@@ -141,5 +141,18 @@
 	#define LM_PRAGMA(x) _Pragma(LM_STRINGIFY(x))
 #endif
 
+#define LM_SAFE_DELETE(val) if ((val) != nullptr) { delete (val); (val) = nullptr; }
+#define LM_SAFE_DELETE_ARRAY(val) if ((val) != nullptr) { delete[] (val); (val) = nullptr; }
+
+#define LM_DISABLE_COPY_AND_MOVE(TypeName) \
+	TypeName(const TypeName &); \
+	TypeName(TypeName&&); \
+	void operator=(const TypeName&); \
+	void operator=(TypeName&&)
+
+#define LM_DISABLE_CONSTRUCT(TypeName) \
+    TypeName(); \
+    LM_DISABLE_COPY_AND_MOVE(TypeName)
+
 #define LM_NAMESPACE_BEGIN namespace lightmetrica_v2 {
 #define LM_NAMESPACE_END }

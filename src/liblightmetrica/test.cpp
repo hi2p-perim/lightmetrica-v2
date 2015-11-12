@@ -43,20 +43,11 @@ struct A1 : public A
 
     LM_IMPL_F(Func3, [this]()
     {
-        std::cout << "he" << std::endl;
+        std::cout << "hello" << std::endl;
     });
 };
 
-extern "C" A* CreateA()
-{
-    return new A1;
-}
-
-extern "C" void ReleaseA(A* p)
-{
-    delete p;
-    p = nullptr;
-}
+LM_COMPONENT_REGISTER_IMPL(A1);
 
 // --------------------------------------------------------------------------------
 
@@ -76,25 +67,16 @@ struct B1 : public B
 
     LM_IMPL_F(Func3, [this]()
     {
-        std::cout << "he2" << std::endl;
+        std::cout << "a" << std::endl;
     });
 
     LM_IMPL_F(Func4, [this]()
     {
-        std::cout << "gegegege" << std::endl;
+        std::cout << "b" << std::endl;
     });
 };
 
-extern "C" B* CreateB()
-{
-    return new B1;
-}
-
-extern "C" void ReleaseB(B* p)
-{
-    delete p;
-    p = nullptr;
-}
+LM_COMPONENT_REGISTER_IMPL(B1);
 
 // --------------------------------------------------------------------------------
 
@@ -128,18 +110,8 @@ struct C1 : public C
     {
         std::cout << s << std::endl;
     });
-
 };
 
-extern "C" C* CreateC()
-{
-    return new C1;
-}
-
-extern "C" void ReleaseC(C* p)
-{
-    delete p;
-    p = nullptr;
-}
+LM_COMPONENT_REGISTER_IMPL(C1);
 
 LM_NAMESPACE_END

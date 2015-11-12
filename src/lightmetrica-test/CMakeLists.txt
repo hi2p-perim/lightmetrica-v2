@@ -25,10 +25,16 @@
 include (PCHTargets)
 
 set(_PROJECT_NAME "lightmetrica-test")
+set(_GTEST_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/src/gtest-1.7.0")
 set(
 	_SOURCE_FILES
 	"main.cpp"
 	"test_test.cpp"
+	"test_component.cpp"
+	"test_reflection.cpp"
+
+	# gtest
+	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc"
 )
 
 pch_add_executable(${_PROJECT_NAME} PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h" ${_SOURCE_FILES})

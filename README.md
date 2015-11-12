@@ -88,8 +88,15 @@ This is a topic specific to the `research-oriented` application.
     + You should not introduce unnecessary state variables for a small optimization
     + Specially in the non-optimized version, the number of cached values should be zero.
 
+### Binary boundary
 
+- All interface should support compiler-level portability
+    + Use builtin component system
+- All data structure should be POD type
 
+### Tab size
+
+- The tab should be by 4 spaces. Avoid to use `\t` character.
 
 Recommended practices (CMake)
 --------------------

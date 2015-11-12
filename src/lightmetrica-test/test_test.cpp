@@ -22,36 +22,15 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
-#include <lightmetrica/component.h>
-#include <vector>
-#include <string>
+#include <pch_test.h>
 
 LM_NAMESPACE_BEGIN
+LM_TEST_NAMESPACE_BEGIN
 
-struct A : public Component
+TEST(Test, Test)
 {
-    LM_INTERFACE_CLASS(A, Component, 3);
-    LM_INTERFACE_F(0, Func1, void(int));
-    LM_INTERFACE_F(1, Func2, int(int, int));
-    LM_INTERFACE_F(2, Func3, void());
-};
+    EXPECT_TRUE(true);
+}
 
-struct B : public A
-{
-    LM_INTERFACE_CLASS(B, A, 1);
-    LM_INTERFACE_F(0, Func4, void());
-};
-
-struct C : public Component
-{
-    LM_INTERFACE_CLASS(C, Component, 6);
-    LM_INTERFACE_F(0, Func1, void(const int*, int n));
-    LM_INTERFACE_F(1, Func2, void(std::vector<int>));
-    LM_INTERFACE_F(2, Func3, void(int&));
-    LM_INTERFACE_F(3, Func4, void(const int&));
-    LM_INTERFACE_F(4, Func5, void(const std::string&));
-};
-
+LM_TEST_NAMESPACE_END
 LM_NAMESPACE_END

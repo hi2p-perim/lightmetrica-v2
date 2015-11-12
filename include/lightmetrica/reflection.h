@@ -24,34 +24,39 @@
 
 #pragma once
 
-#include <lightmetrica/component.h>
-#include <vector>
-#include <string>
+#include <lightmetrica/macros.h>
 
 LM_NAMESPACE_BEGIN
 
-struct A : public Component
+/*!
+    Types.
+*/
+enum class Type
 {
-    LM_INTERFACE_CLASS(A, Component, 3);
-    LM_INTERFACE_F(0, Func1, void(int));
-    LM_INTERFACE_F(1, Func2, int(int, int));
-    LM_INTERFACE_F(2, Func3, void());
+    Class,
 };
 
-struct B : public A
+/*!
+    Type info.
+    Implements simple run-time reflection.
+*/
+struct TypeInfo
 {
-    LM_INTERFACE_CLASS(B, A, 1);
-    LM_INTERFACE_F(0, Func4, void());
+    Type type;
+    const char* name;
+    struct
+    {
+        const char* base;
+    } classT;
 };
 
-struct C : public Component
-{
-    LM_INTERFACE_CLASS(C, Component, 6);
-    LM_INTERFACE_F(0, Func1, void(const int*, int n));
-    LM_INTERFACE_F(1, Func2, void(std::vector<int>));
-    LM_INTERFACE_F(2, Func3, void(int&));
-    LM_INTERFACE_F(3, Func4, void(const int&));
-    LM_INTERFACE_F(4, Func5, void(const std::string&));
-};
+#define LM_DEFINE_CLASS_TYPE(ClassType, BaseClassType) \
+    static TypeInfo Type() { \
+        TypeInfo t; \
+        t.type = Type::Class; \
+        t.name = #ClassType; \
+        t.classT.base = #BaseClassType; \
+        return t; \
+    }
 
 LM_NAMESPACE_END

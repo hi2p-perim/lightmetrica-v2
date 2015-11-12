@@ -26,11 +26,22 @@
 
 #include <lightmetrica/macros.h>
 #include <lightmetrica/portable.h>
+#include <lightmetrica/reflection.h>
 #include <functional>
 #include <type_traits>
+#include <memory>
 
 LM_NAMESPACE_BEGIN
 
+#pragma region Component
+
+/*!
+    Component.
+    The base class for all component classes.
+    The component system of lightmetrica is main feature for
+    retaining portability of the framework.
+    For technical details, see <TODO>.
+*/
 struct Component
 {
     // VTable entries and user-defined data
@@ -40,6 +51,12 @@ struct Component
     void* userdata_[VTableNumEntries];
     static constexpr int NumFuncs = 0;
 };
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Interface definition
 
 template <int ID, typename Signature>
 struct VirtualFunction;
@@ -73,6 +90,7 @@ struct VirtualFunctionGenerator<ID, ReturnType(ArgTypes...)>
 
 // Define interface class
 #define LM_INTERFACE_CLASS(Current, Base, Num) \
+    LM_DEFINE_CLASS_TYPE(Current, Base); \
     using BaseType = Base; \
     using InterfaceType = Current; \
     static constexpr int NumFuncs = BaseType::NumFuncs + Num
@@ -82,7 +100,11 @@ struct VirtualFunctionGenerator<ID, ReturnType(ArgTypes...)>
     static constexpr int Name ## _ID_ = BaseType::NumFuncs + Index; \
     const VirtualFunction<Name ## _ID_, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, Signature>::Get(this)
 
+#pragma endregion
+
 // --------------------------------------------------------------------------------
+
+#pragma region Implementation definition
 
 template <typename Signature>
 struct ImplFunctionGenerator;
@@ -105,6 +127,7 @@ struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
 };
 
 #define LM_IMPL_CLASS(Impl, Base) \
+    LM_DEFINE_CLASS_TYPE(Impl, Base); \
     using ImplType = Impl; \
     using BaseType = Base
 
@@ -117,5 +140,105 @@ struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
     } Name ## _Init_Inst_{this}; \
     friend struct Name ## _Init_; \
     const std::function<decltype(Name)::Type> Name ## _ = Lambda
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Component factory
+
+using CreateFuncPointerType = Component* (*)();
+using ReleaseFuncPointerType = void(*)(Component*);
+
+extern "C" LM_PUBLIC_API void ComponentFactory_Register(TypeInfo implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc);
+extern "C" LM_PUBLIC_API Component* ComponentFactory_Create(const char* implName);
+extern "C" LM_PUBLIC_API ReleaseFuncPointerType ComponentFactory_ReleaseFunc(const char* implName);
+
+/*!
+    Component factory.
+    Instance factory class for component creation.
+    All components are instanciated with this class.
+*/
+class ComponentFactory
+{
+public:
+    static void Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) { ComponentFactory_Register(implT, createFunc, releaseFunc); }
+    static Component* Create(const char* implName) { return ComponentFactory_Create(implName); }
+    static ReleaseFuncPointerType ReleaseFunc(const char* implName) { return ComponentFactory_ReleaseFunc(implName); }
+
+public:
+    template <typename InterfaceType>
+    static std::unique_ptr<InterfaceType, ReleaseFuncPointerType> Create(const char* implName)
+    {
+        // Create instance
+        using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
+        auto* p = reinterpret_cast<InterfaceType*>(Create(implName));
+        if (!p)
+        {
+            return ReturnType(nullptr, [](Component*){});
+        }
+
+        // Deleter
+        const auto deleter = ReleaseFunc(implName);
+        if (!deleter)
+        {
+            return ReturnType(nullptr, [](Component*){});
+        }
+        
+        ReturnType p2(p, deleter);
+        return std::move(p2);
+    }
+
+private:
+    LM_DISABLE_CONSTRUCT(ComponentFactory);
+};
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Implementation registry
+
+/*!
+    Implementation entry.
+    The constructor is called automatically and registers
+    instance creation function to the component factory.
+    \tparam ImplType Implementation class type.
+*/
+template <typename ImplType>
+class ImplEntry
+{
+public:
+    static ImplEntry<ImplType>& Instance()
+    {
+        static ImplEntry<ImplType> instance;
+        return instance;
+    }
+
+private:
+    ImplEntry()
+    {
+        ComponentFactory::Register(
+            ImplType::Type(), 
+            []() -> Component* { return new ImplType; },
+            [](Component* p) -> void
+            {
+                auto* p2 = reinterpret_cast<ImplType*>(p);
+                LM_SAFE_DELETE(p2);
+                p = nullptr;
+            });
+    }
+};
+
+#define LM_COMPONENT_REGISTER_IMPL(ImplType) \
+	namespace { \
+		template <typename T> \
+		class ImplEntry_Init; \
+		template <> \
+        class ImplEntry_Init<ImplType> { static const ImplEntry<ImplType>& reg; }; \
+        const ImplEntry<ImplType>& ImplEntry_Init<ImplType>::reg = ImplEntry<ImplType>::Instance(); \
+	}
+
+#pragma endregion
 
 LM_NAMESPACE_END
