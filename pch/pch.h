@@ -36,7 +36,6 @@
 #include <unordered_map>
 #include <chrono>
 
-//#include <boost/bind.hpp>
 //#include <boost/format.hpp>
 //#include <boost/scoped_array.hpp>
 //#include <boost/optional.hpp>
@@ -45,10 +44,6 @@
 //#include <boost/numeric/conversion/cast.hpp>
 //#include <boost/math/constants/constants.hpp>
 //#include <boost/lexical_cast.hpp>
-//#pragma warning(push)
-//#pragma warning(disable:4267)
-//#include <boost/asio.hpp>
-//#pragma warning(pop)
 
 //#if LM_PLATFORM_WINDOWS
 //#include <Windows.h>

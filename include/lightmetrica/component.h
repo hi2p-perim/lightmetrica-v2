@@ -150,9 +150,12 @@ struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
 using CreateFuncPointerType = Component* (*)();
 using ReleaseFuncPointerType = void(*)(Component*);
 
-extern "C" LM_PUBLIC_API void ComponentFactory_Register(TypeInfo implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc);
-extern "C" LM_PUBLIC_API Component* ComponentFactory_Create(const char* implName);
-extern "C" LM_PUBLIC_API ReleaseFuncPointerType ComponentFactory_ReleaseFunc(const char* implName);
+extern "C"
+{
+    LM_PUBLIC_API void ComponentFactory_Register(TypeInfo implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc);
+    LM_PUBLIC_API Component* ComponentFactory_Create(const char* implName);
+    LM_PUBLIC_API ReleaseFuncPointerType ComponentFactory_ReleaseFunc(const char* implName);
+}
 
 /*!
     Component factory.
@@ -162,11 +165,13 @@ extern "C" LM_PUBLIC_API ReleaseFuncPointerType ComponentFactory_ReleaseFunc(con
 class ComponentFactory
 {
 public:
+
     static void Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) { ComponentFactory_Register(implT, createFunc, releaseFunc); }
     static Component* Create(const char* implName) { return ComponentFactory_Create(implName); }
     static ReleaseFuncPointerType ReleaseFunc(const char* implName) { return ComponentFactory_ReleaseFunc(implName); }
 
 public:
+
     template <typename InterfaceType>
     static std::unique_ptr<InterfaceType, ReleaseFuncPointerType> Create(const char* implName)
     {
@@ -190,7 +195,9 @@ public:
     }
 
 private:
+
     LM_DISABLE_CONSTRUCT(ComponentFactory);
+
 };
 
 #pragma endregion
@@ -209,6 +216,7 @@ template <typename ImplType>
 class ImplEntry
 {
 public:
+
     static ImplEntry<ImplType>& Instance()
     {
         static ImplEntry<ImplType> instance;
@@ -216,6 +224,7 @@ public:
     }
 
 private:
+
     ImplEntry()
     {
         ComponentFactory::Register(
@@ -228,6 +237,7 @@ private:
                 p = nullptr;
             });
     }
+
 };
 
 #define LM_COMPONENT_REGISTER_IMPL(ImplType) \
