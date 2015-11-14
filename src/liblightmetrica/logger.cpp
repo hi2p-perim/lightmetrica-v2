@@ -28,8 +28,11 @@
 #include <boost/bind.hpp>
 #pragma warning(push)
 #pragma warning(disable:4267)
+#pragma warning(disable:4005)
 #include <boost/asio.hpp>
 #pragma warning(pop)
+
+#include <tbb/tbb.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -41,12 +44,12 @@ public:
 
 public:
 
-	void Run()
+	auto Run() -> void
 	{
 		ioThread = std::thread(boost::bind(&boost::asio::io_service::run, &io));
 	}
 
-	void Stop()
+	auto Stop() -> void
 	{
 		if (ioThread.joinable())
 		{
@@ -57,7 +60,7 @@ public:
 
 public:
 
-	void Log(LogType type, const std::string& message, int line, bool inplace)
+	auto Log(LogType type, const std::string& message, int line, bool inplace) -> void
 	{
 		int threadId;
 		{
@@ -77,7 +80,7 @@ public:
 			{
 				int consoleWidth;
 				const int DefaultConsoleWidth = 100;
-				#if NGI_PLATFORM_WINDOWS
+				#if LM_PLATFORM_WINDOWS
 				{
 					HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 					CONSOLE_SCREEN_BUFFER_INFO screenBufferInfo;
@@ -90,7 +93,7 @@ public:
 						consoleWidth = screenBufferInfo.dwSize.X - 1;
 					}
 				}
-				#elif NGI_PLATFORM_LINUX
+				#elif LM_PLATFORM_LINUX
 				{
 					struct winsize w;
 					if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) < 0)
@@ -124,7 +127,7 @@ public:
 		});
 	}
 
-    void UpdateIndentation(bool push)
+    auto UpdateIndentation(bool push) -> void
     {
         io.post([this, push]()
         {
@@ -143,7 +146,7 @@ public:
 
 private:
 
-	std::string GenerateMessage(LogType type, const std::string& message, int line, int threadId) const
+	auto GenerateMessage(LogType type, const std::string& message, int line, int threadId) const -> std::string
 	{
 		const std::string LogTypeString[] = { "ERROR", "WARN", "INFO", "DEBUG" };
 		const auto now = std::chrono::high_resolution_clock::now();
@@ -151,9 +154,9 @@ private:
 		return boost::str(boost::format("| %-5s %.3f | @%4d | #%2d | %s%s") % LogTypeString[(int)(type)] % elapsed % line % threadId % IndentationString % message);
 	}
 
-	void BeginTextColor(LogType type)
+	auto BeginTextColor(LogType type) -> void
 	{
-		#if NGI_PLATFORM_WINDOWS
+		#if LM_PLATFORM_WINDOWS
 		HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		WORD colorFlag = 0;
 		switch (type)
@@ -175,19 +178,19 @@ private:
 		#endif
 	}
 
-	void EndTextColor()
+	auto EndTextColor() -> void
 	{
-		#if NGI_PLATFORM_WINDOWS
+		#if LM_PLATFORM_WINDOWS
 		HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		SetConsoleTextAttribute(consoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-		#elif NGI_PLATFORM_LINUX
+		#elif LM_PLATFORM_LINUX
 		std::cout << "\033[0m";
 		#endif
 	}
 
 private:
 
-	static std::atomic<Logger*> instance;
+	static std::atomic<LoggerImpl*> instance;
 	static std::mutex mutex;
 
 private:
@@ -208,20 +211,20 @@ private:
 
 };
 
-std::atomic<Logger*> Logger::instance;
-std::mutex Logger::mutex;
+std::atomic<LoggerImpl*> LoggerImpl::instance;
+std::mutex LoggerImpl::mutex;
 
-Logger* Logger::Instance()
+auto LoggerImpl::Instance() -> LoggerImpl*
 {
 	auto* p = instance.load(std::memory_order_relaxed);
-	std::atomic_thread_fence(std::memory_order_acquire);
+    std::atomic_thread_fence(std::memory_order_acquire);
 	if (p == nullptr)
 	{
 		std::lock_guard<std::mutex> lock(mutex);
 		p = instance.load(std::memory_order_relaxed);
 		if (p == nullptr)
 		{
-			p = new Logger;
+			p = new LoggerImpl;
 			std::atomic_thread_fence(std::memory_order_release);
 			instance.store(p, std::memory_order_relaxed);
 		}
@@ -229,9 +232,9 @@ Logger* Logger::Instance()
 	return p;
 }
 
-void Logger_Run() { LoggerImpl::Instance()->Run(); }
-void Logger_Stop() { LoggerImpl::Instance()->Stop(); }
-void Logger_Log(int type, const char* message, int line, bool inplace) { LoggerImpl::Instance()->Log((LogType)(type), message, line, inplace); }
-void Logger_UpdateIndentation(bool push) { LoggerImpl::Instance()->UpdateIndentation(push); }
+auto Logger_Run() -> void { LoggerImpl::Instance()->Run(); }
+auto Logger_Stop() -> void { LoggerImpl::Instance()->Stop(); }
+auto Logger_Log(int type, const char* message, int line, bool inplace) -> void { LoggerImpl::Instance()->Log((LogType)(type), message, line, inplace); }
+auto Logger_UpdateIndentation(bool push) -> void { LoggerImpl::Instance()->UpdateIndentation(push); }
 
 LM_NAMESPACE_END

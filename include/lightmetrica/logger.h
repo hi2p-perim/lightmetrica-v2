@@ -91,28 +91,29 @@ enum class LogType
        ...
        ```
 */
+
+extern "C"
+{
+    LM_PUBLIC_API auto Logger_Run() -> void;
+    LM_PUBLIC_API auto Logger_Stop() -> void;
+    LM_PUBLIC_API auto Logger_Log(int type, const char* message, int line, bool inplace) -> void;
+    LM_PUBLIC_API auto Logger_UpdateIndentation(bool push) -> void;
+}
+
 class Logger
 {
 public:
 
-    static void Run() { Logger_Run(); }
-    static void Stop() { Logger_Stop(); }
-    static void Log(LogType type, const std::string& message, int line, bool inplace) { Logger_Log((int)(type), message.c_str(), line, inplace); }
-    static void UpdateIndentation(bool push) { Logger_UpdateIndentation(push); }
+    static auto Run()  -> void { Logger_Run(); }
+    static auto Stop() -> void { Logger_Stop(); }
+    static auto Log(LogType type, const std::string& message, int line, bool inplace) -> void { Logger_Log((int)(type), message.c_str(), line, inplace); }
+    static auto UpdateIndentation(bool push) -> void { Logger_UpdateIndentation(push); }
 
 private:
     
     LM_DISABLE_CONSTRUCT(Logger);
 
 };
-
-extern "C"
-{
-    LM_PUBLIC_API void Logger_Run();
-    LM_PUBLIC_API void Logger_Stop();
-    LM_PUBLIC_API void Logger_Log(int type, const char* message, int line, bool inplace);
-    LM_PUBLIC_API void Logger_UpdateIndentation(bool push);
-}
 
 /*!
     Log indenter.

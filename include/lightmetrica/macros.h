@@ -147,8 +147,8 @@
 #define LM_DISABLE_COPY_AND_MOVE(TypeName) \
 	TypeName(const TypeName &); \
 	TypeName(TypeName&&); \
-	void operator=(const TypeName&); \
-	void operator=(TypeName&&)
+	auto operator=(const TypeName&) -> void; \
+	auto operator=(TypeName&&) -> void
 
 #define LM_DISABLE_CONSTRUCT(TypeName) \
     TypeName(); \

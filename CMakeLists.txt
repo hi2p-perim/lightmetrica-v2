@@ -24,8 +24,6 @@
 
 cmake_minimum_required(VERSION 3.2)
 
-include(CMakeParseArguments)
-
 project(lightmetrica)
 
 # --------------------------------------------------------------------------------
@@ -106,8 +104,8 @@ include_directories(${Boost_INCLUDE_DIRS})
 # endif()
 
 # TBB
-# find_package(TBB REQUIRED)
-# include_directories(${TBB_INCLUDE_DIRS})
+find_package(TBB REQUIRED)
+include_directories(${TBB_INCLUDE_DIRS})
 
 # Assimp
 # find_package(Assimp REQUIRED)
@@ -223,4 +221,3 @@ add_subdirectory("src/liblightmetrica")
 
 #add_subdirectory("src/lightmetrica")
 add_subdirectory("src/lightmetrica-test")
-

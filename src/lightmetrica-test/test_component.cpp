@@ -28,6 +28,30 @@
 LM_NAMESPACE_BEGIN
 LM_TEST_NAMESPACE_BEGIN
 
+// --------------------------------------------------------------------------------
+
+struct E : public Component
+{
+    LM_INTERFACE_CLASS(E, Component, 1);
+    LM_INTERFACE_F(0, Func, int());
+};
+
+struct E1 : public E
+{
+    LM_IMPL_CLASS(E1, E);
+    LM_IMPL_F(Func, [this]() -> int { return 42; });
+};
+
+LM_COMPONENT_REGISTER_IMPL(E1);
+
+TEST(ComponentTest, E)
+{
+    auto p = std::move(ComponentFactory::Create<E>("E1"));
+    EXPECT_EQ(42, p->Func());
+}
+
+// --------------------------------------------------------------------------------
+
 TEST(ComponentTest, A)
 {
     auto p = std::move(ComponentFactory::Create<A>("A1"));

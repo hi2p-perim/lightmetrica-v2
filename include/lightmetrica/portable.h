@@ -36,14 +36,14 @@ struct Portable
 {
     T v;
     Portable<T>(T v) : v(v) {}
-    T Get() const { return v; }
+    auto Get() -> T const { return v; }
 };
 
 template <>
 struct Portable<void>
 {
     Portable<void>() {}
-    void Get() const {}
+    auto Get() -> void const {}
 };
 
 template <typename T>
@@ -51,7 +51,7 @@ struct Portable<T&>
 {
     T* v;
     Portable<T&>(T& v) : v(&v) {}
-    T& Get() const { return *v; }
+    auto Get() const -> T& { return *v; }
 };
 
 // Spefialization for unportable types
@@ -69,7 +69,7 @@ struct Portable<std::vector<ContainerT>>
         , p(&v[0])
     {}
 
-    VectorT Get() const
+    auto Get() const -> VectorT
     {
         VectorT v;
         v.assign(p, p + N);
@@ -86,7 +86,7 @@ struct Portable<const std::string&>
         : p(s.c_str())
     {}
 
-    std::string Get() const
+    auto Get() const -> std::string
     {
         return std::string(p);
     }

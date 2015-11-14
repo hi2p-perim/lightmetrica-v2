@@ -67,7 +67,7 @@ struct VirtualFunction<ID, ReturnType(ArgTypes...)>
     using Type = ReturnType(ArgTypes...);
     Component* o;
     explicit VirtualFunction<ID, ReturnType(ArgTypes...)>(Component* o) : o(o) {};
-    ReturnType operator()(ArgTypes... args) const
+    auto operator()(ArgTypes... args) const -> ReturnType
     {
         // Convert argument types to portable types and call the functions stored in the vtable.
         using FuncType = ReturnType(*)(void*, Portable<ArgTypes>...);
@@ -150,30 +150,31 @@ struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
 using CreateFuncPointerType = Component* (*)();
 using ReleaseFuncPointerType = void(*)(Component*);
 
-extern "C"
-{
-    LM_PUBLIC_API void ComponentFactory_Register(TypeInfo implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc);
-    LM_PUBLIC_API Component* ComponentFactory_Create(const char* implName);
-    LM_PUBLIC_API ReleaseFuncPointerType ComponentFactory_ReleaseFunc(const char* implName);
-}
-
 /*!
     Component factory.
     Instance factory class for component creation.
     All components are instanciated with this class.
 */
+
+extern "C"
+{
+    LM_PUBLIC_API auto ComponentFactory_Register(TypeInfo implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void;
+    LM_PUBLIC_API auto ComponentFactory_Create(const char* implName)->Component*;
+    LM_PUBLIC_API auto ComponentFactory_ReleaseFunc(const char* implName)->ReleaseFuncPointerType;
+}
+
 class ComponentFactory
 {
 public:
 
-    static void Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) { ComponentFactory_Register(implT, createFunc, releaseFunc); }
-    static Component* Create(const char* implName) { return ComponentFactory_Create(implName); }
-    static ReleaseFuncPointerType ReleaseFunc(const char* implName) { return ComponentFactory_ReleaseFunc(implName); }
+    static auto Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactory_Register(implT, createFunc, releaseFunc); }
+    static auto Create(const char* implName) -> Component* { return ComponentFactory_Create(implName); }
+    static auto ReleaseFunc(const char* implName) -> ReleaseFuncPointerType { return ComponentFactory_ReleaseFunc(implName); }
 
 public:
 
     template <typename InterfaceType>
-    static std::unique_ptr<InterfaceType, ReleaseFuncPointerType> Create(const char* implName)
+    static auto Create(const char* implName) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
         // Create instance
         using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
@@ -217,7 +218,7 @@ class ImplEntry
 {
 public:
 
-    static ImplEntry<ImplType>& Instance()
+    static auto Instance() -> ImplEntry<ImplType>&
     {
         static ImplEntry<ImplType> instance;
         return instance;

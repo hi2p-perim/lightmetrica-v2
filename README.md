@@ -11,7 +11,7 @@ Build
 
 > QTDIR="D:\Qt\Qt5.4.2\5.4\msvc2013_64_opengl" BOOST_ROOT="" BOOST_INCLUDEDIR="D:\boost\boost_1_59_0" BOOST_LIBRARYDIR="D:\boost\boost_1_59_0\lib64-msvc-14.0" TB B_ROOT="D:\tbb\tbb43_20150611oss" TBB_ARCH_PLATFORM="intel64" cmake -G "Visual Studio 14 2015 Win64" ..
 
-> BOOST_ROOT="" BOOST_INCLUDEDIR="D:\boost\boost_1_59_0" BOOST_LIBRARYDIR="D:\boost\boost_1_59_0\lib64-msvc-14.0" cmake -G "Visual Studio 14 2015 Win64" ..
+> BOOST_ROOT="" BOOST_INCLUDEDIR="C:\boost\boost_1_59_0" BOOST_LIBRARYDIR="C:\boost\boost_1_59_0\lib64-msvc-14.0" TBB_ROOT="`pwd`/../external/src/tbb44_20150928oss" TBB_ARCH_PLATFORM="intel64" cmake -G "Visual Studio 14 2015 Win64" ..
 
 
 
@@ -97,6 +97,13 @@ This is a topic specific to the `research-oriented` application.
 ### Tab size
 
 - The tab should be by 4 spaces. Avoid to use `\t` character.
+
+### Function
+
+- The function declaration should use `trailing return types` supported from C++11.
+    + Consistent handling of return types
+    + Keeping visually arranged looking of the code
+- The return type of the lambda function should be specified
 
 Recommended practices (CMake)
 --------------------

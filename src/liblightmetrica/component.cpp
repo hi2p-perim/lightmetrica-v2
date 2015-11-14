@@ -52,7 +52,7 @@ public:
 
 public:
 
-    void Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc)
+    auto Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void
     {
         if (funcMap.find(implT.name) != funcMap.end())
         {
@@ -66,13 +66,13 @@ public:
         funcMap[implT.name] = CreateAndReleaseFuncs{createFunc, releaseFunc};
     }
 
-    Component* Create(const char* implName)
+    auto Create(const char* implName) -> Component*
     {
         auto it = funcMap.find(implName);
         return it == funcMap.end() ? nullptr : it->second.createFunc();
     }
 
-    ReleaseFuncPointerType ReleaseFunc(const char* implName)
+    auto ReleaseFunc(const char* implName) -> ReleaseFuncPointerType
     {
         auto it = funcMap.find(implName);
         return it == funcMap.end() ? nullptr : it->second.releaseFunc;
@@ -85,8 +85,8 @@ private:
 
 };
 
-void ComponentFactory_Register(TypeInfo implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) { ComponentFactoryImpl::Instance().Register(implT, createFunc, releaseFunc); }
-Component* ComponentFactory_Create(const char* implName) { return ComponentFactoryImpl::Instance().Create(implName); }
-ReleaseFuncPointerType ComponentFactory_ReleaseFunc(const char* implName) { return ComponentFactoryImpl::Instance().ReleaseFunc(implName); }
+auto ComponentFactory_Register(TypeInfo implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactoryImpl::Instance().Register(implT, createFunc, releaseFunc); }
+auto ComponentFactory_Create(const char* implName) -> Component* { return ComponentFactoryImpl::Instance().Create(implName); }
+auto ComponentFactory_ReleaseFunc(const char* implName) -> ReleaseFuncPointerType { return ComponentFactoryImpl::Instance().ReleaseFunc(implName); }
 
 LM_NAMESPACE_END
