@@ -46,12 +46,10 @@ set(
     "${_INCLUDE_DIR}/math.h"
     "${_INCLUDE_DIR}/version.h"
     "${_INCLUDE_DIR}/reflection.h"
-    "${_INCLUDE_DIR}/test.h"
 	"${_INCLUDE_DIR}/logger.h"
 )
 set(
     _SOURCE_FILES
-    "test.cpp"
     "component.cpp"
     "logger.cpp"
 )

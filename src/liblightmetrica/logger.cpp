@@ -68,8 +68,15 @@ public:
 	{
 		if (ioThread.joinable())
 		{
+            // Clear the `work` associated to `io_service`
+            // and wait for io thread ends.
 			work.reset();
 			ioThread.join();
+
+            // Reset io_service for later invocation of the `run` function
+            // Also we need to reassign a work.
+            io.reset();
+            work.reset(new boost::asio::io_service::work(io));
 		}
 	}
 
@@ -84,7 +91,6 @@ public:
 			if (threadIdMap.insert(a, id))
 			{
                 a->second = (int)(threadIdMap.size() - 1);
-				//a->second = threadIdMapCount++;
 			}
 			threadId = a->second;
 		}
@@ -217,13 +223,11 @@ private:
 
 private:
 
-	std::string InplaceText;
 	std::chrono::high_resolution_clock::time_point LogStartTime = std::chrono::high_resolution_clock::now();
 	int Indentation = 0;
 	std::string IndentationString;
 	bool prevMessageIsInplace = false;
 	tbb::concurrent_hash_map<std::string, int> threadIdMap;
-	//std::atomic<int> threadIdMapCount;
 
 };
 

@@ -23,55 +23,152 @@
 */
 
 #include <pch_test.h>
-#include <lightmetrica/test.h>
+#include <lightmetrica/component.h>
+#include <lightmetrica-test/utils.h>
 
 LM_TEST_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
 
-struct E : public Component
+#pragma region Interfaces
+
+struct A : public Component
 {
-    LM_INTERFACE_CLASS(E, Component, 1);
-    LM_INTERFACE_F(0, Func, int());
+    LM_INTERFACE_CLASS(A, Component, 3);
+    LM_INTERFACE_F(0, Func1, void(int));
+    LM_INTERFACE_F(1, Func2, int(int, int));
+    LM_INTERFACE_F(2, Func3, void());
 };
 
-struct E1 : public E
+struct B : public A
 {
-    LM_IMPL_CLASS(E1, E);
-    LM_IMPL_F(Func, [this]() -> int { return 42; });
+    LM_INTERFACE_CLASS(B, A, 1);
+    LM_INTERFACE_F(0, Func4, void());
 };
 
-LM_COMPONENT_REGISTER_IMPL(E1);
-
-TEST(ComponentTest, E)
+struct C : public Component
 {
-    auto p = std::move(ComponentFactory::Create<E>("E1"));
-    EXPECT_EQ(42, p->Func());
-}
+    LM_INTERFACE_CLASS(C, Component, 6);
+    LM_INTERFACE_F(0, Func1, void(const int*, int n));
+    LM_INTERFACE_F(1, Func2, void(std::vector<int>));
+    LM_INTERFACE_F(2, Func3, void(int&));
+    LM_INTERFACE_F(3, Func4, void(const int&));
+    LM_INTERFACE_F(4, Func5, void(const std::string&));
+};
+
+#pragma endregion
 
 // --------------------------------------------------------------------------------
 
-TEST(ComponentTest, A)
+#pragma region Implementation
+
+struct A1 : public A
+{
+    LM_IMPL_CLASS(A1, A);
+
+    LM_IMPL_F(Func1, [this](int v) -> void
+    {
+        std::cout << v << std::endl;
+    });
+
+    LM_IMPL_F(Func2, [this](int v1, int v2) -> int
+    {
+        return v1 + v2;
+    });
+
+    LM_IMPL_F(Func3, [this]() -> void
+    {
+        std::cout << "hello" << std::endl;
+    });
+};
+
+LM_COMPONENT_REGISTER_IMPL(A1);
+
+// --------------------------------------------------------------------------------
+
+struct B1 : public B
+{
+    LM_IMPL_CLASS(B1, B);
+
+    LM_IMPL_F(Func1, [this](int v) -> void
+    {
+        std::cout << v + 1 << std::endl;
+    });
+
+    LM_IMPL_F(Func2, [this](int v1, int v2) -> int
+    {
+        return v1 + v2 + 1;
+    });
+
+    LM_IMPL_F(Func3, [this]() -> void
+    {
+        std::cout << "a" << std::endl;
+    });
+
+    LM_IMPL_F(Func4, [this]() -> void
+    {
+        std::cout << "b" << std::endl;
+    });
+};
+
+LM_COMPONENT_REGISTER_IMPL(B1);
+
+// --------------------------------------------------------------------------------
+
+struct C1 : public C
+{
+    LM_IMPL_CLASS(C1, C);
+
+    LM_IMPL_F(Func1, [this](const int* v, int n) -> void
+    {
+        for (int i = 0; i < n; i++) std::cout << v[i] << " ";
+        std::cout << std::endl;
+    });
+
+    LM_IMPL_F(Func2, [this](std::vector<int> v) -> void
+    {
+        for (int& val : v) std::cout << val << " ";
+        std::cout << std::endl;
+    });
+
+    LM_IMPL_F(Func3, [this](int& v) -> void
+    {
+        v = 42;
+    });
+
+    LM_IMPL_F(Func4, [this](const int& v) -> void
+    {
+        std::cout << v << std::endl;
+    });
+
+    LM_IMPL_F(Func5, [this](const std::string& s) -> void
+    {
+        std::cout << s << std::endl;
+    });
+};
+
+LM_COMPONENT_REGISTER_IMPL(C1);
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+TEST(ComponentTest, Simple)
 {
     auto p = std::move(ComponentFactory::Create<A>("A1"));
-
     ASSERT_FALSE(p == nullptr);
 
+    EXPECT_EQ("42\n", TestUtils::CaptureStdout([&]()
     {
-        testing::internal::CaptureStdout();
         p->Func1(42);
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("42\n", out);
-    }
+    }));
 
     EXPECT_EQ(3, p->Func2(1, 2));
 
+    EXPECT_EQ("hello\n", TestUtils::CaptureStdout([&]()
     {
-        testing::internal::CaptureStdout();
         p->Func3();
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("hello\n", out);
-    }
+    }));
 }
 
 TEST(ComponentTest, FailedToCreate)
@@ -80,55 +177,45 @@ TEST(ComponentTest, FailedToCreate)
     ASSERT_TRUE(p == nullptr);
 }
 
-TEST(ComponentTest, B)
+TEST(ComponentTest, InheritedInterface)
 {
     auto p = std::move(ComponentFactory::Create<B>("B1"));
 
     ASSERT_FALSE(p == nullptr);
 
+    EXPECT_EQ("43\n", TestUtils::CaptureStdout([&]()
     {
-        testing::internal::CaptureStdout();
         p->Func1(42);
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("43\n", out);
-    }
+    }));
 
     EXPECT_EQ(4, p->Func2(1, 2));
 
+    EXPECT_EQ("a\n", TestUtils::CaptureStdout([&]()
     {
-        testing::internal::CaptureStdout();
         p->Func3();
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("a\n", out);
-    }
+    }));
 
+    EXPECT_EQ("b\n", TestUtils::CaptureStdout([&]()
     {
-        testing::internal::CaptureStdout();
         p->Func4();
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("b\n", out);
-    }
+    }));
 }
 
-TEST(ComponentTest, C)
+TEST(ComponentTest, PortableArguments)
 {
     auto p = std::move(ComponentFactory::Create<C>("C1"));
 
     std::vector<int> v{ 1,2,3 };
     
+    EXPECT_EQ("1 2 3 \n", TestUtils::CaptureStdout([&]()
     {
-        testing::internal::CaptureStdout();
         p->Func1(v.data(), 3);
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("1 2 3 \n", out);
-    }
+    }));
 
+    EXPECT_EQ("1 2 3 \n", TestUtils::CaptureStdout([&]()
     {
-        testing::internal::CaptureStdout();
         p->Func2(v);
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("1 2 3 \n", out);
-    }
+    }));
 
     {
         int t;
@@ -136,21 +223,17 @@ TEST(ComponentTest, C)
         EXPECT_EQ(42, t);
     }
 
+    EXPECT_EQ("42\n", TestUtils::CaptureStdout([&]()
     {
         int t = 42;
-        testing::internal::CaptureStdout();
         p->Func4(t);
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("42\n", out);
-    }
+    }));
 
+    EXPECT_EQ("hello\n", TestUtils::CaptureStdout([&]()
     {
         std::string str = "hello";
-        testing::internal::CaptureStdout();
         p->Func5(str);
-        const auto out = testing::internal::GetCapturedStdout();
-        EXPECT_EQ("hello\n", out);
-    }
+    }));
 }
 
 LM_TEST_NAMESPACE_END

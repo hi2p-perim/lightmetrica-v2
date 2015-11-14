@@ -32,7 +32,7 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
 {
     const auto CheckLogOutput = [](const std::string& type, const std::string& message, const std::string& out) -> void
     {
-        std::regex re(R"x(^\| ([[:upper:]]+) [\d]+\.\d{3} \| @[ \d]{4} \| #[ \d]{2} \| (.*)\n)x");
+        std::regex re(R"x(^\| ([[:upper:]]+) +[\d]*\.\d{3} \| @[ \d]{4} \| #[ \d]{2} \| (.*)\n)x");
         std::smatch match;
         const bool result = std::regex_match(out, match, re);
         EXPECT_TRUE(result);
@@ -42,8 +42,6 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
             EXPECT_EQ(message, match[2]);
         }
     };
-
-    // --------------------------------------------------------------------------------
 
     CheckLogOutput("ERROR", "Hello", TestUtils::CaptureStdout([]()
     {
@@ -73,25 +71,25 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
         LM_LOG_STOP();
     }));
 }
-
-TEST(LoggerTest, OutputToStdoutOrStderr)
-{
-
-}
-
-TEST(LoggerTest, OutputToFile)
-{
-
-}
-
-TEST(LogerTest, AddLogFromAnotherThread)
-{
-    
-}
-
-TEST(LoggerTest, ImmediateMode)
-{
-    
-}
+//
+//TEST(LoggerTest, OutputToSignal)
+//{
+//
+//}
+//
+//TEST(LoggerTest, OutputToFile)
+//{
+//
+//}
+//
+//TEST(LogerTest, AddLogFromAnotherThread)
+//{
+//    
+//}
+//
+//TEST(LoggerTest, ImmediateMode)
+//{
+//    
+//}
 
 LM_TEST_NAMESPACE_END

@@ -29,19 +29,26 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
-namespace TestUtils
+class TestUtils
 {
+public:
+
     /*!
         Capture starndard outputs.
         Execute the given function and captures all standard outputs.
         Wraps testing::internal::CaptureStdout.
     */
-    std::string CaptureStdout(const std::function<void()>& func)
+    static std::string CaptureStdout(const std::function<void()>& func)
     {
         testing::internal::CaptureStdout();
         func();
         return testing::internal::GetCapturedStdout();
     }
-}
+
+private:
+    
+    LM_DISABLE_CONSTRUCT(TestUtils);
+
+};
 
 LM_TEST_NAMESPACE_END

@@ -47,7 +47,6 @@ set(
 set(
 	_SOURCE_FILES
 	"main.cpp"
-	"test_test.cpp"
 	"test_component.cpp"
 	"test_reflection.cpp"
 	"test_logger.cpp"
