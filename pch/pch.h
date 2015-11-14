@@ -24,8 +24,6 @@
 
 #pragma once
 
-#include <lightmetrica/macros.h>
-
 #include <iostream>
 #include <functional>
 #include <thread>
@@ -35,6 +33,7 @@
 #include <random>
 #include <unordered_map>
 #include <chrono>
+#include <regex>
 
 #include <boost/format.hpp>
 //#include <boost/scoped_array.hpp>
@@ -45,7 +44,4 @@
 //#include <boost/math/constants/constants.hpp>
 #include <boost/lexical_cast.hpp>
 
-//#if LM_PLATFORM_WINDOWS
-//#include <Windows.h>
-//#endif
-
+#include <lightmetrica/macros.h>

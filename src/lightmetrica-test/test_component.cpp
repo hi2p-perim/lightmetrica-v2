@@ -25,7 +25,6 @@
 #include <pch_test.h>
 #include <lightmetrica/test.h>
 
-LM_NAMESPACE_BEGIN
 LM_TEST_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
@@ -155,4 +154,3 @@ TEST(ComponentTest, C)
 }
 
 LM_TEST_NAMESPACE_END
-LM_NAMESPACE_END

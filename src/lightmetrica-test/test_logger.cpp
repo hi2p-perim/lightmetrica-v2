@@ -21,3 +21,77 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 */
+
+#include <pch_test.h>
+#include <lightmetrica/logger.h>
+#include <lightmetrica-test/utils.h>
+
+LM_TEST_NAMESPACE_BEGIN
+
+TEST(LoggerTest, LogMessagesWithVariousLevels)
+{
+    const auto CheckLogOutput = [](const std::string& type, const std::string& message, const std::string& out) -> void
+    {
+        std::regex re(R"x(^\| ([[:upper:]]+) [\d]+\.\d{3} \| @[ \d]{4} \| #[ \d]{2} \| (.*)\n)x");
+        std::smatch match;
+        const bool result = std::regex_match(out, match, re);
+        EXPECT_TRUE(result);
+        if (result)
+        {
+            EXPECT_EQ(type, match[1]);
+            EXPECT_EQ(message, match[2]);
+        }
+    };
+
+    // --------------------------------------------------------------------------------
+
+    CheckLogOutput("ERROR", "Hello", TestUtils::CaptureStdout([]()
+    {
+        LM_LOG_RUN();
+        LM_LOG_ERROR("Hello");
+        LM_LOG_STOP();
+    }));
+
+    CheckLogOutput("WARN", "Hello", TestUtils::CaptureStdout([]()
+    {
+        LM_LOG_RUN();
+        LM_LOG_WARN("Hello");
+        LM_LOG_STOP();
+    }));
+
+    CheckLogOutput("INFO", "Hello", TestUtils::CaptureStdout([]()
+    {
+        LM_LOG_RUN();
+        LM_LOG_INFO("Hello");
+        LM_LOG_STOP();
+    }));
+
+    CheckLogOutput("DEBUG", "Hello", TestUtils::CaptureStdout([]()
+    {
+        LM_LOG_RUN();
+        LM_LOG_DEBUG("Hello");
+        LM_LOG_STOP();
+    }));
+}
+
+TEST(LoggerTest, OutputToStdoutOrStderr)
+{
+
+}
+
+TEST(LoggerTest, OutputToFile)
+{
+
+}
+
+TEST(LogerTest, AddLogFromAnotherThread)
+{
+    
+}
+
+TEST(LoggerTest, ImmediateMode)
+{
+    
+}
+
+LM_TEST_NAMESPACE_END

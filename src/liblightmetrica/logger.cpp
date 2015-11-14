@@ -34,8 +34,23 @@
 
 #include <tbb/tbb.h>
 
+#if LM_PLATFORM_WINDOWS
+#include <Windows.h>
+#endif
+
 LM_NAMESPACE_BEGIN
 
+/*
+    LoggerImpl
+
+    Implementation of Logger class.
+
+    TODO
+    - Changiable verbose level.
+    - Output-to-file mode.
+    - Connection to signal
+        + Portable signal-slot system is another topic.
+*/
 class LoggerImpl
 {
 public:
@@ -68,7 +83,8 @@ public:
 			tbb::concurrent_hash_map<std::string, int>::accessor a;
 			if (threadIdMap.insert(a, id))
 			{
-				a->second = threadIdMapCount++;
+                a->second = (int)(threadIdMap.size() - 1);
+				//a->second = threadIdMapCount++;
 			}
 			threadId = a->second;
 		}
@@ -207,7 +223,7 @@ private:
 	std::string IndentationString;
 	bool prevMessageIsInplace = false;
 	tbb::concurrent_hash_map<std::string, int> threadIdMap;
-	std::atomic<int> threadIdMapCount;
+	//std::atomic<int> threadIdMapCount;
 
 };
 

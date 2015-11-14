@@ -24,6 +24,10 @@
 
 #pragma once
 
-#include "pch.h"
-#include <gtest/gtest.h>
-#include <lightmetrica-test/macros.h>
+#include <lightmetrica/macros.h>
+
+#define LM_TEST_NAMESPACE_BEGIN \
+    LM_NAMESPACE_BEGIN namespace test {
+#define LM_TEST_NAMESPACE_END \
+    LM_NAMESPACE_END }
+

@@ -24,6 +24,24 @@
 
 #pragma once
 
-#include "pch.h"
-#include <gtest/gtest.h>
 #include <lightmetrica-test/macros.h>
+#include <functional>
+
+LM_TEST_NAMESPACE_BEGIN
+
+namespace TestUtils
+{
+    /*!
+        Capture starndard outputs.
+        Execute the given function and captures all standard outputs.
+        Wraps testing::internal::CaptureStdout.
+    */
+    std::string CaptureStdout(const std::function<void()>& func)
+    {
+        testing::internal::CaptureStdout();
+        func();
+        return testing::internal::GetCapturedStdout();
+    }
+}
+
+LM_TEST_NAMESPACE_END

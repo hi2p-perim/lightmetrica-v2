@@ -24,8 +24,26 @@
 
 include (PCHTargets)
 
+# --------------------------------------------------------------------------------
+
 set(_PROJECT_NAME "lightmetrica-test")
+set(_HEADER_FILES_ROOT "Header Files")
+set(_SOURCE_FILES_ROOT "Source Files")
+set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica-test")
 set(_GTEST_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/src/gtest-1.7.0")
+
+# --------------------------------------------------------------------------------
+
+#
+# Header and source Files
+#
+
+set(
+    _HEADER_FILES
+	"${_INCLUDE_DIR}/macros.h"
+	"${_INCLUDE_DIR}/utils.h"
+)
+
 set(
 	_SOURCE_FILES
 	"main.cpp"
@@ -35,11 +53,16 @@ set(
 	"test_logger.cpp"
 	"test_math.cpp"
 
-	# gtest
 	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc"
 )
 
-pch_add_executable(${_PROJECT_NAME} PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h" ${_SOURCE_FILES})
+# --------------------------------------------------------------------------------
+
+#
+# Create a library project
+#
+
+pch_add_executable(${_PROJECT_NAME} PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h" ${_HEADER_FILES} ${_SOURCE_FILES})
 target_link_libraries(${_PROJECT_NAME} liblightmetrica)
 add_dependencies(${_PROJECT_NAME} liblightmetrica)
 
