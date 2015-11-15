@@ -26,8 +26,6 @@
 
 int main(int argc, char** argv)
 {
-    // Initialize Google test
     testing::InitGoogleTest(&argc, argv);
-
     return RUN_ALL_TESTS();
 }

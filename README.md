@@ -14,6 +14,27 @@ Build
 > BOOST_ROOT="" BOOST_INCLUDEDIR="C:\boost\boost_1_59_0" BOOST_LIBRARYDIR="C:\boost\boost_1_59_0\lib64-msvc-14.0" TBB_ROOT="`pwd`/../external/src/tbb44_20150928oss" TBB_ARCH_PLATFORM="intel64" cmake -G "Visual Studio 14 2015 Win64" ..
 
 
+Discussions
+--------------------
+
+Discussion on features, future development, TODOs, etc.
+
+- Build environment
+    + Support MinGW compiler
+    + Build tests with Linux environment
+- Support code coverage
+    + Support on Windows environment
+    + Support on Linux environment
+- Add portability test on component
+    + Compile library with different compiler and check if they works propertly
+    + How to automate build and tests? Possibly with travis?
+- Unittest of math library is not sufficient
+- One problem for current implementation (v1) is that we cannot do a test with high and low precision floating point numbers
+  because the precision is controlled by compiler level constants.
+    + In order to resolve this, all the functions defined need to be templated.
+      However this is not acceptable in terms of implementation.
+    + Experiments with changing precision is not feasible.
+- Try to use user defined literals for representing internal floating point type (Math::Float)
 
 Recommended practices (C++)
 --------------------
