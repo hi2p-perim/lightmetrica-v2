@@ -17,7 +17,8 @@ Build
 Discussions
 --------------------
 
-Discussion on features, future development, TODOs, etc.
+Discussion on possible features, future developments, 
+design or achitectural problems, etc.
 
 - Build environment
     + Support MinGW compiler
@@ -34,7 +35,10 @@ Discussion on features, future development, TODOs, etc.
     + In order to resolve this, all the functions defined need to be templated.
       However this is not acceptable in terms of implementation.
     + Experiments with changing precision is not feasible.
-- Try to use user defined literals for representing internal floating point type (Math::Float)
+- Math library
+    + Use policy-based design to select optimized or non-optimized version
+    + Try to use user defined literals for representing internal floating point type (Math::Float)
+- Handling of command line arguments
 
 Recommended practices (C++)
 --------------------

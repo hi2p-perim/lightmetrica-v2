@@ -47,17 +47,19 @@ set(
     "${_INCLUDE_DIR}/version.h"
     "${_INCLUDE_DIR}/reflection.h"
 	"${_INCLUDE_DIR}/logger.h"
+	"${_INCLUDE_DIR}/fp.h"
 )
 set(
     _SOURCE_FILES
     "component.cpp"
     "logger.cpp"
+    "fp.cpp"
 )
 
 # --------------------------------------------------------------------------------
 
 #
-# Create a library project
+# Create a library
 #
 
 pch_add_library(${_PROJECT_NAME} SHARED PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch.h" ${_HEADER_FILES} ${_SOURCE_FILES})
@@ -70,7 +72,7 @@ set_target_properties(${_PROJECT_NAME} PROPERTIES COMPILE_DEFINITIONS "LM_EXPORT
 set_target_properties(${_PROJECT_NAME} PROPERTIES PREFIX "")
 
 # Solution directory
-set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "core")
+set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "lib")
 
 # --------------------------------------------------------------------------------
 

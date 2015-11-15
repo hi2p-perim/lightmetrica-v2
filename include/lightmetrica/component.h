@@ -37,6 +37,7 @@ LM_NAMESPACE_BEGIN
 
 /*!
     Component.
+
     The base class for all component classes.
     The component system of lightmetrica is main feature for
     retaining portability of the framework.
@@ -152,6 +153,7 @@ using ReleaseFuncPointerType = void(*)(Component*);
 
 /*!
     Component factory.
+
     Instance factory class for component creation.
     All components are instanciated with this class.
 */
@@ -165,6 +167,10 @@ extern "C"
 
 class ComponentFactory
 {
+private:
+
+    LM_DISABLE_CONSTRUCT(ComponentFactory);
+
 public:
 
     static auto Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactory_Register(implT, createFunc, releaseFunc); }
@@ -195,10 +201,6 @@ public:
         return std::move(p2);
     }
 
-private:
-
-    LM_DISABLE_CONSTRUCT(ComponentFactory);
-
 };
 
 #pragma endregion
@@ -209,8 +211,10 @@ private:
 
 /*!
     Implementation entry.
+
     The constructor is called automatically and registers
     instance creation function to the component factory.
+
     \tparam ImplType Implementation class type.
 */
 template <typename ImplType>

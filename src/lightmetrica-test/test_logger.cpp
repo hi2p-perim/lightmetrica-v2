@@ -28,6 +28,10 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
+/*
+    Check if the logger macros output
+    appropriate message for each log type.
+*/
 TEST(LoggerTest, LogMessagesWithVariousLevels)
 {
     const auto CheckLogOutput = [](const std::string& type, const std::string& message, const std::string& out) -> void
@@ -71,6 +75,50 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
         LM_LOG_STOP();
     }));
 }
+
+/*
+    Check if the indentation feature works propertly.
+*/
+TEST(LoggerTest, Indenter)
+{
+    const auto ExtractMessage = [](const std::string& out) -> std::string
+    {
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| @[ \d]{4} \| #[ \d]{2} \| (.*))x");
+        std::smatch match;
+        const bool result = std::regex_match(out, match, re);
+        return result ? std::string(match[1]) : "";
+    };
+
+    const auto out = TestUtils::CaptureStdout([]()
+    {
+        LM_LOG_RUN();
+     
+        LM_LOG_DEBUG("A");
+        LM_LOG_INDENTER();
+        {
+            LM_LOG_DEBUG("B");
+            LM_LOG_INDENTER();
+            LM_LOG_DEBUG("C");
+        }
+        LM_LOG_DEBUG("D");
+        
+        LM_LOG_STOP();
+    });
+
+    std::stringstream ss(out);
+    const auto NextMessage = [&]() -> std::string
+    {
+        std::string line;
+        std::getline(ss, line, '\n');
+        return ExtractMessage(line);
+    };
+
+    EXPECT_EQ("A", NextMessage());
+    EXPECT_EQ(".... B", NextMessage());
+    EXPECT_EQ("........ C", NextMessage());
+    EXPECT_EQ(".... D", NextMessage());
+}
+
 //
 //TEST(LoggerTest, OutputToSignal)
 //{

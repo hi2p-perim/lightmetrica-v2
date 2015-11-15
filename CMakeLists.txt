@@ -219,5 +219,5 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_subdirectory("src/liblightmetrica")
 #add_subdirectory("src/liblightmetrica-test")
 
-#add_subdirectory("src/lightmetrica")
+add_subdirectory("src/lightmetrica")
 add_subdirectory("src/lightmetrica-test")

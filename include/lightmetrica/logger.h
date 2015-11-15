@@ -102,16 +102,16 @@ extern "C"
 
 class Logger
 {
+private:
+
+    LM_DISABLE_CONSTRUCT(Logger);
+
 public:
 
     static auto Run()  -> void { Logger_Run(); }
     static auto Stop() -> void { Logger_Stop(); }
     static auto Log(LogType type, const std::string& message, int line, bool inplace) -> void { Logger_Log((int)(type), message.c_str(), line, inplace); }
     static auto UpdateIndentation(bool push) -> void { Logger_UpdateIndentation(push); }
-
-private:
-    
-    LM_DISABLE_CONSTRUCT(Logger);
 
 };
 
@@ -137,6 +137,6 @@ struct LogIndenter
 #define LM_LOG_DEBUG(message)   Logger::Log(LogType::Debug, message, __LINE__, false)
 #define LM_LOG_INPLACE(message) Logger::Log(LogType::Info,  message, __LINE__, true)
 #define LM_LOG_INPLACE_END()    std::cout << std::endl
-#define LM_LOG_INDENTER()       LogIndenter _logIndenter
+#define LM_LOG_INDENTER()       LogIndenter LM_TOKENPASTE2(logIndenter_, __LINE__)
 
 LM_NAMESPACE_END

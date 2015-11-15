@@ -51,6 +51,7 @@ set(
 	"test_reflection.cpp"
 	"test_logger.cpp"
 	"test_math.cpp"
+	"test_fp.cpp"
 
 	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc"
 )
@@ -58,7 +59,7 @@ set(
 # --------------------------------------------------------------------------------
 
 #
-# Create a library project
+# Create an executable
 #
 
 pch_add_executable(${_PROJECT_NAME} PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h" ${_HEADER_FILES} ${_SOURCE_FILES})
