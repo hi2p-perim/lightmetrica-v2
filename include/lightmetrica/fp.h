@@ -24,9 +24,12 @@
 
 #pragma once
 
-#include <lightmetrica/macros.h>
+#include <lightmetrica/static.h>
 
 LM_NAMESPACE_BEGIN
+
+extern "C" LM_PUBLIC_API auto FPUtils_EnableFPControl() -> bool;
+extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
 
 /*
     Floating-point exception control.
@@ -37,27 +40,16 @@ LM_NAMESPACE_BEGIN
     In such a case, the target function call is wrapped by `EnableFPException` and `DisableFPException`.
     This feature is only supported with Visual Studio in Windows environment.
 */
-
-extern "C"
-{
-    LM_PUBLIC_API auto 
-}
-
-class FloatintPointUtils
+class FPUtils
 {
 private:
 
-    LM_DISABLE_CONSTRUCT(FloatintPointUtils);
+    LM_DISABLE_CONSTRUCT(FPUtils);
 
 public:
 
-    static auto EnableFPControl() -> bool { return EnableFPControl_();  }
-    static auto DisableFPControl() -> bool {}
-
-private:
-
-    using EnableFPControl_Type = bool(*)();
-    EnableFPControl_Type EnableFPControl_;
+    static auto EnableFPControl()  -> bool { LM_EXPORTED_F(FPUtils_EnableFPControl); }
+    static auto DisableFPControl() -> bool { LM_EXPORTED_F(FPUtils_DisableFPControl); }
 
 };
 

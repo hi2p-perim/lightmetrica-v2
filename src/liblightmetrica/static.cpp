@@ -22,10 +22,19 @@
     THE SOFTWARE.
 */
 
-#include <pch_test.h>
+#include <pch.h>
+#include <lightmetrica/static.h>
 
-LM_TEST_NAMESPACE_BEGIN
+LM_NAMESPACE_BEGIN
 
+auto StaticFuncTest_Func1() -> int
+{
+    return 42;
+}
 
+auto StaticFuncTest_Func2(int v1, int v2) -> int
+{
+    return v1 + v2;
+}
 
-LM_TEST_NAMESPACE_END
+LM_NAMESPACE_END

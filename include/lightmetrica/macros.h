@@ -93,7 +93,10 @@
 	#ifdef LM_EXPORTS
 		#define LM_PUBLIC_API __declspec(dllexport)
 	#else
-		#define LM_PUBLIC_API __declspec(dllimport)
+        // In this framework implicit DLL loading is avoided because of portability.
+        // All DLL loading is done with explicit dll loading functions
+		#define LM_PUBLIC_API
+        //#define LM_PUBLIC_API __declspec(dllimport)
 	#endif
 	#define LM_HIDDEN_API
 #elif LM_COMPILER_GCC

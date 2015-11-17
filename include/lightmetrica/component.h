@@ -27,6 +27,8 @@
 #include <lightmetrica/macros.h>
 #include <lightmetrica/portable.h>
 #include <lightmetrica/reflection.h>
+#include <lightmetrica/static.h>
+
 #include <functional>
 #include <type_traits>
 #include <memory>
@@ -173,9 +175,9 @@ private:
 
 public:
 
-    static auto Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactory_Register(implT, createFunc, releaseFunc); }
-    static auto Create(const char* implName) -> Component* { return ComponentFactory_Create(implName); }
-    static auto ReleaseFunc(const char* implName) -> ReleaseFuncPointerType { return ComponentFactory_ReleaseFunc(implName); }
+    static auto Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { LM_EXPORTED_F(ComponentFactory_Register, implT, createFunc, releaseFunc); }
+    static auto Create(const char* implName) -> Component* { LM_EXPORTED_F(ComponentFactory_Create, implName); }
+    static auto ReleaseFunc(const char* implName) -> ReleaseFuncPointerType { LM_EXPORTED_F(ComponentFactory_ReleaseFunc, implName); }
 
 public:
 

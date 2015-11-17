@@ -52,6 +52,7 @@ set(
 	"test_logger.cpp"
 	"test_math.cpp"
 	"test_fp.cpp"
+	"test_static.cpp"
 
 	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc"
 )
@@ -63,7 +64,8 @@ set(
 #
 
 pch_add_executable(${_PROJECT_NAME} PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} liblightmetrica)
+# We don't need to use the import library
+#target_link_libraries(${_PROJECT_NAME} liblightmetrica)
 add_dependencies(${_PROJECT_NAME} liblightmetrica)
 
 # Solution directory

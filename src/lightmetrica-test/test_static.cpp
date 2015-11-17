@@ -23,9 +23,28 @@
 */
 
 #include <pch_test.h>
+#include <lightmetrica/static.h>
 
 LM_TEST_NAMESPACE_BEGIN
 
+/*
+    Check if the lightmetrica library is loaded in
+    the static initialization phase.
+*/
+TEST (StaticTest, CheckLoaded)
+{
+    EXPECT_TRUE(StaticInit<ExternalPolicy>::Instance().Library() != nullptr);
+}
 
+/*
+    Call static member function and call.
+    The static member function is exported with c linkage
+    and loaded without any automatic loading feature.
+*/
+TEST(StaticTest, LoadAndEvaluate)
+{
+    EXPECT_EQ(42, StaticFuncTest::Func1());
+    EXPECT_EQ(3,  StaticFuncTest::Func2(1, 2));
+}
 
 LM_TEST_NAMESPACE_END

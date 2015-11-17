@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <lightmetrica/macros.h>
+#include <lightmetrica/static.h>
 #include <string>
 
 LM_NAMESPACE_BEGIN
@@ -45,6 +45,15 @@ enum class LogType
 	Info,       //!< Information.
 	Debug,      //!< Debugging (used only for the debug mode).
 };
+
+
+extern "C"
+{
+    LM_PUBLIC_API auto Logger_Run() -> void;
+    LM_PUBLIC_API auto Logger_Stop() -> void;
+    LM_PUBLIC_API auto Logger_Log(int type, const char* message, int line, bool inplace) -> void;
+    LM_PUBLIC_API auto Logger_UpdateIndentation(bool push) -> void;
+}
 
 /*!
     Logger.
@@ -91,15 +100,6 @@ enum class LogType
        ...
        ```
 */
-
-extern "C"
-{
-    LM_PUBLIC_API auto Logger_Run() -> void;
-    LM_PUBLIC_API auto Logger_Stop() -> void;
-    LM_PUBLIC_API auto Logger_Log(int type, const char* message, int line, bool inplace) -> void;
-    LM_PUBLIC_API auto Logger_UpdateIndentation(bool push) -> void;
-}
-
 class Logger
 {
 private:
@@ -108,10 +108,10 @@ private:
 
 public:
 
-    static auto Run()  -> void { Logger_Run(); }
-    static auto Stop() -> void { Logger_Stop(); }
-    static auto Log(LogType type, const std::string& message, int line, bool inplace) -> void { Logger_Log((int)(type), message.c_str(), line, inplace); }
-    static auto UpdateIndentation(bool push) -> void { Logger_UpdateIndentation(push); }
+    static auto Run()  -> void { LM_EXPORTED_F(Logger_Run); }
+    static auto Stop() -> void { LM_EXPORTED_F(Logger_Stop); }
+    static auto Log(LogType type, const std::string& message, int line, bool inplace) -> void { LM_EXPORTED_F(Logger_Log, (int)(type), message.c_str(), line, inplace); }
+    static auto UpdateIndentation(bool push) -> void { LM_EXPORTED_F(Logger_UpdateIndentation, push); }
 
 };
 
