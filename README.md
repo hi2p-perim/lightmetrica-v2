@@ -29,7 +29,6 @@ design or achitectural problems, etc.
 - Add portability test on component
     + Compile library with different compiler and check if they works propertly
     + How to automate build and tests? Possibly with travis?
-- Unittest of math library is not sufficient
 - One problem for current implementation (v1) is that we cannot do a test with high and low precision floating point numbers
   because the precision is controlled by compiler level constants.
     + In order to resolve this, all the functions defined need to be templated.
@@ -39,6 +38,12 @@ design or achitectural problems, etc.
     + Use policy-based design to select optimized or non-optimized version
     + Try to use user defined literals for representing internal floating point type (Math::Float)
 - Handling of command line arguments
+- Testing
+    + Unittest of math library is not sufficient
+    + Portability test
+        * Create each component with different compiler, and try to run tests with various combinations
+    + Performance test
+    + Statistics test
 
 Recommended practices (C++)
 --------------------

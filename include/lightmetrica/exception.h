@@ -22,29 +22,36 @@
     THE SOFTWARE.
 */
 
-#include <pch_test.h>
-#include <lightmetrica/statictest.h>
+#pragma once
 
-LM_TEST_NAMESPACE_BEGIN
+#include <lightmetrica/static.h>
 
-/*
-    Check if the lightmetrica library is loaded in
-    the static initialization phase.
-*/
-TEST (StaticTest, CheckLoaded)
+LM_NAMESPACE_BEGIN
+
+extern "C"
 {
-    EXPECT_TRUE(StaticInit<ExternalPolicy>::Instance().Library() != nullptr);
+    LM_PUBLIC_API auto SEHUtils_EnableSEHReport() -> void;
+    LM_PUBLIC_API auto SEHUtils_DisableSEHReport() -> void;
 }
 
 /*
-    Call static member function and call.
-    The static member function is exported with c linkage
-    and loaded without any automatic loading feature.
-*/
-TEST(StaticTest, LoadAndEvaluate)
-{
-    EXPECT_EQ(42, detail::StaticTest::Func1());
-    EXPECT_EQ(3,  detail::StaticTest::Func2(1, 2));
-}
+    SEH utilility.
 
-LM_TEST_NAMESPACE_END
+    Helps to handle structured exception handling (SEH) in the Windows environment.
+    Some exceptions such as floating-point exception is handled via SEH.
+    We need to register a translator function to catch SEH from user code.
+*/
+class SEHUtils
+{
+private:
+
+    LM_DISABLE_CONSTRUCT(SEHUtils);
+
+public:
+
+    static auto EnableSEHReport() -> void { LM_EXPORTED_F(SEHUtils_EnableSEHReport); }
+    static auto DisableSEHReport() -> void { LM_EXPORTED_F(SEHUtils_DisableSEHReport); }
+
+};
+
+LM_NAMESPACE_END

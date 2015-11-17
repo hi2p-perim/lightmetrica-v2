@@ -23,7 +23,7 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/static.h>
+#include <lightmetrica/statictest.h>
 
 LM_NAMESPACE_BEGIN
 

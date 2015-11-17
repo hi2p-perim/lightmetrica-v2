@@ -22,29 +22,32 @@
     THE SOFTWARE.
 */
 
-#include <pch_test.h>
-#include <lightmetrica/statictest.h>
+#pragma once
 
-LM_TEST_NAMESPACE_BEGIN
+#include <lightmetrica/static.h>
 
-/*
-    Check if the lightmetrica library is loaded in
-    the static initialization phase.
-*/
-TEST (StaticTest, CheckLoaded)
+LM_NAMESPACE_BEGIN
+
+extern "C"
 {
-    EXPECT_TRUE(StaticInit<ExternalPolicy>::Instance().Library() != nullptr);
+    LM_PUBLIC_API auto StaticFuncTest_Func1() -> int;
+    LM_PUBLIC_API auto StaticFuncTest_Func2(int v1, int v2) -> int;
 }
 
-/*
-    Call static member function and call.
-    The static member function is exported with c linkage
-    and loaded without any automatic loading feature.
-*/
-TEST(StaticTest, LoadAndEvaluate)
+namespace detail
 {
-    EXPECT_EQ(42, detail::StaticTest::Func1());
-    EXPECT_EQ(3,  detail::StaticTest::Func2(1, 2));
+    class StaticTest
+    {
+    private:
+
+        LM_DISABLE_CONSTRUCT(StaticTest);
+
+    public:
+
+        static auto Func1() -> int { LM_EXPORTED_F(StaticFuncTest_Func1); }
+        static auto Func2(int v1, int v2) -> int { LM_EXPORTED_F(StaticFuncTest_Func2, v1, v2); }
+
+    };
 }
 
-LM_TEST_NAMESPACE_END
+LM_NAMESPACE_END

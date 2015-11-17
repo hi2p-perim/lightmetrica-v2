@@ -39,6 +39,10 @@ extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
     Some external libraies needs to explicitly disable floating-point exception control feature.
     In such a case, the target function call is wrapped by `EnableFPException` and `DisableFPException`.
     This feature is only supported with Visual Studio in Windows environment.
+
+    TODO:
+      - GCC support
+      - Linux environment support
 */
 class FPUtils
 {

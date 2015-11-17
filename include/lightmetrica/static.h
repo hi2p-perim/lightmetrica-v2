@@ -171,19 +171,4 @@ namespace
         return func(__VA_ARGS__);
 #endif
 
-// --------------------------------------------------------------------------------
-
-extern "C" LM_PUBLIC_API auto StaticFuncTest_Func1() -> int;
-extern "C" LM_PUBLIC_API auto StaticFuncTest_Func2(int v1, int v2) -> int;
-
-class StaticFuncTest
-{
-private:
-    LM_DISABLE_CONSTRUCT(StaticFuncTest);
-
-public:
-    static auto Func1() -> int               { LM_EXPORTED_F(StaticFuncTest_Func1); }
-    static auto Func2(int v1, int v2) -> int { LM_EXPORTED_F(StaticFuncTest_Func2, v1, v2); }
-};
-
 LM_NAMESPACE_END

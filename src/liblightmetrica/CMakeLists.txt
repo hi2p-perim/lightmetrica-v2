@@ -49,13 +49,16 @@ set(
 	"${_INCLUDE_DIR}/logger.h"
 	"${_INCLUDE_DIR}/fp.h"
 	"${_INCLUDE_DIR}/static.h"
+	"${_INCLUDE_DIR}/statictest.h"
+	"${_INCLUDE_DIR}/exception.h"
 )
 set(
     _SOURCE_FILES
     "component.cpp"
     "logger.cpp"
     "fp.cpp"
-	"static.cpp"
+	"statictest.cpp"
+	"exception.cpp"
 )
 
 # --------------------------------------------------------------------------------

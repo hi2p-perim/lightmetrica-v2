@@ -23,9 +23,26 @@
 */
 
 #include <pch_test.h>
+#include <lightmetrica/exception.h>
 
 LM_TEST_NAMESPACE_BEGIN
 
+TEST(FPTest, CatchSupportedExceptions)
+{
+    SEHUtils::EnableSEHReport();
+    
+    // _EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE
+    const double sNaN = std::numeric_limits<double>::signaling_NaN();
+    const double qNaN = std::numeric_limits<double>::quiet_NaN();
 
+    
+
+    SEHUtils::DisableSEHReport();
+}
+
+TEST(FPTest, UnsupportedException)
+{
+
+}
 
 LM_TEST_NAMESPACE_END
