@@ -29,7 +29,7 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
-TEST(FPTest, CatchSupportedExceptions)
+TEST(FPTest, SupportedExceptions)
 {
     const auto GetDescription = [](const std::string& out) -> std::string
     {
@@ -93,9 +93,94 @@ TEST(FPTest, CatchSupportedExceptions)
     });
 }
 
-TEST(FPTest, UnsupportedException)
+TEST(FPTest, UnsupportedExceptions)
 {
+    // _EM_DENORMAL
+    EXPECT_NO_THROW(
+    {
+        {
+            // 4.940656e-324 : denormal
+            const double t = 4.940656e-324;
+            EXPECT_EQ(FP_SUBNORMAL, std::fpclassify(t));
+        }
+        
+        {
+            // 4.940656e-325 : below representable number by denormal -> clamped to zero
+            const double t = 4.940656e-325;
+            EXPECT_EQ(FP_ZERO, std::fpclassify(t));
+        }
+    });
 
+    // Overflow
+    EXPECT_NO_THROW(
+    {
+        const double max = std::numeric_limits<double>::max();
+        const double t = max + 1.0;
+
+        // Default rouding mode is `round to nearest`.
+        EXPECT_EQ(max, t);
+    });
+
+    // Underflow
+    EXPECT_NO_THROW(
+    {
+        double t = std::nextafter(std::numeric_limits<double>::min(), -std::numeric_limits<double>::infinity());
+        EXPECT_EQ(FP_SUBNORMAL, std::fpclassify(t));
+    });
+
+    EXPECT_NO_THROW(
+    {
+        double t = std::nextafter(std::numeric_limits<double>::denorm_min(), -std::numeric_limits<double>::infinity());
+        EXPECT_EQ(FP_ZERO, std::fpclassify(t));
+    });
+
+    // Inexact
+    EXPECT_NO_THROW(
+    {
+        const double t = 2.0 / 3.0;
+        LM_UNUSED(t);
+    });
+
+    EXPECT_NO_THROW(
+    {
+        const double t = std::log(1.1);
+        LM_UNUSED(t);
+    });
+}
+
+TEST(FPTest, DisabledBehavior)
+{
+    EXPECT_NO_THROW(
+    {
+        const double t = std::numeric_limits<double>::infinity() * 0;
+        EXPECT_TRUE(glm::isnan(t));
+    });
+
+    EXPECT_NO_THROW(
+    {
+        double z = 0;
+        const double t = 0 / z;
+        EXPECT_TRUE(glm::isnan(t));
+    });
+
+    EXPECT_NO_THROW(
+    {
+        const double t = std::sqrt(-1);
+        EXPECT_TRUE(glm::isnan(t));
+    });
+
+    EXPECT_NO_THROW(
+    {
+        const double t = 1.0 * std::numeric_limits<double>::signaling_NaN();
+        EXPECT_TRUE(glm::isnan(t));
+    });
+
+    EXPECT_NO_THROW(
+    {
+        double z = 0;
+        const double t = 1.0 / z;
+        EXPECT_TRUE(glm::isinf(t));
+    });
 }
 
 LM_TEST_NAMESPACE_END

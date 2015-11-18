@@ -59,7 +59,7 @@ namespace
   
 auto FPUtils_EnableFPControl() -> bool
 {
-    return SetFPException((unsigned int)(~(_EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE)));
+    return SetFPException((unsigned int)(~(_EM_INVALID | _EM_ZERODIVIDE)));
 }
 
 auto FPUtils_DisableFPControl() -> bool

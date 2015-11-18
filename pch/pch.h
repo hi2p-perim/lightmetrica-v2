@@ -44,4 +44,6 @@
 //#include <boost/math/constants/constants.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <glm/glm.hpp>
+
 #include <lightmetrica/macros.h>
