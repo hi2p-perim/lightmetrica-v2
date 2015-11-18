@@ -32,17 +32,38 @@ extern "C" LM_PUBLIC_API auto FPUtils_EnableFPControl() -> bool;
 extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
 
 /*
-    Floating-point exception control.
+    Floating point exception control.
     
-    Controls floating-point exceptions.
+    Controls floating point exceptions.
     In this framework, the floating-point exception should be enabled by default.
-    Some external libraies needs to explicitly disable floating-point exception control feature.
+    Some external libraies needs to explicitly disable floating point exception control feature.
     In such a case, the target function call is wrapped by `EnableFPException` and `DisableFPException`.
     This feature is only supported with Visual Studio in Windows environment.
+
+    All enabled floating point exception is translated into C++ exception (std::runtime_error).
+    An alternative way to detect the floating point exception
+    is to utilize `fetestexcept` function, 
+    however it does needs explicit check of the exception flags.
+
+    The enabled flag would be
+      - Invalid operation
+          + The operand is invalid, e.g., any operation involving in
+            the signaling NaN generates an exception.
+      - Division by zero
+          + The floating point value is divided by zero.
+    
+    For the practical point of view,
+    overflow, underflow, inexact, and denormalized (x86 only)
+    exceptions are not caught.
+
+    When the floating point exception is disabled
+    each operation generates different results,
+    e.g., invalid operation returns qNaN.
 
     TODO:
       - GCC support
       - Linux environment support
+      - Add some explanation why some exception is not caught
 */
 class FPUtils
 {
@@ -52,7 +73,16 @@ private:
 
 public:
 
+    /*!
+        Enable floating point exceptions.
+        Returns `true` if succeed, otherwise `false`.
+    */
     static auto EnableFPControl()  -> bool { LM_EXPORTED_F(FPUtils_EnableFPControl); }
+
+    /*!
+        Disables floating point exceptions.
+        Returns `true` if succeed, otherwise `false`.
+    */
     static auto DisableFPControl() -> bool { LM_EXPORTED_F(FPUtils_DisableFPControl); }
 
 };

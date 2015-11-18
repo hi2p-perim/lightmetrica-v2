@@ -24,20 +24,73 @@
 
 #include <pch_test.h>
 #include <lightmetrica/exception.h>
+#include <lightmetrica/fp.h>
+#include <lightmetrica-test/utils.h>
 
 LM_TEST_NAMESPACE_BEGIN
 
 TEST(FPTest, CatchSupportedExceptions)
 {
-    SEHUtils::EnableSEHReport();
-    
-    // _EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE
-    const double sNaN = std::numeric_limits<double>::signaling_NaN();
-    const double qNaN = std::numeric_limits<double>::quiet_NaN();
+    const auto GetDescription = [](const std::string& out) -> std::string
+    {
+        std::regex re(R"x(Description +: ([\w_]+))x");
+        std::smatch m;
+        return std::regex_search(out, m, re) ? m[1] : std::string("");
+    };
 
-    
+    const auto Trial = [&](const std::string& desc, const std::function<void()>& func) -> void
+    {
+        SEHUtils::EnableStructuralException();
+        FPUtils::EnableFPControl();
 
-    SEHUtils::DisableSEHReport();
+        bool exception = false;
+        try
+        {
+            func();
+        }
+        catch (const std::runtime_error& e)
+        {
+            exception = true;
+            EXPECT_EQ(desc, std::string(e.what()));
+        }
+        EXPECT_TRUE(exception);
+
+        FPUtils::DisableFPControl();
+        SEHUtils::DisableStructuralException();
+    };
+
+    // --------------------------------------------------------------------------------
+
+    Trial("FLT_INVALID_OPERATION", [&]()
+    {
+        const double t = std::numeric_limits<double>::infinity() * 0;
+        LM_UNUSED(t);
+    });
+
+    Trial("FLT_INVALID_OPERATION", [&]()
+    {
+        double z = 0;
+        const double t = 0 / z;
+        LM_UNUSED(t);
+    });
+
+    Trial("FLT_INVALID_OPERATION", [&]()
+    {
+        std::sqrt(-1);
+    });
+
+    Trial("FLT_INVALID_OPERATION", [&]()
+    {
+        const double t = 1.0 * std::numeric_limits<double>::signaling_NaN();
+        LM_UNUSED(t);
+    });
+
+    Trial("FLT_DIVIDE_BY_ZERO", [&]()
+    {
+        double z = 0;
+        const double t = 1.0 / z;
+        LM_UNUSED(t);
+    });
 }
 
 TEST(FPTest, UnsupportedException)

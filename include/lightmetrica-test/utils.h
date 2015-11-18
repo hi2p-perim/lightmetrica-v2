@@ -31,10 +31,14 @@ LM_TEST_NAMESPACE_BEGIN
 
 class TestUtils
 {
+private:
+
+    LM_DISABLE_CONSTRUCT(TestUtils);
+
 public:
 
     /*!
-        Capture starndard outputs.
+        Capture standard output.
         Execute the given function and captures all standard outputs.
         Wraps testing::internal::CaptureStdout.
     */
@@ -45,9 +49,17 @@ public:
         return testing::internal::GetCapturedStdout();
     }
 
-private:
-    
-    LM_DISABLE_CONSTRUCT(TestUtils);
+     /*!
+        Capture standard error.
+        Execute the given function and captures all standard outputs.
+        Wraps testing::internal::CaptureStderr.
+    */
+    static std::string CaptureStderr(const std::function<void()>& func)
+    {
+        testing::internal::CaptureStderr();
+        func();
+        return testing::internal::GetCapturedStderr();
+    }
 
 };
 

@@ -30,8 +30,8 @@ LM_NAMESPACE_BEGIN
 
 extern "C"
 {
-    LM_PUBLIC_API auto SEHUtils_EnableSEHReport() -> void;
-    LM_PUBLIC_API auto SEHUtils_DisableSEHReport() -> void;
+    LM_PUBLIC_API auto SEHUtils_EnableStructuralException() -> void;
+    LM_PUBLIC_API auto SEHUtils_DisableStructuralException() -> void;
 }
 
 /*
@@ -49,8 +49,8 @@ private:
 
 public:
 
-    static auto EnableSEHReport() -> void { LM_EXPORTED_F(SEHUtils_EnableSEHReport); }
-    static auto DisableSEHReport() -> void { LM_EXPORTED_F(SEHUtils_DisableSEHReport); }
+    static auto EnableStructuralException() -> void { LM_EXPORTED_F(SEHUtils_EnableStructuralException); }
+    static auto DisableStructuralException() -> void { LM_EXPORTED_F(SEHUtils_DisableStructuralException); }
 
 };
 
