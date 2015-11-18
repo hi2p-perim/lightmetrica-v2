@@ -44,6 +44,13 @@ design or achitectural problems, etc.
         * Create each component with different compiler, and try to run tests with various combinations
     + Performance test
     + Statistics test
+- Program options
+    + Seprate scene specic options and framework specific options
+    + Make modifiable with replacable template
+        * This is useful for experiment with various sets of parameters
+- Object system
+    + Portable property representation
+    + Directly convertable from hierarchies in scene file
 
 Recommended practices (C++)
 --------------------
