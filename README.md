@@ -51,6 +51,8 @@ design or achitectural problems, etc.
 - Object system
     + Portable property representation
     + Directly convertable from hierarchies in scene file
+- Serialization support
+    + Makes it possible to print intermediate states, useful for verification or debugging.
 
 Recommended practices (C++)
 --------------------

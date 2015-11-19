@@ -46,7 +46,7 @@ set(
 #
 
 add_executable(${_PROJECT_NAME} ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} liblightmetrica)
+target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES})
 add_dependencies(${_PROJECT_NAME} liblightmetrica)
 
 # Solution directory

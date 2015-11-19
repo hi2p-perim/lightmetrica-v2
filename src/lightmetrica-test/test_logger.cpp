@@ -49,30 +49,30 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
 
     CheckLogOutput("ERROR", "Hello", TestUtils::CaptureStdout([]()
     {
-        LM_LOG_RUN();
+        Logger::Run();
         LM_LOG_ERROR("Hello");
-        LM_LOG_STOP();
+        Logger::Stop();
     }));
 
     CheckLogOutput("WARN", "Hello", TestUtils::CaptureStdout([]()
     {
-        LM_LOG_RUN();
+        Logger::Run();
         LM_LOG_WARN("Hello");
-        LM_LOG_STOP();
+        Logger::Stop();
     }));
 
     CheckLogOutput("INFO", "Hello", TestUtils::CaptureStdout([]()
     {
-        LM_LOG_RUN();
+        Logger::Run();
         LM_LOG_INFO("Hello");
-        LM_LOG_STOP();
+        Logger::Stop();
     }));
 
     CheckLogOutput("DEBUG", "Hello", TestUtils::CaptureStdout([]()
     {
-        LM_LOG_RUN();
+        Logger::Run();
         LM_LOG_DEBUG("Hello");
-        LM_LOG_STOP();
+        Logger::Stop();
     }));
 }
 
@@ -91,7 +91,7 @@ TEST(LoggerTest, Indenter)
 
     const auto out = TestUtils::CaptureStdout([]()
     {
-        LM_LOG_RUN();
+        Logger::Run();
      
         LM_LOG_DEBUG("A");
         LM_LOG_INDENTER();
@@ -102,7 +102,7 @@ TEST(LoggerTest, Indenter)
         }
         LM_LOG_DEBUG("D");
         
-        LM_LOG_STOP();
+        Logger::Stop();
     });
 
     std::stringstream ss(out);

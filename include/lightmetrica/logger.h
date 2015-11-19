@@ -51,8 +51,9 @@ extern "C"
 {
     LM_PUBLIC_API auto Logger_Run() -> void;
     LM_PUBLIC_API auto Logger_Stop() -> void;
-    LM_PUBLIC_API auto Logger_Log(int type, const char* message, int line, bool inplace) -> void;
+    LM_PUBLIC_API auto Logger_Log(int type, const char* message, int line, bool inplace, bool simple) -> void;
     LM_PUBLIC_API auto Logger_UpdateIndentation(bool push) -> void;
+    LM_PUBLIC_API auto Logger_Flush() -> void;
 }
 
 /*!
@@ -77,8 +78,8 @@ extern "C"
           For this, we implemented a simple message rewriting mechanism
           which can work orthogonally with any other log outputs.
     - Indentation support
-        + Indentation is helpful for readibilty of the log messages,
-          e.g., the messages from the calling fuction can be indended.
+        + Indentation is helpful for readability of the log messages,
+          e.g., the messages from the calling function can be indented.
 
     Example:
     
@@ -102,7 +103,7 @@ extern "C"
 */
 class Logger
 {
-private:
+public:
 
     LM_DISABLE_CONSTRUCT(Logger);
 
@@ -110,8 +111,13 @@ public:
 
     static auto Run()  -> void { LM_EXPORTED_F(Logger_Run); }
     static auto Stop() -> void { LM_EXPORTED_F(Logger_Stop); }
-    static auto Log(LogType type, const std::string& message, int line, bool inplace) -> void { LM_EXPORTED_F(Logger_Log, (int)(type), message.c_str(), line, inplace); }
+    static auto Log(LogType type, const std::string& message, int line, bool inplace, bool simple) -> void { LM_EXPORTED_F(Logger_Log, (int)(type), message.c_str(), line, inplace, simple); }
     static auto UpdateIndentation(bool push) -> void { LM_EXPORTED_F(Logger_UpdateIndentation, push); }
+
+    /*!
+        Flush pending log messages.
+    */
+    static auto Flush() -> void { LM_EXPORTED_F(Logger_Flush); }
 
 };
 
@@ -129,14 +135,16 @@ struct LogIndenter
 	~LogIndenter() { Logger::UpdateIndentation(false); }
 };
 
-#define LM_LOG_RUN()			Logger::Run()
-#define LM_LOG_STOP()			Logger::Stop()
-#define LM_LOG_ERROR(message)   Logger::Log(LogType::Error, message, __LINE__, false)
-#define LM_LOG_WARN(message)    Logger::Log(LogType::Warn,  message, __LINE__, false)
-#define LM_LOG_INFO(message)    Logger::Log(LogType::Info,  message, __LINE__, false)
-#define LM_LOG_DEBUG(message)   Logger::Log(LogType::Debug, message, __LINE__, false)
-#define LM_LOG_INPLACE(message) Logger::Log(LogType::Info,  message, __LINE__, true)
-#define LM_LOG_INPLACE_END()    std::cout << std::endl
-#define LM_LOG_INDENTER()       LogIndenter LM_TOKENPASTE2(logIndenter_, __LINE__)
+#define LM_LOG_ERROR(message)        Logger::Log(LogType::Error, message, __LINE__, false, false)
+#define LM_LOG_WARN(message)         Logger::Log(LogType::Warn,  message, __LINE__, false, false)
+#define LM_LOG_INFO(message)         Logger::Log(LogType::Info,  message, __LINE__, false, false)
+#define LM_LOG_DEBUG(message)        Logger::Log(LogType::Debug, message, __LINE__, false, false)
+#define LM_LOG_ERROR_SIMPLE(message) Logger::Log(LogType::Error, message, __LINE__, false, true)
+#define LM_LOG_WARN_SIMPLE(message)  Logger::Log(LogType::Warn,  message, __LINE__, false, true)
+#define LM_LOG_INFO_SIMPLE(message)  Logger::Log(LogType::Info,  message, __LINE__, false, true)
+#define LM_LOG_DEBUG_SIMPLE(message) Logger::Log(LogType::Debug, message, __LINE__, false, true)
+#define LM_LOG_INPLACE(message)      Logger::Log(LogType::Info,  message, __LINE__, true, false)
+#define LM_LOG_INPLACE_END()         std::cout << std::endl
+#define LM_LOG_INDENTER()            LogIndenter LM_TOKENPASTE2(logIndenter_, __LINE__)
 
 LM_NAMESPACE_END

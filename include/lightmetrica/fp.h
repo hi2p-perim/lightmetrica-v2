@@ -67,7 +67,7 @@ extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
 */
 class FPUtils
 {
-private:
+public:
 
     LM_DISABLE_CONSTRUCT(FPUtils);
 

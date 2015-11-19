@@ -37,32 +37,56 @@ LM_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
 
+/*
+    Dynamic library.
+
+    TODO: Multiplatform.
+*/
 class DynamicLibrary
 {
 public:
 
-    bool Load(const std::string& path)
+    auto Load(const std::string& path) -> bool
     {
         handle = LoadLibraryA(path.c_str());
         if (!handle)
         {
-            std::cerr << "Failed to load library " << std::endl;
-            std::cerr << std::to_string(GetLastError()) << std::endl;
+            std::cerr << "Failed to load library : " << path << std::endl;
+            std::cerr << GetLastErrorAsString() << std::endl;
             return false;
         }
         return true;
     }
 
-    void* GetFuncPointer(const std::string& symbol) const
+    auto GetFuncPointer(const std::string& symbol) const -> void*
     {
         void* address = GetProcAddress(handle, symbol.c_str());
         if (address == nullptr)
         {
-            std::cerr << "Failed to get address of '" + symbol + "' : " + std::to_string(GetLastError()) << std::endl;
+            std::cerr << "Failed to get address of '" << symbol << "'" << std::endl;
+            std::cerr << GetLastErrorAsString() << std::endl;
             return nullptr;
         }
 
         return address;
+    }
+
+private:
+
+    auto GetLastErrorAsString() const -> std::string
+    {
+        DWORD error = GetLastError();
+        if (error == 0)
+        {
+            return std::string();
+        }
+
+        LPSTR buffer = nullptr;
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&buffer, 0, NULL);
+        std::string message(buffer, size);
+        LocalFree(buffer);
+
+        return message;
     }
 
 public:
@@ -72,7 +96,6 @@ public:
 };
 
 // --------------------------------------------------------------------------------
-
 
 struct InternalPolicy {};
 struct ExternalPolicy {};
@@ -148,7 +171,6 @@ private:
 
 };
 
-
 namespace
 {
     struct StaticInitReg { static const StaticInit<InitPolicy>& reg; };
@@ -156,6 +178,12 @@ namespace
 }
 
 // --------------------------------------------------------------------------------
+
+/*
+    LM_EXPORTED_F
+    TODO
+      - Thread safety
+*/
 
 #ifdef LM_EXPORTS
     #define LM_EXPORTED_F(Func, ...) return Func(__VA_ARGS__);

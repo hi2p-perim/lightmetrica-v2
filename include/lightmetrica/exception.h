@@ -43,7 +43,7 @@ extern "C"
 */
 class SEHUtils
 {
-private:
+public:
 
     LM_DISABLE_CONSTRUCT(SEHUtils);
 

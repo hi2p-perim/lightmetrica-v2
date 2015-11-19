@@ -46,7 +46,7 @@ LM_NAMESPACE_BEGIN
     Implementation of Logger class.
 
     TODO
-    - Changiable verbose level.
+    - Changeable verbose level.
     - Output-to-file mode.
     - Connection to signal
         + Portable signal-slot system is another topic.
@@ -80,9 +80,7 @@ public:
 		}
 	}
 
-public:
-
-	auto Log(LogType type, const std::string& message, int line, bool inplace) -> void
+	auto Log(LogType type, const std::string& message, int line, bool inplace, bool simple) -> void
 	{
 		int threadId;
 		{
@@ -95,7 +93,7 @@ public:
 			threadId = a->second;
 		}
 
-		io.post([this, type, message, line, threadId, inplace]()
+		io.post([this, type, message, line, threadId, inplace, simple]()
 		{
 			// Fill spaces to erase previous message
 			if (prevMessageIsInplace)
@@ -133,7 +131,7 @@ public:
 
 			// Print message
 			BeginTextColor(type);
-			const auto text = GenerateMessage(type, message, line, threadId);
+			const auto text = simple ? message : GenerateMessage(type, message, line, threadId);
 			if (inplace)
 			{
 				std::cout << text << "\r";
@@ -164,6 +162,12 @@ public:
                 IndentationString = "";
             }
         });
+    }
+
+    auto Flush() -> void
+    {
+        Stop();
+        Run();
     }
 
 private:
@@ -254,7 +258,8 @@ auto LoggerImpl::Instance() -> LoggerImpl*
 
 auto Logger_Run() -> void { LoggerImpl::Instance()->Run(); }
 auto Logger_Stop() -> void { LoggerImpl::Instance()->Stop(); }
-auto Logger_Log(int type, const char* message, int line, bool inplace) -> void { LoggerImpl::Instance()->Log((LogType)(type), message, line, inplace); }
+auto Logger_Log(int type, const char* message, int line, bool inplace, bool simple) -> void { LoggerImpl::Instance()->Log((LogType)(type), message, line, inplace, simple); }
 auto Logger_UpdateIndentation(bool push) -> void { LoggerImpl::Instance()->UpdateIndentation(push); }
+auto Logger_Flush() -> void { LoggerImpl::Instance()->Flush(); }
 
 LM_NAMESPACE_END

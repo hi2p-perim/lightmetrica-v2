@@ -148,13 +148,13 @@
 #define LM_SAFE_DELETE_ARRAY(val) if ((val) != nullptr) { delete[] (val); (val) = nullptr; }
 
 #define LM_DISABLE_COPY_AND_MOVE(TypeName) \
-	TypeName(const TypeName &); \
-	TypeName(TypeName&&); \
-	auto operator=(const TypeName&) -> void; \
-	auto operator=(TypeName&&) -> void
+	TypeName(const TypeName &) = delete; \
+	TypeName(TypeName&&) = delete; \
+	auto operator=(const TypeName&) -> void = delete; \
+	auto operator=(TypeName&&) -> void = delete;
 
 #define LM_DISABLE_CONSTRUCT(TypeName) \
-    TypeName(); \
+    TypeName() = delete; \
     LM_DISABLE_COPY_AND_MOVE(TypeName)
 
 #define LM_NAMESPACE_BEGIN namespace lightmetrica_v2 {

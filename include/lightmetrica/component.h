@@ -169,7 +169,7 @@ extern "C"
 
 class ComponentFactory
 {
-private:
+public:
 
     LM_DISABLE_CONSTRUCT(ComponentFactory);
 
