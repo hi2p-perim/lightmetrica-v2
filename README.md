@@ -11,10 +11,9 @@ Project site: http://lightmetrica.org
 Build
 --------------------
 
-> QTDIR="D:\Qt\Qt5.4.2\5.4\msvc2013_64_opengl" BOOST_ROOT="" BOOST_INCLUDEDIR="D:\boost\boost_1_59_0" BOOST_LIBRARYDIR="D:\boost\boost_1_59_0\lib64-msvc-14.0" TB B_ROOT="D:\tbb\tbb43_20150611oss" TBB_ARCH_PLATFORM="intel64" cmake -G "Visual Studio 14 2015 Win64" ..
+Disclaimer: Currently tested only on Visual Studio 2015 environment.
 
 > BOOST_ROOT="" BOOST_INCLUDEDIR="C:\boost\boost_1_59_0" BOOST_LIBRARYDIR="C:\boost\boost_1_59_0\lib64-msvc-14.0" TBB_ROOT="`pwd`/../external/src/tbb44_20150928oss" TBB_ARCH_PLATFORM="intel64" cmake -G "Visual Studio 14 2015 Win64" ..
-
 
 Discussions
 --------------------
