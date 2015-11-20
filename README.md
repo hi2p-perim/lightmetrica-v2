@@ -84,9 +84,9 @@ we recommend to follow the practices described in this section.
 ### File headers
 
 - All header and implementation file should include the license header.
-- The header file should begin with `#pragma region` and should *not* include  addtional include guards.
+- The header file should begin with `#pragma once` and should *not* include addtional include guards.
     + Rationale
-        * Most modern compilers support `#pragma region`.
+        * Most modern compilers support `#pragma once`.
         * Lack of `#endif` in traditional include guards causes tricky bugs.
 
 ### Macro
