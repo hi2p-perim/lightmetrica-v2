@@ -4,6 +4,8 @@ Lightmetrica
 
 Lightmetrica : A modern, research-oriented renderer
 
+**This project is WIP**
+
 Project site: http://lightmetrica.org
 
 Build
