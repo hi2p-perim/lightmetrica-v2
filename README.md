@@ -54,6 +54,11 @@ design or achitectural problems, etc.
     + Directly convertable from hierarchies in scene file
 - Serialization support
     + Makes it possible to print intermediate states, useful for verification or debugging.
+- Scene description
+    + Possibility to integrate string template
+    + Include another file
+    + Binary support
+- Show defined macros in the startup
 
 Recommended practices (C++)
 --------------------

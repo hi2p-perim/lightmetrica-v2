@@ -40,6 +40,19 @@ set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica")
 
 set(
     _HEADER_FILES
+)
+set(
+    _SOURCE_FILES
+)
+
+# --------------------------------------------------------------------------------
+
+#
+# Core
+#
+
+set(
+    _CORE_HEADER_FILES
     "${_INCLUDE_DIR}/macros.h"
     "${_INCLUDE_DIR}/component.h"
 	"${_INCLUDE_DIR}/portable.h"
@@ -51,15 +64,43 @@ set(
 	"${_INCLUDE_DIR}/static.h"
 	"${_INCLUDE_DIR}/statictest.h"
 	"${_INCLUDE_DIR}/exception.h"
+	"${_INCLUDE_DIR}/property.h"
 )
 set(
-    _SOURCE_FILES
+    _CORE_SOURCE_FILES
     "component.cpp"
     "logger.cpp"
     "fp.cpp"
 	"statictest.cpp"
 	"exception.cpp"
 )
+
+source_group("${_HEADER_FILES_ROOT}\\core" FILES ${_CORE_HEADER_FILES})
+source_group("${_SOURCE_FILES_ROOT}\\core" FILES ${_CORE_SOURCE_FILES})
+list(APPEND _HEADER_FILES ${_CORE_HEADER_FILES})
+list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Asset
+#
+
+set(
+    _ASSET_HEADER_FILES
+	"${_INCLUDE_DIR}/asset.h"
+	"${_INCLUDE_DIR}/assets.h"
+)
+
+set(
+    _ASSET_SOURCE_FILES
+	"assets.cpp"
+)
+
+source_group("${_HEADER_FILES_ROOT}\\asset" FILES ${_ASSET_HEADER_FILES})
+source_group("${_SOURCE_FILES_ROOT}\\asset" FILES ${_ASSET_SOURCE_FILES})
+list(APPEND _HEADER_FILES ${_ASSET_HEADER_FILES})
+list(APPEND _SOURCE_FILES ${_ASSET_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 

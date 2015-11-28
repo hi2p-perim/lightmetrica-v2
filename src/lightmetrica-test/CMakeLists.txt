@@ -47,15 +47,34 @@ set(
 set(
 	_SOURCE_FILES
 	"main.cpp"
+)
+
+# --------------------------------------------------------------------------------
+
+set(
+    _LIB_SOURCE_FILES
+	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\lib" FILES ${_LIB_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_LIB_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+set(
+    _CORE_SOURCE_FILES
 	"test_component.cpp"
 	"test_reflection.cpp"
 	"test_logger.cpp"
 	"test_math.cpp"
 	"test_fp.cpp"
 	"test_static.cpp"
-
-	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc"
+	"test_property.cpp"
+	"test_assets.cpp"
 )
+
+source_group("${_SOURCE_FILES_ROOT}\\core" FILES ${_CORE_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 
