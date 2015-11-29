@@ -22,64 +22,23 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
-#include <lightmetrica/component.h>
+#include <pch.h>
+#include <lightmetrica/assetlibrary.h>
 
 LM_NAMESPACE_BEGIN
 
-/*!
-    Property node.
-
-    An element of the property.
-*/
-//class PropertyNode : public Component
-//{
-//private:
-//
-//    LM_INTERFACE_CLASS(PropertyNode, Component, 1);
-//
-//public:
-//
-//    PropertyNode() = default;
-//    LM_DISABLE_COPY_AND_MOVE(Property);
-//
-//public:
-//
-//    
-//
-//};
-
-/*!
-    Property.
-    
-    Manages tree structure.
-    Mainly utilized as asset parameters.
-    This class manages all instances of the property nodes.
-*/
-class Property : public Component
+class AssetLibrary_ : public AssetLibrary
 {
 public:
 
-    LM_INTERFACE_CLASS(Property, Component, 1);
+    LM_IMPL_CLASS(AssetLibrary_, AssetLibrary);
 
 public:
 
-    Property() = default;
-    LM_DISABLE_COPY_AND_MOVE(Property);
-
-public:
-    
-    /*!
-        Load property from YAML file.
-    */
-    LM_INTERFACE_F(0, LoadFromYAMLString, bool(const std::string&));
-
-    /*!
-        Get root node.
-    */
     
 
 };
+
+LM_COMPONENT_REGISTER_IMPL(AssetLibrary_);
 
 LM_NAMESPACE_END

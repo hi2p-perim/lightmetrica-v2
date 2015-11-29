@@ -26,6 +26,9 @@
 
 #include <lightmetrica-test/macros.h>
 #include <functional>
+#include <iostream>
+#include <sstream>
+#include <regex>
 
 LM_TEST_NAMESPACE_BEGIN
 
@@ -42,24 +45,44 @@ public:
         Execute the given function and captures all standard outputs.
         Wraps testing::internal::CaptureStdout.
     */
-    static std::string CaptureStdout(const std::function<void()>& func)
+    static auto CaptureStdout(const std::function<void()>& func) -> std::string
     {
         testing::internal::CaptureStdout();
         func();
         return testing::internal::GetCapturedStdout();
     }
 
-     /*!
+    /*!
         Capture standard error.
         Execute the given function and captures all standard outputs.
         Wraps testing::internal::CaptureStderr.
     */
-    static std::string CaptureStderr(const std::function<void()>& func)
+    static auto CaptureStderr(const std::function<void()>& func) -> std::string
     {
         testing::internal::CaptureStderr();
         func();
         return testing::internal::GetCapturedStderr();
     }
+
+    /*!
+        Multiline literal with indentation.
+    */
+    static auto MultiLineLiteral(const std::string& text) -> std::string
+    {
+        std::string converted;
+        const std::regex re(R"x(^ *\| ?(.*)$)x");
+        std::stringstream ss(text);
+        std::string line;
+        while (std::getline(ss, line))
+        {
+            std::smatch m;
+            if (std::regex_match(line, m, re))
+            {
+                converted += std::string(m[1]) + "\n";
+            }
+        }
+        return converted;
+    };
 
 };
 

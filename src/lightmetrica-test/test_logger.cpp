@@ -77,7 +77,7 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
 }
 
 /*
-    Check if the indentation feature works propertly.
+    Check if the indentation feature works properly.
 */
 TEST(LoggerTest, Indenter)
 {

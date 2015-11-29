@@ -23,22 +23,25 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/assets.h>
+#include <lightmetrica/property.h>
 
 LM_NAMESPACE_BEGIN
 
-class Assets_ : public Assets
+class Property_ : public Property
 {
-private:
+public:
 
-    LM_IMPL_CLASS(Assets_, Assets);
+    LM_IMPL_CLASS(Property_, Property);
 
 public:
 
-    
+    LM_IMPL_F(LoadFromYAMLString, [this](const std::string& content) -> bool
+    {
+        return false;
+    });
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Assets_);
+LM_COMPONENT_REGISTER_IMPL(Property_);
 
 LM_NAMESPACE_END

@@ -23,20 +23,13 @@
 */
 
 #include <pch_test.h>
-#include <lightmetrica/assets.h>
-
-namespace
-{
-    const std::string AssetSuccess = R"x(
-
-    )x";
-}
+#include <lightmetrica/assetlibrary.h>
 
 LM_TEST_NAMESPACE_BEGIN
 
-TEST(AssetsTest, A)
-{
-    
-}
+//TEST(AssetsTest, A)
+//{
+//    
+//}
 
 LM_TEST_NAMESPACE_END

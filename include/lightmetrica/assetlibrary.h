@@ -29,20 +29,20 @@
 LM_NAMESPACE_BEGIN
 
 /*!
-    Asset manager.
+    Asset library.
 
     Manages all instances of the assets.
 */
-class Assets : public Component
+class AssetLibrary : public Component
 {
-private:
+public:
 
-    LM_INTERFACE_CLASS(Assets, Component, 1);
+    LM_INTERFACE_CLASS(AssetLibrary, Component, 1);
 
 public:
 
-    Assets() = default;
-    LM_DISABLE_COPY_AND_MOVE(Assets);
+    AssetLibrary() = default;
+    LM_DISABLE_COPY_AND_MOVE(AssetLibrary);
 
 public:
 

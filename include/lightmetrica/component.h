@@ -32,6 +32,7 @@
 #include <functional>
 #include <type_traits>
 #include <memory>
+#include <string>
 
 LM_NAMESPACE_BEGIN
 
@@ -201,6 +202,13 @@ public:
         
         ReturnType p2(p, deleter);
         return std::move(p2);
+    }
+
+    template <typename InterfaceType>
+    static auto Create() -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    {
+        const auto implName = std::string(InterfaceType::Type().name) + "_";
+        return std::move(Create<InterfaceType>(implName.c_str()));
     }
 
 };

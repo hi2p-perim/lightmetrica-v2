@@ -70,7 +70,7 @@ set(
 	"test_fp.cpp"
 	"test_static.cpp"
 	"test_property.cpp"
-	"test_assets.cpp"
+	"test_assetlibrary.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\core" FILES ${_CORE_SOURCE_FILES})

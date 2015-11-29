@@ -73,6 +73,7 @@ set(
     "fp.cpp"
 	"statictest.cpp"
 	"exception.cpp"
+	"property.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core" FILES ${_CORE_HEADER_FILES})
@@ -89,12 +90,14 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 set(
     _ASSET_HEADER_FILES
 	"${_INCLUDE_DIR}/asset.h"
-	"${_INCLUDE_DIR}/assets.h"
+	"${_INCLUDE_DIR}/assetlibrary.h"
+	"${_INCLUDE_DIR}/primitives.h"
 )
 
 set(
     _ASSET_SOURCE_FILES
-	"assets.cpp"
+	"assetlibrary.cpp"
+	"primitives.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\asset" FILES ${_ASSET_HEADER_FILES})
