@@ -24,39 +24,29 @@
 
 #pragma once
 
-#include <lightmetrica/macros.h>
+#include <lightmetrica/component.h>
 
 LM_NAMESPACE_BEGIN
 
-/*!
-    Types.
-*/
-enum class Type
-{
-    Class,
-};
+class PropertyNode;
+class Scene;
 
-/*!
-    Type info.
-    Implements simple run-time reflection.
-*/
-struct TypeInfo
+class RenderJob : public Component
 {
-    Type type;
-    const char* name;
-    struct
-    {
-        const char* base;
-    } classT;
-};
+public:
 
-#define LM_DEFINE_CLASS_TYPE(ClassType, BaseClassType) \
-    static TypeInfo Type_() { \
-        TypeInfo t; \
-        t.type = Type::Class; \
-        t.name = #ClassType; \
-        t.classT.base = #BaseClassType; \
-        return t; \
-    }
+    LM_INTERFACE_CLASS(RenderJob, Component, 2);
+
+public:
+
+    RenderJob() = default;
+    LM_DISABLE_COPY_AND_MOVE(RenderJob);
+
+public:
+
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
+    LM_INTERFACE_F(1, Render, void(const Scene*));
+
+};
 
 LM_NAMESPACE_END

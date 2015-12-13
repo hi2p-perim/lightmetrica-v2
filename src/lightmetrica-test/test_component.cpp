@@ -66,20 +66,20 @@ struct A1 : public A
 {
     LM_IMPL_CLASS(A1, A);
 
-    LM_IMPL_F(Func1, [this](int v) -> void
+    LM_IMPL_F(Func1) = [this](int v) -> void
     {
         std::cout << v << std::endl;
-    });
+    };
 
-    LM_IMPL_F(Func2, [this](int v1, int v2) -> int
+    LM_IMPL_F(Func2) = [this](int v1, int v2) -> int
     {
         return v1 + v2;
-    });
+    };
 
-    LM_IMPL_F(Func3, [this]() -> void
+    LM_IMPL_F(Func3) = [this]() -> void
     {
         std::cout << "hello" << std::endl;
-    });
+    };
 };
 
 LM_COMPONENT_REGISTER_IMPL(A1);
@@ -90,25 +90,25 @@ struct B1 : public B
 {
     LM_IMPL_CLASS(B1, B);
 
-    LM_IMPL_F(Func1, [this](int v) -> void
+    LM_IMPL_F(Func1) = [this](int v) -> void
     {
         std::cout << v + 1 << std::endl;
-    });
+    };
 
-    LM_IMPL_F(Func2, [this](int v1, int v2) -> int
+    LM_IMPL_F(Func2) = [this](int v1, int v2) -> int
     {
         return v1 + v2 + 1;
-    });
+    };
 
-    LM_IMPL_F(Func3, [this]() -> void
+    LM_IMPL_F(Func3) = [this]() -> void
     {
         std::cout << "a" << std::endl;
-    });
+    };
 
-    LM_IMPL_F(Func4, [this]() -> void
+    LM_IMPL_F(Func4) = [this]() -> void
     {
         std::cout << "b" << std::endl;
-    });
+    };
 };
 
 LM_COMPONENT_REGISTER_IMPL(B1);
@@ -119,32 +119,32 @@ struct C1 : public C
 {
     LM_IMPL_CLASS(C1, C);
 
-    LM_IMPL_F(Func1, [this](const int* v, int n) -> void
+    LM_IMPL_F(Func1) = [this](const int* v, int n) -> void
     {
         for (int i = 0; i < n; i++) std::cout << v[i] << " ";
         std::cout << std::endl;
-    });
+    };
 
-    LM_IMPL_F(Func2, [this](std::vector<int> v) -> void
+    LM_IMPL_F(Func2) = [this](std::vector<int> v) -> void
     {
         for (int& val : v) std::cout << val << " ";
         std::cout << std::endl;
-    });
+    };
 
-    LM_IMPL_F(Func3, [this](int& v) -> void
+    LM_IMPL_F(Func3) = [this](int& v) -> void
     {
         v = 42;
-    });
+    };
 
-    LM_IMPL_F(Func4, [this](const int& v) -> void
+    LM_IMPL_F(Func4) = [this](const int& v) -> void
     {
         std::cout << v << std::endl;
-    });
+    };
 
-    LM_IMPL_F(Func5, [this](const std::string& s) -> void
+    LM_IMPL_F(Func5) = [this](const std::string& s) -> void
     {
         std::cout << s << std::endl;
-    });
+    };
 };
 
 LM_COMPONENT_REGISTER_IMPL(C1);

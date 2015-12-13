@@ -22,14 +22,23 @@
     THE SOFTWARE.
 */
 
-#include <pch_test.h>
-#include <lightmetrica/assetlibrary.h>
+#include <pch.h>
+#include <lightmetrica/assets.h>
 
-LM_TEST_NAMESPACE_BEGIN
+LM_NAMESPACE_BEGIN
 
-//TEST(AssetsTest, A)
-//{
-//    
-//}
+class Assets_ : public Assets
+{
+public:
 
-LM_TEST_NAMESPACE_END
+    LM_IMPL_CLASS(Assets_, Assets);
+
+public:
+
+    
+
+};
+
+LM_COMPONENT_REGISTER_IMPL(Assets_);
+
+LM_NAMESPACE_END

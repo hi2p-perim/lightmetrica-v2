@@ -59,6 +59,9 @@ design or achitectural problems, etc.
     + Include another file
     + Binary support
 - Show defined macros in the startup
+- Write an article on how to make things portable
+- Remove indices in the interface definition of the component using constexpr counter
+    + http://b.atch.se/posts/constexpr-counter/
 
 Recommended practices (C++)
 --------------------
@@ -149,6 +152,11 @@ This is a topic specific to the `research-oriented` application.
     + Consistent handling of return types
     + Keeping visually arranged looking of the code
 - The return type of the lambda function should be specified
+
+### Enums
+
+- The internal type of `enum class` should always be specified.
+- Ordinary `enum` type should be wrapped with a namespace
 
 Recommended practices (CMake)
 --------------------

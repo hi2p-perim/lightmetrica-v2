@@ -120,8 +120,8 @@ include_directories(${TBB_INCLUDE_DIRS})
 # include_directories(${EMBREE_INCLUDE_DIRS})
 
 # yaml-cpp
-# find_package(YamlCpp REQUIRED)
-# include_directories(${YAMLCPP_INCLUDE_DIRS})
+find_package(YamlCpp REQUIRED)
+include_directories(${YAMLCPP_INCLUDE_DIRS})
 
 # Google test
 include_directories("${PROJECT_SOURCE_DIR}/external/src/gtest-1.7.0")

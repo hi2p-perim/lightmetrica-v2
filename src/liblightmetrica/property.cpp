@@ -24,24 +24,150 @@
 
 #include <pch.h>
 #include <lightmetrica/property.h>
+#include <lightmetrica/logger.h>
+#include <yaml-cpp/yaml.h>
 
 LM_NAMESPACE_BEGIN
 
-class Property_ : public Property
+class PropertyTree_;
+
+class PropertyNode_ : public PropertyNode
 {
-public:
-
-    LM_IMPL_CLASS(Property_, Property);
+    friend class PropertyTree_;
 
 public:
 
-    LM_IMPL_F(LoadFromYAMLString, [this](const std::string& content) -> bool
+    LM_IMPL_CLASS(PropertyNode_, PropertyNode);
+
+public:
+
+    LM_IMPL_F(Type)   = [this]() -> PropertyNodeType { return type_; };
+    LM_IMPL_F(Scalar) = [this]() -> std::string { return scalar_; };
+    LM_IMPL_F(Key)    = [this]() -> std::string { return key_; };
+
+    LM_IMPL_F(Child) = [this](const std::string& key) -> const PropertyNode*
     {
-        return false;
-    });
+        const auto it = map_.find(key);
+        return it != map_.end() ? it->second : nullptr;
+    };
+
+    LM_IMPL_F(At) = [this](int index) -> const PropertyNode*
+    {
+        return sequence_.at(index);
+    };
+
+private:
+
+    // Type of the node
+    PropertyNodeType type_;
+
+    // For map node type
+    std::string key_;
+    std::unordered_map<std::string, const PropertyNode_*> map_;
+
+    // For sequence node type
+    std::vector<const PropertyNode_*> sequence_;
+
+    // For scalar type
+    std::string scalar_;
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Property_);
+LM_COMPONENT_REGISTER_IMPL(PropertyNode_);
+
+// --------------------------------------------------------------------------------
+
+class PropertyTree_ : public PropertyTree
+{
+public:
+
+    LM_IMPL_CLASS(PropertyTree_, PropertyTree);
+
+public:
+
+    LM_IMPL_F(LoadFromString) = [this](const std::string& input) -> bool
+    {
+        // Traverse YAML nodes and convert to the our node type
+        const std::function<PropertyNode_*(const YAML::Node&)> Traverse = [&](const YAML::Node& yamlNode) -> PropertyNode_*
+        {
+            // Create our node
+            nodes_.push_back(ComponentFactory::Create<PropertyNode>());
+            auto* node_internal = static_cast<PropertyNode_*>(nodes_.back().get());
+
+            switch (yamlNode.Type())
+            {
+                case YAML::NodeType::Null:
+                {
+                    node_internal->type_ = PropertyNodeType::Null;
+                    break;
+                }
+                
+                case YAML::NodeType::Scalar:
+                {
+                    node_internal->type_ = PropertyNodeType::Scalar;
+                    node_internal->scalar_ = yamlNode.Scalar();
+                    break;
+                }
+
+                case YAML::NodeType::Sequence:
+                {
+                    node_internal->type_ = PropertyNodeType::Sequence;
+                    for (size_t i = 0; i < yamlNode.size(); i++)
+                    {
+                        node_internal->sequence_.push_back(Traverse(yamlNode[i]));
+                    }
+                    break;
+                }
+
+                case YAML::NodeType::Map:
+                {
+                    node_internal->type_ = PropertyNodeType::Map;
+                    for (const auto& p : yamlNode)
+                    {
+                        const auto key = p.first.as<std::string>();
+                        auto* childNode = Traverse(p.second);
+                        childNode->key_ = key;
+                        node_internal->map_[key] = childNode;
+                    }
+                    break;
+                }
+
+                case YAML::NodeType::Undefined:
+                {
+                    LM_UNREACHABLE();
+                    break;
+                }
+            }
+
+            return node_internal;
+        };
+
+        try
+        {
+            const auto root = YAML::Load(input.c_str());
+            root_ = Traverse(root);
+        }
+        catch (const YAML::Exception& e)
+        {
+            LM_LOG_ERROR("YAML exception: " + std::string(e.what()));
+            return false;
+        }
+
+        return true;
+    };
+
+    LM_IMPL_F(Root) = [this]() -> const PropertyNode*
+    {
+        return root_;
+    };
+
+private:
+
+    const PropertyNode* root_;
+    std::vector<PropertyNode::UniquePointerType> nodes_;
+
+};
+
+LM_COMPONENT_REGISTER_IMPL(PropertyTree_);
 
 LM_NAMESPACE_END

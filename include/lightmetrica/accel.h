@@ -28,21 +28,16 @@
 
 LM_NAMESPACE_BEGIN
 
-/*!
-    Asset library.
-
-    Manages all instances of the assets.
-*/
-class AssetLibrary : public Component
+class Accel : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(AssetLibrary, Component, 1);
+    LM_INTERFACE_CLASS(Accel, Component, 1);
 
 public:
 
-    AssetLibrary() = default;
-    LM_DISABLE_COPY_AND_MOVE(AssetLibrary);
+    Accel() = default;
+    LM_DISABLE_COPY_AND_MOVE(Accel);
 
 public:
 

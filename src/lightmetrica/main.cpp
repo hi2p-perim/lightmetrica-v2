@@ -24,6 +24,9 @@
 
 #include <lightmetrica/logger.h>
 #include <lightmetrica/exception.h>
+#include <lightmetrica/property.h>
+#include <lightmetrica/scene.h>
+#include <lightmetrica/renderjob.h>
 
 #include <iostream>
 #include <sstream>
@@ -304,10 +307,47 @@ private:
         
         // --------------------------------------------------------------------------------
 
-        // Load scene
-        // Initialize renderer
-        // Process render
-        // Save image
+        #pragma region Initialize scene
+
+        const auto sceneProp = std::move(ComponentFactory::Create<PropertyTree>());
+        if (!sceneProp->LoadFromString(opt.Render.SceneFile))
+        {
+            return false;
+        }
+
+        const auto scene = std::move(ComponentFactory::Create<Scene>());
+        if (!scene->Initialize(sceneProp->Root()))
+        {
+            return false;
+        }
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Initialize renderer
+
+        const auto renderProp = std::move(ComponentFactory::Create<PropertyTree>());
+        if (!renderProp->LoadFromString(opt.Render.RenderOptionFile))
+        {
+            return false;
+        }
+
+        const auto renderJob = std::move(ComponentFactory::Create<RenderJob>());
+        if (!renderJob->Initialize(renderProp->Root()))
+        {
+            return false;
+        }
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Process rendering
+
+        renderJob->Render(scene.get());
+
+        #pragma endregion
 
         // --------------------------------------------------------------------------------
 

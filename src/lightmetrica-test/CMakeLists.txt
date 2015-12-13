@@ -70,7 +70,7 @@ set(
 	"test_fp.cpp"
 	"test_static.cpp"
 	"test_property.cpp"
-	"test_assetlibrary.cpp"
+	"test_assets.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\core" FILES ${_CORE_SOURCE_FILES})
@@ -83,7 +83,6 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 #
 
 pch_add_executable(${_PROJECT_NAME} PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-# We don't need to use the import library
 #target_link_libraries(${_PROJECT_NAME} liblightmetrica)
 add_dependencies(${_PROJECT_NAME} liblightmetrica)
 

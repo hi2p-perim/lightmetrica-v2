@@ -28,57 +28,100 @@
 
 LM_NAMESPACE_BEGIN
 
+enum class PropertyNodeType : int
+{
+    Null,
+    Scalar,
+    Sequence,
+    Map,
+    Undefined,
+};
+
 /*!
     Property node.
 
     An element of the property.
 */
-//class PropertyNode : public Component
-//{
-//private:
-//
-//    LM_INTERFACE_CLASS(PropertyNode, Component, 1);
-//
-//public:
-//
-//    PropertyNode() = default;
-//    LM_DISABLE_COPY_AND_MOVE(Property);
-//
-//public:
-//
-//    
-//
-//};
+class PropertyNode : public Component
+{
+public:
+
+    LM_INTERFACE_CLASS(PropertyNode, Component, 5);
+
+public:
+
+    PropertyNode() = default;
+    LM_DISABLE_COPY_AND_MOVE(PropertyNode);
+
+public:
+    
+    /*!
+        Type of the node.
+    */
+    LM_INTERFACE_F(0, Type, PropertyNodeType());
+
+    /*!
+        Key of the node.
+        Only available for `Map` type.
+    */
+    LM_INTERFACE_F(1, Key, std::string());
+
+    /*!
+        Scalar value of the node.
+        Only available for `Scalar` type.
+    */
+    LM_INTERFACE_F(2, Scalar, std::string());
+
+    /*!
+        Find a child by name.
+        Only available for `Map` type.
+    */
+    LM_INTERFACE_F(3, Child, const PropertyNode*(const std::string&));
+
+    /*!
+        Get a child by index.
+        Only available for `Sequence` type.
+    */
+    LM_INTERFACE_F(4, At, const PropertyNode*(int));
+
+public:
+
+    template <typename T> auto As() const -> T;
+    template <> auto As<std::string>() const -> std::string { return Scalar(); }
+    template <> auto As<int>() const -> int { return std::stoi(Scalar()); }
+    template <> auto As<double>() const -> double { return std::stod(Scalar()); }
+
+};
 
 /*!
-    Property.
+    Property tree.
     
     Manages tree structure.
     Mainly utilized as asset parameters.
     This class manages all instances of the property nodes.
 */
-class Property : public Component
+class PropertyTree : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Property, Component, 1);
+    LM_INTERFACE_CLASS(PropertyTree, Component, 2);
 
 public:
 
-    Property() = default;
-    LM_DISABLE_COPY_AND_MOVE(Property);
+    PropertyTree() = default;
+    LM_DISABLE_COPY_AND_MOVE(PropertyTree);
 
 public:
     
     /*!
-        Load property from YAML file.
+        Load property from YAML sequences.
     */
-    LM_INTERFACE_F(0, LoadFromYAMLString, bool(const std::string&));
+    LM_INTERFACE_F(0, LoadFromString, bool(const std::string&));
 
     /*!
         Get root node.
     */
-    
+    LM_INTERFACE_F(1, Root, const PropertyNode*());
 
 };
 

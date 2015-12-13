@@ -24,26 +24,149 @@
 
 #include <pch_test.h>
 #include <lightmetrica/property.h>
+#include <lightmetrica/logger.h>
 #include <lightmetrica-test/utils.h>
 
 LM_TEST_NAMESPACE_BEGIN
 
 namespace
 {
-    const std::string Load_Success = R"x(
+    const auto Scalar_Input = TestUtils::MultiLineLiteral(R"x(
+    | a
+    )x");
+
+    const auto Map_Input = TestUtils::MultiLineLiteral(R"x(
+    | A: a
+    | B: b
+    )x");
+
+    const auto Sequence_Input = TestUtils::MultiLineLiteral(R"x(
+    | - a
+    | - b
+    )x");
+
+    const auto Tree_Input = TestUtils::MultiLineLiteral(R"x(
     | A:
-    |   A1: a1
-    |   A2: a2
+    |   - A1
+    |   - A2
     | B:
-    |   - id: B1
-    |   - id: B2
-    )x";
+    |   - B1
+    |   - B2
+    )x");
+
+    const auto Tree_Input_2 = TestUtils::MultiLineLiteral(R"x(
+    | A: [1, 2, 3, 4]
+    | B: >
+    |   1 2
+    |   3 4
+    )x");
+
+    const auto TypeConversion_Input = TestUtils::MultiLineLiteral(R"x(
+    | - hello
+    | - 1
+    | - 1.1
+    )x");
 }
 
-TEST(PropertyTest, Load)
+class PropertyTest : public ::testing::Test
 {
-    auto p = std::move(ComponentFactory::Create<Property>());
-    EXPECT_TRUE(p->LoadFromYAMLString(Load_Success));
+public:
+    virtual void SetUp() override { Logger::Run(); }
+    virtual void TearDown() override { Logger::Stop(); }
+};
+
+TEST_F(PropertyTest, Scalar)
+{
+    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+
+    ASSERT_TRUE(p->LoadFromString(Scalar_Input));
+
+    const auto* root = p->Root();
+    ASSERT_NE(nullptr, root);
+    EXPECT_EQ(PropertyNodeType::Scalar, root->Type());
+    EXPECT_EQ("a", root->Scalar());
+}
+
+TEST_F(PropertyTest, Map)
+{
+    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+
+    ASSERT_TRUE(p->LoadFromString(Map_Input));
+    
+    const auto* root = p->Root();
+    ASSERT_NE(nullptr, root);
+    EXPECT_EQ(PropertyNodeType::Map, root->Type());
+
+    const auto* A = root->Child("A");
+    ASSERT_NE(nullptr, A);
+    EXPECT_EQ(PropertyNodeType::Scalar, A->Type());
+    EXPECT_EQ("A", A->Key());
+    EXPECT_EQ("a", A->Scalar());
+
+    const auto* B = root->Child("B");
+    ASSERT_NE(nullptr, B);
+    EXPECT_EQ(PropertyNodeType::Scalar, B->Type());
+    EXPECT_EQ("B", B->Key());
+    EXPECT_EQ("b", B->Scalar());
+}
+
+TEST_F(PropertyTest, Sequence)
+{
+    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+
+    ASSERT_TRUE(p->LoadFromString(Sequence_Input));
+
+    const auto* root = p->Root();
+    ASSERT_NE(nullptr, root);
+    EXPECT_EQ(PropertyNodeType::Sequence, root->Type());
+
+    const auto* n0 = root->At(0);
+    ASSERT_NE(nullptr, n0);
+    EXPECT_EQ("a", n0->Scalar());
+
+    const auto* n1 = root->At(1);
+    ASSERT_NE(nullptr, n1);
+    EXPECT_EQ("b", n1->Scalar());
+}
+
+TEST_F(PropertyTest, Tree)
+{
+    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+
+    ASSERT_TRUE(p->LoadFromString(Tree_Input));
+
+    const auto* root = p->Root();
+    EXPECT_EQ("A1", root->Child("A")->At(0)->Scalar());
+    EXPECT_EQ("A2", root->Child("A")->At(1)->Scalar());
+    EXPECT_EQ("B1", root->Child("B")->At(0)->Scalar());
+    EXPECT_EQ("B2", root->Child("B")->At(1)->Scalar());
+}
+
+TEST_F(PropertyTest, Tree_2)
+{
+    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+
+    ASSERT_TRUE(p->LoadFromString(Tree_Input_2));
+
+    const auto* root = p->Root();
+    EXPECT_EQ("1", root->Child("A")->At(0)->Scalar());
+    EXPECT_EQ("2", root->Child("A")->At(1)->Scalar());
+    EXPECT_EQ("3", root->Child("A")->At(2)->Scalar());
+    EXPECT_EQ("4", root->Child("A")->At(3)->Scalar());
+
+    EXPECT_EQ("1 2 3 4\n", root->Child("B")->Scalar());
+}
+
+TEST_F(PropertyTest, TypeConversion)
+{
+    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+
+    ASSERT_TRUE(p->LoadFromString(TypeConversion_Input));
+
+    const auto* root = p->Root();
+    EXPECT_EQ("hello", root->At(0)->As<std::string>());
+    EXPECT_EQ(1, root->At(1)->As<int>());
+    EXPECT_EQ(1.1, root->At(2)->As<double>());
 }
 
 LM_TEST_NAMESPACE_END

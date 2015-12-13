@@ -40,9 +40,11 @@ set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica")
 
 set(
     _HEADER_FILES
+    "${_INCLUDE_DIR}/scene.h"
 )
 set(
     _SOURCE_FILES
+	"scene.cpp"
 )
 
 # --------------------------------------------------------------------------------
@@ -90,13 +92,13 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 set(
     _ASSET_HEADER_FILES
 	"${_INCLUDE_DIR}/asset.h"
-	"${_INCLUDE_DIR}/assetlibrary.h"
+	"${_INCLUDE_DIR}/assets.h"
 	"${_INCLUDE_DIR}/primitives.h"
 )
 
 set(
     _ASSET_SOURCE_FILES
-	"assetlibrary.cpp"
+	"assets.cpp"
 	"primitives.cpp"
 )
 
@@ -108,11 +110,54 @@ list(APPEND _SOURCE_FILES ${_ASSET_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
+# Scene
+#
+
+set(
+    _SCENE_HEADER_FILES
+	"${_INCLUDE_DIR}/scene.h"
+	"${_INCLUDE_DIR}/accel.h"
+	"${_INCLUDE_DIR}/primitive.h"
+)
+
+set(
+    _SCENE_SOURCE_FILES
+)
+
+source_group("${_HEADER_FILES_ROOT}\\scene" FILES ${_SCENE_HEADER_FILES})
+source_group("${_SOURCE_FILES_ROOT}\\scene" FILES ${_SCENE_SOURCE_FILES})
+list(APPEND _HEADER_FILES ${_SCENE_HEADER_FILES})
+list(APPEND _SOURCE_FILES ${_SCENE_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Renderer
+#
+
+set(
+    _RENDERER_HEADER_FILES
+	"${_INCLUDE_DIR}/renderer.h"
+	"${_INCLUDE_DIR}/renderjob.h"
+)
+
+set(
+    _RENDERER_SOURCE_FILES
+)
+
+source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})
+source_group("${_SOURCE_FILES_ROOT}\\renderer" FILES ${_RENDERER_SOURCE_FILES})
+list(APPEND _HEADER_FILES ${_RENDERER_HEADER_FILES})
+list(APPEND _SOURCE_FILES ${_RENDERER_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
 # Create a library
 #
 
 pch_add_library(${_PROJECT_NAME} SHARED PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES})
+target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES})
 
 # Proprocessor definition for exporting symbols
 set_target_properties(${_PROJECT_NAME} PROPERTIES COMPILE_DEFINITIONS "LM_EXPORTS")

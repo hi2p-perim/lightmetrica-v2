@@ -24,39 +24,30 @@
 
 #pragma once
 
-#include <lightmetrica/macros.h>
+#include <lightmetrica/component.h>
 
 LM_NAMESPACE_BEGIN
 
 /*!
-    Types.
-*/
-enum class Type
-{
-    Class,
-};
+    Asset library.
 
-/*!
-    Type info.
-    Implements simple run-time reflection.
+    Manages all instances of the assets.
 */
-struct TypeInfo
+class Assets : public Component
 {
-    Type type;
-    const char* name;
-    struct
-    {
-        const char* base;
-    } classT;
-};
+public:
 
-#define LM_DEFINE_CLASS_TYPE(ClassType, BaseClassType) \
-    static TypeInfo Type_() { \
-        TypeInfo t; \
-        t.type = Type::Class; \
-        t.name = #ClassType; \
-        t.classT.base = #BaseClassType; \
-        return t; \
-    }
+    LM_INTERFACE_CLASS(Assets, Component, 1);
+
+public:
+
+    Assets() = default;
+    LM_DISABLE_COPY_AND_MOVE(Assets);
+
+public:
+
+    
+
+};
 
 LM_NAMESPACE_END

@@ -22,41 +22,14 @@
     THE SOFTWARE.
 */
 
-#pragma once
+#include <pch_test.h>
+#include <lightmetrica/assets.h>
 
-#include <lightmetrica/macros.h>
+LM_TEST_NAMESPACE_BEGIN
 
-LM_NAMESPACE_BEGIN
+//TEST(AssetsTest, A)
+//{
+//    
+//}
 
-/*!
-    Types.
-*/
-enum class Type
-{
-    Class,
-};
-
-/*!
-    Type info.
-    Implements simple run-time reflection.
-*/
-struct TypeInfo
-{
-    Type type;
-    const char* name;
-    struct
-    {
-        const char* base;
-    } classT;
-};
-
-#define LM_DEFINE_CLASS_TYPE(ClassType, BaseClassType) \
-    static TypeInfo Type_() { \
-        TypeInfo t; \
-        t.type = Type::Class; \
-        t.name = #ClassType; \
-        t.classT.base = #BaseClassType; \
-        return t; \
-    }
-
-LM_NAMESPACE_END
+LM_TEST_NAMESPACE_END

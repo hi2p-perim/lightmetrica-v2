@@ -54,6 +54,12 @@
 	#define LM_COMPILER_MSVC 0
 #endif
 
+#ifdef __INTELLISENSE__
+    #define LM_INTELLISENSE 1
+#else
+    #define LM_INTELLISENSE 0
+#endif
+
 #if defined(__GNUC__) || defined(__MINGW32__)
 	#define LM_COMPILER_GCC 1
 #else

@@ -22,23 +22,29 @@
     THE SOFTWARE.
 */
 
-#include <pch.h>
-#include <lightmetrica/assetlibrary.h>
+#pragma once
+
+#include <lightmetrica/component.h>
 
 LM_NAMESPACE_BEGIN
 
-class AssetLibrary_ : public AssetLibrary
+class PropertyNode;
+
+class Scene : public Component
 {
 public:
 
-    LM_IMPL_CLASS(AssetLibrary_, AssetLibrary);
+    LM_INTERFACE_CLASS(Scene, Component, 1);
 
 public:
 
-    
+    Scene() = default;
+    LM_DISABLE_COPY_AND_MOVE(Scene);
+
+public:
+
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
 
 };
-
-LM_COMPONENT_REGISTER_IMPL(AssetLibrary_);
 
 LM_NAMESPACE_END

@@ -28,6 +28,7 @@
 #include <lightmetrica/portable.h>
 #include <lightmetrica/reflection.h>
 #include <lightmetrica/static.h>
+#include <lightmetrica/logger.h>
 
 #include <functional>
 #include <type_traits>
@@ -51,8 +52,8 @@ struct Component
     // VTable entries and user-defined data
     // User-defined data is required to hold non-portable version
     static constexpr size_t VTableNumEntries = 100;
-    void* vtable_[VTableNumEntries];
-    void* userdata_[VTableNumEntries];
+    void* vtable_[VTableNumEntries] = {};
+    void* userdata_[VTableNumEntries] = {};
     static constexpr int NumFuncs = 0;
 };
 
@@ -62,47 +63,54 @@ struct Component
 
 #pragma region Interface definition
 
-template <int ID, typename Signature>
+template <int ID, typename Iface, typename Signature>
 struct VirtualFunction;
 
-template <int ID, typename ReturnType, typename ...ArgTypes>
-struct VirtualFunction<ID, ReturnType(ArgTypes...)>
+template <int ID, typename Iface, typename ReturnType, typename ...ArgTypes>
+struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
 {
     using Type = ReturnType(ArgTypes...);
     Component* o;
-    explicit VirtualFunction<ID, ReturnType(ArgTypes...)>(Component* o) : o(o) {};
+    explicit VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>(Component* o) : o(o) {};
     auto operator()(ArgTypes... args) const -> ReturnType
     {
         // Convert argument types to portable types and call the functions stored in the vtable.
-        using FuncType = ReturnType(*)(void*, Portable<ArgTypes>...);
-        return reinterpret_cast<FuncType>(o->vtable_[ID])(o->userdata_[ID], Portable<ArgTypes>(args)...);
+        using FuncType = Portable<ReturnType>(*)(void*, Portable<ArgTypes>...);
+        if (!o->vtable_[ID])
+        {
+            LM_LOG_ERROR("Missing vtable entry for <Interface: " + std::string(typeid(Iface).name()) + ", ID=" + std::to_string(ID) + ">");
+            return ReturnType();
+        }
+        return reinterpret_cast<FuncType>(o->vtable_[ID])(o->userdata_[ID], Portable<ArgTypes>(args)...).Get();
     }
 };
 
-template <int ID, typename Signature>
+template <int ID, typename Iface, typename Signature>
 struct VirtualFunctionGenerator;
 
-template <int ID, typename ReturnType, typename ...ArgTypes>
-struct VirtualFunctionGenerator<ID, ReturnType(ArgTypes...)>
+template <int ID, typename Iface, typename ReturnType, typename ...ArgTypes>
+struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
 {
-    static_assert(ID < Component::VTableNumEntries, "Excessive VTable entries");
-    static auto Get(Component* o) -> VirtualFunction<ID, ReturnType(ArgTypes...)>
+    static_assert(ID < Component::VTableNumEntries, "Excessive vtable entries");
+    using VirtualFunctionType = VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>;
+    static auto Get(Component* o) -> VirtualFunctionType
     {
-        return VirtualFunction<ID, ReturnType(ArgTypes...)>(o);
+        return VirtualFunctionType(o);
     }
 };
 
 // Define interface class
 #define LM_INTERFACE_CLASS(Current, Base, Num) \
-    LM_DEFINE_CLASS_TYPE(Current, Base); \
-    using BaseType = Base; \
-    using InterfaceType = Current; \
-    static constexpr int NumFuncs = BaseType::NumFuncs + Num
+        LM_DEFINE_CLASS_TYPE(Current, Base); \
+        using BaseType = Base; \
+        using InterfaceType = Current; \
+        using UniquePointerType = std::unique_ptr<InterfaceType, void(*)(Component*)>; \
+        static constexpr int NumFuncs = BaseType::NumFuncs + Num
 
 // Define interface member function
 #define LM_INTERFACE_F(Index, Name, Signature) \
-    static constexpr int Name ## _ID_ = BaseType::NumFuncs + Index; \
-    const VirtualFunction<Name ## _ID_, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, Signature>::Get(this)
+        static constexpr int Name ## _ID_ = BaseType::NumFuncs + Index; \
+        const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this)
 
 #pragma endregion
 
@@ -116,17 +124,35 @@ struct ImplFunctionGenerator;
 template <typename ReturnType, typename ...ArgTypes>
 struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
 {
-    using PortableFunctionType = ReturnType(*)(void*, Portable<ArgTypes>...);
+    using PortableFunctionType = Portable<ReturnType>(*)(void*, Portable<ArgTypes>...);
     static auto Get() -> PortableFunctionType
     {
         return static_cast<PortableFunctionType>(
-            [](void* userdata, Portable<ArgTypes>... args) -> ReturnType
+            [](void* userdata, Portable<ArgTypes>... args) -> Portable<ReturnType>
             {
                 // Convert user defined implementation to original type
                 using UserFunctionType = std::function<ReturnType(ArgTypes...)>;
                 auto& f = *reinterpret_cast<UserFunctionType*>(userdata);
-                return f((args.Get())...);
+                return Portable<ReturnType>(f((args.Get())...));
             });
+    }
+};
+
+template <typename ...ArgTypes>
+struct ImplFunctionGenerator<void(ArgTypes...)>
+{
+    using PortableFunctionType = Portable<void>(*)(void*, Portable<ArgTypes>...);
+    static auto Get() -> PortableFunctionType
+    {
+        return static_cast<PortableFunctionType>(
+            [](void* userdata, Portable<ArgTypes>... args) -> Portable<void>
+        {
+            // Convert user defined implementation to original type
+            using UserFunctionType = std::function<void(ArgTypes...)>;
+            auto& f = *reinterpret_cast<UserFunctionType*>(userdata);
+            f((args.Get())...);
+            return Portable<void>();
+        });
     }
 };
 
@@ -135,15 +161,15 @@ struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
     using ImplType = Impl; \
     using BaseType = Base
 
-#define LM_IMPL_F(Name, Lambda) \
+#define LM_IMPL_F(Name) \
     struct Name ## _Init_ { \
         Name ## _Init_(ImplType* p) { \
-            p->vtable_[Name ## _ID_]   = (void*)(ImplFunctionGenerator<decltype(Name)::Type>::Get()); \
-            p->userdata_[Name ## _ID_] = (void*)(&p->Name ## _); \
+            p->vtable_[Name ## _ID_]   = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
+            p->userdata_[Name ## _ID_] = (void*)(&p->Name ## _Impl_); \
         } \
     } Name ## _Init_Inst_{this}; \
     friend struct Name ## _Init_; \
-    const std::function<decltype(Name)::Type> Name ## _ = Lambda
+    const std::function<decltype(BaseType::Name)::Type> Name ## _Impl_ 
 
 #pragma endregion
 
@@ -200,15 +226,14 @@ public:
             return ReturnType(nullptr, [](Component*){});
         }
         
-        ReturnType p2(p, deleter);
-        return std::move(p2);
+        return ReturnType(p, deleter);
     }
 
     template <typename InterfaceType>
     static auto Create() -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
-        const auto implName = std::string(InterfaceType::Type().name) + "_";
-        return std::move(Create<InterfaceType>(implName.c_str()));
+        const auto implName = std::string(InterfaceType::Type_().name) + "_";
+        return Create<InterfaceType>(implName.c_str());
     }
 
 };
@@ -243,7 +268,7 @@ private:
     ImplEntry()
     {
         ComponentFactory::Register(
-            ImplType::Type(), 
+            ImplType::Type_(), 
             []() -> Component* { return new ImplType; },
             [](Component* p) -> void
             {
@@ -255,14 +280,18 @@ private:
 
 };
 
-#define LM_COMPONENT_REGISTER_IMPL(ImplType) \
-	namespace { \
-		template <typename T> \
-		class ImplEntry_Init; \
-		template <> \
-        class ImplEntry_Init<ImplType> { static const ImplEntry<ImplType>& reg; }; \
-        const ImplEntry<ImplType>& ImplEntry_Init<ImplType>::reg = ImplEntry<ImplType>::Instance(); \
-	}
+#if LM_INTELLISENSE
+    #define LM_COMPONENT_REGISTER_IMPL(ImplType)
+#else
+    #define LM_COMPONENT_REGISTER_IMPL(ImplType) \
+	    namespace { \
+		    template <typename T> \
+		    class ImplEntry_Init; \
+		    template <> \
+            class ImplEntry_Init<ImplType> { static const ImplEntry<ImplType>& reg; }; \
+            const ImplEntry<ImplType>& ImplEntry_Init<ImplType>::reg = ImplEntry<ImplType>::Instance(); \
+	    }
+#endif
 
 #pragma endregion
 
