@@ -34,26 +34,26 @@ LM_TEST_NAMESPACE_BEGIN
 
 struct A : public Component
 {
-    LM_INTERFACE_CLASS(A, Component, 3);
-    LM_INTERFACE_F(0, Func1, void(int));
-    LM_INTERFACE_F(1, Func2, int(int, int));
-    LM_INTERFACE_F(2, Func3, void());
+    LM_INTERFACE_CLASS(A, Component);
+    LM_INTERFACE_F(Func1, void(int));
+    LM_INTERFACE_F(Func2, int(int, int));
+    LM_INTERFACE_F(Func3, void());
 };
 
 struct B : public A
 {
-    LM_INTERFACE_CLASS(B, A, 1);
-    LM_INTERFACE_F(0, Func4, void());
+    LM_INTERFACE_CLASS(B, A);
+    LM_INTERFACE_F(Func4, void());
 };
 
 struct C : public Component
 {
-    LM_INTERFACE_CLASS(C, Component, 6);
-    LM_INTERFACE_F(0, Func1, void(const int*, int n));
-    LM_INTERFACE_F(1, Func2, void(std::vector<int>));
-    LM_INTERFACE_F(2, Func3, void(int&));
-    LM_INTERFACE_F(3, Func4, void(const int&));
-    LM_INTERFACE_F(4, Func5, void(const std::string&));
+    LM_INTERFACE_CLASS(C, Component);
+    LM_INTERFACE_F(Func1, void(const int*, int n));
+    LM_INTERFACE_F(Func2, void(std::vector<int>));
+    LM_INTERFACE_F(Func3, void(int&));
+    LM_INTERFACE_F(Func4, void(const int&));
+    LM_INTERFACE_F(Func5, void(const std::string&));
 };
 
 #pragma endregion

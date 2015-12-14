@@ -35,7 +35,7 @@ class RenderJob : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(RenderJob, Component, 2);
+    LM_INTERFACE_CLASS(RenderJob, Component);
 
 public:
 
@@ -44,8 +44,8 @@ public:
 
 public:
 
-    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
-    LM_INTERFACE_F(1, Render, void(const Scene*));
+    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
+    LM_INTERFACE_F(Render, void(const Scene*));
 
 };
 

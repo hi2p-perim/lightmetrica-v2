@@ -46,7 +46,7 @@ class PropertyNode : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(PropertyNode, Component, 5);
+    LM_INTERFACE_CLASS(PropertyNode, Component);
 
 public:
 
@@ -54,35 +54,35 @@ public:
     LM_DISABLE_COPY_AND_MOVE(PropertyNode);
 
 public:
-    
+
     /*!
         Type of the node.
     */
-    LM_INTERFACE_F(0, Type, PropertyNodeType());
+    LM_INTERFACE_F(Type, PropertyNodeType());
 
     /*!
         Key of the node.
         Only available for `Map` type.
     */
-    LM_INTERFACE_F(1, Key, std::string());
+    LM_INTERFACE_F(Key, std::string());
 
     /*!
         Scalar value of the node.
         Only available for `Scalar` type.
     */
-    LM_INTERFACE_F(2, Scalar, std::string());
+    LM_INTERFACE_F(Scalar, std::string());
 
     /*!
         Find a child by name.
         Only available for `Map` type.
     */
-    LM_INTERFACE_F(3, Child, const PropertyNode*(const std::string&));
+    LM_INTERFACE_F(Child, const PropertyNode*(const std::string&));
 
     /*!
         Get a child by index.
         Only available for `Sequence` type.
     */
-    LM_INTERFACE_F(4, At, const PropertyNode*(int));
+    LM_INTERFACE_F(At, const PropertyNode*(int));
 
 public:
 
@@ -104,7 +104,7 @@ class PropertyTree : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(PropertyTree, Component, 2);
+    LM_INTERFACE_CLASS(PropertyTree, Component);
 
 public:
 
@@ -116,12 +116,12 @@ public:
     /*!
         Load property from YAML sequences.
     */
-    LM_INTERFACE_F(0, LoadFromString, bool(const std::string&));
+    LM_INTERFACE_F(LoadFromString, bool(const std::string&));
 
     /*!
         Get root node.
     */
-    LM_INTERFACE_F(1, Root, const PropertyNode*());
+    LM_INTERFACE_F(Root, const PropertyNode*());
 
 };
 

@@ -22,36 +22,29 @@
     THE SOFTWARE.
 */
 
-#pragma once
+#include <pch_test.h>
+#include <lightmetrica/metacounter.h>
+#include <lightmetrica-test/utils.h>
 
-#include <lightmetrica/component.h>
-#include <lightmetrica/property.h>
-#include <lightmetrica/assets.h>
+LM_TEST_NAMESPACE_BEGIN
 
-LM_NAMESPACE_BEGIN
-
-/*!
-    Asset.
-
-    The base class of the asset classes.
-    The `asset` is an important concept in the framework.
-    All user-defined resources such as triangle meshes or BSDFs must inherits this class.
-    The construction of assets are fully automated with asset management class (`Assets` class),
-    which make it possible to extend your own assets consistently.
-    For the design of the asset management in Lightmetrica, see <TODO>.
-*/
-class Asset : public Component
+TEST(MetaCounterTest, Simple)
 {
-private:
+    using C1 = MetaCounter<class Counter1>;
+    using C2 = MetaCounter<class Counter2>;
 
-    LM_INTERFACE_CLASS(Asset, Component);
+    C1::Next();
+    C1::Next();
+    C1::Next();
 
-public:
+    C2::Next();
+    C2::Next();
 
-    LM_INTERFACE_BEGIN();
-    LM_INTERFACE_F(Load, void(const PropertyNode&, const Assets& assets));
-    LM_INTERFACE_END();
+    static_assert(C1::Value() == 3, "C1::Value () == 3");
+    static_assert(C2::Value() == 2, "C2::Value () == 2");
 
-};
+    EXPECT_EQ(3, C1::Value());
+    EXPECT_EQ(2, C2::Value());
+}
 
-LM_NAMESPACE_END
+LM_TEST_NAMESPACE_END

@@ -34,7 +34,7 @@ class Scene : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene, Component, 1);
+    LM_INTERFACE_CLASS(Scene, Component);
 
 public:
 
@@ -43,7 +43,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
+    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
 
 };
 

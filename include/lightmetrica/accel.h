@@ -32,7 +32,7 @@ class Accel : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Accel, Component, 1);
+    LM_INTERFACE_CLASS(Accel, Component);
 
 public:
 
@@ -41,7 +41,6 @@ public:
 
 public:
 
-    
 
 };
 

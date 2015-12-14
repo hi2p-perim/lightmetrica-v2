@@ -37,7 +37,7 @@ class Assets : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Assets, Component, 1);
+    LM_INTERFACE_CLASS(Assets, Component);
 
 public:
 
@@ -46,7 +46,6 @@ public:
 
 public:
 
-    
 
 };
 

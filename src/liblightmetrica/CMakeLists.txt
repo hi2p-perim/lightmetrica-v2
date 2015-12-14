@@ -67,6 +67,7 @@ set(
 	"${_INCLUDE_DIR}/statictest.h"
 	"${_INCLUDE_DIR}/exception.h"
 	"${_INCLUDE_DIR}/property.h"
+	"${_INCLUDE_DIR}/metacounter.h"
 )
 set(
     _CORE_SOURCE_FILES

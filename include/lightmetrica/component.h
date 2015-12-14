@@ -29,6 +29,7 @@
 #include <lightmetrica/reflection.h>
 #include <lightmetrica/static.h>
 #include <lightmetrica/logger.h>
+#include <lightmetrica/metacounter.h>
 
 #include <functional>
 #include <type_traits>
@@ -100,16 +101,15 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
 };
 
 // Define interface class
-#define LM_INTERFACE_CLASS(Current, Base, Num) \
+#define LM_INTERFACE_CLASS(Current, Base) \
         LM_DEFINE_CLASS_TYPE(Current, Base); \
         using BaseType = Base; \
         using InterfaceType = Current; \
-        using UniquePointerType = std::unique_ptr<InterfaceType, void(*)(Component*)>; \
-        static constexpr int NumFuncs = BaseType::NumFuncs + Num
+        using UniquePointerType = std::unique_ptr<InterfaceType, void(*)(Component*)>
 
 // Define interface member function
-#define LM_INTERFACE_F(Index, Name, Signature) \
-        static constexpr int Name ## _ID_ = BaseType::NumFuncs + Index; \
+#define LM_INTERFACE_F(Name, Signature) \
+        static constexpr int Name ## _ID_ = MetaCounter<BaseType>::Value() + MetaCounter<InterfaceType>::Next() - 1; \
         const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this)
 
 #pragma endregion
