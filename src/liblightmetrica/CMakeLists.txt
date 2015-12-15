@@ -68,6 +68,7 @@ set(
 	"${_INCLUDE_DIR}/exception.h"
 	"${_INCLUDE_DIR}/property.h"
 	"${_INCLUDE_DIR}/metacounter.h"
+	"${_INCLUDE_DIR}/stringtemplate.h"
 )
 set(
     _CORE_SOURCE_FILES
@@ -77,6 +78,7 @@ set(
 	"statictest.cpp"
 	"exception.cpp"
 	"property.cpp"
+	"stringtemplate.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core" FILES ${_CORE_HEADER_FILES})
@@ -158,7 +160,7 @@ list(APPEND _SOURCE_FILES ${_RENDERER_SOURCE_FILES})
 #
 
 pch_add_library(${_PROJECT_NAME} SHARED PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES})
+target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${CTEMPLATE_LIBRARIES})
 
 # Proprocessor definition for exporting symbols
 set_target_properties(${_PROJECT_NAME} PROPERTIES COMPILE_DEFINITIONS "LM_EXPORTS")

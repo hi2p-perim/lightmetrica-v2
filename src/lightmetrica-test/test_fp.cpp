@@ -27,6 +27,11 @@
 #include <lightmetrica/fp.h>
 #include <lightmetrica-test/utils.h>
 
+#if LM_PLATFORM_WINDOWS
+#pragma warning(push)
+#pragma warning(disable:4723)   // C4723: potential divide by 0
+#endif
+
 LM_TEST_NAMESPACE_BEGIN
 
 TEST(FPTest, SupportedExceptions)
@@ -184,3 +189,7 @@ TEST(FPTest, DisabledBehavior)
 }
 
 LM_TEST_NAMESPACE_END
+
+#if LM_PLATFORM_WINDOWS
+#pragma warning(pop)
+#endif

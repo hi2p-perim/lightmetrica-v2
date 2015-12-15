@@ -58,7 +58,7 @@ if (WIN32)
 
 	find_library(
 		CTEMPLATE_LIBRARY_DEBUG
-		NAMES libctemplated
+		NAMES libctemplate-debug
 		PATHS
 			$ENV{PROGRAMFILES}/lib
 			${CTEMPLATE_ROOT_DIR}/lib)
