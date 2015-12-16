@@ -47,56 +47,54 @@ public:
 
 private:
     
-    //auto Initialize(const PropertyNode* prop) -> bool
-    //{
-    //    return false;
+    auto Initialize(const PropertyNode* prop) -> bool
+    {
+        // Create instances
+        assets_ = ComponentFactory::Create<Assets>();
 
-    //    //// Create instances
-    //    //assets_ = ComponentFactory::Create<Assets>();
+        // --------------------------------------------------------------------------------
 
-    //    //// --------------------------------------------------------------------------------
+        #pragma region Load primitives
+        
+        {
+            // `scene` node
+            // TODO: Add error check (with detailed and human-readable error message)
+            const auto* scenePropNode = prop->Child("scene");
 
-    //    //#pragma region Load primitives
-    //    //
-    //    //{
-    //    //    // `scene` node
-    //    //    // TODO: Add error check (with detailed and human-readable error message)
-    //    //    const auto* scenePropNode = prop->Child("scene");
+            // Traverse scene nodes and create primitives
+            const auto Traverse = [this](const PropertyNode* propNode) -> void
+            {
+                // ID
+                std::string id;
+                {
+                    const auto* idNode = propNode->Child("id");
+                    if (idNode)
+                    {
+                        id = idNode->As<std::string>();
+                    }
+                }
 
-    //    //    // Traverse scene nodes and create primitives
-    //    //    const auto Traverse = [this](const PropertyNode* propNode) -> void
-    //    //    {
-    //    //        // ID
-    //    //        std::string id;
-    //    //        {
-    //    //            const auto* idNode = propNode->Child("id");
-    //    //            if (idNode)
-    //    //            {
-    //    //                id = idNode->As<std::string>();
-    //    //            }
-    //    //        }
+                // Transform
+                
 
-    //    //        // Transform
-    //    //        
+                // Child nodes
+                const auto* childNode = propNode->Child("child");
+                if (childNode)
+                {
+                    
+                }
+            };
 
-    //    //        // Child nodes
-    //    //        const auto* childNode = propNode->Child("child");
-    //    //        if (childNode)
-    //    //        {
-    //    //            
-    //    //        }
-    //    //    };
+            const auto* rootPropNode = scenePropNode->Child("nodes");
+            Traverse(rootPropNode);
+        }
 
-    //    //    const auto* rootPropNode = scenePropNode->Child("nodes");
-    //    //    Traverse(rootPropNode);
-    //    //}
+        #pragma endregion
 
-    //    //#pragma endregion
+        // --------------------------------------------------------------------------------
 
-    //    //// --------------------------------------------------------------------------------
-
-    //    //return true;
-    //};
+        return true;
+    };
 
 private:
 

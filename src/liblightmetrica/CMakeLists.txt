@@ -40,11 +40,9 @@ set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica")
 
 set(
     _HEADER_FILES
-    "${_INCLUDE_DIR}/scene.h"
 )
 set(
     _SOURCE_FILES
-	"scene.cpp"
 )
 
 # --------------------------------------------------------------------------------
@@ -125,6 +123,7 @@ set(
 
 set(
     _SCENE_SOURCE_FILES
+	"scene.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\scene" FILES ${_SCENE_HEADER_FILES})

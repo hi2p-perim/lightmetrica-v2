@@ -29,45 +29,6 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
-namespace
-{
-    const auto Scalar_Input = TestUtils::MultiLineLiteral(R"x(
-    | a
-    )x");
-
-    const auto Map_Input = TestUtils::MultiLineLiteral(R"x(
-    | A: a
-    | B: b
-    )x");
-
-    const auto Sequence_Input = TestUtils::MultiLineLiteral(R"x(
-    | - a
-    | - b
-    )x");
-
-    const auto Tree_Input = TestUtils::MultiLineLiteral(R"x(
-    | A:
-    |   - A1
-    |   - A2
-    | B:
-    |   - B1
-    |   - B2
-    )x");
-
-    const auto Tree_Input_2 = TestUtils::MultiLineLiteral(R"x(
-    | A: [1, 2, 3, 4]
-    | B: >
-    |   1 2
-    |   3 4
-    )x");
-
-    const auto TypeConversion_Input = TestUtils::MultiLineLiteral(R"x(
-    | - hello
-    | - 1
-    | - 1.1
-    )x");
-}
-
 class PropertyTest : public ::testing::Test
 {
 public:
@@ -77,6 +38,10 @@ public:
 
 TEST_F(PropertyTest, Scalar)
 {
+    const auto Scalar_Input = TestUtils::MultiLineLiteral(R"x(
+    | a
+    )x");
+
     auto p = std::move(ComponentFactory::Create<PropertyTree>());
 
     ASSERT_TRUE(p->LoadFromString(Scalar_Input));
@@ -89,6 +54,11 @@ TEST_F(PropertyTest, Scalar)
 
 TEST_F(PropertyTest, Map)
 {
+    const auto Map_Input = TestUtils::MultiLineLiteral(R"x(
+    | A: a
+    | B: b
+    )x");
+
     auto p = std::move(ComponentFactory::Create<PropertyTree>());
 
     ASSERT_TRUE(p->LoadFromString(Map_Input));
@@ -112,6 +82,11 @@ TEST_F(PropertyTest, Map)
 
 TEST_F(PropertyTest, Sequence)
 {
+    const auto Sequence_Input = TestUtils::MultiLineLiteral(R"x(
+    | - a
+    | - b
+    )x");
+
     auto p = std::move(ComponentFactory::Create<PropertyTree>());
 
     ASSERT_TRUE(p->LoadFromString(Sequence_Input));
@@ -131,6 +106,15 @@ TEST_F(PropertyTest, Sequence)
 
 TEST_F(PropertyTest, Tree)
 {
+    const auto Tree_Input = TestUtils::MultiLineLiteral(R"x(
+    | A:
+    |   - A1
+    |   - A2
+    | B:
+    |   - B1
+    |   - B2
+    )x");
+
     auto p = std::move(ComponentFactory::Create<PropertyTree>());
 
     ASSERT_TRUE(p->LoadFromString(Tree_Input));
@@ -144,6 +128,13 @@ TEST_F(PropertyTest, Tree)
 
 TEST_F(PropertyTest, Tree_2)
 {
+    const auto Tree_Input_2 = TestUtils::MultiLineLiteral(R"x(
+    | A: [1, 2, 3, 4]
+    | B: >
+    |   1 2
+    |   3 4
+    )x");
+
     auto p = std::move(ComponentFactory::Create<PropertyTree>());
 
     ASSERT_TRUE(p->LoadFromString(Tree_Input_2));
@@ -159,6 +150,12 @@ TEST_F(PropertyTest, Tree_2)
 
 TEST_F(PropertyTest, TypeConversion)
 {
+    const auto TypeConversion_Input = TestUtils::MultiLineLiteral(R"x(
+    | - hello
+    | - 1
+    | - 1.1
+    )x");
+
     auto p = std::move(ComponentFactory::Create<PropertyTree>());
 
     ASSERT_TRUE(p->LoadFromString(TypeConversion_Input));

@@ -80,6 +80,16 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 
+set(
+	_SCENE_SOURCE_FILES
+	"test_scene.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\scene" FILES ${_SCENE_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_SCENE_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
 #
 # Create an executable
 #
