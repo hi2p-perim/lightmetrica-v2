@@ -23,7 +23,9 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/stringtemplate.h>
+#include <lightmetrica-internal/stringtemplate.h>
+#include <lightmetrica/logger.h>
+
 #if LM_PLATFORM_WINDOWS
 #pragma warning(push)
 #pragma warning(disable:4267)
@@ -33,4 +35,30 @@
 #pragma warning(pop)
 #endif
 
+LM_NAMESPACE_BEGIN
 
+auto StringTemplate::Expand(const std::string& input, const std::unordered_map<std::string, std::string>& dict) -> std::string
+{
+    namespace ct = ctemplate;
+
+    // Convert to ctemplate's dict type
+    ct::TemplateDictionary ctdict("dict");
+    for (const auto& kv : dict)
+    {
+        ctdict[kv.first] = kv.second;
+    }
+
+    // Expand template
+    std::string output;
+    auto* tpl = ct::Template::StringToTemplate(input, ct::DO_NOT_STRIP);
+    if (!tpl->Expand(&output, &ctdict))
+    {
+        // TODO: Human-readable error message
+        LM_LOG_ERROR("Failed to expand template");
+        return "";
+    }
+
+    return output;
+}
+
+LM_NAMESPACE_END

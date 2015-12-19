@@ -24,12 +24,40 @@
 
 #pragma once
 
-#pragma once
-
-#include <lightmetrica/component.h>
+#include <lightmetrica/macros.h>
+#include <string>
+#include <unordered_map>
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    String template.
+   
+    Implements string template supports.
+    This feature offers advanced control on the scene configuration file.
+    The language syntax is based on the `ctemplate` library:
+    https://github.com/olafvdspek/ctemplate
+    
+    Although we leave the detailed explanation to the documentation of the ctemplate library,
+    for convenience we briefly describe the usage of the template language.
+    
+    TODO.
 
+    TODO. Create `internal` group in doxygen.
+*/
+class StringTemplate
+{
+public:
+
+    LM_DISABLE_CONSTRUCT(StringTemplate);
+
+public:
+
+    /*!
+        Expand template.
+    */
+    LM_PUBLIC_API static auto Expand(const std::string& input, const std::unordered_map<std::string, std::string>& dict) -> std::string;
+
+};
 
 LM_NAMESPACE_END

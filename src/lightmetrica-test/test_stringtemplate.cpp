@@ -22,6 +22,34 @@
     THE SOFTWARE.
 */
 
-#pragma once
+#include <pch_test.h>
+#include <lightmetrica-internal/stringtemplate.h>
+#include <lightmetrica/logger.h>
 
+LM_TEST_NAMESPACE_BEGIN
 
+class StringTemplateTest : public ::testing::Test
+{
+public:
+    virtual void SetUp() override { Logger::Run(); }
+    virtual void TearDown() override { Logger::Stop(); }
+};
+
+// Expand a string
+TEST_F(StringTemplateTest, Expand)
+{
+    EXPECT_EQ("Hello World", StringTemplate::Expand("{{a}} {{b}}",
+        {
+            {"a", "Hello"},
+            {"b", "World"}
+        }));
+}
+
+// Failed to expand
+TEST_F(StringTemplateTest, Expand_Fail)
+{
+    EXPECT_EQ("", StringTemplate::Expand("{{a}}", {{"b", "Hello"}}));
+    EXPECT_EQ("", StringTemplate::Expand("{{a}}", {}));
+}
+
+LM_TEST_NAMESPACE_END

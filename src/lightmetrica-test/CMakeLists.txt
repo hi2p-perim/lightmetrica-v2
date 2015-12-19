@@ -72,6 +72,8 @@ set(
 	"test_property.cpp"
 	"test_assets.cpp"
 	"test_metacounter.cpp"
+
+	# Internal
 	"test_stringtemplate.cpp"
 )
 
@@ -95,7 +97,7 @@ list(APPEND _SOURCE_FILES ${_SCENE_SOURCE_FILES})
 #
 
 pch_add_executable(${_PROJECT_NAME} PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-#target_link_libraries(${_PROJECT_NAME} liblightmetrica)
+target_link_libraries(${_PROJECT_NAME} liblightmetrica)
 add_dependencies(${_PROJECT_NAME} liblightmetrica)
 
 # Solution directory
