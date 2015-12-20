@@ -62,7 +62,7 @@ struct C : public Component
 
 #pragma region Implementation
 
-struct A1 : public A
+struct A1 final : public A
 {
     LM_IMPL_CLASS(A1, A);
 
@@ -86,7 +86,7 @@ LM_COMPONENT_REGISTER_IMPL(A1);
 
 // --------------------------------------------------------------------------------
 
-struct B1 : public B
+struct B1 final : public B
 {
     LM_IMPL_CLASS(B1, B);
 
@@ -115,7 +115,7 @@ LM_COMPONENT_REGISTER_IMPL(B1);
 
 // --------------------------------------------------------------------------------
 
-struct C1 : public C
+struct C1 final : public C
 {
     LM_IMPL_CLASS(C1, C);
 

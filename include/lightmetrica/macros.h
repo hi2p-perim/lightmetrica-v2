@@ -24,11 +24,21 @@
 
 #pragma once
 
+// --------------------------------------------------------------------------------
+
+#pragma region Debug mode flag
+
 #ifndef NDEBUG
 	#define LM_DEBUG_MODE 1
 #else
 	#define LM_DEBUG_MODE 0
 #endif
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Platform and compiler flag
 
 #ifdef _WIN32
 	#define LM_PLATFORM_WINDOWS 1
@@ -77,6 +87,12 @@
 	#define LM_COMPILER_CLANG 0
 #endif
 
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Disable some warnings
+
 #if LM_PLATFORM_WINDOWS
 	#define NOMINMAX
 	#define WIN32_LEAN_AND_MEAN
@@ -95,14 +111,17 @@
     #pragma warning(disable:4189)   // Level 4. local variable is initialized but not referenced
 #endif
 
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+                                  
+#pragma region Dynamic library import and export
+
 #if LM_COMPILER_MSVC
 	#ifdef LM_EXPORTS
 		#define LM_PUBLIC_API __declspec(dllexport)
 	#else
-        // In this framework implicit DLL loading is avoided because of portability.
-        // All DLL loading is done with explicit dll loading functions
-		#define LM_PUBLIC_API
-        //#define LM_PUBLIC_API __declspec(dllimport)
+		#define LM_PUBLIC_API __declspec(dllimport)
 	#endif
 	#define LM_HIDDEN_API
 #elif LM_COMPILER_GCC
@@ -117,6 +136,26 @@
 	#define LM_PUBLIC_API
 	#define LM_HIDDEN_API
 #endif
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Alignment
+
+#if LM_COMPILER_MSVC
+	#define LM_ALIGN(x) __declspec(align(x))
+#elif LM_COMPILER_GCC
+	#define LM_ALIGN(x) __attribute__((aligned(x)))
+#endif
+#define LM_ALIGN_16 LM_ALIGN(16)
+#define LM_ALIGN_32 LM_ALIGN(32)
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Useful macros
 
 #define LM_TOKENPASTE(x, y) x ## y
 #define LM_TOKENPASTE2(x, y) LM_TOKENPASTE(x, y)
@@ -163,5 +202,14 @@
     TypeName() = delete; \
     LM_DISABLE_COPY_AND_MOVE(TypeName)
 
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Framework namespace
+
 #define LM_NAMESPACE_BEGIN namespace lightmetrica_v2 {
 #define LM_NAMESPACE_END }
+
+#pragma endregion
+

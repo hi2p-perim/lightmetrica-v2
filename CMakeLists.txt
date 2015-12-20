@@ -165,6 +165,10 @@ if (MSVC)
     string(REPLACE "." "" _VERSION ${_VERSION})
     string(REGEX REPLACE "([0-9])" "0\\1" _VERSION ${_VERSION})
     add_definitions(-D_WIN32_WINNT=0x${_VERSION})
+
+	# SIMD support
+	# TODO: Make it configurable
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
 endif()
 
 # GCC

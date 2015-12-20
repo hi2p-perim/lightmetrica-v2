@@ -32,7 +32,7 @@
 
 LM_NAMESPACE_BEGIN
 
-class Scene_ : public Scene
+class Scene_ final : public Scene
 {
 public:
 

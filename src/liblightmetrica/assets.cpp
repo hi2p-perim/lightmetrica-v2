@@ -27,7 +27,7 @@
 
 LM_NAMESPACE_BEGIN
 
-class Assets_ : public Assets
+class Assets_ final : public Assets
 {
 public:
 

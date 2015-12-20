@@ -51,6 +51,10 @@ set(
 
 # --------------------------------------------------------------------------------
 
+#
+# Libraries
+#
+
 set(
     _LIB_SOURCE_FILES
 	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc"
@@ -61,12 +65,15 @@ list(APPEND _SOURCE_FILES ${_LIB_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 
+#
+# Core
+#
+
 set(
     _CORE_SOURCE_FILES
 	"test_component.cpp"
 	"test_reflection.cpp"
 	"test_logger.cpp"
-	"test_math.cpp"
 	"test_fp.cpp"
 	"test_static.cpp"
 	"test_property.cpp"
@@ -82,6 +89,10 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 
+#
+# Scene
+#
+
 set(
 	_SCENE_SOURCE_FILES
 	"test_scene.cpp"
@@ -89,6 +100,20 @@ set(
 
 source_group("${_SOURCE_FILES_ROOT}\\scene" FILES ${_SCENE_SOURCE_FILES})
 list(APPEND _SOURCE_FILES ${_SCENE_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Math
+#
+
+set(
+	_MATH_SOURCE_FILES
+	"test_math.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\math" FILES ${_MATH_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_MATH_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 

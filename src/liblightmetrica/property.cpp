@@ -31,7 +31,7 @@ LM_NAMESPACE_BEGIN
 
 class PropertyTree_;
 
-class PropertyNode_ : public PropertyNode
+class PropertyNode_ final : public PropertyNode
 {
     friend class PropertyTree_;
 
@@ -77,7 +77,7 @@ LM_COMPONENT_REGISTER_IMPL(PropertyNode_);
 
 // --------------------------------------------------------------------------------
 
-class PropertyTree_ : public PropertyTree
+class PropertyTree_ final : public PropertyTree
 {
 public:
 

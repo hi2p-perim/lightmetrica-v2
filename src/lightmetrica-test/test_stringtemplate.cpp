@@ -28,11 +28,10 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
-class StringTemplateTest : public ::testing::Test
+struct StringTemplateTest : public ::testing::Test
 {
-public:
-    virtual void SetUp() override { Logger::Run(); }
-    virtual void TearDown() override { Logger::Stop(); }
+    virtual auto SetUp() -> void override { Logger::Run(); }
+    virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
 // Expand a string

@@ -58,7 +58,6 @@ set(
     "${_INCLUDE_DIR}/macros.h"
     "${_INCLUDE_DIR}/component.h"
 	"${_INCLUDE_DIR}/portable.h"
-    "${_INCLUDE_DIR}/math.h"
     "${_INCLUDE_DIR}/version.h"
     "${_INCLUDE_DIR}/reflection.h"
 	"${_INCLUDE_DIR}/logger.h"
@@ -86,6 +85,20 @@ source_group("${_HEADER_FILES_ROOT}\\core" FILES ${_CORE_HEADER_FILES})
 source_group("${_SOURCE_FILES_ROOT}\\core" FILES ${_CORE_SOURCE_FILES})
 list(APPEND _HEADER_FILES ${_CORE_HEADER_FILES})
 list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Math
+#
+
+set(
+    _MATH_HEADER_FILES
+    "${_INCLUDE_DIR}/math.h"
+)
+
+source_group("${_HEADER_FILES_ROOT}\\math" FILES ${_MATH_HEADER_FILES})
+list(APPEND _HEADER_FILES ${_MATH_HEADER_FILES})
 
 # --------------------------------------------------------------------------------
 

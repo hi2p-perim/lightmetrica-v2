@@ -29,11 +29,10 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
-class PropertyTest : public ::testing::Test
+struct PropertyTest : public ::testing::Test
 {
-public:
-    virtual void SetUp() override { Logger::Run(); }
-    virtual void TearDown() override { Logger::Stop(); }
+    virtual auto SetUp() -> void override { Logger::Run(); }
+    virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
 TEST_F(PropertyTest, Scalar)
