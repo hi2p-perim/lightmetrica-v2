@@ -63,7 +63,7 @@ struct MathTestUtils<
     >
 >
 {
-    static auto ExpectNear(const T& expected, const T& actual, const T& epsilon) -> ::testing::AssertionResult
+    static auto ExpectNear(const T& expected, const T& actual, const T& epsilon = std::numeric_limits<T>::epsilon()) -> ::testing::AssertionResult
     {
         const auto diff = std::abs<T>(expected - actual);
         if (diff > epsilon)
@@ -82,7 +82,8 @@ struct MathTestUtils<
 template <unsigned int Digits>
 struct MathTestUtils<BigFloat<Digits>>
 {
-    static auto ExpectNear(const BigFloat<Digits>& expected, const BigFloat<Digits>& actual, const BigFloat<Digits>& epsilon) -> ::testing::AssertionResult
+    using VT = BigFloat<Digits>;
+    static auto ExpectNear(const VT& expected, const VT& actual, const VT& epsilon = std::numeric_limits<VT>::epsilon()) -> ::testing::AssertionResult
     {
         const auto diff = boost::multiprecision::abs(expected - actual);
         if (diff > epsilon)
@@ -102,33 +103,38 @@ struct MathTestUtils<BigFloat<Digits>>
 
 // --------------------------------------------------------------------------------
 
-#pragma region Vector type
+#pragma region Tests for vector types (Vec2, Vec3, Vec4)
 
 template <typename T_, SIMD Opt_>
-struct VecTypeParam
+struct VecTParam
 {
     using T = typename T_;
     static constexpr SIMD Opt = Opt_;
 };
 
+using VecTestTypes = ::testing::Types<
+    VecTParam<float, SIMD::None>,
+    VecTParam<float, SIMD::SSE>,
+    VecTParam<double, SIMD::AVX>,
+    VecTParam<double, SIMD::None>,
+    VecTParam<BigFloat50, SIMD::None>,
+    VecTParam<BigFloat100, SIMD::None>
+>;
+
+// --------------------------------------------------------------------------------
+
+#pragma region Vec3
+
 template <typename T>
 struct Vec3Test : public ::testing::Test {};
-
-using VecTestTypes = ::testing::Types<
-    VecTypeParam<float, SIMD::None>,
-    VecTypeParam<float, SIMD::SSE>,
-    VecTypeParam<double, SIMD::AVX>,
-    VecTypeParam<double, SIMD::None>,
-    VecTypeParam<BigFloat50, SIMD::None>,
-    VecTypeParam<BigFloat100, SIMD::None>
->;
 
 TYPED_TEST_CASE(Vec3Test, VecTestTypes);
 
 TYPED_TEST(Vec3Test, DefaultConstructor)
 {
-    using T = TypeParam;
-    TVec3<T::T, T::Opt> v;
+    using T = TypeParam::T;
+    using VecT = TVec3<T, TypeParam::Opt>;
+    VecT v;
     EXPECT_EQ(0, v.x);
     EXPECT_EQ(0, v.y);
     EXPECT_EQ(0, v.z);
@@ -137,11 +143,179 @@ TYPED_TEST(Vec3Test, DefaultConstructor)
 TYPED_TEST(Vec3Test, Constructor)
 {
     using T = TypeParam::T;
-    const auto eps = std::numeric_limits<T>::epsilon();
-    TVec3<T, TypeParam::Opt> v(T(1), T(2), T(3));
-    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(1), v.x, eps));
-    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(2), v.y, eps));
-    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(3), v.z, eps));
+    using VecT = TVec3<T, TypeParam::Opt>;
+    VecT v(T(1), T(2), T(3));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(1), v.x));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(2), v.y));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(3), v.z));
+}
+
+TYPED_TEST(Vec3Test, Accessor1)
+{
+    using T = TypeParam::T;
+    using VecT = TVec3<T, TypeParam::Opt>;
+    VecT v(T(1), T(2), T(3));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(1), v[0]));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(2), v[1]));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(3), v[2]));
+}
+
+TYPED_TEST(Vec3Test, Accessor2)
+{
+    using T = TypeParam::T;
+    using VecT = TVec3<T, TypeParam::Opt>;
+    VecT v;
+    v[0] = 1;
+    v[1] = 2;
+    v[2] = 3;
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(1), v.x));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(2), v.y));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(3), v.z));
+}
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Vec4
+
+template <typename T>
+struct Vec4Test : public ::testing::Test {};
+
+TYPED_TEST_CASE(Vec4Test, VecTestTypes);
+
+TYPED_TEST(Vec4Test, DefaultConstructor)
+{
+    using T = TypeParam::T;
+    using VecT = TVec4<T, TypeParam::Opt>;
+    VecT v;
+    EXPECT_EQ(0, v.x);
+    EXPECT_EQ(0, v.y);
+    EXPECT_EQ(0, v.z);
+    EXPECT_EQ(0, v.w);
+}
+
+TYPED_TEST(Vec4Test, Constructor)
+{
+    using T = TypeParam::T;
+    using VecT = TVec4<T, TypeParam::Opt>;
+    VecT v(T(1), T(2), T(3), T(4));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(1), v.x));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(2), v.y));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(3), v.z));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(4), v.w));
+}
+
+TYPED_TEST(Vec4Test, Accessor1)
+{
+    using T = TypeParam::T;
+    using VecT = TVec4<T, TypeParam::Opt>;
+    VecT v(T(1), T(2), T(3), T(4));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(1), v[0]));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(2), v[1]));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(3), v[2]));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(4), v[3]));
+}
+
+TYPED_TEST(Vec4Test, Accessor2)
+{
+    using T = TypeParam::T;
+    using VecT = TVec4<T, TypeParam::Opt>;
+    VecT v;
+    v[0] = 1;
+    v[1] = 2;
+    v[2] = 3;
+    v[3] = 4;
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(1), v.x));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(2), v.y));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(3), v.z));
+    EXPECT_TRUE(MathTestUtils<T>::ExpectNear(T(4), v.w));
+}
+
+#pragma endregion
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Tests for vector operations
+
+template <typename T_, SIMD Opt_, template <typename, SIMD> class VecT_>
+struct VecOpParam
+{
+    using T = typename T_;
+    static constexpr SIMD Opt = Opt_;
+    using VecT = typename VecT_<T_, Opt_>;
+};
+
+template <typename T>
+struct VecOpTest : public ::testing::Test {};
+
+using VecOpTestTypes = ::testing::Types<
+    VecOpParam<float, SIMD::None, TVec3>,
+    VecOpParam<float, SIMD::SSE, TVec3>,
+    VecOpParam<double, SIMD::AVX, TVec3>,
+    VecOpParam<double, SIMD::None, TVec3>,
+    VecOpParam<BigFloat50, SIMD::None, TVec3>,
+    VecOpParam<BigFloat100, SIMD::None, TVec3>,
+    VecOpParam<float, SIMD::None, TVec4>,
+    VecOpParam<float, SIMD::SSE, TVec4>,
+    VecOpParam<double, SIMD::AVX, TVec4>,
+    VecOpParam<double, SIMD::None, TVec4>,
+    VecOpParam<BigFloat50, SIMD::None, TVec4>,
+    VecOpParam<BigFloat100, SIMD::None, TVec4>
+>;
+
+TYPED_TEST_CASE(VecOpTest, VecOpTestTypes);
+
+TYPED_TEST(VecOpTest, Add)
+{
+    using T = TypeParam::T;
+    using VecT = TypeParam::VecT;
+    constexpr int N = VecT::NumComponents;
+
+    T v1i[] = { T(1), T(2), T(3), T(4) };
+    T v2i[] = { T(4), T(3), T(2), T(1) };
+    T ans[] = { T(5), T(5), T(5), T(5) };
+
+    VecT v1;
+    VecT v2;
+    for (int i = 0; i < N; i++)
+    {
+        v1[i] = v1i[i];
+        v2[i] = v2i[i];
+    }
+
+    const auto result = v1 + v2;
+    for (int i = 0; i < N; i++)
+    {
+        EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], result[i]));
+    }
+}
+
+TYPED_TEST(VecOpTest, Subtract)
+{
+    using T = TypeParam::T;
+    using VecT = TypeParam::VecT;
+    constexpr int N = VecT::NumComponents;
+
+    T v1i[] = { T(1), T(2), T(3), T(4) };
+    T v2i[] = { T(4), T(3), T(2), T(1) };
+    T ans[] = { T(-3), T(-1), T(1), T(3) };
+
+    VecT v1;
+    VecT v2;
+    for (int i = 0; i < N; i++)
+    {
+        v1[i] = v1i[i];
+        v2[i] = v2i[i];
+    }
+
+    const auto result = v1 - v2;
+    for (int i = 0; i < N; i++)
+    {
+        EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], result[i]));
+    }
 }
 
 #pragma endregion
