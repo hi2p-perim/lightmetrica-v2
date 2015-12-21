@@ -272,7 +272,7 @@ TYPED_TEST(VecOpTest, Add)
 {
     using T = TypeParam::T;
     using VecT = TypeParam::VecT;
-    constexpr int N = VecT::NumComponents;
+    constexpr int N = VecT::NC;
 
     T v1i[] = { T(1), T(2), T(3), T(4) };
     T v2i[] = { T(4), T(3), T(2), T(1) };
@@ -297,7 +297,7 @@ TYPED_TEST(VecOpTest, Subtract)
 {
     using T = TypeParam::T;
     using VecT = TypeParam::VecT;
-    constexpr int N = VecT::NumComponents;
+    constexpr int N = VecT::NC;
 
     T v1i[] = { T(1), T(2), T(3), T(4) };
     T v2i[] = { T(4), T(3), T(2), T(1) };
@@ -315,6 +315,157 @@ TYPED_TEST(VecOpTest, Subtract)
     for (int i = 0; i < N; i++)
     {
         EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], result[i]));
+    }
+}
+
+TYPED_TEST(VecOpTest, Multiply)
+{
+    using T = TypeParam::T;
+    using VecT = TypeParam::VecT;
+    constexpr int N = VecT::NC;
+
+    T v1i[] = { T(1), T(2), T(3), T(4) };
+    T v2i[] = { T(4), T(3), T(2), T(1) };
+    T ans[] = { T(4), T(6), T(6), T(4) };
+
+    VecT v1;
+    VecT v2;
+    for (int i = 0; i < N; i++)
+    {
+        v1[i] = v1i[i];
+        v2[i] = v2i[i];
+    }
+
+    const auto result = v1 * v2;
+    for (int i = 0; i < N; i++)
+    {
+        EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], result[i]));
+    }
+}
+
+TYPED_TEST(VecOpTest, Divide)
+{
+    using T = TypeParam::T;
+    using VecT = TypeParam::VecT;
+    constexpr int N = VecT::NC;
+
+    T v1i[] = { T(12), T(12), T(12), T(12) };
+    T v2i[] = { T(2), T(3), T(4), T(6) };
+    T ans[] = { T(6), T(4), T(3), T(2) };
+
+    VecT v1;
+    VecT v2;
+    for (int i = 0; i < N; i++)
+    {
+        v1[i] = v1i[i];
+        v2[i] = v2i[i];
+    }
+
+    const auto result = v1 / v2;
+    for (int i = 0; i < N; i++)
+    {
+        EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], result[i]));
+    }
+}
+
+TYPED_TEST(VecOpTest, AddAssign)
+{
+    using T = TypeParam::T;
+    using VecT = TypeParam::VecT;
+    constexpr int N = VecT::NC;
+
+    T v1i[] = { T(1), T(2), T(3), T(4) };
+    T v2i[] = { T(4), T(3), T(2), T(1) };
+    T ans[] = { T(5), T(5), T(5), T(5) };
+
+    VecT v1;
+    VecT v2;
+    for (int i = 0; i < N; i++)
+    {
+        v1[i] = v1i[i];
+        v2[i] = v2i[i];
+    }
+
+    v1 += v2;
+    for (int i = 0; i < N; i++)
+    {
+        EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], v1[i]));
+    }
+}
+
+TYPED_TEST(VecOpTest, SubtractAssign)
+{
+    using T = TypeParam::T;
+    using VecT = TypeParam::VecT;
+    constexpr int N = VecT::NC;
+
+    T v1i[] = { T(1), T(2), T(3), T(4) };
+    T v2i[] = { T(4), T(3), T(2), T(1) };
+    T ans[] = { T(-3), T(-1), T(1), T(3) };
+
+    VecT v1;
+    VecT v2;
+    for (int i = 0; i < N; i++)
+    {
+        v1[i] = v1i[i];
+        v2[i] = v2i[i];
+    }
+
+    v1 -= v2;
+    const auto result = v1 - v2;
+    for (int i = 0; i < N; i++)
+    {
+        EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], v1[i]));
+    }
+}
+
+TYPED_TEST(VecOpTest, MultiplyAssign)
+{
+    using T = TypeParam::T;
+    using VecT = TypeParam::VecT;
+    constexpr int N = VecT::NC;
+
+    T v1i[] = { T(1), T(2), T(3), T(4) };
+    T v2i[] = { T(4), T(3), T(2), T(1) };
+    T ans[] = { T(4), T(6), T(6), T(4) };
+
+    VecT v1;
+    VecT v2;
+    for (int i = 0; i < N; i++)
+    {
+        v1[i] = v1i[i];
+        v2[i] = v2i[i];
+    }
+
+    v1 *= v2;
+    for (int i = 0; i < N; i++)
+    {
+        EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], v1[i]));
+    }
+}
+
+TYPED_TEST(VecOpTest, DivideAssign)
+{
+    using T = TypeParam::T;
+    using VecT = TypeParam::VecT;
+    constexpr int N = VecT::NC;
+
+    T v1i[] = { T(12), T(12), T(12), T(12) };
+    T v2i[] = { T(2), T(3), T(4), T(6) };
+    T ans[] = { T(6), T(4), T(3), T(2) };
+
+    VecT v1;
+    VecT v2;
+    for (int i = 0; i < N; i++)
+    {
+        v1[i] = v1i[i];
+        v2[i] = v2i[i];
+    }
+
+    v1 /= v2;
+    for (int i = 0; i < N; i++)
+    {
+        EXPECT_TRUE(MathTestUtils<T>::ExpectNear(ans[i], v1[i]));
     }
 }
 

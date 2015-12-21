@@ -141,6 +141,18 @@
 
 // --------------------------------------------------------------------------------
 
+#pragma region Force inline
+
+#if LM_COMPILER_MSVC
+	#define LM_INLINE __forceinline
+#elif LM_COMPILER_GCC
+	#define LM_INLINE inline __attribute__((always_inline))
+#endif
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
 #pragma region Alignment
 
 #if LM_COMPILER_MSVC
