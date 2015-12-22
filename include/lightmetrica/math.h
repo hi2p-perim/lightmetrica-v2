@@ -159,7 +159,7 @@ struct TVecBase
 
     // Parameter types
     using ParamT  = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
-    using RetType = ParamT;
+    using RetT = ParamT;
 
 };
 
@@ -198,7 +198,7 @@ struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
     LM_INLINE TVec3(const VecT& v)                      : x(v.x), y(v.y), z(v.z) {}
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetType { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT    { return (&x)[i]; }
     LM_INLINE auto operator=(const VecT& v)  -> VecT&   { x = v.x; y = v.y; z = v.z; return *this; }
     LM_INLINE auto operator+=(const VecT& v) -> VecT&   { x += v.x; y += v.y; z += v.z; return *this; }
     LM_INLINE auto operator-=(const VecT& v) -> VecT&   { x -= v.x; y -= v.y; z -= v.z; return *this; }
@@ -222,7 +222,7 @@ struct LM_ALIGN_16 TVec3<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE TVec3(SIMDT v)                            : v_(v) {}
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetType { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT    { return (&x)[i]; }
     LM_INLINE auto operator=(const VecT& v)  -> VecT&   { v_ = v.v_; return *this; }
     LM_INLINE auto operator+=(const VecT& v) -> VecT&   { v_ = _mm_add_ps(v_, v.v_); return *this; }
     LM_INLINE auto operator-=(const VecT& v) -> VecT&   { v_ = _mm_sub_ps(v_, v.v_); return *this; }
@@ -247,7 +247,7 @@ struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE TVec3(SIMDT v)                            : v_(v) {}
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetType { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT    { return (&x)[i]; }
     LM_INLINE auto operator=(const VecT& v)  -> VecT&   { v_ = v.v_; return *this; }
     LM_INLINE auto operator+=(const VecT& v) -> VecT&   { v_ = _mm256_add_pd(v_, v.v_); return *this; }
     LM_INLINE auto operator-=(const VecT& v) -> VecT&   { v_ = _mm256_sub_pd(v_, v.v_); return *this; }
@@ -285,7 +285,7 @@ struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
     LM_INLINE TVec4(const VecT& v)                          : x(v.x), y(v.y), z(v.z), w(v.w) {}
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetType     { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
     LM_INLINE auto operator=(const VecT& v)  -> VecT&       { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
     LM_INLINE auto operator+=(const VecT& v) -> VecT&       { x += v.x; y += v.y; z += v.z; w += v.w; return *this; }
     LM_INLINE auto operator-=(const VecT& v) -> VecT&       { x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this; }
@@ -310,7 +310,7 @@ struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetType     { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
     LM_INLINE auto operator=(const VecT& v)  -> VecT&       { v_ = v.v_; return *this; }
     LM_INLINE auto operator+=(const VecT& v) -> VecT&       { v_ = _mm_add_ps(v_, v.v_); return *this; }
     LM_INLINE auto operator-=(const VecT& v) -> VecT&       { v_ = _mm_sub_ps(v_, v.v_); return *this; }
@@ -335,7 +335,7 @@ struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetType     { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
     LM_INLINE auto operator=(const VecT& v)  -> VecT&       { v_ = v.v_; return *this; }
     LM_INLINE auto operator+=(const VecT& v) -> VecT&       { v_ = _mm256_add_pd(v_, v.v_); return *this; }
     LM_INLINE auto operator-=(const VecT& v) -> VecT&       { v_ = _mm256_sub_pd(v_, v.v_); return *this; }
@@ -495,6 +495,25 @@ LM_INLINE auto operator/(const VecTAVX<VecT>& v1, const VecTAVX<VecT>& v2) -> Ve
 
 #pragma region Base matrix type
 
+template <typename T, SIMD Opt, template <typename, SIMD> class MatT_, template <typename, SIMD> class VecT_, int NC_>
+struct TMatBase
+{
+    // Value type
+    using VT = T;
+
+    // Matrix type
+    using MatT = MatT_<T, Opt>;
+
+    // Column vector type
+    using VecT = VecT_<T, Opt>;
+
+    // Number of components
+    static constexpr int NC = NC_;
+
+    // Parameter types
+    using ParamT = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
+    using RetT = ParamT;
+};
 
 #pragma endregion
 
@@ -502,6 +521,47 @@ LM_INLINE auto operator/(const VecTAVX<VecT>& v1, const VecTAVX<VecT>& v2) -> Ve
 
 #pragma region Mat3
 
+/*!
+	3x3 matrix.
+
+	Generic column major 3x3 matrix. 
+	A matrix
+		v00 v01 v02
+		v10 v11 v12
+		v20 v21 v22
+	is stored sequentially as v00, v10, ..., v22.
+*/
+template <typename T, SIMD Opt = SIMD::None>
+struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
+{
+
+	VecT v_[NC];
+
+    LM_INLINE TMat3() {}
+    LM_INLINE TMat3(const MatT& m)
+    {
+        v_[0] = m.v_[0];
+        v_[1] = m.v_[1];
+        v_[2] = m.v_[2];
+    }
+    LM_INLINE TMat3(
+        ParamT v00, ParamT v10, ParamT v20,
+        ParamT v01, ParamT v11, ParamT v21,
+        ParamT v02, ParamT v12, ParamT v22)
+    {
+        v[0] = VecT(v00, v10, v20);
+        v[1] = VecT(v01, v11, v21);
+        v[2] = VecT(v02, v12, v22);
+    }
+
+	LM_INLINE auto operator[](int i) -> VecT& { return v[i]; }
+	LM_INLINE auto operator[](int i) const -> RetT { return v[i]; }
+
+	//LM_INLINE auto operator*=(const TMat3<T>& m) -> MatT&;
+	//LM_INLINE auto operator*=(const T& s) -> MatT&;
+	//LM_INLINE auto operator/=(const T& s) -> MatT&;
+
+};
 
 #pragma endregion
 
