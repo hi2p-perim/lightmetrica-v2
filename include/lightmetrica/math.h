@@ -26,6 +26,7 @@
 
 #include <lightmetrica/macros.h>
 #include <string>
+#include <initializer_list>
 
 // TODO. Make configurable from cmake file 
 #define LM_USE_DOUBLE_PRECISION
@@ -135,7 +136,19 @@ enum class SIMD
 
 // --------------------------------------------------------------------------------
 
-#pragma region Vector types
+#pragma region Math object types
+
+#pragma region Math object type flag
+
+enum class MathObjectType
+{
+    Vec,
+    Mat,
+};
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
 
 #pragma region Base vector type
 
@@ -148,6 +161,9 @@ template <typename T, SIMD Opt, template <typename, SIMD> class VecT_, int NC_>
 struct TVecBase
 {
 
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Vec;
+
     // Value type
     using VT = T;
 
@@ -158,8 +174,10 @@ struct TVecBase
     static constexpr int NC = NC_;
 
     // Parameter types
-    using ParamT  = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
-    using RetT = ParamT;
+    template <typename U>
+    using TParam = std::conditional_t<std::is_arithmetic<U>::value, U, const U&>;
+    using ParamT = TParam<T>;
+    using RetT   = ParamT;
 
 };
 
@@ -196,6 +214,7 @@ struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
     LM_INLINE TVec3()                                   : x(VT(0)), y(VT(0)), z(VT(0)) {}
     LM_INLINE TVec3(ParamT x, ParamT y, ParamT z)       : x(x), y(y), z(z) {}
     LM_INLINE TVec3(const VecT& v)                      : x(v.x), y(v.y), z(v.z) {}
+    LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
     LM_INLINE auto operator[](int i) const   -> RetT    { return (&x)[i]; }
@@ -220,6 +239,7 @@ struct LM_ALIGN_16 TVec3<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE TVec3(ParamT x, ParamT y, ParamT z)       : v_(_mm_set_ps(1.0f, z, y, x)) {}
     LM_INLINE TVec3(const VecT& v)                      : v_(v.v_) {}
     LM_INLINE TVec3(SIMDT v)                            : v_(v) {}
+    LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
     LM_INLINE auto operator[](int i) const   -> RetT    { return (&x)[i]; }
@@ -245,6 +265,7 @@ struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE TVec3(ParamT x, ParamT y, ParamT z)       : v_(_mm256_set_pd(1, z, y, x)) {}
     LM_INLINE TVec3(const VecT& v)                      : v_(v.v_) {}
     LM_INLINE TVec3(SIMDT v)                            : v_(v) {}
+    LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
     LM_INLINE auto operator[](int i) const   -> RetT    { return (&x)[i]; }
@@ -283,6 +304,7 @@ struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
     LM_INLINE TVec4()                                       : x(VT(0)), y(VT(0)), z(VT(0)), w(VT(0)) {}
     LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : x(x), y(y), z(z), w(w) {}
     LM_INLINE TVec4(const VecT& v)                          : x(v.x), y(v.y), z(v.z), w(v.w) {}
+    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
     LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
@@ -308,6 +330,7 @@ struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : v_(_mm_set_ps(w, z, y, x)) {}
     LM_INLINE TVec4(const VecT& v)                          : v_(v.v_) {}
     LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
+    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
     LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
@@ -333,6 +356,7 @@ struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : v_(_mm256_set_pd(w, z, y, x)) {}
     LM_INLINE TVec4(const VecT& v)                          : v_(v.v_) {}
     LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
+    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
     LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
@@ -348,156 +372,15 @@ struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
 
 // --------------------------------------------------------------------------------
 
-#pragma region Some aliases
-
-template <typename T, template <typename, SIMD> class VecT>
-using VecTNone = VecT<T, SIMD::None>;
-
-template <template <typename, SIMD> class VecT>
-using VecTSSE = VecT<float, SIMD::SSE>;
-
-template <template <typename, SIMD> class VecT>
-using VecTAVX = VecT<double, SIMD::AVX>;
-
-template <template <typename, SIMD> class VecT>
-using EnableIfSSEType =
-    typename std::enable_if_t<
-        std::is_same<VecT<float, SIMD::SSE>, TVec3<float, SIMD::SSE>>::value ||
-        std::is_same<VecT<float, SIMD::SSE>, TVec4<float, SIMD::SSE>>::value
-    >;
-
-template <template <typename, SIMD> class VecT>
-using EnableIfAVXType =
-    typename std::enable_if_t<
-        std::is_same<VecT<double, SIMD::AVX>, TVec3<double, SIMD::AVX>>::value ||
-        std::is_same<VecT<double, SIMD::AVX>, TVec4<double, SIMD::AVX>>::value
-    >;
-
-#pragma endregion
-
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
-#pragma region Vector operations
-
-#pragma region operator+
-
-template <typename T, template <typename, SIMD> class VecT>
-LM_INLINE auto operator+(const VecTNone<T, VecT>& v1, const VecTNone<T, VecT>& v2) -> VecTNone<T, VecT>
-{
-    constexpr int N = VecTNone<T, VecT>::NC;
-    VecTNone<T, VecT> result;
-    for (int i = 0; i < N; i++) result[i] = v1[i] + v2[i];
-    return result;
-}
-
-template <template <typename, SIMD> class VecT, typename = EnableIfSSEType<VecT>>
-LM_INLINE auto operator+(const VecTSSE<VecT>& v1, const VecTSSE<VecT>& v2) -> VecTSSE<VecT>
-{
-    return VecTSSE<VecT>(_mm_add_ps(v1.v_, v2.v_));
-}
-
-template <template <typename, SIMD> class VecT, typename = EnableIfAVXType<VecT>>
-LM_INLINE auto operator+(const VecTAVX<VecT>& v1, const VecTAVX<VecT>& v2) -> VecTAVX<VecT>
-{
-    return VecTAVX<VecT>(_mm256_add_pd(v1.v_, v2.v_));
-}
-
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
-#pragma region operator-
-
-template <typename T, template <typename, SIMD> class VecT>
-LM_INLINE auto operator-(const VecTNone<T, VecT>& v1, const VecTNone<T, VecT>& v2) -> VecTNone<T, VecT>
-{
-    constexpr int N = VecTNone<T, VecT>::NC;
-    VecTNone<T, VecT> result;
-    for (int i = 0; i < N; i++) result[i] = v1[i] - v2[i];
-    return result;
-}
-
-template <template <typename, SIMD> class VecT, typename = EnableIfSSEType<VecT>>
-LM_INLINE auto operator-(const VecTSSE<VecT>& v1, const VecTSSE<VecT>& v2) -> VecTSSE<VecT>
-{
-    return VecTSSE<VecT>(_mm_sub_ps(v1.v_, v2.v_));
-}
-
-template <template <typename, SIMD> class VecT, typename = EnableIfAVXType<VecT>>
-LM_INLINE auto operator-(const VecTAVX<VecT>& v1, const VecTAVX<VecT>& v2) -> VecTAVX<VecT>
-{
-    return VecTAVX<VecT>(_mm256_sub_pd(v1.v_, v2.v_));
-}
-
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
-#pragma region operator*
-
-template <typename T, template <typename, SIMD> class VecT>
-LM_INLINE auto operator*(const VecTNone<T, VecT>& v1, const VecTNone<T, VecT>& v2) -> VecTNone<T, VecT>
-{
-    constexpr int N = VecTNone<T, VecT>::NC;
-    VecTNone<T, VecT> result;
-    for (int i = 0; i < N; i++) result[i] = v1[i] * v2[i];
-    return result;
-}
-
-template <template <typename, SIMD> class VecT, typename = EnableIfSSEType<VecT>>
-LM_INLINE auto operator*(const VecTSSE<VecT>& v1, const VecTSSE<VecT>& v2) -> VecTSSE<VecT>
-{
-    return VecTSSE<VecT>(_mm_mul_ps(v1.v_, v2.v_));
-}
-
-template <template <typename, SIMD> class VecT, typename = EnableIfAVXType<VecT>>
-LM_INLINE auto operator*(const VecTAVX<VecT>& v1, const VecTAVX<VecT>& v2) -> VecTAVX<VecT>
-{
-    return VecTAVX<VecT>(_mm256_mul_pd(v1.v_, v2.v_));
-}
-
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
-#pragma region operator/
-
-template <typename T, template <typename, SIMD> class VecT>
-LM_INLINE auto operator/(const VecTNone<T, VecT>& v1, const VecTNone<T, VecT>& v2) -> VecTNone<T, VecT>
-{
-    constexpr int N = VecTNone<T, VecT>::NC;
-    VecTNone<T, VecT> result;
-    for (int i = 0; i < N; i++) result[i] = v1[i] / v2[i];
-    return result;
-}
-
-template <template <typename, SIMD> class VecT, typename = EnableIfSSEType<VecT>>
-LM_INLINE auto operator/(const VecTSSE<VecT>& v1, const VecTSSE<VecT>& v2) -> VecTSSE<VecT>
-{
-    return VecTSSE<VecT>(_mm_div_ps(v1.v_, v2.v_));
-}
-
-template <template <typename, SIMD> class VecT, typename = EnableIfAVXType<VecT>>
-LM_INLINE auto operator/(const VecTAVX<VecT>& v1, const VecTAVX<VecT>& v2) -> VecTAVX<VecT>
-{
-    return VecTAVX<VecT>(_mm256_div_pd(v1.v_, v2.v_));
-}
-
-#pragma endregion
-
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
-#pragma region Matrix types
-
 #pragma region Base matrix type
 
 template <typename T, SIMD Opt, template <typename, SIMD> class MatT_, template <typename, SIMD> class VecT_, int NC_>
 struct TMatBase
 {
+
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Mat;
+
     // Value type
     using VT = T;
 
@@ -505,6 +388,8 @@ struct TMatBase
     using MatT = MatT_<T, Opt>;
 
     // Column vector type
+    template <typename T__, SIMD Opt__>
+    using TVec = VecT_<T__, Opt__>;
     using VecT = VecT_<T, Opt>;
 
     // Number of components
@@ -513,6 +398,7 @@ struct TMatBase
     // Parameter types
     using ParamT = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
     using RetT = ParamT;
+
 };
 
 #pragma endregion
@@ -524,12 +410,12 @@ struct TMatBase
 /*!
 	3x3 matrix.
 
-	Generic column major 3x3 matrix. 
-	A matrix
-		v00 v01 v02
-		v10 v11 v12
-		v20 v21 v22
-	is stored sequentially as v00, v10, ..., v22.
+    Generic column major 3x3 matrix.
+    A matrix
+        v00 v01 v02
+        v10 v11 v12
+        v20 v21 v22
+    is stored sequentially as v00, v10, ..., v22.
 */
 template <typename T, SIMD Opt = SIMD::None>
 struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
@@ -538,28 +424,25 @@ struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
 	VecT v_[NC];
 
     LM_INLINE TMat3() {}
-    LM_INLINE TMat3(const MatT& m)
-    {
-        v_[0] = m.v_[0];
-        v_[1] = m.v_[1];
-        v_[2] = m.v_[2];
-    }
+    LM_INLINE TMat3(const MatT& m) : v_{m.v_[0], m.v_[1], m.v_[2]} {}
+    LM_INLINE TMat3(const VecT& v0, const VecT& v1, const VecT& v2) : v_{v0, v1, v2} {}
     LM_INLINE TMat3(
         ParamT v00, ParamT v10, ParamT v20,
         ParamT v01, ParamT v11, ParamT v21,
         ParamT v02, ParamT v12, ParamT v22)
+        : v_{{v00, v10, v20},
+             {v01, v11, v21},
+             {v02, v12, v22}}
+    {}
+    LM_INLINE TMat3(std::initializer_list<VT> l)
     {
-        v[0] = VecT(v00, v10, v20);
-        v[1] = VecT(v01, v11, v21);
-        v[2] = VecT(v02, v12, v22);
+        for (int i = 0; i < NC; i++)
+            for (int j = 0; j < NC; j++)
+                v_[i][j] = l.begin()[i*NC+j];
     }
 
-	LM_INLINE auto operator[](int i) -> VecT& { return v[i]; }
-	LM_INLINE auto operator[](int i) const -> RetT { return v[i]; }
-
-	//LM_INLINE auto operator*=(const TMat3<T>& m) -> MatT&;
-	//LM_INLINE auto operator*=(const T& s) -> MatT&;
-	//LM_INLINE auto operator/=(const T& s) -> MatT&;
+	LM_INLINE auto operator[](int i) -> VecT& { return v_[i]; }
+	LM_INLINE auto operator[](int i) const -> const VecT& { return v_[i]; }
 
 };
 
@@ -569,11 +452,262 @@ struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
 
 #pragma region Mat4
 
+/*!
+	4x4 matrix.
 
+	Generic column major 4x4 matrix. 
+	A matrix
+		v00 v01 v02 v03
+		v10 v11 v12 v13
+		v20 v21 v22 v23
+		v30 v31 v32 v33
+	is stored sequentially as v00, v10, ..., v33
+*/
+template <typename T, SIMD Opt = SIMD::None>
+struct TMat4 : public TMatBase<T, Opt, TMat4, TVec4, 4>
+{
+
+	VecT v_[NC];
+
+    LM_INLINE TMat4() {}
+    LM_INLINE TMat4(const MatT& m) : v_{m.v_[0], m.v_[1], m.v_[2], m.v_[3]} {}
+    LM_INLINE TMat4(const VecT& v0, const VecT& v1, const VecT& v2, const VecT& v3) : v_{v0, v1, v2, v3} {}
+    LM_INLINE TMat4(
+        ParamT v00, ParamT v10, ParamT v20, ParamT v30,
+        ParamT v01, ParamT v11, ParamT v21, ParamT v31,
+        ParamT v02, ParamT v12, ParamT v22, ParamT v32,
+        ParamT v03, ParamT v13, ParamT v23, ParamT v33)
+        : v_{{v00, v10, v20, v30},
+             {v01, v11, v21, v31},
+             {v02, v12, v22, v32},
+             {v03, v13, v23, v33}}
+    {}
+    LM_INLINE TMat4(std::initializer_list<VT> l)
+    {
+        for (int i = 0; i < NC; i++)
+            for (int j = 0; j < NC; j++)
+                v_[i][j] = l.begin()[i*NC+j];
+    }
+
+	LM_INLINE auto operator[](int i) -> VecT& { return v_[i]; }
+	LM_INLINE auto operator[](int i) const -> const VecT& { return v_[i]; }
+
+};
 
 #pragma endregion
 
 // --------------------------------------------------------------------------------
+
+#pragma region Some aliases
+
+template <typename T, SIMD Opt, template <typename, SIMD> class MathObject>
+using EnableIfVecType = std::enable_if_t<MathObject<T, Opt>::ObjT == MathObjectType::Vec>;
+
+template <typename T, SIMD Opt, template <typename, SIMD> class MathObject>
+using EnableIfMatType = std::enable_if_t<MathObject<T, Opt>::ObjT == MathObjectType::Mat>;
+
+template <typename T, SIMD Opt>
+using EnableIfSSEType = std::enable_if_t<std::is_same<T, float>::value && Opt == SIMD::SSE>;
+
+template <typename T, SIMD Opt>
+using EnableIfAVXType = std::enable_if_t<std::is_same<T, double>::value && Opt == SIMD::AVX>;
+
+#pragma endregion
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Math operations
+
+#pragma region operator+
+
+template <typename T, template <typename, SIMD> class VecT>
+LM_INLINE auto operator+(const VecT<T, SIMD::None>& v1, const VecT<T, SIMD::None>& v2) -> VecT<T, SIMD::None>
+{
+    constexpr int N = VecT<T, SIMD::None>::NC;
+    VecT<T, SIMD::None> result;
+    for (int i = 0; i < N; i++) result[i] = v1[i] + v2[i];
+    return result;
+}
+
+template <template <typename, SIMD> class VecT>
+LM_INLINE auto operator+(const VecT<float, SIMD::SSE>& v1, const VecT<float, SIMD::SSE>& v2) -> VecT<float, SIMD::SSE>
+{
+    return VecT<float, SIMD::SSE>(_mm_add_ps(v1.v_, v2.v_));
+}
+
+template <template <typename, SIMD> class VecT>
+LM_INLINE auto operator+(const VecT<double, SIMD::AVX>& v1, const VecT<double, SIMD::AVX>& v2) -> VecT<double, SIMD::AVX>
+{
+    return VecT<double, SIMD::AVX>(_mm256_add_pd(v1.v_, v2.v_));
+}
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region operator-
+
+template <typename T, template <typename, SIMD> class VecT>
+LM_INLINE auto operator-(const VecT<T, SIMD::None>& v1, const VecT<T, SIMD::None>& v2) -> VecT<T, SIMD::None>
+{
+    constexpr int N = VecT<T, SIMD::None>::NC;
+    VecT<T, SIMD::None> result;
+    for (int i = 0; i < N; i++) result[i] = v1[i] - v2[i];
+    return result;
+}
+
+template <template <typename, SIMD> class VecT>
+LM_INLINE auto operator-(const VecT<float, SIMD::SSE>& v1, const VecT<float, SIMD::SSE>& v2) -> VecT<float, SIMD::SSE>
+{
+    return VecT<float, SIMD::SSE>(_mm_sub_ps(v1.v_, v2.v_));
+}
+
+template <template <typename, SIMD> class VecT>
+LM_INLINE auto operator-(const VecT<double, SIMD::AVX>& v1, const VecT<double, SIMD::AVX>& v2) -> VecT<double, SIMD::AVX>
+{
+    return VecT<double, SIMD::AVX>(_mm256_sub_pd(v1.v_, v2.v_));
+}
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region operator*
+
+template <typename T, template <typename, SIMD> class VecT, typename = EnableIfVecType<T, SIMD::None, VecT>>
+LM_INLINE auto operator*(const VecT<T, SIMD::None>& v1, const VecT<T, SIMD::None>& v2) -> VecT<T, SIMD::None>
+{
+    constexpr int N = VecT<T, SIMD::None>::NC;
+    VecT<T, SIMD::None> result;
+    for (int i = 0; i < N; i++) result[i] = v1[i] * v2[i];
+    return result;
+}
+
+template <template <typename, SIMD> class VecT, typename = EnableIfVecType<float, SIMD::SSE, VecT>>
+LM_INLINE auto operator*(const VecT<float, SIMD::SSE>& v1, const VecT<float, SIMD::SSE>& v2) -> VecT<float, SIMD::SSE>
+{
+    return VecT<float, SIMD::SSE>(_mm_mul_ps(v1.v_, v2.v_));
+}
+
+template <template <typename, SIMD> class VecT, typename = EnableIfVecType<double, SIMD::AVX, VecT>>
+LM_INLINE auto operator*(const VecT<double, SIMD::AVX>& v1, const VecT<double, SIMD::AVX>& v2) -> VecT<double, SIMD::AVX>
+{
+    return VecT<double, SIMD::AVX>(_mm256_mul_pd(v1.v_, v2.v_));
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat3<T, Opt>& m1, const TMat3<T, Opt>& m2) -> TMat3<T, Opt>
+{
+    return TMat3<T, Opt>(m1 * m2[0], m1 * m2[1], m1 * m2[2]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat3<T, Opt>& m, const TVec3<T, Opt>& v) -> TVec3<T, Opt>
+{
+    return TVec3<T, Opt>(
+        m[0][0] * v.x + m[1][0] * v.y + m[2][0] * v.z,
+        m[0][1] * v.x + m[1][1] * v.y + m[2][1] * v.z,
+        m[0][2] * v.x + m[1][2] * v.y + m[2][2] * v.z);
+}
+
+LM_INLINE auto operator*(const TMat3<float, SIMD::SSE>& m, const TVec3<float, SIMD::SSE>& v) -> TVec3<float, SIMD::SSE>
+{
+	return TVec3<float, SIMD::SSE>(
+        _mm_add_ps(
+            _mm_add_ps(
+                _mm_mul_ps(m[0].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(0, 0, 0, 0))),
+                _mm_mul_ps(m[1].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(1, 1, 1, 1)))),
+                _mm_mul_ps(m[2].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(2, 2, 2, 2)))));
+}
+
+LM_INLINE auto operator*(const TMat3<double, SIMD::AVX>& m, const TVec3<double, SIMD::AVX>& v) -> TVec3<double, SIMD::AVX>
+{
+    return TVec3<double, SIMD::AVX>(
+        _mm256_add_pd(
+            _mm256_add_pd(
+                _mm256_mul_pd(m[0].v_, _mm256_broadcast_sd(&(v.x))),
+                _mm256_mul_pd(m[1].v_, _mm256_broadcast_sd(&(v.x) + 1))),
+                _mm256_mul_pd(m[2].v_, _mm256_broadcast_sd(&(v.x) + 2))));
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat4<T, Opt>& m1, const TMat4<T, Opt>& m2) -> TMat4<T, Opt>
+{
+    return TMat4<T, Opt>(m1 * m2[0], m1 * m2[1], m1 * m2[2], m1 * m2[3]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat4<T, Opt>& m, const TVec4<T, Opt>& v) -> TVec4<T, Opt>
+{
+    return TVec4<T, Opt>(
+        m[0][0] * v.x + m[1][0] * v.y + m[2][0] * v.z + m[3][0] * v.w,
+        m[0][1] * v.x + m[1][1] * v.y + m[2][1] * v.z + m[3][1] * v.w,
+        m[0][2] * v.x + m[1][2] * v.y + m[2][2] * v.z + m[3][2] * v.w,
+        m[0][3] * v.x + m[1][3] * v.y + m[2][3] * v.z + m[3][3] * v.w);
+}
+
+LM_INLINE auto operator*(const TMat4<float, SIMD::SSE>& m, const TVec4<float, SIMD::SSE>& v) -> TVec4<float, SIMD::SSE>
+{
+    return TVec4<float, SIMD::SSE>(
+        _mm_add_ps(
+            _mm_add_ps(
+                _mm_mul_ps(m[0].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(0, 0, 0, 0))),
+                _mm_mul_ps(m[1].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(1, 1, 1, 1)))),
+            _mm_add_ps(
+                _mm_mul_ps(m[2].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(2, 2, 2, 2))),
+                _mm_mul_ps(m[3].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(3, 3, 3, 3))))));
+}
+
+LM_INLINE auto operator*(const TMat4<double, SIMD::AVX>& m, const TVec4<double, SIMD::AVX>& v) -> TVec4<double, SIMD::AVX>
+{
+    return TVec4<double, SIMD::AVX>(
+        _mm256_add_pd(
+            _mm256_add_pd(
+                _mm256_mul_pd(m[0].v_, _mm256_broadcast_sd(&(v.x))),
+                _mm256_mul_pd(m[1].v_, _mm256_broadcast_sd(&(v.x) + 1))),
+            _mm256_add_pd(
+                _mm256_mul_pd(m[2].v_, _mm256_broadcast_sd(&(v.x) + 2)),
+                _mm256_mul_pd(m[3].v_, _mm256_broadcast_sd(&(v.x) + 3)))));
+}
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region operator/
+
+template <typename T, template <typename, SIMD> class VecT>
+LM_INLINE auto operator/(const VecT<T, SIMD::None>& v1, const VecT<T, SIMD::None>& v2) -> VecT<T, SIMD::None>
+{
+    constexpr int N = VecT<T, SIMD::None>::NC;
+    VecT<T, SIMD::None> result;
+    for (int i = 0; i < N; i++) result[i] = v1[i] / v2[i];
+    return result;
+}
+
+template <template <typename, SIMD> class VecT>
+LM_INLINE auto operator/(const VecT<float, SIMD::SSE>& v1, const VecT<float, SIMD::SSE>& v2) -> VecT<float, SIMD::SSE>
+{
+    return VecT<float, SIMD::SSE>(_mm_div_ps(v1.v_, v2.v_));
+}
+
+template <template <typename, SIMD> class VecT>
+LM_INLINE auto operator/(const VecT<double, SIMD::AVX>& v1, const VecT<double, SIMD::AVX>& v2) -> VecT<double, SIMD::AVX>
+{
+    return VecT<double, SIMD::AVX>(_mm256_div_pd(v1.v_, v2.v_));
+}
+
+#pragma endregion
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Basic math functions
+
+
 
 #pragma endregion
 
