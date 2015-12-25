@@ -114,17 +114,23 @@ public:
         #pragma region Load primitives
         
         {
-            // `scene` node
-            const auto* scenePropNode = root->Child("scene");
-            if (!scenePropNode)
+            #pragma region Sensor node
+            
+            const auto* sceneNode = root->Child("scene");
+            if (!sceneNode)
             {
                 // TODO: Add error check (with detailed and human-readable error message)
                 LM_LOG_ERROR("Missing 'scene' node");
                 return false;
             }
 
-            // Traverse scene nodes and create primitives
-            const std::function<bool(const PropertyNode*)> Traverse = [&](const PropertyNode* propNode) -> bool
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Traverse scene nodes and create primitives
+
+            const std::function<bool(const PropertyNode*, const Mat4&)> Traverse = [&](const PropertyNode* propNode, const Mat4& parentTransform) -> bool
             {
                 #pragma region Create primitive
 
@@ -149,6 +155,8 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region Parse transform
+
+                Mat4 transform;
 
                 {
                     const auto* transformNode = propNode->Child("transform");
@@ -213,10 +221,13 @@ public:
                             return true;
                         };
                         
-                        if (!ParseTransform(transformNode, primitive->transform))
+                        if (!ParseTransform(transformNode, transform))
                         {
                             return false;
                         }
+
+                        transform = parentTransform * transform;
+                        primitive->transform = transform;
                     }
                 }
 
@@ -244,7 +255,7 @@ public:
                 {
                     for (int i = 0; i < childNode->Size(); i++)
                     {
-                        if (!Traverse(childNode->At(i)))
+                        if (!Traverse(childNode->At(i), transform))
                         {
                             return false;
                         }
@@ -258,14 +269,40 @@ public:
                 return true;
             };
 
-            const auto* rootPropNode = scenePropNode->Child("nodes");
-            for (int i = 0; i < rootPropNode->Size(); i++)
+            const auto* nodesNode = sceneNode->Child("nodes");
+            for (int i = 0; i < nodesNode->Size(); i++)
             {
-                if (!Traverse(rootPropNode->At(i)))
+                if (!Traverse(nodesNode->At(i), Mat4::Identity()))
                 {
                     return false;
                 }
             }
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Main sensor
+
+            {
+                const auto mainSensorNode = sceneNode->Child("sensor");
+                if (!mainSensorNode)
+                {
+                    LM_LOG_ERROR("Missing 'sensor' node");
+                    return false;
+                }
+
+                const auto it = primitiveIDMap_.find(mainSensorNode->As<std::string>());
+                if (it == primitiveIDMap_.end())
+                {
+                    LM_LOG_ERROR("Missing primitive ID: " + mainSensorNode->As<std::string>());
+                    return false;
+                }
+
+                sensorPrimitive_ = it->second;
+            }
+
+            #pragma endregion
         }
 
         #pragma endregion
@@ -281,12 +318,20 @@ public:
         return it != primitiveIDMap_.end() ? it->second : nullptr;
     };
 
+    LM_IMPL_F(Sensor) = [this]() -> const Primitive*
+    {
+        return sensorPrimitive_;
+    };
+
 private:
 
-    Assets::UniquePointerType assets_{nullptr, [](Component*){}};     // Asset library
-    std::vector<std::unique_ptr<Primitive>> primitives_;              // Primitives
-    std::unordered_map<std::string, Primitive*> primitiveIDMap_;      // Mapping from ID to primitive pointer
-    //std::unique_ptr<Accel> accel_;                                  // Acceleration structure
+    Assets::UniquePointerType assets_{nullptr, [](Component*){}};   // Asset library
+    std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
+    std::unordered_map<std::string, Primitive*> primitiveIDMap_;    // Mapping from ID to primitive pointer
+    Primitive* sensorPrimitive_;                                    // Index of main sensor
+    //std::unique_ptr<Accel> accel_;                                // Acceleration structure
+
+    
 
 };
 

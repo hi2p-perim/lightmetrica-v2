@@ -42,6 +42,7 @@ set(
     _HEADER_FILES
 	"${_INCLUDE_DIR}/macros.h"
 	"${_INCLUDE_DIR}/utils.h"
+	"${_INCLUDE_DIR}/mathutils.h"
 )
 
 set(

@@ -27,6 +27,7 @@
 #include <lightmetrica/property.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica-test/utils.h>
+#include <lightmetrica-test/mathutils.h>
 
 LM_TEST_NAMESPACE_BEGIN
 
@@ -59,7 +60,7 @@ TEST_F(SceneTest, SimpleLoad)
     |       B: b
     |
     |   scene:
-    |     main_camera: n1
+    |     sensor: n1
     |     nodes:
     |       - id: n1
     |       - id: n2
@@ -92,7 +93,7 @@ TEST_F(SceneTest, Transform)
     | lightmetrica_scene:
     |   version: 1.0.0
     |   scene:
-    |     main_camera: n1
+    |     sensor: n1
     |     nodes:
     |       - id: n1
     |         transform:
@@ -107,11 +108,11 @@ TEST_F(SceneTest, Transform)
     |         transform:
     |           # Transform by translate, rotate, and scale
     |           translate: 0 0 0
-    |           scale: 1
+    |           scale: 1 1 1
     |           rotate:
     |             # Specify rotation by rotation axis and angle
     |             axis: 0 1 0
-    |             angle: 45
+    |             angle: 0
     |              
     |       # Accumulated transform by multiple levels of nodes
     |       - id: n3
@@ -122,7 +123,7 @@ TEST_F(SceneTest, Transform)
     |             0 0 1 1
     |             0 0 0 1
     |         child:
-    |           - id: n4_1
+    |           - id: n4
     |             transform:
     |               matrix: >
     |                 2 0 0 0
@@ -137,22 +138,39 @@ TEST_F(SceneTest, Transform)
     const auto scene = ComponentFactory::Create<Scene>();
     EXPECT_TRUE(scene->Initialize(prop->Root()));
 
+    const Primitive* n1 = scene->PrimitiveByID("n1");
+    EXPECT_TRUE(ExpectMatNear(Mat4{ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 }, n1->transform));
 
+    const Primitive* n2 = scene->PrimitiveByID("n2");
+    EXPECT_TRUE(ExpectMatNear(Mat4{ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 }, n2->transform));
 
+    const Primitive* n3 = scene->PrimitiveByID("n3");
+    EXPECT_TRUE(ExpectMatNear(Mat4{ 1,0,0,1, 0,1,0,1, 0,0,1,1, 0,0,0,1 }, n3->transform));
+
+    const Primitive* n4 = scene->PrimitiveByID("n4");
+    EXPECT_TRUE(ExpectMatNear(Mat4{ 2,0,0,2, 0,2,0,2, 0,0,2,2, 0,0,0,1 }, n4->transform));
 }
 
-// Camera nodes
-TEST_F(SceneTest, CameraNode)
+// Sensor nodes
+TEST_F(SceneTest, SensorNode)
 {
-    const auto CameraNode_Input = TestUtils::MultiLineLiteral(R"x(
+    const auto SensorNode_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
     |   version: 1.0.0
     |   scene:
-    |     main_camera: {{main_camera_node}}
-    |     - id: n1
+    |     sensor: n2
+    |     nodes:
+    |       - id: n1
+    |       - id: n2
     )x");
 
-    FAIL();
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(SensorNode_Input));
+
+    const auto scene = ComponentFactory::Create<Scene>();
+    EXPECT_TRUE(scene->Initialize(prop->Root()));
+
+    EXPECT_EQ("n2", scene->Sensor()->id);
 }
 
 // Missing `lightmetrica_scene` node
@@ -234,41 +252,51 @@ TEST_F(SceneTest, InvalidVersion_Fail)
     EXPECT_TRUE(boost::starts_with(err, "Invalid version"));
 }
 
-// There is no `main_camera` node
-TEST_F(SceneTest, NoMainCamera_Fail)
+// There is no `sensor` node
+TEST_F(SceneTest, NoSensor_Fail)
 {
-    const auto NoMainCamera_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+    const auto NoSensor_Fail_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
     |   version: 1.0.0
     |   scene:
-    |     - id: n1
-    |     - id: n2
+    |     nodes:
+    |       - id: n1
+    |       - id: n2
     )x");
 
-    FAIL();
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(NoSensor_Fail_Input));
+
+    const auto scene = ComponentFactory::Create<Scene>();
+    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+    {
+        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        Logger::Flush();
+    }));
+    EXPECT_TRUE(boost::starts_with(err, "Missing 'sensor' node"));
 }
 
 // Invalid number of arguments in `transform`
-TEST_F(SceneTest, Transform_Fail)
-{
-    const auto Transform_Fail_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
-    |   version: 1.0.0
-    |   scene:
-    |     main_camera: n1
-    |     nodes:
-    |       - id: n1
-    |         transform: {{transform}}
-    )x");
-
-    const std::string TransformNodes[] =
-    {
-        TestUtils::MultiLineLiteral(R"x(
-        | {}
-        )x")
-    };
-
-    FAIL();
-}
+//TEST_F(SceneTest, Transform_Fail)
+//{
+//    const auto Transform_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+//    | lightmetrica_scene:
+//    |   version: 1.0.0
+//    |   scene:
+//    |     sensor: n1
+//    |     nodes:
+//    |       - id: n1
+//    |         transform: {{transform}}
+//    )x");
+//
+//    const std::string TransformNodes[] =
+//    {
+//        TestUtils::MultiLineLiteral(R"x(
+//        | {}
+//        )x")
+//    };
+//
+//    FAIL();
+//}
 
 LM_TEST_NAMESPACE_END

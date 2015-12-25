@@ -57,6 +57,8 @@ public:
     */
     LM_INTERFACE_F(PrimitiveByID, const Primitive*(const std::string&));
 
+    LM_INTERFACE_F(Sensor, const Primitive*());
+
 };
 
 LM_NAMESPACE_END
