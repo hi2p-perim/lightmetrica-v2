@@ -34,6 +34,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <regex>
+#include <tuple>
 
 #include <boost/format.hpp>
 //#include <boost/scoped_array.hpp>
@@ -43,6 +44,7 @@
 //#include <boost/numeric/conversion/cast.hpp>
 //#include <boost/math/constants/constants.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <glm/glm.hpp>
 

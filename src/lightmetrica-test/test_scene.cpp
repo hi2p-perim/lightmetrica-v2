@@ -30,8 +30,14 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
+struct SceneTest : public ::testing::Test
+{
+    virtual auto SetUp() -> void override { Logger::Run(); }
+    virtual auto TearDown() -> void override { Logger::Stop(); }
+};
+
 // Tests simple loading of the scene
-TEST(SceneTest, SimpleLoad)
+TEST_F(SceneTest, SimpleLoad)
 {
     const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
@@ -80,7 +86,7 @@ TEST(SceneTest, SimpleLoad)
 }
 
 // Tests with the scene with transform
-TEST(SceneTest, Transform)
+TEST_F(SceneTest, Transform)
 {
     const auto Transform_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
@@ -106,20 +112,9 @@ TEST(SceneTest, Transform)
     |             # Specify rotation by rotation axis and angle
     |             axis: 0 1 0
     |             angle: 45
-    |             
-    |       - id: n3
-    |         transform:
-    |           translate: 0 0 0
-    |           scale: 1
-    |           rotate:
-    |             # Specify rotation by matrix
-    |             matrix: >
-    |               1 0 0
-    |               0 1 0
-    |               0 0 1
     |              
     |       # Accumulated transform by multiple levels of nodes
-    |       - id: n4
+    |       - id: n3
     |         transform:
     |           matrix: >
     |             1 0 0 1
@@ -136,11 +131,18 @@ TEST(SceneTest, Transform)
     |                 0 0 0 1
     )x");
 
-    FAIL();
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(Transform_Input));
+
+    const auto scene = ComponentFactory::Create<Scene>();
+    EXPECT_TRUE(scene->Initialize(prop->Root()));
+
+
+
 }
 
 // Camera nodes
-TEST(SceneTest, CameraNode)
+TEST_F(SceneTest, CameraNode)
 {
     const auto CameraNode_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
@@ -153,19 +155,87 @@ TEST(SceneTest, CameraNode)
     FAIL();
 }
 
+// Missing `lightmetrica_scene` node
+TEST_F(SceneTest, InvalidrRootNode_Fail)
+{
+    const auto InvalidrRootNode_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+    | a:
+    )x");
+
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(InvalidrRootNode_Fail_Input));
+
+    const auto scene = ComponentFactory::Create<Scene>();
+    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+    {
+        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        Logger::Flush();
+    }));
+    EXPECT_EQ("Missing 'lightmetrica_scene' node", err);
+}
+
+// Missing `version` node
+TEST_F(SceneTest, MissingVersionNode_Fail)
+{
+    const auto MissingVersionNode_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+    | lightmetrica_scene:
+    |   a:
+    )x");
+
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(MissingVersionNode_Fail_Input));
+
+    const auto scene = ComponentFactory::Create<Scene>();
+    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+    {
+        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        Logger::Flush();
+    }));
+    EXPECT_EQ("Missing 'version' node", err);
+}
+
+// Invalid version string
+TEST_F(SceneTest, InvalidVersionString_Fail)
+{
+    const auto InvalidVersionString_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+    | lightmetrica_scene:
+    |   version: 1.0
+    )x");
+
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(InvalidVersionString_Fail_Input));
+
+    const auto scene = ComponentFactory::Create<Scene>();
+    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+    {
+        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        Logger::Flush();
+    }));
+    EXPECT_TRUE(boost::starts_with(err, "Invalid version string"));
+}
+
 // Version check fails
-TEST(SceneTest, InvalidVersion_Fail)
+TEST_F(SceneTest, InvalidVersion_Fail)
 {
     const auto InvalidVersion_Fail_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
     |   version: 0.0.0
     )x");
 
-    FAIL();
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(InvalidVersion_Fail_Input));
+
+    const auto scene = ComponentFactory::Create<Scene>();
+    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+    {
+        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        Logger::Flush();
+    }));
+    EXPECT_TRUE(boost::starts_with(err, "Invalid version"));
 }
 
 // There is no `main_camera` node
-TEST(SceneTest, NoMainCamera_Fail)
+TEST_F(SceneTest, NoMainCamera_Fail)
 {
     const auto NoMainCamera_Fail_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
@@ -179,7 +249,7 @@ TEST(SceneTest, NoMainCamera_Fail)
 }
 
 // Invalid number of arguments in `transform`
-TEST(SceneTest, Transform_Fail)
+TEST_F(SceneTest, Transform_Fail)
 {
     const auto Transform_Fail_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:

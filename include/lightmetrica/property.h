@@ -25,6 +25,8 @@
 #pragma once
 
 #include <lightmetrica/component.h>
+#include <lightmetrica/math.h>
+#include <sstream>
 
 LM_NAMESPACE_BEGIN
 
@@ -92,10 +94,64 @@ public:
 
 public:
 
+    #pragma region Type conversion functions
+
     template <typename T> auto As() const -> T;
     template <> auto As<std::string>() const -> std::string { return Scalar(); }
     template <> auto As<int>() const -> int { return std::stoi(Scalar()); }
     template <> auto As<double>() const -> double { return std::stod(Scalar()); }
+
+    template <>
+    auto As<Float>() const -> Float
+    {
+        return Float(As<double>());
+    }
+
+    template <>
+    auto As<Vec3>() const -> Vec3
+    {
+        Vec3 v;
+        std::stringstream ss(Scalar());
+        double t;
+        int i = 0;
+        while (ss >> t) { v[i++] = Float(t); }
+        return v;
+    }
+
+    template <>
+    auto As<Vec4>() const -> Vec4
+    {
+        Vec4 v;
+        std::stringstream ss(Scalar());
+        double t;
+        int i = 0;
+        while (ss >> t) { v[i++] = Float(t); }
+        return v;
+    }
+
+    template <>
+    auto As<Mat3>() const -> Mat3
+    {
+        Mat3 m;
+        std::stringstream ss(Scalar());
+        double t;
+        int i = 0;
+        while (ss >> t) { m[i/3][i%3] = Float(t); i++; }
+        return m;
+    }
+
+    template <>
+    auto As<Mat4>() const -> Mat4
+    {
+        Mat4 m;
+        std::stringstream ss(Scalar());
+        double t;
+        int i = 0;
+        while (ss >> t) { m[i/4][i%4] = Float(t); i++; }
+        return m;
+    }
+
+    #pragma endregion
 
 };
 
