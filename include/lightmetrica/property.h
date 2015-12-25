@@ -73,6 +73,12 @@ public:
     LM_INTERFACE_F(Scalar, std::string());
 
     /*!
+        Get a number of child elements.
+        Only available for `Sequence` type.
+    */
+    LM_INTERFACE_F(Size, int());
+
+    /*!
         Find a child by name.
         Only available for `Map` type.
     */

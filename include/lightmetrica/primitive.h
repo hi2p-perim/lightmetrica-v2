@@ -25,12 +25,23 @@
 #pragma once
 
 #include <lightmetrica/macros.h>
+#include <lightmetrica/math.h>
+#include <string>
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    Primitive type.
+
+    This must be POD type.
+*/
 struct Primitive
 {
-    
+    std::string id;
+    Mat4 transform;
+    //TriangleMesh* mesh;
+    //GeneralizedBSDF* bsdf;
+
 };
 
 LM_NAMESPACE_END

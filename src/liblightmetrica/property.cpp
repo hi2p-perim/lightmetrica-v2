@@ -44,6 +44,7 @@ public:
     LM_IMPL_F(Type)   = [this]() -> PropertyNodeType { return type_; };
     LM_IMPL_F(Scalar) = [this]() -> std::string { return scalar_; };
     LM_IMPL_F(Key)    = [this]() -> std::string { return key_; };
+    LM_IMPL_F(Size)   = [this]() -> int { return (int)(sequence_.size()); };
 
     LM_IMPL_F(Child) = [this](const std::string& key) -> const PropertyNode*
     {

@@ -29,7 +29,8 @@
 #include <initializer_list>
 
 // TODO. Make configurable from cmake file 
-#define LM_USE_DOUBLE_PRECISION
+#define LM_USE_SINGLE_PRECISION
+#define LM_USE_SSE
 #define LM_USE_AVX
 
 // --------------------------------------------------------------------------------
@@ -70,9 +71,6 @@
 	#define LM_AVX 1
 #else
 	#define LM_AVX 0
-#endif
-#if LM_NO_SIMD + LM_SSE + LM_AVX != 1
-	#error "Invalid SIMD support flag"
 #endif
 
 #if LM_AVX
@@ -130,6 +128,13 @@ enum class SIMD
     None,
     SSE,    // Requires support of SSE, SSE2, SSE3, SSE4.x
     AVX,    // Requires support of AVX, AVX2
+
+    // Default SIMD type
+    #if LM_SINGLE_PRECISION && LM_SSE
+    Default = SSE,
+    #elif LM_DOUBLE_PRECISION && LM_AVX
+    Default = AVX,
+    #endif
 };
 
 #pragma endregion
@@ -700,6 +705,17 @@ LM_INLINE auto operator/(const VecT<double, SIMD::AVX>& v1, const VecT<double, S
 }
 
 #pragma endregion
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Default types
+
+using Vec3 = TVec3<Float, SIMD::Default>;
+using Vec4 = TVec4<Float, SIMD::Default>;
+using Mat3 = TMat3<Float, SIMD::Default>;
+using Mat4 = TMat4<Float, SIMD::Default>;
 
 #pragma endregion
 

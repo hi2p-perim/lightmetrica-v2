@@ -24,6 +24,8 @@
 
 #include <pch_test.h>
 #include <lightmetrica/scene.h>
+#include <lightmetrica/property.h>
+#include <lightmetrica/primitive.h>
 #include <lightmetrica-test/utils.h>
 
 LM_TEST_NAMESPACE_BEGIN
@@ -60,10 +62,21 @@ TEST(SceneTest, SimpleLoad)
     |           - id: n2_2
     |             child:
     |               - id: n2_2_1
-    |               - id: n2_2_1
+    |               - id: n2_2_2
     )x");
 
-    FAIL();
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(SimpleLoad_Input));
+    
+    const auto scene = ComponentFactory::Create<Scene>();
+    EXPECT_TRUE(scene->Initialize(prop->Root()));
+
+    EXPECT_EQ("n1", scene->PrimitiveByID("n1")->id);
+    EXPECT_EQ("n2", scene->PrimitiveByID("n2")->id);
+    EXPECT_EQ("n2_1", scene->PrimitiveByID("n2_1")->id);
+    EXPECT_EQ("n2_2", scene->PrimitiveByID("n2_2")->id);
+    EXPECT_EQ("n2_2_1", scene->PrimitiveByID("n2_2_1")->id);
+    EXPECT_EQ("n2_2_2", scene->PrimitiveByID("n2_2_2")->id);
 }
 
 // Tests with the scene with transform

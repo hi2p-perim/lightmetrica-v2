@@ -29,6 +29,7 @@
 LM_NAMESPACE_BEGIN
 
 class PropertyNode;
+struct Primitive;
 
 class Scene : public Component
 {
@@ -43,7 +44,18 @@ public:
 
 public:
 
+    /*!
+        \brief Initialize the scene.
+
+        Initializes the scene from the given property of
+        the scene configuration file.
+    */
     LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
+
+    /*!
+        \brief Get a primitive by ID.
+    */
+    LM_INTERFACE_F(PrimitiveByID, const Primitive*(const std::string&));
 
 };
 

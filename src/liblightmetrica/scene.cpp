@@ -24,6 +24,7 @@
 
 #include <pch.h>
 #include <lightmetrica/scene.h>
+#include <lightmetrica/math.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/assets.h>
 #include <lightmetrica/primitive.h>
@@ -40,17 +41,19 @@ public:
 
 public:
 
-    LM_IMPL_F(Initialize) = [this](const PropertyNode*) -> bool
-    {
-        return false;
-    };
-
-private:
-    
-    auto Initialize(const PropertyNode* prop) -> bool
+    LM_IMPL_F(Initialize) = [this](const PropertyNode* root) -> bool
     {
         // Create instances
         assets_ = ComponentFactory::Create<Assets>();
+        
+        // Scene configuration file must begin with `lightmetrica_scene` node
+        const auto* prop = root->Child("lightmetrica_scene");
+        if (!prop)
+        {
+            // TODO: Improve error messages
+            LM_LOG_ERROR("Missing 'lightmetrica_scene' node");
+            return false;
+        }
 
         // --------------------------------------------------------------------------------
 
@@ -60,33 +63,58 @@ private:
             // `scene` node
             // TODO: Add error check (with detailed and human-readable error message)
             const auto* scenePropNode = prop->Child("scene");
+            if (!scenePropNode)
+            {
+                LM_LOG_ERROR("Missing 'scene' node");
+                return false;
+            }
 
             // Traverse scene nodes and create primitives
-            const auto Traverse = [this](const PropertyNode* propNode) -> void
+            const std::function<void(const PropertyNode*)> Traverse = [&](const PropertyNode* propNode) -> void
             {
+                // Create primitive
+                std::unique_ptr<Primitive> primitive(new Primitive);
+
                 // ID
-                std::string id;
                 {
                     const auto* idNode = propNode->Child("id");
                     if (idNode)
                     {
-                        id = idNode->As<std::string>();
+                        primitive->id = idNode->As<std::string>();
                     }
                 }
 
                 // Transform
+                {
+                    Mat4 transform;
+                    primitive->transform = transform;
+                }
+
+                // Add primitive
+                if (!primitive->id.empty())
+                {
+                    primitiveIDMap_[primitive->id] = primitive.get();
+                }
+                primitives_.push_back(std::move(primitive));
                 
+                // --------------------------------------------------------------------------------
 
                 // Child nodes
                 const auto* childNode = propNode->Child("child");
                 if (childNode)
                 {
-                    
+                    for (int i = 0; i < childNode->Size(); i++)
+                    {
+                        Traverse(childNode->At(i));
+                    }
                 }
             };
 
             const auto* rootPropNode = scenePropNode->Child("nodes");
-            Traverse(rootPropNode);
+            for (int i = 0; i < rootPropNode->Size(); i++)
+            {
+                Traverse(rootPropNode->At(i));
+            }
         }
 
         #pragma endregion
@@ -96,11 +124,17 @@ private:
         return true;
     };
 
+    LM_IMPL_F(PrimitiveByID) = [this](const std::string& id) -> const Primitive*
+    {
+        const auto it = primitiveIDMap_.find(id);
+        return it != primitiveIDMap_.end() ? it->second : nullptr;
+    };
+
 private:
 
     Assets::UniquePointerType assets_{nullptr, [](Component*){}};     // Asset library
-    //std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
-    //std::unordered_map<std::string, Primitive*> primitiveIDMap_;    // Mapping from ID to primitive pointer
+    std::vector<std::unique_ptr<Primitive>> primitives_;              // Primitives
+    std::unordered_map<std::string, Primitive*> primitiveIDMap_;      // Mapping from ID to primitive pointer
     //std::unique_ptr<Accel> accel_;                                  // Acceleration structure
 
 };
