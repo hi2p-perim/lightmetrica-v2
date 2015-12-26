@@ -272,7 +272,7 @@ private:
             []() -> Component* { return new ImplType; },
             [](Component* p) -> void
             {
-                auto* p2 = reinterpret_cast<ImplType*>(p);
+                auto* p2 = static_cast<ImplType*>(p);
                 LM_SAFE_DELETE(p2);
                 p = nullptr;
             });

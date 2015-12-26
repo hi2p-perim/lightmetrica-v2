@@ -236,4 +236,110 @@ TEST(ComponentTest, PortableArguments)
     }));
 }
 
+// --------------------------------------------------------------------------------
+
+#pragma region Test of component with internal functions
+
+// Some member exposes public interfaces and on the inherited class,
+// the internal member is defined as virtual function
+// this is not accessed from public interfaces (see `InternalInterface` test).
+// Another way to introduce internal members is to use virtual inheritance
+// along with multiple inheritance. However, this is possible because 
+// we need to know the declaration of implementation class (see `InternalInterfaceMultiple` test).
+
+struct D : public Component
+{
+    LM_INTERFACE_CLASS(D, Component);
+    LM_INTERFACE_F(Func_Public, void());
+};
+
+struct D_Internal
+{
+    virtual auto Func_Internal() const -> void = 0;
+};
+
+struct D_ final : public D_Internal, public D
+{
+    LM_IMPL_CLASS(D_, D);
+
+    LM_IMPL_F(Func_Public) = [this]() -> void
+    {
+        std::cout << "hello" << std::endl;
+    };
+
+    virtual auto Func_Internal() const -> void override
+    {
+        std::cout << "world" << std::endl;
+    }
+};
+
+LM_COMPONENT_REGISTER_IMPL(D_);
+
+TEST(ComponentTest, InternalInterfaceMultiple)
+{
+    const auto p = ComponentFactory::Create<D>();
+
+    ASSERT_FALSE(p == nullptr);
+
+    EXPECT_EQ("hello\n", TestUtils::CaptureStdout([&]()
+    {
+        p->Func_Public();
+    }));
+
+    EXPECT_EQ("world\n", TestUtils::CaptureStdout([&]()
+    {
+        // need to know D_
+        D_Internal* p2 = static_cast<D_*>(p.get());
+        p2->Func_Internal();
+    }));
+}
+
+struct E : public Component
+{
+    LM_INTERFACE_CLASS(E, Component);
+    LM_INTERFACE_F(Func_Public, void());
+};
+
+struct E_Internal : public E
+{
+    virtual auto Func_Internal() const -> void = 0;
+};
+
+struct E_ final : public E_Internal
+{
+    LM_IMPL_CLASS(E_, E_Internal);
+
+    LM_IMPL_F(Func_Public) = [this]() -> void
+    {
+        std::cout << "hello" << std::endl;
+    };
+
+    virtual auto Func_Internal() const -> void override
+    {
+        std::cout << "world" << std::endl;
+    }
+};
+
+LM_COMPONENT_REGISTER_IMPL(E_);
+
+TEST(ComponentTest, InternalInterface)
+{
+    const auto p = ComponentFactory::Create<E>();
+
+    ASSERT_FALSE(p == nullptr);
+
+    EXPECT_EQ("hello\n", TestUtils::CaptureStdout([&]()
+    {
+        p->Func_Public();
+    }));
+
+    EXPECT_EQ("world\n", TestUtils::CaptureStdout([&]()
+    {
+        auto* p2 = static_cast<E_Internal*>(p.get());
+        p2->Func_Internal();
+    }));
+}
+
+#pragma endregion
+
 LM_TEST_NAMESPACE_END

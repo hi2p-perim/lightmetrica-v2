@@ -42,23 +42,7 @@ TEST_F(SceneTest, SimpleLoad)
 {
     const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
-    |
     |   version: 1.0.0
-    |
-    |   assets:
-    |     - id: stub_asset_1
-    |       asset_type: stub
-    |       type: stub_1
-    |       params:
-    |           A: a
-    |           B: b
-    |
-    |   accel:
-    |     type: stub_accel
-    |     params:
-    |       A: a
-    |       B: b
-    |
     |   scene:
     |     sensor: n1
     |     nodes:
@@ -84,6 +68,54 @@ TEST_F(SceneTest, SimpleLoad)
     EXPECT_EQ("n2_2", scene->PrimitiveByID("n2_2")->id);
     EXPECT_EQ("n2_2_1", scene->PrimitiveByID("n2_2_1")->id);
     EXPECT_EQ("n2_2_2", scene->PrimitiveByID("n2_2_2")->id);
+}
+
+// Tests simple loading of the scene with delayed loading of assets
+TEST_F(SceneTest, SimpleLoadWithAssets)
+{
+    const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
+    | lightmetrica_scene:
+    |
+    |   version: 1.0.0
+    |
+    |   assets:
+    |     - id: sensor_1
+    |       interface: sensor
+    |       type: stub_sensor
+    |
+    |     - id: mesh_1
+    |       interface: triangle_mesh
+    |       type: stub_triangle_mesh
+    |
+    |     - id: mesh_2
+    |       interface: triangle_mesh
+    |       type: stub_triangle_mesh
+    |
+    |     - id: bsdf_1
+    |       interface: bsdf
+    |       type: stub_bsdf
+    |
+    |   scene:
+    |     sensor: n1
+    |     nodes:
+    |       - id: n1
+    |         sensor: sensor_1
+    |         triangle_mesh: mesh_1
+    |         bsdf: bsdf_1
+    |
+    |       - id: n2
+    |         light: light_1
+    |         triangle_mesh: mesh_2
+    |         bsdf: bsdf_1
+    )x");
+
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(SimpleLoad_Input));
+
+    const auto scene = ComponentFactory::Create<Scene>();
+    EXPECT_TRUE(scene->Initialize(prop->Root()));
+
+    FAIL();
 }
 
 // Tests with the scene with transform
