@@ -30,6 +30,10 @@
 
 LM_NAMESPACE_BEGIN
 
+class TriangleMesh;
+class BSDF;
+class Emitter;
+
 /*!
     Primitive type.
 
@@ -39,9 +43,9 @@ struct Primitive
 {
     std::string id;
     Mat4 transform;
-    //TriangleMesh* mesh;
-    //GeneralizedBSDF* bsdf;
-
+    TriangleMesh* mesh = nullptr;
+    Emitter* emitter = nullptr;
+    BSDF* bsdf = nullptr;
 };
 
 LM_NAMESPACE_END

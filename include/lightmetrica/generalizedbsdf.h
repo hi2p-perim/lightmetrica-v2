@@ -24,27 +24,47 @@
 
 #pragma once
 
-#include <lightmetrica/emitter.h>
+#include <lightmetrica/asset.h>
+#include <lightmetrica/math.h>
 
 LM_NAMESPACE_BEGIN
 
+struct SurfaceGeometry;
+
 /*!
 */
-class Light : public Emitter
+namespace SurfaceInteraction
+{
+    enum Type
+    {
+        D = 1 << 0,
+        G = 1 << 1,
+        S = 1 << 2,
+        L = 1 << 3,
+        E = 1 << 4,
+        BSDF = D | G | S,
+        Emitter = L | E,
+        None = 0
+    };
+};
+
+/*!
+*/
+class GeneralizedBSDF : public Asset
 {
 public:
 
-    LM_INTERFACE_CLASS(Light, Emitter);
+    LM_INTERFACE_CLASS(GeneralizedBSDF, Asset);
 
 public:
 
-    Light() = default;
-    LM_DISABLE_COPY_AND_MOVE(Light);
+    GeneralizedBSDF() = default;
+    LM_DISABLE_COPY_AND_MOVE(GeneralizedBSDF);
 
 public:
 
+    LM_INTERFACE_F(EvaluateDirection, bool(const SurfaceGeometry&, SurfaceInteraction types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta));
 
-
-};
+}
 
 LM_NAMESPACE_END

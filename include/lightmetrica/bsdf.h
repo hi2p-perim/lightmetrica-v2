@@ -24,22 +24,22 @@
 
 #pragma once
 
-#include <lightmetrica/emitter.h>
+#include <lightmetrica/generalizedbsdf.h>
 
 LM_NAMESPACE_BEGIN
 
 /*!
 */
-class Light : public Emitter
+class BSDF : public GeneralizedBSDF
 {
 public:
 
-    LM_INTERFACE_CLASS(Light, Emitter);
+    LM_INTERFACE_CLASS(BSDF, GeneralizedBSDF);
 
 public:
 
-    Light() = default;
-    LM_DISABLE_COPY_AND_MOVE(Light);
+    BSDF() = default;
+    LM_DISABLE_COPY_AND_MOVE(BSDF);
 
 public:
 

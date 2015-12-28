@@ -24,27 +24,15 @@
 
 #pragma once
 
-#include <lightmetrica/emitter.h>
+#include <lightmetrica/macros.h>
 
 LM_NAMESPACE_BEGIN
 
 /*!
 */
-class Light : public Emitter
+struct Spectrum
 {
-public:
-
-    LM_INTERFACE_CLASS(Light, Emitter);
-
-public:
-
-    Light() = default;
-    LM_DISABLE_COPY_AND_MOVE(Light);
-
-public:
-
-
-
+    
 };
 
 LM_NAMESPACE_END

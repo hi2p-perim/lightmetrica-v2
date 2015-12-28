@@ -25,6 +25,8 @@
 #pragma once
 
 #include <lightmetrica/component.h>
+#include <lightmetrica/math.h>
+#include <lightmetrica/specturm.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -54,7 +56,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Load, bool(const PropertyNode*, Assets* assets));
+    LM_INTERFACE_F(Load, Spectrum(const SurfaceGeometry&));
 
 };
 

@@ -29,7 +29,10 @@
 #include <lightmetrica/assets.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/accel.h>
-#include <glm/glm.hpp>
+#include <lightmetrica/trianglemesh.h>
+#include <lightmetrica/light.h>
+#include <lightmetrica/sensor.h>
+#include <lightmetrica/bsdf.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -246,19 +249,31 @@ public:
 
                 // --------------------------------------------------------------------------------
 
-                #pragma region Light
+                #pragma region Emitter
 
+                const auto* L = propNode->Child("light");
+                const auto* E = propNode->Child("sensor");
+                if (!L && !E)
                 {
-                    //const auto* light = assets->GetByID();
+                    LM_LOG_ERROR("'light' and 'sensor' node cannot be used in the same time");
+                    return false;
                 }
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Sensor
-
-                
+                else if (L || E)
+                {
+                    if (L)
+                    {
+                        primitive->emitter = assets->GetByID<Light>(L->As<std::string>());
+                    }
+                    else if (E)
+                    {
+                        primitive->emitter = assets->GetByID<Sensor>(L->As<std::string>());
+                    }
+                    if (!primitive->emitter)
+                    {
+                        LM_LOG_ERROR("Failed to create emitter");
+                        return false;
+                    }
+                }
 
                 #pragma endregion
 
@@ -266,7 +281,11 @@ public:
 
                 #pragma region Triangle mesh
 
-                
+                const auto* meshNode = propNode->Child("mesh");
+                if (meshNode)
+                {
+                    primitive->mesh = assets->GetByID<TriangleMesh>(meshNode->As<std::string>());
+                }
 
                 #pragma endregion
 
@@ -274,7 +293,11 @@ public:
 
                 #pragma region BSDF
 
-                
+                const auto* bsdfNode = propNode->Child("bsdf");
+                if (bsdfNode)
+                {
+                    primitive->bsdf = assets->GetByID<BSDF>(bsdfNode->As<std::string>());
+                }
 
                 #pragma endregion
 

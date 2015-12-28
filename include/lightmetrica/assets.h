@@ -54,13 +54,13 @@ public:
 
 public:
 
-    //template <typename AssetT>
-    //bool GetByID(const std::string& id)
-    //{
-    //    static_assert(std::is_base_of<AssetT, Asset>::value);
-    //    const auto* asset = GetByID(id, typeid(AssetT).name());
-    //    return static_cast<Asset*>(asset);
-    //}
+    template <typename AssetType>
+    auto GetByID(const std::string& id) const -> const Asset*
+    {
+        static_assert(std::is_base_of<AssetT, AssetType>::value);
+        const auto* asset = GetByID(id, typeid(AssetType).name());
+        return static_cast<AssetType*>(asset);
+    }
 
 };
 

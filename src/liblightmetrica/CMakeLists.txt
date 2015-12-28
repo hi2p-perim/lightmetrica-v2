@@ -67,6 +67,9 @@ set(
 	"${_INCLUDE_DIR}/exception.h"
 	"${_INCLUDE_DIR}/property.h"
 	"${_INCLUDE_DIR}/metacounter.h"
+	"${_INCLUDE_DIR}/surfacegeometry.h"
+	"${_INCLUDE_DIR}/ray.h"
+	"${_INCLUDE_DIR}/spectrum.h"
 )
 set(
     _CORE_SOURCE_FILES
@@ -111,6 +114,11 @@ set(
 	"${_INCLUDE_DIR}/asset.h"
 	"${_INCLUDE_DIR}/assets.h"
 	"${_INCLUDE_DIR}/primitives.h"
+	"${_INCLUDE_DIR}/light.h"
+	"${_INCLUDE_DIR}/emitter.h"
+	"${_INCLUDE_DIR}/sensor.h"
+	"${_INCLUDE_DIR}/bsdf.h"
+	"${_INCLUDE_DIR}/generalizedbsdf.h"
 )
 
 set(

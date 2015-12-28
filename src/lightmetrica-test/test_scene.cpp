@@ -28,6 +28,8 @@
 #include <lightmetrica/primitive.h>
 #include <lightmetrica-test/utils.h>
 #include <lightmetrica/assets.h>
+#include <lightmetrica/generalizedbsdf.h>
+#include <lightmetrica/trianglemesh.h>
 #include <lightmetrica-test/mathutils.h>
 
 LM_TEST_NAMESPACE_BEGIN
@@ -117,21 +119,24 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
     |     nodes:
     |       - id: n1
     |         sensor: sensor_1
-    |         triangle_mesh: mesh_1
+    |         mesh: mesh_1
     |         bsdf: bsdf_1
     |
     |       - id: n2
     |         light: light_1
-    |         triangle_mesh: mesh_2
+    |         mesh: mesh_2
     |         bsdf: bsdf_1
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
-    EXPECT_TRUE(prop->LoadFromString(SimpleLoad_Input));
+    ASSERT_TRUE(prop->LoadFromString(SimpleLoad_Input));
 
     const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
-    EXPECT_TRUE(scene->Initialize(prop->Root(), assets.get()));
+    ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get()));
+
+    const auto* n1 = scene->PrimitiveByID("n1");
+    ASSERT_TRUE(n1->bsdf);
 
     FAIL();
 }
