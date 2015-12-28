@@ -108,9 +108,15 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
         using UniquePointerType = std::unique_ptr<InterfaceType, void(*)(Component*)>
 
 // Define interface member function
-#define LM_INTERFACE_F(Name, Signature) \
-        static constexpr int Name ## _ID_ = MetaCounter<BaseType>::Value() + MetaCounter<InterfaceType>::Next() - 1; \
-        const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this)
+#if LM_INTELLISENSE
+    // Nasty workaround for intellisense
+    #define LM_INTERFACE_F(Name, Signature) \
+            const std::function<Signature> Name
+#else
+    #define LM_INTERFACE_F(Name, Signature) \
+            static constexpr int Name ## _ID_ = MetaCounter<BaseType>::Value() + MetaCounter<InterfaceType>::Next() - 1; \
+            const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this)
+#endif
 
 #pragma endregion
 
@@ -161,15 +167,20 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
     using ImplType = Impl; \
     using BaseType = Base
 
-#define LM_IMPL_F(Name) \
-    struct Name ## _Init_ { \
-        Name ## _Init_(ImplType* p) { \
-            p->vtable_[Name ## _ID_]   = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
-            p->userdata_[Name ## _ID_] = (void*)(&p->Name ## _Impl_); \
-        } \
-    } Name ## _Init_Inst_{this}; \
-    friend struct Name ## _Init_; \
-    const std::function<decltype(BaseType::Name)::Type> Name ## _Impl_ 
+#if LM_INTELLISENSE
+    #define LM_IMPL_F(Name) \
+        const std::function<decltype(BaseType::Name)::Type> Name ## _Impl_ 
+#else
+    #define LM_IMPL_F(Name) \
+        struct Name ## _Init_ { \
+            Name ## _Init_(ImplType* p) { \
+                p->vtable_[Name ## _ID_]   = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
+                p->userdata_[Name ## _ID_] = (void*)(&p->Name ## _Impl_); \
+            } \
+        } Name ## _Init_Inst_{this}; \
+        friend struct Name ## _Init_; \
+        const std::function<decltype(BaseType::Name)::Type> Name ## _Impl_ 
+#endif
 
 #pragma endregion
 
