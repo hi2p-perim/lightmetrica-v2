@@ -48,17 +48,8 @@ public:
 
 public:
 
-    LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
+    LM_IMPL_F(Initialize) = [this](const PropertyNode* prop, Assets* assets) -> bool
     {
-        #pragma region Asset manager
-
-        // Create asset manager
-        assets_ = ComponentFactory::Create<Assets>();
-
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
         #pragma region Check root node
 
         // Scene configuration file must begin with `lightmetrica_scene` node
@@ -107,6 +98,26 @@ public:
             }
         }
 
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Initialize asset manager
+
+        {
+            const auto* assetsNode = root->Child("assets");
+            if (!assetsNode)
+            {
+                LM_LOG_ERROR("Missing 'assets' node");
+                return false;
+            }
+
+            if (!assets->Initialize(assetsNode))
+            {
+                return false;
+            }
+        }
+        
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -235,6 +246,40 @@ public:
 
                 // --------------------------------------------------------------------------------
 
+                #pragma region Light
+
+                {
+                    //const auto* light = assets->GetByID();
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Sensor
+
+                
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Triangle mesh
+
+                
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region BSDF
+
+                
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
                 #pragma region Add primitive
 
                 if (!primitive->id.empty())
@@ -268,6 +313,8 @@ public:
 
                 return true;
             };
+
+            // --------------------------------------------------------------------------------
 
             const auto* nodesNode = sceneNode->Child("nodes");
             for (int i = 0; i < nodesNode->Size(); i++)
@@ -325,13 +372,10 @@ public:
 
 private:
 
-    Assets::UniquePointerType assets_{nullptr, [](Component*){}};   // Asset library
     std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
     std::unordered_map<std::string, Primitive*> primitiveIDMap_;    // Mapping from ID to primitive pointer
     Primitive* sensorPrimitive_;                                    // Index of main sensor
-    //std::unique_ptr<Accel> accel_;                                // Acceleration structure
-
-    
+    //Accel* accel_;
 
 };
 

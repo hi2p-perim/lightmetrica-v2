@@ -27,6 +27,7 @@
 #include <lightmetrica/property.h>
 #include <lightmetrica/scene.h>
 #include <lightmetrica/renderjob.h>
+#include <lightmetrica/assets.h>
 
 #include <iostream>
 #include <sstream>
@@ -307,16 +308,34 @@ private:
         
         // --------------------------------------------------------------------------------
 
-        #pragma region Initialize scene
+        #pragma region Load configuration files
 
-        const auto sceneProp = std::move(ComponentFactory::Create<PropertyTree>());
-        if (!sceneProp->LoadFromString(opt.Render.SceneFile))
+        // Scene configuration
+        const auto sceneConf = ComponentFactory::Create<PropertyTree>();
+        if (!sceneConf->LoadFromString(opt.Render.SceneFile))
         {
             return false;
         }
 
+        // Render configuration
+        const auto renderConf = ComponentFactory::Create<PropertyTree>();
+        if (!renderConf->LoadFromString(opt.Render.RenderOptionFile))
+        {
+            return false;
+        }
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Initialize scene
+
+        // Asset manager
+        const auto assets = ComponentFactory::Create<Assets>();
+
+        // Scene
         const auto scene = std::move(ComponentFactory::Create<Scene>());
-        if (!scene->Initialize(sceneProp->Root()))
+        if (!scene->Initialize(sceneConf->Root(), assets.get()))
         {
             return false;
         }
@@ -327,14 +346,8 @@ private:
 
         #pragma region Initialize renderer
 
-        const auto renderProp = std::move(ComponentFactory::Create<PropertyTree>());
-        if (!renderProp->LoadFromString(opt.Render.RenderOptionFile))
-        {
-            return false;
-        }
-
         const auto renderJob = std::move(ComponentFactory::Create<RenderJob>());
-        if (!renderJob->Initialize(renderProp->Root()))
+        if (!renderJob->Initialize(renderConf->Root()))
         {
             return false;
         }

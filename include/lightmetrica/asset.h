@@ -25,10 +25,11 @@
 #pragma once
 
 #include <lightmetrica/component.h>
-#include <lightmetrica/property.h>
-#include <lightmetrica/assets.h>
 
 LM_NAMESPACE_BEGIN
+
+class Assets;
+class PropertyNode;
 
 /*!
     Asset.
@@ -42,15 +43,18 @@ LM_NAMESPACE_BEGIN
 */
 class Asset : public Component
 {
-private:
+public:
 
     LM_INTERFACE_CLASS(Asset, Component);
 
 public:
 
-    LM_INTERFACE_BEGIN();
-    LM_INTERFACE_F(Load, void(const PropertyNode&, const Assets& assets));
-    LM_INTERFACE_END();
+    Asset() = default;
+    LM_DISABLE_COPY_AND_MOVE(Asset);
+
+public:
+
+    LM_INTERFACE_F(Load, bool(const PropertyNode*, Assets* assets));
 
 };
 

@@ -28,6 +28,9 @@
 
 LM_NAMESPACE_BEGIN
 
+class Asset;
+class PropertyNode;
+
 /*!
     Asset library.
 
@@ -46,6 +49,18 @@ public:
 
 public:
 
+    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
+    LM_INTERFACE_F(GetByID, const Asset*(const std::string& id, const std::string& type));
+
+public:
+
+    //template <typename AssetT>
+    //bool GetByID(const std::string& id)
+    //{
+    //    static_assert(std::is_base_of<AssetT, Asset>::value);
+    //    const auto* asset = GetByID(id, typeid(AssetT).name());
+    //    return static_cast<Asset*>(asset);
+    //}
 
 };
 

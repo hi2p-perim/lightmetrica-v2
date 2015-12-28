@@ -209,11 +209,32 @@ public:
 public:
 
     template <typename InterfaceType>
+    static auto Create(const char* implName, const char* interfaceName) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    {
+        // Create instance
+        using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
+        auto* p = static_cast<InterfaceType*>(Create(implName));
+        if (!p)
+        {
+            return ReturnType(nullptr, [](Component*) {});
+        }
+
+        // Deleter
+        const auto deleter = ReleaseFunc(implName);
+        if (!deleter)
+        {
+            return ReturnType(nullptr, [](Component*) {});
+        }
+
+        return ReturnType(p, deleter);
+    }
+
+    template <typename InterfaceType>
     static auto Create(const char* implName) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
         // Create instance
         using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
-        auto* p = reinterpret_cast<InterfaceType*>(Create(implName));
+        auto* p = static_cast<InterfaceType*>(Create(implName));
         if (!p)
         {
             return ReturnType(nullptr, [](Component*){});
@@ -237,6 +258,34 @@ public:
     }
 
 };
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Helper functions
+
+namespace
+{
+    // http://stackoverflow.com/questions/21174593/downcasting-unique-ptrbase-to-unique-ptrderived
+    template<typename Derived, typename Base, typename Del>
+    auto static_unique_ptr_cast(std::unique_ptr<Base, Del>&& p) -> std::unique_ptr<Derived, Del>
+    {
+        auto d = static_cast<Derived *>(p.release());
+        return std::unique_ptr<Derived, Del>(d, std::move(p.get_deleter()));
+    }
+
+    template<typename Derived, typename Base, typename Del>
+    auto dynamic_unique_ptr_cast(std::unique_ptr<Base, Del>&& p) -> std::unique_ptr<Derived, Del>
+    {
+        if (Derived *result = dynamic_cast<Derived *>(p.get()))
+        {
+            p.release();
+            return std::unique_ptr<Derived, Del>(result, std::move(p.get_deleter()));
+        }
+        return std::unique_ptr<Derived, Del>(nullptr, p.get_deleter());
+    }
+}
 
 #pragma endregion
 

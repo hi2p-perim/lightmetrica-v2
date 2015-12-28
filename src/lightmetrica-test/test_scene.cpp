@@ -27,6 +27,7 @@
 #include <lightmetrica/property.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica-test/utils.h>
+#include <lightmetrica/assets.h>
 #include <lightmetrica-test/mathutils.h>
 
 LM_TEST_NAMESPACE_BEGIN
@@ -37,12 +38,15 @@ struct SceneTest : public ::testing::Test
     virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
+// --------------------------------------------------------------------------------
+
 // Tests simple loading of the scene
 TEST_F(SceneTest, SimpleLoad)
 {
     const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
     |   version: 1.0.0
+    |   assets:
     |   scene:
     |     sensor: n1
     |     nodes:
@@ -59,8 +63,9 @@ TEST_F(SceneTest, SimpleLoad)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(SimpleLoad_Input));
     
+    const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
-    EXPECT_TRUE(scene->Initialize(prop->Root()));
+    EXPECT_TRUE(scene->Initialize(prop->Root(), assets.get()));
 
     EXPECT_EQ("n1", scene->PrimitiveByID("n1")->id);
     EXPECT_EQ("n2", scene->PrimitiveByID("n2")->id);
@@ -69,6 +74,14 @@ TEST_F(SceneTest, SimpleLoad)
     EXPECT_EQ("n2_2_1", scene->PrimitiveByID("n2_2_1")->id);
     EXPECT_EQ("n2_2_2", scene->PrimitiveByID("n2_2_2")->id);
 }
+
+// --------------------------------------------------------------------------------
+
+// Stubs
+//class Stub_TriangleMesh : public TriangleMesh
+//{
+//    
+//};
 
 // Tests simple loading of the scene with delayed loading of assets
 TEST_F(SceneTest, SimpleLoadWithAssets)
@@ -79,24 +92,28 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
     |   version: 1.0.0
     |
     |   assets:
-    |     - id: sensor_1
-    |       interface: sensor
-    |       type: stub_sensor
+    |     sensor_1:
+    |       interface: Sensor
+    |       type: Stub_Sensor
     |
-    |     - id: mesh_1
-    |       interface: triangle_mesh
-    |       type: stub_triangle_mesh
+    |     mesh_1:
+    |       interface: TriangleMesh
+    |       type: Stub_TriangleMesh
     |
-    |     - id: mesh_2
-    |       interface: triangle_mesh
-    |       type: stub_triangle_mesh
+    |     mesh_2:
+    |       interface: TriangleMesh
+    |       type: Stub_TriangleMesh
     |
-    |     - id: bsdf_1
-    |       interface: bsdf
-    |       type: stub_bsdf
+    |     bsdf_1:
+    |       interface: BSDF
+    |       type: Stub_BSDF
     |
     |   scene:
     |     sensor: n1
+    |
+    |     accel:
+    |       type: stub_accel
+    |
     |     nodes:
     |       - id: n1
     |         sensor: sensor_1
@@ -112,11 +129,14 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(SimpleLoad_Input));
 
+    const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
-    EXPECT_TRUE(scene->Initialize(prop->Root()));
+    EXPECT_TRUE(scene->Initialize(prop->Root(), assets.get()));
 
     FAIL();
 }
+
+// --------------------------------------------------------------------------------
 
 // Tests with the scene with transform
 TEST_F(SceneTest, Transform)
@@ -124,6 +144,7 @@ TEST_F(SceneTest, Transform)
     const auto Transform_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
     |   version: 1.0.0
+    |   assets:
     |   scene:
     |     sensor: n1
     |     nodes:
@@ -167,8 +188,9 @@ TEST_F(SceneTest, Transform)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(Transform_Input));
 
+    const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
-    EXPECT_TRUE(scene->Initialize(prop->Root()));
+    EXPECT_TRUE(scene->Initialize(prop->Root(), assets.get()));
 
     const Primitive* n1 = scene->PrimitiveByID("n1");
     EXPECT_TRUE(ExpectMatNear(Mat4{ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 }, n1->transform));
@@ -183,12 +205,15 @@ TEST_F(SceneTest, Transform)
     EXPECT_TRUE(ExpectMatNear(Mat4{ 2,0,0,2, 0,2,0,2, 0,0,2,2, 0,0,0,1 }, n4->transform));
 }
 
+// --------------------------------------------------------------------------------
+
 // Sensor nodes
 TEST_F(SceneTest, SensorNode)
 {
     const auto SensorNode_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
     |   version: 1.0.0
+    |   assets:
     |   scene:
     |     sensor: n2
     |     nodes:
@@ -199,11 +224,15 @@ TEST_F(SceneTest, SensorNode)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(SensorNode_Input));
 
+    const auto assets = ComponentFactory::Create<Assets>();
+
     const auto scene = ComponentFactory::Create<Scene>();
-    EXPECT_TRUE(scene->Initialize(prop->Root()));
+    EXPECT_TRUE(scene->Initialize(prop->Root(), assets.get()));
 
     EXPECT_EQ("n2", scene->Sensor()->id);
 }
+
+// --------------------------------------------------------------------------------
 
 // Missing `lightmetrica_scene` node
 TEST_F(SceneTest, InvalidrRootNode_Fail)
@@ -215,34 +244,40 @@ TEST_F(SceneTest, InvalidrRootNode_Fail)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(InvalidrRootNode_Fail_Input));
 
+    const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
     const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
     {
-        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
         Logger::Flush();
     }));
     EXPECT_EQ("Missing 'lightmetrica_scene' node", err);
 }
+
+// --------------------------------------------------------------------------------
 
 // Missing `version` node
 TEST_F(SceneTest, MissingVersionNode_Fail)
 {
     const auto MissingVersionNode_Fail_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
-    |   a:
+    |   assets:
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(MissingVersionNode_Fail_Input));
 
+    const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
     const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
     {
-        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
         Logger::Flush();
     }));
     EXPECT_EQ("Missing 'version' node", err);
 }
+
+// --------------------------------------------------------------------------------
 
 // Invalid version string
 TEST_F(SceneTest, InvalidVersionString_Fail)
@@ -255,14 +290,17 @@ TEST_F(SceneTest, InvalidVersionString_Fail)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(InvalidVersionString_Fail_Input));
 
+    const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
     const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
     {
-        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
         Logger::Flush();
     }));
     EXPECT_TRUE(boost::starts_with(err, "Invalid version string"));
 }
+
+// --------------------------------------------------------------------------------
 
 // Version check fails
 TEST_F(SceneTest, InvalidVersion_Fail)
@@ -275,14 +313,17 @@ TEST_F(SceneTest, InvalidVersion_Fail)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(InvalidVersion_Fail_Input));
 
+    const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
     const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
     {
-        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
         Logger::Flush();
     }));
     EXPECT_TRUE(boost::starts_with(err, "Invalid version"));
 }
+
+// --------------------------------------------------------------------------------
 
 // There is no `sensor` node
 TEST_F(SceneTest, NoSensor_Fail)
@@ -290,6 +331,7 @@ TEST_F(SceneTest, NoSensor_Fail)
     const auto NoSensor_Fail_Input = TestUtils::MultiLineLiteral(R"x(
     | lightmetrica_scene:
     |   version: 1.0.0
+    |   assets:
     |   scene:
     |     nodes:
     |       - id: n1
@@ -299,14 +341,17 @@ TEST_F(SceneTest, NoSensor_Fail)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(NoSensor_Fail_Input));
 
+    const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
     const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
     {
-        EXPECT_FALSE(scene->Initialize(prop->Root()));
+        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
         Logger::Flush();
     }));
     EXPECT_TRUE(boost::starts_with(err, "Missing 'sensor' node"));
 }
+
+// --------------------------------------------------------------------------------
 
 // Invalid number of arguments in `transform`
 //TEST_F(SceneTest, Transform_Fail)

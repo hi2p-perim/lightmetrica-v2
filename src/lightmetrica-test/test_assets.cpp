@@ -24,12 +24,44 @@
 
 #include <pch_test.h>
 #include <lightmetrica/assets.h>
+#include <lightmetrica/asset.h>
+#include <lightmetrica/property.h>
+#include <lightmetrica-test/utils.h>
 
 LM_TEST_NAMESPACE_BEGIN
 
-//TEST(AssetsTest, A)
-//{
-//    
-//}
+struct TestAsset : public Asset
+{
+    LM_INTERFACE_CLASS(TestAsset, Asset);
+    LM_INTERFACE_F(Func, int());
+};
+
+struct TestAsset1 : public TestAsset
+{
+    LM_IMPL_CLASS(TestAsset1, TestAsset);
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets* assets) -> bool { return true; };
+    LM_IMPL_F(Func) = [this]() -> int { return 42; };
+};
+
+LM_COMPONENT_REGISTER_IMPL(TestAsset1);
+
+TEST(AssetsTest, GetByID)
+{
+    const std::string GetByID_Input = TestUtils::MultiLineLiteral(R"x(
+    | test_1:
+    |   interface: TestAsset
+    |   type: TestAsset1
+    )x");
+
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(GetByID_Input));
+
+    const auto assets = ComponentFactory::Create<Assets>();
+    EXPECT_TRUE(assets->Initialize(prop->Root()));
+
+    const auto* asset = static_cast<const TestAsset*>(assets->GetByID("test_1", "TestAsset"));
+    ASSERT_NE(nullptr, asset);
+    EXPECT_EQ(42, asset->Func());
+}
 
 LM_TEST_NAMESPACE_END
