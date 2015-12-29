@@ -63,11 +63,11 @@ TEST_F(SceneTest, SimpleLoad)
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
-    EXPECT_TRUE(prop->LoadFromString(SimpleLoad_Input));
+    ASSERT_TRUE(prop->LoadFromString(SimpleLoad_Input));
     
     const auto assets = ComponentFactory::Create<Assets>();
     const auto scene = ComponentFactory::Create<Scene>();
-    EXPECT_TRUE(scene->Initialize(prop->Root(), assets.get()));
+    ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get()));
 
     EXPECT_EQ("n1", scene->PrimitiveByID("n1")->id);
     EXPECT_EQ("n2", scene->PrimitiveByID("n2")->id);
@@ -136,7 +136,7 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get()));
 
     const auto* n1 = scene->PrimitiveByID("n1");
-    ASSERT_TRUE(n1->bsdf);
+    ASSERT_NE(nullptr, n1->bsdf);
 
     FAIL();
 }

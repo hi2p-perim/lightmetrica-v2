@@ -53,9 +53,9 @@ struct TestAsset2 : public TestAsset
 LM_COMPONENT_REGISTER_IMPL(TestAsset1);
 LM_COMPONENT_REGISTER_IMPL(TestAsset2);
 
-TEST(AssetsTest, GetByID)
+TEST(AssetsTest, AssetByIDAndType)
 {
-    const std::string GetByID_Input = TestUtils::MultiLineLiteral(R"x(
+    const std::string AssetByIDAndType_Input = TestUtils::MultiLineLiteral(R"x(
     | test_1:
     |   interface: TestAsset
     |   type: TestAsset1
@@ -66,19 +66,19 @@ TEST(AssetsTest, GetByID)
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
-    EXPECT_TRUE(prop->LoadFromString(GetByID_Input));
+    EXPECT_TRUE(prop->LoadFromString(AssetByIDAndType_Input));
 
     const auto assets = ComponentFactory::Create<Assets>();
     EXPECT_TRUE(assets->Initialize(prop->Root()));
 
     {
-        const auto* asset = static_cast<const TestAsset*>(assets->GetByID("test_1", "TestAsset"));
+        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_1", "TestAsset"));
         ASSERT_NE(nullptr, asset);
         EXPECT_EQ(42, asset->Func());
     }
 
     {
-        const auto* asset = static_cast<const TestAsset*>(assets->GetByID("test_2", "TestAsset"));
+        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_2", "TestAsset"));
         ASSERT_NE(nullptr, asset);
         EXPECT_EQ(43, asset->Func());
     }

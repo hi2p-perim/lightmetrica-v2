@@ -26,12 +26,13 @@
 
 #include <lightmetrica/component.h>
 #include <lightmetrica/math.h>
-#include <lightmetrica/specturm.h>
+#include <lightmetrica/spectrum.h>
 
 LM_NAMESPACE_BEGIN
 
 class Assets;
 class PropertyNode;
+struct SurfaceGeometry;
 
 /*!
     Asset.
@@ -56,7 +57,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Load, Spectrum(const SurfaceGeometry&));
+    LM_INTERFACE_F(Load, bool(const PropertyNode*, Assets*));
 
 };
 

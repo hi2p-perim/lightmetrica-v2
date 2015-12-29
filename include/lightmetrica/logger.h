@@ -51,7 +51,7 @@ extern "C"
 {
     LM_PUBLIC_API auto Logger_Run() -> void;
     LM_PUBLIC_API auto Logger_Stop() -> void;
-    LM_PUBLIC_API auto Logger_Log(int type, const char* message, int line, bool inplace, bool simple) -> void;
+    LM_PUBLIC_API auto Logger_Log(int type, const char* filename, const char* message, int line, bool inplace, bool simple) -> void;
     LM_PUBLIC_API auto Logger_UpdateIndentation(bool push) -> void;
     LM_PUBLIC_API auto Logger_Flush() -> void;
 }
@@ -111,7 +111,7 @@ public:
 
     static auto Run()  -> void { LM_EXPORTED_F(Logger_Run); }
     static auto Stop() -> void { LM_EXPORTED_F(Logger_Stop); }
-    static auto Log(LogType type, const std::string& message, int line, bool inplace, bool simple) -> void { LM_EXPORTED_F(Logger_Log, (int)(type), message.c_str(), line, inplace, simple); }
+    static auto Log(LogType type, const std::string& message, const char* filename, int line, bool inplace, bool simple) -> void { LM_EXPORTED_F(Logger_Log, (int)(type), message.c_str(), filename, line, inplace, simple); }
     static auto UpdateIndentation(bool push) -> void { LM_EXPORTED_F(Logger_UpdateIndentation, push); }
 
     /*!
@@ -135,15 +135,15 @@ struct LogIndenter
 	~LogIndenter() { Logger::UpdateIndentation(false); }
 };
 
-#define LM_LOG_ERROR(message)        Logger::Log(LogType::Error, message, __LINE__, false, false)
-#define LM_LOG_WARN(message)         Logger::Log(LogType::Warn,  message, __LINE__, false, false)
-#define LM_LOG_INFO(message)         Logger::Log(LogType::Info,  message, __LINE__, false, false)
-#define LM_LOG_DEBUG(message)        Logger::Log(LogType::Debug, message, __LINE__, false, false)
-#define LM_LOG_ERROR_SIMPLE(message) Logger::Log(LogType::Error, message, __LINE__, false, true)
-#define LM_LOG_WARN_SIMPLE(message)  Logger::Log(LogType::Warn,  message, __LINE__, false, true)
-#define LM_LOG_INFO_SIMPLE(message)  Logger::Log(LogType::Info,  message, __LINE__, false, true)
-#define LM_LOG_DEBUG_SIMPLE(message) Logger::Log(LogType::Debug, message, __LINE__, false, true)
-#define LM_LOG_INPLACE(message)      Logger::Log(LogType::Info,  message, __LINE__, true, false)
+#define LM_LOG_ERROR(message)        Logger::Log(LogType::Error, message, __FILE__, __LINE__, false, false)
+#define LM_LOG_WARN(message)         Logger::Log(LogType::Warn,  message, __FILE__, __LINE__, false, false)
+#define LM_LOG_INFO(message)         Logger::Log(LogType::Info,  message, __FILE__, __LINE__, false, false)
+#define LM_LOG_DEBUG(message)        Logger::Log(LogType::Debug, message, __FILE__, __LINE__, false, false)
+#define LM_LOG_ERROR_SIMPLE(message) Logger::Log(LogType::Error, message, __FILE__, __LINE__, false, true)
+#define LM_LOG_WARN_SIMPLE(message)  Logger::Log(LogType::Warn,  message, __FILE__, __LINE__, false, true)
+#define LM_LOG_INFO_SIMPLE(message)  Logger::Log(LogType::Info,  message, __FILE__, __LINE__, false, true)
+#define LM_LOG_DEBUG_SIMPLE(message) Logger::Log(LogType::Debug, message, __FILE__, __LINE__, false, true)
+#define LM_LOG_INPLACE(message)      Logger::Log(LogType::Info,  message, __FILE__, __LINE__, true, false)
 #define LM_LOG_INPLACE_END()         std::cout << std::endl
 #define LM_LOG_INDENTER()            LogIndenter LM_TOKENPASTE2(logIndenter_, __LINE__)
 

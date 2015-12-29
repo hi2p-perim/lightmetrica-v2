@@ -80,7 +80,7 @@ public:
 		}
 	}
 
-	auto Log(LogType type, const std::string& message, int line, bool inplace, bool simple) -> void
+	auto Log(LogType type, const std::string& message, const char* filename, int line, bool inplace, bool simple) -> void
 	{
 		int threadId;
 		{
@@ -93,7 +93,7 @@ public:
 			threadId = a->second;
 		}
 
-		io.post([this, type, message, line, threadId, inplace, simple]()
+		io.post([this, type, message, filename, line, threadId, inplace, simple]()
 		{
 			// Fill spaces to erase previous message
 			if (prevMessageIsInplace)
@@ -131,7 +131,7 @@ public:
 
 			// Print message
 			BeginTextColor(type);
-			const auto text = simple ? message : GenerateMessage(type, message, line, threadId);
+			const auto text = simple ? message : GenerateMessage(type, message, boost::filesystem::path(filename).filename().string(), line, threadId);
 			if (inplace)
 			{
 				std::cout << text << "\r";
@@ -172,12 +172,12 @@ public:
 
 private:
 
-	auto GenerateMessage(LogType type, const std::string& message, int line, int threadId) const -> std::string
+	auto GenerateMessage(LogType type, const std::string& message, const std::string& filename, int line, int threadId) const -> std::string
 	{
 		const std::string LogTypeString[] = { "ERROR", "WARN", "INFO", "DEBUG" };
 		const auto now = std::chrono::high_resolution_clock::now();
 		const double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - LogStartTime).count() / 1000.0;
-		return boost::str(boost::format("| %-5s %.3f | @%4d | #%2d | %s%s") % LogTypeString[(int)(type)] % elapsed % line % threadId % IndentationString % message);
+		return boost::str(boost::format("| %-5s %.3f | %-8.8s~ | @%4d | #%2d | %s%s") % LogTypeString[(int)(type)] % elapsed % filename % line % threadId % IndentationString % message);
 	}
 
 	auto BeginTextColor(LogType type) -> void
@@ -258,7 +258,7 @@ auto LoggerImpl::Instance() -> LoggerImpl*
 
 auto Logger_Run() -> void { LoggerImpl::Instance()->Run(); }
 auto Logger_Stop() -> void { LoggerImpl::Instance()->Stop(); }
-auto Logger_Log(int type, const char* message, int line, bool inplace, bool simple) -> void { LoggerImpl::Instance()->Log((LogType)(type), message, line, inplace, simple); }
+auto Logger_Log(int type, const char* message, const char* filename, int line, bool inplace, bool simple) -> void { LoggerImpl::Instance()->Log((LogType)(type), message, filename, line, inplace, simple); }
 auto Logger_UpdateIndentation(bool push) -> void { LoggerImpl::Instance()->UpdateIndentation(push); }
 auto Logger_Flush() -> void { LoggerImpl::Instance()->Flush(); }
 

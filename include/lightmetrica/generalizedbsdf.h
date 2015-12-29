@@ -50,6 +50,14 @@ namespace SurfaceInteraction
 
 /*!
 */
+enum class TransportDirection
+{
+    LE,
+    EL
+};
+
+/*!
+*/
 class GeneralizedBSDF : public Asset
 {
 public:
@@ -63,8 +71,8 @@ public:
 
 public:
 
-    LM_INTERFACE_F(EvaluateDirection, bool(const SurfaceGeometry&, SurfaceInteraction types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta));
+    LM_INTERFACE_F(EvaluateDirection, bool(const SurfaceGeometry&, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta));
 
-}
+};
 
 LM_NAMESPACE_END

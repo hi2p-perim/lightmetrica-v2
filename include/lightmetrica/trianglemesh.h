@@ -30,7 +30,7 @@ LM_NAMESPACE_BEGIN
 
 class TriangleMesh : public Asset
 {
-private:
+public:
 
     LM_INTERFACE_CLASS(TriangleMesh, Asset);
 

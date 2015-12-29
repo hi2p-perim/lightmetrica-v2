@@ -36,7 +36,7 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
 {
     const auto CheckLogOutput = [](const std::string& type, const std::string& message, const std::string& out) -> void
     {
-        std::regex re(R"x(^\| ([[:upper:]]+) +[\d]*\.\d{3} \| @[ \d]{4} \| #[ \d]{2} \| (.*)\n)x");
+        std::regex re(R"x(^\| ([[:upper:]]+) +[\d]*\.\d{3} \| .* \| @[ \d]{4} \| #[ \d]{2} \| (.*)\n)x");
         std::smatch match;
         const bool result = std::regex_match(out, match, re);
         EXPECT_TRUE(result);
@@ -83,7 +83,7 @@ TEST(LoggerTest, Indenter)
 {
     const auto ExtractMessage = [](const std::string& out) -> std::string
     {
-        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| @[ \d]{4} \| #[ \d]{2} \| (.*))x");
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .* \| @[ \d]{4} \| #[ \d]{2} \| (.*))x");
         std::smatch match;
         const bool result = std::regex_match(out, match, re);
         return result ? std::string(match[1]) : "";

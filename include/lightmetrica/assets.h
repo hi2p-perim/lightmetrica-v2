@@ -50,16 +50,16 @@ public:
 public:
 
     LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
-    LM_INTERFACE_F(GetByID, const Asset*(const std::string& id, const std::string& type));
+    LM_INTERFACE_F(AssetByIDAndType, const Asset*(const std::string& id, const std::string& type));
 
 public:
 
     template <typename AssetType>
-    auto GetByID(const std::string& id) const -> const Asset*
+    auto AssetByID(const std::string& id) const -> const AssetType*
     {
-        static_assert(std::is_base_of<AssetT, AssetType>::value);
-        const auto* asset = GetByID(id, typeid(AssetType).name());
-        return static_cast<AssetType*>(asset);
+        static_assert(std::is_base_of<Asset, AssetType>::value, "Asset must be a base of AssetType");
+        const auto* asset = AssetByIDAndType(id, AssetType::Type_().name);
+        return static_cast<const AssetType*>(asset);
     }
 
 };

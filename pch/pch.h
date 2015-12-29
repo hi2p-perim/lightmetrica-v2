@@ -40,7 +40,7 @@
 //#include <boost/scoped_array.hpp>
 //#include <boost/optional.hpp>
 //#include <boost/range/adaptors.hpp>
-//#include <boost/filesystem.hpp>
+#include <boost/filesystem.hpp>
 //#include <boost/numeric/conversion/cast.hpp>
 //#include <boost/math/constants/constants.hpp>
 #include <boost/lexical_cast.hpp>

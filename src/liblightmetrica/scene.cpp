@@ -253,7 +253,7 @@ public:
 
                 const auto* L = propNode->Child("light");
                 const auto* E = propNode->Child("sensor");
-                if (!L && !E)
+                if (L && E)
                 {
                     LM_LOG_ERROR("'light' and 'sensor' node cannot be used in the same time");
                     return false;
@@ -262,11 +262,11 @@ public:
                 {
                     if (L)
                     {
-                        primitive->emitter = assets->GetByID<Light>(L->As<std::string>());
+                        primitive->emitter = static_cast<const Emitter*>(assets->AssetByID<Light>(L->As<std::string>()));
                     }
                     else if (E)
                     {
-                        primitive->emitter = assets->GetByID<Sensor>(L->As<std::string>());
+                        primitive->emitter = static_cast<const Emitter*>(assets->AssetByID<Sensor>(E->As<std::string>()));
                     }
                     if (!primitive->emitter)
                     {
@@ -284,7 +284,7 @@ public:
                 const auto* meshNode = propNode->Child("mesh");
                 if (meshNode)
                 {
-                    primitive->mesh = assets->GetByID<TriangleMesh>(meshNode->As<std::string>());
+                    primitive->mesh = assets->AssetByID<TriangleMesh>(meshNode->As<std::string>());
                 }
 
                 #pragma endregion
@@ -296,7 +296,7 @@ public:
                 const auto* bsdfNode = propNode->Child("bsdf");
                 if (bsdfNode)
                 {
-                    primitive->bsdf = assets->GetByID<BSDF>(bsdfNode->As<std::string>());
+                    primitive->bsdf = assets->AssetByID<BSDF>(bsdfNode->As<std::string>());
                 }
 
                 #pragma endregion

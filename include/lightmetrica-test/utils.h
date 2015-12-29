@@ -89,7 +89,7 @@ public:
     */
     static auto ExtractLogMessage(const std::string& out) -> std::string
     {
-        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| @[ \d]{4} \| #[ \d]{2} \| (.*)\n)x");
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .* \| @[ \d]{4} \| #[ \d]{2} \| (.*)\n)x");
         std::smatch match;
         const bool result = std::regex_match(out, match, re);
         return result ? match[1].str() : "";

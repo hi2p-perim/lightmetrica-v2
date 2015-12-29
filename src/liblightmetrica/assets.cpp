@@ -47,7 +47,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(GetByID) = [this](const std::string& id, const std::string& interfaceType) -> const Asset*
+    LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& interfaceType) -> const Asset*
     {
         #pragma region Find the registered asset by id
 

@@ -43,9 +43,9 @@ struct Primitive
 {
     std::string id;
     Mat4 transform;
-    TriangleMesh* mesh = nullptr;
-    Emitter* emitter = nullptr;
-    BSDF* bsdf = nullptr;
+    const TriangleMesh* mesh = nullptr;
+    const Emitter* emitter = nullptr;
+    const BSDF* bsdf = nullptr;
 };
 
 LM_NAMESPACE_END
