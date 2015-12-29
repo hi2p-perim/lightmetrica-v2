@@ -24,30 +24,25 @@
 
 #pragma once
 
-#include <lightmetrica/component.h>
+#include <lightmetrica/macros.h>
+#include <string>
 
 LM_NAMESPACE_BEGIN
 
-struct Primitive;
-class PropertyNode;
-
-class Accel : public Component
-{
-public:
-
-    LM_INTERFACE_CLASS(Accel, Component);
-
-public:
-
-    Accel() = default;
-    LM_DISABLE_COPY_AND_MOVE(Accel);
-
-public:
-
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
-    LM_INTERFACE_F(Build, bool(const Primitive* primitives, int n));
-    LM_INTERFACE_F(Intersect, void());
-
-};
+/*!
+    Manages configuration file.
+*/
+//class Config
+//{
+//public:
+//
+//    Config() = default;
+//    LM_DISABLE_COPY_AND_MOVE(Config);
+//
+//public:
+//
+//    LM_PUBLIC_API auto Load(const std::string& path) -> bool;
+//
+//};
 
 LM_NAMESPACE_END

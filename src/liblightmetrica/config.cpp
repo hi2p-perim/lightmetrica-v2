@@ -22,32 +22,14 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
-#include <lightmetrica/component.h>
+#include <pch.h>
+#include <lightmetrica/detail/config.h>
 
 LM_NAMESPACE_BEGIN
-
-struct Primitive;
-class PropertyNode;
-
-class Accel : public Component
-{
-public:
-
-    LM_INTERFACE_CLASS(Accel, Component);
-
-public:
-
-    Accel() = default;
-    LM_DISABLE_COPY_AND_MOVE(Accel);
-
-public:
-
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
-    LM_INTERFACE_F(Build, bool(const Primitive* primitives, int n));
-    LM_INTERFACE_F(Intersect, void());
-
-};
+//
+//auto Config::Load(const std::string& path) -> bool
+//{
+//    
+//}
 
 LM_NAMESPACE_END

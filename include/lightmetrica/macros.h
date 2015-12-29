@@ -208,7 +208,7 @@
 	TypeName(const TypeName &) = delete; \
 	TypeName(TypeName&&) = delete; \
 	auto operator=(const TypeName&) -> void = delete; \
-	auto operator=(TypeName&&) -> void = delete;
+	auto operator=(TypeName&&) -> void = delete
 
 #define LM_DISABLE_CONSTRUCT(TypeName) \
     TypeName() = delete; \

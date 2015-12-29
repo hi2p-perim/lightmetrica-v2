@@ -28,12 +28,14 @@
 #include <lightmetrica/scene.h>
 #include <lightmetrica/renderjob.h>
 #include <lightmetrica/assets.h>
+#include <lightmetrica/accel.h>
 
 #include <iostream>
 #include <sstream>
 #include <regex>
 
 #include <boost/program_options.hpp>
+#include <boost/format.hpp>
 
 using namespace lightmetrica_v2;
 
@@ -83,7 +85,6 @@ struct ProgramOption
         bool Help = false;
         std::string HelpDetail;
         std::string SceneFile;
-        std::string RenderOptionFile;
     } Render;
 
 public:
@@ -158,8 +159,7 @@ public:
                     po::options_description renderOpt("Options");
                     renderOpt.add_options()
                         ("help", "Display help message (this message)")
-                        ("scene,s", po::value<std::string>()->required(), "Scene description file")
-                        ("render-option,o", po::value<std::string>()->required(), "Renderer option file");
+                        ("scene,s", po::value<std::string>()->required(), "Scene description file");
 
                     auto opts = po::collect_unrecognized(parsed.options, po::include_positional);
                     opts.erase(opts.begin());
@@ -177,7 +177,6 @@ public:
                     po::notify(vm);
 
                     Render.SceneFile = vm["scene"].as<std::string>();
-                    Render.RenderOptionFile = vm["render-option"].as<std::string>();
 
                     return true;
                 }
@@ -317,12 +316,113 @@ private:
             return false;
         }
 
-        // Render configuration
-        const auto renderConf = ComponentFactory::Create<PropertyTree>();
-        if (!renderConf->LoadFromString(opt.Render.RenderOptionFile))
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Check root node
+
+        // Scene configuration file must begin with `lightmetrica` node
+        const auto* root = sceneConf->Root()->Child("lightmetrica");
+        if (!root)
         {
+            // TODO: Improve error messages
+            LM_LOG_ERROR("Missing 'lightmetrica' node");
             return false;
         }
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Scene version check
+
+        {
+            // Scene version support
+            using VersionT = std::tuple<int, int, int>;
+            const VersionT MinVersion{ 1, 0, 0 };
+            const VersionT MaxVersion{ 1, 0, 0 };
+
+            const auto* versionNode = root->Child("version");
+            if (!versionNode)
+            {
+                LM_LOG_ERROR("Missing 'version' node");
+                return false;
+            }
+
+            // Parse version string
+            const auto versionStr = versionNode->As<std::string>();
+            std::regex re(R"x((\d)\.(\d)\.(\d))x");
+            std::smatch match;
+            const bool result = std::regex_match(versionStr, match, re);
+            if (!result)
+            {
+                LM_LOG_ERROR("Invalid version string: " + versionStr);
+                return false;
+            }
+
+            // Check version
+            VersionT version{ std::stoi(match[1]), std::stoi(match[2]), std::stoi(match[3]) };
+            if (version < MinVersion || MaxVersion < version)
+            {
+                LM_LOG_ERROR(boost::str(boost::format("Invalid version [ Expected: (%d.%d.%d)-(%d.%d.%d), Actual: (%d.%d.%d) ]")
+                    % std::get<0>(MinVersion) % std::get<1>(MinVersion) % std::get<2>(MinVersion)
+                    % std::get<0>(MaxVersion) % std::get<1>(MaxVersion) % std::get<2>(MaxVersion)
+                    % std::get<0>(version) % std::get<1>(version) % std::get<2>(version)));
+                return false;
+            }
+        }
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Initialize asset manager
+
+        const auto assets = ComponentFactory::Create<Assets>();
+        {    
+            const auto* assetsNode = root->Child("assets");
+            if (!assetsNode)
+            {
+                LM_LOG_ERROR("Missing 'assets' node");
+                return false;
+            }
+            if (!assets->Initialize(assetsNode))
+            {
+                return false;
+            }
+        }
+        
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Initialize accel
+
+        const auto accel = [&]() -> Accel::UniquePointerType
+        {
+            bool err = false;
+
+            const auto accelNode = root->Child("accel");
+            if (!accelNode)
+            {
+                err = true;
+            }
+
+            const auto tn = accelNode->Child("type");
+            if (!tn)
+            {
+                err = true;
+            }
+
+            if (err)
+            {
+                LM_LOG_INFO("Invalid 'accel' node, using default accel 'NaiveAccel'");
+                return ComponentFactory::Create<Accel>("NaiveAccel");
+            }
+
+            return ComponentFactory::Create<Accel>(tn->As<std::string>().c_str());
+        }();
 
         #pragma endregion
 
@@ -330,24 +430,28 @@ private:
 
         #pragma region Initialize scene
 
-        // Asset manager
-        const auto assets = ComponentFactory::Create<Assets>();
-
-        // Scene
-        const auto scene = std::move(ComponentFactory::Create<Scene>());
-        if (!scene->Initialize(sceneConf->Root(), assets.get()))
+        const auto scene = ComponentFactory::Create<Scene>();
         {
-            return false;
+            const auto* sceneNode = root->Child("scene");
+            if (!sceneNode)
+            {
+                LM_LOG_ERROR("Missing 'scene' node");
+                return false;
+            }
+            if (!scene->Initialize(sceneNode, assets.get(), accel.get()))
+            {
+                return false;
+            }
         }
 
         #pragma endregion
 
-        // --------------------------------------------------------------------------------
+        // ---------------------------------------- ----------------------------------------
 
         #pragma region Initialize renderer
 
-        const auto renderJob = std::move(ComponentFactory::Create<RenderJob>());
-        if (!renderJob->Initialize(renderConf->Root()))
+        const auto renderJob = ComponentFactory::Create<RenderJob>();
+        if (!renderJob->Initialize(nullptr))
         {
             return false;
         }

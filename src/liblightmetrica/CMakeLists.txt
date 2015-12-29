@@ -29,10 +29,8 @@ include (CopyDLL)
 
 set(_PROJECT_NAME "liblightmetrica")
 set(_HEADER_FILES_ROOT "Header Files")
-set(_INTERNAL_HEADER_FILES_ROOT "Internal Header Files")
 set(_SOURCE_FILES_ROOT "Source Files")
 set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica")
-set(_INTERNAL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica-internal")
 
 # --------------------------------------------------------------------------------
 
@@ -80,14 +78,30 @@ set(
 	"exception.cpp"
 	"property.cpp"
 
-    # Internal
+    # detail
     "stringtemplate.cpp"
+    "config.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core" FILES ${_CORE_HEADER_FILES})
 source_group("${_SOURCE_FILES_ROOT}\\core" FILES ${_CORE_SOURCE_FILES})
 list(APPEND _HEADER_FILES ${_CORE_HEADER_FILES})
 list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Core/detail
+#
+
+set(
+    _CORE_DETAIL_HEADER_FILES
+	"${_INCLUDE_DIR}/detail/stringtemplate.h"
+	"${_INCLUDE_DIR}/detail/config.h"
+)
+
+source_group("${_HEADER_FILES_ROOT}\\core\\detail" FILES ${_CORE_DETAIL_HEADER_FILES})
+list(APPEND _HEADER_FILES ${_CORE_DETAIL_HEADER_FILES})
 
 # --------------------------------------------------------------------------------
 
@@ -158,6 +172,21 @@ list(APPEND _SOURCE_FILES ${_SCENE_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
+# Accel
+#
+
+set(
+    _ACCEL_SOURCE_FILES
+	"accel/accel_naive.cpp"
+	"accel/accel_embree.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\accel" FILES ${_ACCEL_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ACCEL_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
 # Renderer
 #
 
@@ -175,20 +204,6 @@ source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})
 source_group("${_SOURCE_FILES_ROOT}\\renderer" FILES ${_RENDERER_SOURCE_FILES})
 list(APPEND _HEADER_FILES ${_RENDERER_HEADER_FILES})
 list(APPEND _SOURCE_FILES ${_RENDERER_SOURCE_FILES})
-
-# --------------------------------------------------------------------------------
-
-#
-# Internal/core headers
-#
-
-set(
-    _INTERNAL_CORE_HEADER_FILES
-	"${_INTERNAL_INCLUDE_DIR}/stringtemplate.h"
-)
-
-source_group("${_INTERNAL_HEADER_FILES_ROOT}\\core" FILES ${_INTERNAL_CORE_HEADER_FILES})
-list(APPEND _HEADER_FILES ${_INTERNAL_CORE_HEADER_FILES})
 
 # --------------------------------------------------------------------------------
 

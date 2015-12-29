@@ -23,7 +23,7 @@
 */
 
 #include <pch.h>
-#include <lightmetrica-internal/stringtemplate.h>
+#include <lightmetrica/detail/stringtemplate.h>
 #include <lightmetrica/logger.h>
 
 #if LM_PLATFORM_WINDOWS

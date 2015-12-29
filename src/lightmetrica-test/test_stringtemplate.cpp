@@ -23,7 +23,7 @@
 */
 
 #include <pch_test.h>
-#include <lightmetrica-internal/stringtemplate.h>
+#include <lightmetrica/detail/stringtemplate.h>
 #include <lightmetrica/logger.h>
 
 LM_TEST_NAMESPACE_BEGIN

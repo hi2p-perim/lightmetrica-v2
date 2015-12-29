@@ -28,6 +28,7 @@
 #include <lightmetrica/primitive.h>
 #include <lightmetrica-test/utils.h>
 #include <lightmetrica/assets.h>
+#include <lightmetrica/accel.h>
 #include <lightmetrica/light.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/bsdf.h>
@@ -44,32 +45,45 @@ struct SceneTest : public ::testing::Test
 
 // --------------------------------------------------------------------------------
 
+struct Stub_Assets : public Assets
+{
+    LM_IMPL_CLASS(Stub_Assets, Assets);
+    LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& type) -> const Asset*{ return nullptr; };
+};
+
+struct Stub_Accel : public Accel
+{
+    LM_IMPL_CLASS(Stub_Accel, Accel);
+};
+
+LM_COMPONENT_REGISTER_IMPL(Stub_Assets);
+LM_COMPONENT_REGISTER_IMPL(Stub_Accel);
+
+// --------------------------------------------------------------------------------
+
 // Tests simple loading of the scene
 TEST_F(SceneTest, SimpleLoad)
 {
     const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
-    |   version: 1.0.0
-    |   assets:
-    |   scene:
-    |     sensor: n1
-    |     nodes:
-    |       - id: n1
-    |       - id: n2
+    | sensor: n1
+    | nodes:
+    |   - id: n1
+    |   - id: n2
+    |     child:
+    |       - id: n2_1
+    |       - id: n2_2
     |         child:
-    |           - id: n2_1
-    |           - id: n2_2
-    |             child:
-    |               - id: n2_2_1
-    |               - id: n2_2_2
+    |           - id: n2_2_1
+    |           - id: n2_2_2
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
     ASSERT_TRUE(prop->LoadFromString(SimpleLoad_Input));
-    
-    const auto assets = ComponentFactory::Create<Assets>();
+
+    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
     const auto scene = ComponentFactory::Create<Scene>();
-    ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get()));
+    ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     EXPECT_EQ("n1", scene->PrimitiveByID("n1")->id);
     EXPECT_EQ("n2", scene->PrimitiveByID("n2")->id);
@@ -122,55 +136,54 @@ LM_COMPONENT_REGISTER_IMPL(Stub_BSDF);
 TEST_F(SceneTest, SimpleLoadWithAssets)
 {
     const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
+    | assets:
+    |   sensor_1:
+    |     interface: Sensor
+    |     type: Stub_Sensor
     |
-    |   version: 1.0.0
+    |   light_1:
+    |     interface: Light
+    |     type: Stub_Light
     |
-    |   assets:
-    |     sensor_1:
-    |       interface: Sensor
-    |       type: Stub_Sensor
+    |   mesh_1:
+    |     interface: TriangleMesh
+    |     type: Stub_TriangleMesh_1
     |
-    |     light_1:
-    |       interface: Light
-    |       type: Stub_Light
+    |   mesh_2:
+    |     interface: TriangleMesh
+    |     type: Stub_TriangleMesh_2
     |
-    |     mesh_1:
-    |       interface: TriangleMesh
-    |       type: Stub_TriangleMesh_1
+    |   bsdf_1:
+    |     interface: BSDF
+    |     type: Stub_BSDF
     |
-    |     mesh_2:
-    |       interface: TriangleMesh
-    |       type: Stub_TriangleMesh_2
+    | scene:
+    |   sensor: n1
     |
-    |     bsdf_1:
-    |       interface: BSDF
-    |       type: Stub_BSDF
+    |   accel:
+    |     type: stub_accel
     |
-    |   scene:
-    |     sensor: n1
+    |   nodes:
+    |     - id: n1
+    |       sensor: sensor_1
+    |       mesh: mesh_1
+    |       bsdf: bsdf_1
     |
-    |     accel:
-    |       type: stub_accel
-    |
-    |     nodes:
-    |       - id: n1
-    |         sensor: sensor_1
-    |         mesh: mesh_1
-    |         bsdf: bsdf_1
-    |
-    |       - id: n2
-    |         light: light_1
-    |         mesh: mesh_2
-    |         bsdf: bsdf_1
+    |     - id: n2
+    |       light: light_1
+    |       mesh: mesh_2
+    |       bsdf: bsdf_1
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
     ASSERT_TRUE(prop->LoadFromString(SimpleLoad_Input));
 
     const auto assets = ComponentFactory::Create<Assets>();
+    EXPECT_TRUE(assets->Initialize(prop->Root()->Child("assets")));
+    
+    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
     const auto scene = ComponentFactory::Create<Scene>();
-    ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get()));
+    ASSERT_TRUE(scene->Initialize(prop->Root()->Child("scene"), assets.get(), accel.get()));
 
     const auto* n1 = scene->PrimitiveByID("n1");
     ASSERT_NE(nullptr, n1->emitter);
@@ -195,55 +208,52 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
 TEST_F(SceneTest, Transform)
 {
     const auto Transform_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
-    |   version: 1.0.0
-    |   assets:
-    |   scene:
-    |     sensor: n1
-    |     nodes:
-    |       - id: n1
-    |         transform:
-    |           # Transform specified by a 4x4 matrix (row major)
-    |           matrix: >
-    |             1 0 0 0
-    |             0 1 0 0
-    |             0 0 1 0
-    |             0 0 0 1
+    | sensor: n1
+    | nodes:
+    |   - id: n1
+    |     transform:
+    |       # Transform specified by a 4x4 matrix (row major)
+    |       matrix: >
+    |         1 0 0 0
+    |         0 1 0 0
+    |         0 0 1 0
+    |         0 0 0 1
     |
-    |       - id: n2
-    |         transform:
-    |           # Transform by translate, rotate, and scale
-    |           translate: 0 0 0
-    |           scale: 1 1 1
-    |           rotate:
-    |             # Specify rotation by rotation axis and angle
-    |             axis: 0 1 0
-    |             angle: 0
-    |              
-    |       # Accumulated transform by multiple levels of nodes
-    |       - id: n3
+    |   - id: n2
+    |     transform:
+    |       # Transform by translate, rotate, and scale
+    |       translate: 0 0 0
+    |       scale: 1 1 1
+    |       rotate:
+    |         # Specify rotation by rotation axis and angle
+    |         axis: 0 1 0
+    |         angle: 0
+    |          
+    |   # Accumulated transform by multiple levels of nodes
+    |   - id: n3
+    |     transform:
+    |       matrix: >
+    |         1 0 0 1
+    |         0 1 0 1
+    |         0 0 1 1
+    |         0 0 0 1
+    |     child:
+    |       - id: n4
     |         transform:
     |           matrix: >
-    |             1 0 0 1
-    |             0 1 0 1
-    |             0 0 1 1
+    |             2 0 0 0
+    |             0 2 0 0
+    |             0 0 2 0
     |             0 0 0 1
-    |         child:
-    |           - id: n4
-    |             transform:
-    |               matrix: >
-    |                 2 0 0 0
-    |                 0 2 0 0
-    |                 0 0 2 0
-    |                 0 0 0 1
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(Transform_Input));
 
-    const auto assets = ComponentFactory::Create<Assets>();
+    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
     const auto scene = ComponentFactory::Create<Scene>();
-    EXPECT_TRUE(scene->Initialize(prop->Root(), assets.get()));
+    ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     const Primitive* n1 = scene->PrimitiveByID("n1");
     EXPECT_TRUE(ExpectMatNear(Mat4{ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 }, n1->transform));
@@ -264,23 +274,19 @@ TEST_F(SceneTest, Transform)
 TEST_F(SceneTest, SensorNode)
 {
     const auto SensorNode_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
-    |   version: 1.0.0
-    |   assets:
-    |   scene:
-    |     sensor: n2
-    |     nodes:
-    |       - id: n1
-    |       - id: n2
+    | sensor: n2
+    | nodes:
+    |   - id: n1
+    |   - id: n2
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(SensorNode_Input));
 
-    const auto assets = ComponentFactory::Create<Assets>();
-
+    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
     const auto scene = ComponentFactory::Create<Scene>();
-    EXPECT_TRUE(scene->Initialize(prop->Root(), assets.get()));
+    ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     EXPECT_EQ("n2", scene->Sensor()->id);
 }
@@ -288,93 +294,97 @@ TEST_F(SceneTest, SensorNode)
 // --------------------------------------------------------------------------------
 
 // Missing `lightmetrica_scene` node
-TEST_F(SceneTest, InvalidrRootNode_Fail)
-{
-    const auto InvalidrRootNode_Fail_Input = TestUtils::MultiLineLiteral(R"x(
-    | a:
-    )x");
-
-    const auto prop = ComponentFactory::Create<PropertyTree>();
-    EXPECT_TRUE(prop->LoadFromString(InvalidrRootNode_Fail_Input));
-
-    const auto assets = ComponentFactory::Create<Assets>();
-    const auto scene = ComponentFactory::Create<Scene>();
-    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
-    {
-        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
-        Logger::Flush();
-    }));
-    EXPECT_EQ("Missing 'lightmetrica_scene' node", err);
-}
+//TEST_F(SceneTest, InvalidrRootNode_Fail)
+//{
+//    const auto InvalidrRootNode_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+//    | a:
+//    )x");
+//
+//    const auto prop = ComponentFactory::Create<PropertyTree>();
+//    EXPECT_TRUE(prop->LoadFromString(InvalidrRootNode_Fail_Input));
+//
+//    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+//    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
+//    const auto scene = ComponentFactory::Create<Scene>();
+//    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+//    {
+//        ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
+//        Logger::Flush();
+//    }));
+//    EXPECT_EQ("Missing 'lightmetrica_scene' node", err);
+//}
 
 // --------------------------------------------------------------------------------
 
 // Missing `version` node
-TEST_F(SceneTest, MissingVersionNode_Fail)
-{
-    const auto MissingVersionNode_Fail_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
-    |   assets:
-    )x");
-
-    const auto prop = ComponentFactory::Create<PropertyTree>();
-    EXPECT_TRUE(prop->LoadFromString(MissingVersionNode_Fail_Input));
-
-    const auto assets = ComponentFactory::Create<Assets>();
-    const auto scene = ComponentFactory::Create<Scene>();
-    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
-    {
-        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
-        Logger::Flush();
-    }));
-    EXPECT_EQ("Missing 'version' node", err);
-}
+//TEST_F(SceneTest, MissingVersionNode_Fail)
+//{
+//    const auto MissingVersionNode_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+//    | lightmetrica_scene:
+//    |   assets:
+//    )x");
+//
+//    const auto prop = ComponentFactory::Create<PropertyTree>();
+//    EXPECT_TRUE(prop->LoadFromString(MissingVersionNode_Fail_Input));
+//
+//    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+//    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
+//    const auto scene = ComponentFactory::Create<Scene>();
+//    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+//    {
+//        ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
+//        Logger::Flush();
+//    }));
+//    EXPECT_EQ("Missing 'version' node", err);
+//}
 
 // --------------------------------------------------------------------------------
 
 // Invalid version string
-TEST_F(SceneTest, InvalidVersionString_Fail)
-{
-    const auto InvalidVersionString_Fail_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
-    |   version: 1.0
-    )x");
-
-    const auto prop = ComponentFactory::Create<PropertyTree>();
-    EXPECT_TRUE(prop->LoadFromString(InvalidVersionString_Fail_Input));
-
-    const auto assets = ComponentFactory::Create<Assets>();
-    const auto scene = ComponentFactory::Create<Scene>();
-    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
-    {
-        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
-        Logger::Flush();
-    }));
-    EXPECT_TRUE(boost::starts_with(err, "Invalid version string"));
-}
+//TEST_F(SceneTest, InvalidVersionString_Fail)
+//{
+//    const auto InvalidVersionString_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+//    | lightmetrica_scene:
+//    |   version: 1.0
+//    )x");
+//
+//    const auto prop = ComponentFactory::Create<PropertyTree>();
+//    EXPECT_TRUE(prop->LoadFromString(InvalidVersionString_Fail_Input));
+//
+//    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+//    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
+//    const auto scene = ComponentFactory::Create<Scene>();
+//    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+//    {
+//        ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
+//        Logger::Flush();
+//    }));
+//    EXPECT_TRUE(boost::starts_with(err, "Invalid version string"));
+//}
 
 // --------------------------------------------------------------------------------
 
 // Version check fails
-TEST_F(SceneTest, InvalidVersion_Fail)
-{
-    const auto InvalidVersion_Fail_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
-    |   version: 0.0.0
-    )x");
-
-    const auto prop = ComponentFactory::Create<PropertyTree>();
-    EXPECT_TRUE(prop->LoadFromString(InvalidVersion_Fail_Input));
-
-    const auto assets = ComponentFactory::Create<Assets>();
-    const auto scene = ComponentFactory::Create<Scene>();
-    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
-    {
-        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
-        Logger::Flush();
-    }));
-    EXPECT_TRUE(boost::starts_with(err, "Invalid version"));
-}
+//TEST_F(SceneTest, InvalidVersion_Fail)
+//{
+//    const auto InvalidVersion_Fail_Input = TestUtils::MultiLineLiteral(R"x(
+//    | lightmetrica_scene:
+//    |   version: 0.0.0
+//    )x");
+//
+//    const auto prop = ComponentFactory::Create<PropertyTree>();
+//    EXPECT_TRUE(prop->LoadFromString(InvalidVersion_Fail_Input));
+//
+//    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+//    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
+//    const auto scene = ComponentFactory::Create<Scene>();
+//    const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
+//    {
+//        ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
+//        Logger::Flush();
+//    }));
+//    EXPECT_TRUE(boost::starts_with(err, "Invalid version"));
+//}
 
 // --------------------------------------------------------------------------------
 
@@ -382,23 +392,20 @@ TEST_F(SceneTest, InvalidVersion_Fail)
 TEST_F(SceneTest, NoSensor_Fail)
 {
     const auto NoSensor_Fail_Input = TestUtils::MultiLineLiteral(R"x(
-    | lightmetrica_scene:
-    |   version: 1.0.0
-    |   assets:
-    |   scene:
-    |     nodes:
-    |       - id: n1
-    |       - id: n2
+    | nodes:
+    |   - id: n1
+    |   - id: n2
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(NoSensor_Fail_Input));
 
-    const auto assets = ComponentFactory::Create<Assets>();
+    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
     const auto scene = ComponentFactory::Create<Scene>();
     const auto err = TestUtils::ExtractLogMessage(TestUtils::CaptureStdout([&]()
     {
-        EXPECT_FALSE(scene->Initialize(prop->Root(), assets.get()));
+        ASSERT_FALSE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
         Logger::Flush();
     }));
     EXPECT_TRUE(boost::starts_with(err, "Missing 'sensor' node"));

@@ -44,104 +44,11 @@ public:
 
 public:
 
-    // Scene version support
-    using VersionT = std::tuple<int, int, int>;
-    const VersionT MinVersion{ 1, 0, 0 };
-    const VersionT MaxVersion{ 1, 0, 0 };
-
-public:
-
-    LM_IMPL_F(Initialize) = [this](const PropertyNode* prop, Assets* assets) -> bool
+    LM_IMPL_F(Initialize) = [this](const PropertyNode* sceneNode, Assets* assets, Accel* accel) -> bool
     {
-        #pragma region Check root node
-
-        // Scene configuration file must begin with `lightmetrica_scene` node
-        const auto* root = prop->Child("lightmetrica_scene");
-        if (!root)
-        {
-            // TODO: Improve error messages
-            LM_LOG_ERROR("Missing 'lightmetrica_scene' node");
-            return false;
-        }
-
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        #pragma region Scene version check
-
-        {
-            const auto* versionNode = root->Child("version");
-            if (!versionNode)
-            {
-                LM_LOG_ERROR("Missing 'version' node");
-                return false;
-            }
-
-            // Parse version string
-            const auto versionStr = versionNode->As<std::string>();
-            std::regex re(R"x((\d)\.(\d)\.(\d))x");
-            std::smatch match;
-            const bool result = std::regex_match(versionStr, match, re);
-            if (!result)
-            {
-                LM_LOG_ERROR("Invalid version string: " + versionStr);
-                return false;
-            }
-
-            // Check version
-            VersionT version{ std::stoi(match[1]), std::stoi(match[2]), std::stoi(match[3]) };
-            if (version < MinVersion || MaxVersion < version)
-            {
-                LM_LOG_ERROR(boost::str(boost::format("Invalid version [ Expected: (%d.%d.%d)-(%d.%d.%d), Actual: (%d.%d.%d) ]")
-                    % std::get<0>(MinVersion) % std::get<1>(MinVersion) % std::get<2>(MinVersion)
-                    % std::get<0>(MaxVersion) % std::get<1>(MaxVersion) % std::get<2>(MaxVersion)
-                    % std::get<0>(version) % std::get<1>(version) % std::get<2>(version)));
-                return false;
-            }
-        }
-
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        #pragma region Initialize asset manager
-
-        {
-            const auto* assetsNode = root->Child("assets");
-            if (!assetsNode)
-            {
-                LM_LOG_ERROR("Missing 'assets' node");
-                return false;
-            }
-
-            if (!assets->Initialize(assetsNode))
-            {
-                return false;
-            }
-        }
-        
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
         #pragma region Load primitives
         
         {
-            #pragma region Sensor node
-            
-            const auto* sceneNode = root->Child("scene");
-            if (!sceneNode)
-            {
-                // TODO: Add error check (with detailed and human-readable error message)
-                LM_LOG_ERROR("Missing 'scene' node");
-                return false;
-            }
-
-            #pragma endregion
-
-            // --------------------------------------------------------------------------------
-
             #pragma region Traverse scene nodes and create primitives
 
             const std::function<bool(const PropertyNode*, const Mat4&)> Traverse = [&](const PropertyNode* propNode, const Mat4& parentTransform) -> bool
@@ -340,6 +247,11 @@ public:
             // --------------------------------------------------------------------------------
 
             const auto* nodesNode = sceneNode->Child("nodes");
+            if (!nodesNode)
+            {
+                LM_LOG_ERROR("Missing 'nodes' node");
+                return false;
+            }
             for (int i = 0; i < nodesNode->Size(); i++)
             {
                 if (!Traverse(nodesNode->At(i), Mat4::Identity()))
@@ -378,6 +290,14 @@ public:
         #pragma endregion
 
         // --------------------------------------------------------------------------------
+        
+        #pragma region Build accel
+
+        
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
 
         return true;
     };
@@ -398,7 +318,7 @@ private:
     std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
     std::unordered_map<std::string, Primitive*> primitiveIDMap_;    // Mapping from ID to primitive pointer
     Primitive* sensorPrimitive_;                                    // Index of main sensor
-    //Accel* accel_;
+    Accel* accel_;
 
 };
 
