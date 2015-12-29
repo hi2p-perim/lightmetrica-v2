@@ -220,45 +220,17 @@ public:
 public:
 
     template <typename InterfaceType>
-    static auto Create(const char* implName, const char* interfaceName) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
-    {
-        // Create instance
-        using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
-        auto* p = static_cast<InterfaceType*>(Create(implName));
-        if (!p)
-        {
-            return ReturnType(nullptr, [](Component*) {});
-        }
-
-        // Deleter
-        const auto deleter = ReleaseFunc(implName);
-        if (!deleter)
-        {
-            return ReturnType(nullptr, [](Component*) {});
-        }
-
-        return ReturnType(p, deleter);
-    }
-
-    template <typename InterfaceType>
     static auto Create(const char* implName) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
-        // Create instance
         using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
         auto* p = static_cast<InterfaceType*>(Create(implName));
         if (!p)
         {
+            LM_LOG_ERROR("Failed to create instance (impl: " + std::string(implName) + ", interface: " + std::string(InterfaceType::Type_().name) + ")");
             return ReturnType(nullptr, [](Component*){});
         }
 
-        // Deleter
-        const auto deleter = ReleaseFunc(implName);
-        if (!deleter)
-        {
-            return ReturnType(nullptr, [](Component*){});
-        }
-        
-        return ReturnType(p, deleter);
+        return ReturnType(p, ReleaseFunc(implName));
     }
 
     template <typename InterfaceType>

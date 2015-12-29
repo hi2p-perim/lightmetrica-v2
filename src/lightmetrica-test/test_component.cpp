@@ -30,7 +30,7 @@ LM_TEST_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
 
-#pragma region Interfaces
+#pragma region Basic tests (simple instance creation, inherited interface)
 
 struct A : public Component
 {
@@ -45,22 +45,6 @@ struct B : public A
     LM_INTERFACE_CLASS(B, A);
     LM_INTERFACE_F(Func4, void());
 };
-
-struct C : public Component
-{
-    LM_INTERFACE_CLASS(C, Component);
-    LM_INTERFACE_F(Func1, void(const int*, int n));
-    LM_INTERFACE_F(Func2, void(std::vector<int>));
-    LM_INTERFACE_F(Func3, void(int&));
-    LM_INTERFACE_F(Func4, void(const int&));
-    LM_INTERFACE_F(Func5, void(const std::string&));
-};
-
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
-#pragma region Implementation
 
 struct A1 final : public A
 {
@@ -83,8 +67,6 @@ struct A1 final : public A
 };
 
 LM_COMPONENT_REGISTER_IMPL(A1);
-
-// --------------------------------------------------------------------------------
 
 struct B1 final : public B
 {
@@ -112,46 +94,6 @@ struct B1 final : public B
 };
 
 LM_COMPONENT_REGISTER_IMPL(B1);
-
-// --------------------------------------------------------------------------------
-
-struct C1 final : public C
-{
-    LM_IMPL_CLASS(C1, C);
-
-    LM_IMPL_F(Func1) = [this](const int* v, int n) -> void
-    {
-        for (int i = 0; i < n; i++) std::cout << v[i] << " ";
-        std::cout << std::endl;
-    };
-
-    LM_IMPL_F(Func2) = [this](std::vector<int> v) -> void
-    {
-        for (int& val : v) std::cout << val << " ";
-        std::cout << std::endl;
-    };
-
-    LM_IMPL_F(Func3) = [this](int& v) -> void
-    {
-        v = 42;
-    };
-
-    LM_IMPL_F(Func4) = [this](const int& v) -> void
-    {
-        std::cout << v << std::endl;
-    };
-
-    LM_IMPL_F(Func5) = [this](const std::string& s) -> void
-    {
-        std::cout << s << std::endl;
-    };
-};
-
-LM_COMPONENT_REGISTER_IMPL(C1);
-
-#pragma endregion
-
-// --------------------------------------------------------------------------------
 
 TEST(ComponentTest, Simple)
 {
@@ -201,6 +143,56 @@ TEST(ComponentTest, InheritedInterface)
     }));
 }
 
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Tests with portable arguments
+
+struct C : public Component
+{
+    LM_INTERFACE_CLASS(C, Component);
+    LM_INTERFACE_F(Func1, void(const int*, int n));
+    LM_INTERFACE_F(Func2, void(std::vector<int>));
+    LM_INTERFACE_F(Func3, void(int&));
+    LM_INTERFACE_F(Func4, void(const int&));
+    LM_INTERFACE_F(Func5, void(const std::string&));
+};
+
+struct C1 final : public C
+{
+    LM_IMPL_CLASS(C1, C);
+
+    LM_IMPL_F(Func1) = [this](const int* v, int n) -> void
+    {
+        for (int i = 0; i < n; i++) std::cout << v[i] << " ";
+        std::cout << std::endl;
+    };
+
+    LM_IMPL_F(Func2) = [this](std::vector<int> v) -> void
+    {
+        for (int& val : v) std::cout << val << " ";
+        std::cout << std::endl;
+    };
+
+    LM_IMPL_F(Func3) = [this](int& v) -> void
+    {
+        v = 42;
+    };
+
+    LM_IMPL_F(Func4) = [this](const int& v) -> void
+    {
+        std::cout << v << std::endl;
+    };
+
+    LM_IMPL_F(Func5) = [this](const std::string& s) -> void
+    {
+        std::cout << s << std::endl;
+    };
+};
+
+LM_COMPONENT_REGISTER_IMPL(C1);
+
 TEST(ComponentTest, PortableArguments)
 {
     auto p = std::move(ComponentFactory::Create<C>("C1"));
@@ -236,9 +228,11 @@ TEST(ComponentTest, PortableArguments)
     }));
 }
 
+#pragma endregion
+
 // --------------------------------------------------------------------------------
 
-#pragma region Test of component with internal functions
+#pragma region Tests with internal functions
 
 // Some member exposes public interfaces and on the inherited class,
 // the internal member is defined as virtual function
@@ -338,6 +332,37 @@ TEST(ComponentTest, InternalInterface)
         auto* p2 = static_cast<E_Internal*>(p.get());
         p2->Func_Internal();
     }));
+}
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Tests with portable member variables
+
+struct F : public Component
+{
+    Portable<std::string> id;
+    LM_INTERFACE_CLASS(F, Component);
+    LM_INTERFACE_F(Func, int());
+    auto ID() const -> std::string { return id.Get(); }
+};
+
+struct F_ : public F
+{
+    LM_IMPL_CLASS(F_, F);
+    LM_IMPL_F(Func) = [this]() -> int { return 42; };
+};
+
+LM_COMPONENT_REGISTER_IMPL(F_);
+
+TEST(ComponentTest, PortableMemberVariable)
+{
+    const auto p = ComponentFactory::Create<F>();
+    ASSERT_NE(nullptr, p);
+    p->id.Reset("hello");
+    EXPECT_EQ(42, p->Func());
+    EXPECT_EQ("hello", p->ID());
 }
 
 #pragma endregion

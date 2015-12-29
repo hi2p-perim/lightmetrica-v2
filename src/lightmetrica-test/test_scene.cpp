@@ -28,7 +28,9 @@
 #include <lightmetrica/primitive.h>
 #include <lightmetrica-test/utils.h>
 #include <lightmetrica/assets.h>
-#include <lightmetrica/generalizedbsdf.h>
+#include <lightmetrica/light.h>
+#include <lightmetrica/sensor.h>
+#include <lightmetrica/bsdf.h>
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica-test/mathutils.h>
 
@@ -80,10 +82,41 @@ TEST_F(SceneTest, SimpleLoad)
 // --------------------------------------------------------------------------------
 
 // Stubs
-//class Stub_TriangleMesh : public TriangleMesh
-//{
-//    
-//};
+struct Stub_Sensor : public Sensor
+{
+    LM_IMPL_CLASS(Stub_Sensor, Sensor);
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+};
+
+struct Stub_Light : public Light
+{
+    LM_IMPL_CLASS(Stub_Light, Light);
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+};
+
+struct Stub_BSDF : public BSDF
+{
+    LM_IMPL_CLASS(Stub_BSDF, BSDF);
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+};
+
+struct Stub_TriangleMesh_1 : public TriangleMesh
+{
+    LM_IMPL_CLASS(Stub_TriangleMesh_1, TriangleMesh);
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+};
+
+struct Stub_TriangleMesh_2 : public TriangleMesh
+{
+    LM_IMPL_CLASS(Stub_TriangleMesh_2, TriangleMesh);
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+};
+
+LM_COMPONENT_REGISTER_IMPL(Stub_Sensor);
+LM_COMPONENT_REGISTER_IMPL(Stub_Light);
+LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_1);
+LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_2);
+LM_COMPONENT_REGISTER_IMPL(Stub_BSDF);
 
 // Tests simple loading of the scene with delayed loading of assets
 TEST_F(SceneTest, SimpleLoadWithAssets)
@@ -98,13 +131,17 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
     |       interface: Sensor
     |       type: Stub_Sensor
     |
+    |     light_1:
+    |       interface: Light
+    |       type: Stub_Light
+    |
     |     mesh_1:
     |       interface: TriangleMesh
-    |       type: Stub_TriangleMesh
+    |       type: Stub_TriangleMesh_1
     |
     |     mesh_2:
     |       interface: TriangleMesh
-    |       type: Stub_TriangleMesh
+    |       type: Stub_TriangleMesh_2
     |
     |     bsdf_1:
     |       interface: BSDF
@@ -136,9 +173,20 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get()));
 
     const auto* n1 = scene->PrimitiveByID("n1");
+    ASSERT_NE(nullptr, n1->emitter);
+    EXPECT_EQ("sensor_1", n1->emitter->ID());
     ASSERT_NE(nullptr, n1->bsdf);
-
-    FAIL();
+    EXPECT_EQ("bsdf_1", n1->bsdf->ID());
+    ASSERT_NE(nullptr, n1->mesh);
+    EXPECT_EQ("mesh_1", n1->mesh->ID());
+    
+    const auto* n2 = scene->PrimitiveByID("n2");
+    ASSERT_NE(nullptr, n2->emitter);
+    EXPECT_EQ("light_1", n2->emitter->ID());
+    ASSERT_NE(nullptr, n2->bsdf);
+    EXPECT_EQ("bsdf_1", n2->bsdf->ID());
+    ASSERT_NE(nullptr, n2->mesh);
+    EXPECT_EQ("mesh_2", n2->mesh->ID());
 }
 
 // --------------------------------------------------------------------------------

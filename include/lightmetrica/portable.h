@@ -35,22 +35,22 @@ template <typename T>
 struct Portable
 {
     T v;
-    Portable<T>(T v) : v(v) {}
+    Portable(T v) : v(v) {}
     auto Get() -> T const { return v; }
 };
 
 template <>
 struct Portable<void>
 {
-    Portable<void>() {}
+    Portable() {}
     auto Get() -> void const {}
 };
 
 template <typename T>
 struct Portable<T&>
 {
-    T* v;
-    Portable<T&>(T& v) : v(&v) {}
+    T* v = nullptr;
+    Portable(T& v) : v(&v) {}
     auto Get() const -> T& { return *v; }
 };
 
@@ -62,9 +62,9 @@ struct Portable<std::vector<ContainerT>>
     using Type = VectorT;
 
     size_t N;
-    ContainerT* p;
+    ContainerT* p = nullptr;
 
-    Portable<VectorT>(VectorT& v)
+    Portable(VectorT& v)
         : N(v.size())
         , p(&v[0])
     {}
@@ -78,18 +78,27 @@ struct Portable<std::vector<ContainerT>>
 };
 
 template <>
+struct Portable<std::string>
+{
+    char* p = nullptr;
+    Portable() {}
+    Portable(const std::string& s) { Reset(s); }
+    ~Portable() { LM_SAFE_DELETE_ARRAY(p); }
+    auto Reset(const std::string& s) -> void
+    {
+        LM_SAFE_DELETE_ARRAY(p);
+        p = new char[s.size() + 1];
+        memcpy(p, s.c_str(), s.size() + 1);
+    }
+    auto Get() const -> std::string { return std::string(p); }
+};
+
+template <>
 struct Portable<const std::string&>
 {
-    const char* p;
-
-    Portable<const std::string&>(const std::string& s)
-        : p(s.c_str())
-    {}
-
-    auto Get() const -> std::string
-    {
-        return std::string(p);
-    }
+    const char* p = nullptr;
+    Portable(const std::string& s) : p(s.c_str()) {}
+    auto Get() const -> std::string { return std::string(p); }
 };
 
 LM_NAMESPACE_END

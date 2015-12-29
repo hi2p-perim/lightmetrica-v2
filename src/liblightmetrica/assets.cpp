@@ -91,12 +91,19 @@ public:
         // Create asset instance
         const auto* typeNode = assetNode->Child("type");
         const auto implType = typeNode->As<std::string>();
-        auto asset = ComponentFactory::Create<Asset>(implType.c_str(), interfaceType.c_str());   // This cannot be const (later we move it)
+        auto asset = ComponentFactory::Create<Asset>(implType.c_str());   // This cannot be const (later we move it)
         if (!asset)
         {
-            LM_LOG_ERROR("Failed to create instance");
+            LM_LOG_ERROR("Failed to create instance: " + implType);
             return nullptr;
         }
+
+        // Check interface type
+        //if (asset->Type_().name == interfaceType)
+        //{
+        //    LM_LOG_ERROR("");
+        //    return nullptr;
+        //}
 
         // Load asset
         if (!asset->Load(assetNode->Child("params"), this))
@@ -107,6 +114,7 @@ public:
         // Register asset
         assets_.push_back(std::move(asset));
         assetIndexMap_[id] = assets_.size() - 1;
+        assets_.back()->SetID(id);
 
         #pragma endregion
 
