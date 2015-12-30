@@ -42,25 +42,23 @@ public:
 public:
 
     LM_IMPL_F(Type)   = [this]() -> PropertyNodeType { return type_; };
+    LM_IMPL_F(Line)   = [this]() -> int { return line_; };
+    LM_IMPL_F(Column) = [this]() -> int { return column_; };
     LM_IMPL_F(Scalar) = [this]() -> std::string { return scalar_; };
     LM_IMPL_F(Key)    = [this]() -> std::string { return key_; };
     LM_IMPL_F(Size)   = [this]() -> int { return (int)(sequence_.size()); };
-
-    LM_IMPL_F(Child) = [this](const std::string& key) -> const PropertyNode*
-    {
-        const auto it = map_.find(key);
-        return it != map_.end() ? it->second : nullptr;
-    };
-
-    LM_IMPL_F(At) = [this](int index) -> const PropertyNode*
-    {
-        return sequence_.at(index);
-    };
+    LM_IMPL_F(Child)  = [this](const std::string& key) -> const PropertyNode* { const auto it = map_.find(key); return it != map_.end() ? it->second : nullptr; };
+    LM_IMPL_F(At)     = [this](int index) -> const PropertyNode* { return sequence_.at(index); };
+    LM_IMPL_F(Parent) = [this]() -> const PropertyNode* { return parent_; };
 
 private:
 
     // Type of the node
     PropertyNodeType type_;
+
+    // Line, column
+    int line_;
+    int column_;
 
     // For map node type
     std::string key_;
@@ -71,6 +69,9 @@ private:
 
     // For scalar type
     std::string scalar_;
+
+    // Parent node (nullptr for root node)
+    const PropertyNode_* parent_ = nullptr;
 
 };
 
@@ -88,12 +89,15 @@ public:
 
     LM_IMPL_F(LoadFromString) = [this](const std::string& input) -> bool
     {
-        // Traverse YAML nodes and convert to the our node type
+        #pragma region Traverse YAML nodes and convert to the our node type
+
         const std::function<PropertyNode_*(const YAML::Node&)> Traverse = [&](const YAML::Node& yamlNode) -> PropertyNode_*
         {
             // Create our node
             nodes_.push_back(ComponentFactory::Create<PropertyNode>());
             auto* node_internal = static_cast<PropertyNode_*>(nodes_.back().get());
+            node_internal->line_ = yamlNode.Mark().line;
+            node_internal->column_ = yamlNode.Mark().column;
 
             switch (yamlNode.Type())
             {
@@ -128,6 +132,7 @@ public:
                         const auto key = p.first.as<std::string>();
                         auto* childNode = Traverse(p.second);
                         childNode->key_ = key;
+                        childNode->parent_ = node_internal;
                         node_internal->map_[key] = childNode;
                     }
                     break;
@@ -154,6 +159,8 @@ public:
             return false;
         }
 
+        #pragma endregion
+
         return true;
     };
 
@@ -165,7 +172,7 @@ public:
 private:
 
     const PropertyNode* root_;
-    std::vector<PropertyNode::UniquePointerType> nodes_;
+    std::vector<PropertyNode::UniquePtr> nodes_;
 
 };
 

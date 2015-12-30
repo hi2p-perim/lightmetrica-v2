@@ -105,7 +105,7 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
         LM_DEFINE_CLASS_TYPE(Current, Base); \
         using BaseType = Base; \
         using InterfaceType = Current; \
-        using UniquePointerType = std::unique_ptr<InterfaceType, void(*)(Component*)>
+        using UniquePtr = std::unique_ptr<InterfaceType, void(*)(Component*)>
 
 // Define interface member function
 #if LM_INTELLISENSE
@@ -220,24 +220,24 @@ public:
 public:
 
     template <typename InterfaceType>
-    static auto Create(const char* implName) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    static auto Create(const std::string& implName) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
         using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
-        auto* p = static_cast<InterfaceType*>(Create(implName));
+        auto* p = static_cast<InterfaceType*>(Create(implName.c_str()));
         if (!p)
         {
-            LM_LOG_ERROR("Failed to create instance (impl: " + std::string(implName) + ", interface: " + std::string(InterfaceType::Type_().name) + ")");
+            LM_LOG_ERROR("Failed to create instance (impl: " + implName + ", interface: " + std::string(InterfaceType::Type_().name) + ")");
             return ReturnType(nullptr, [](Component*){});
         }
 
-        return ReturnType(p, ReleaseFunc(implName));
+        return ReturnType(p, ReleaseFunc(implName.c_str()));
     }
 
     template <typename InterfaceType>
     static auto Create() -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
         const auto implName = std::string(InterfaceType::Type_().name) + "_";
-        return Create<InterfaceType>(implName.c_str());
+        return Create<InterfaceType>(implName);
     }
 
 };
@@ -251,17 +251,17 @@ public:
 namespace
 {
     // http://stackoverflow.com/questions/21174593/downcasting-unique-ptrbase-to-unique-ptrderived
-    template<typename Derived, typename Base, typename Del>
+    template <typename Derived, typename Base, typename Del>
     auto static_unique_ptr_cast(std::unique_ptr<Base, Del>&& p) -> std::unique_ptr<Derived, Del>
     {
-        auto d = static_cast<Derived *>(p.release());
+        auto d = static_cast<Derived*>(p.release());
         return std::unique_ptr<Derived, Del>(d, std::move(p.get_deleter()));
     }
 
-    template<typename Derived, typename Base, typename Del>
+    template <typename Derived, typename Base, typename Del>
     auto dynamic_unique_ptr_cast(std::unique_ptr<Base, Del>&& p) -> std::unique_ptr<Derived, Del>
     {
-        if (Derived *result = dynamic_cast<Derived *>(p.get()))
+        if (Derived *result = dynamic_cast<Derived*>(p.get()))
         {
             p.release();
             return std::unique_ptr<Derived, Del>(result, std::move(p.get_deleter()));

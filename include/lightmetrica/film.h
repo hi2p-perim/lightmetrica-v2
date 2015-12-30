@@ -28,27 +28,22 @@
 
 LM_NAMESPACE_BEGIN
 
-class Scene;
-class Film;
-
-/*!
-*/
-class Renderer : public Configurable
+class Film : public Configurable
 {
 public:
 
-    LM_INTERFACE_CLASS(Renderer, Component);
+    LM_INTERFACE_CLASS(Film, Asset);
 
 public:
 
-    Renderer() = default;
-    LM_DISABLE_COPY_AND_MOVE(Renderer);
+    Film() = default;
+    LM_DISABLE_COPY_AND_MOVE(Film);
 
 public:
 
-    LM_INTERFACE_F(Render, void(const Scene*, Film*));
+    LM_INTERFACE_F(Width, int());
+    LM_INTERFACE_F(Height, int());
 
 };
 
 LM_NAMESPACE_END
-

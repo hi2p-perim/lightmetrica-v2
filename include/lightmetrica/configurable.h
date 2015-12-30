@@ -24,31 +24,40 @@
 
 #pragma once
 
-#include <lightmetrica/configurable.h>
+#include <lightmetrica/component.h>
 
 LM_NAMESPACE_BEGIN
 
-class Scene;
-class Film;
+class PropertyNode;
 
 /*!
+    Configurable components.
+
+    Component with initialized with user defined types and properties.
+    The configurable component has same format in the scene configuration file:
+    
+      component_name:
+        type: component_type
+        params:
+          param_1: ...
+          param_2: ...
+          ...
 */
-class Renderer : public Configurable
+class Configurable : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Renderer, Component);
+    LM_INTERFACE_CLASS(Configurable, Component);
+    
+public:
+
+    Configurable() = default;
+    LM_DISABLE_COPY_AND_MOVE(Configurable);
 
 public:
 
-    Renderer() = default;
-    LM_DISABLE_COPY_AND_MOVE(Renderer);
-
-public:
-
-    LM_INTERFACE_F(Render, void(const Scene*, Film*));
+    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
 
 };
 
 LM_NAMESPACE_END
-

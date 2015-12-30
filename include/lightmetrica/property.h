@@ -57,10 +57,10 @@ public:
 
 public:
 
-    /*!
-        Type of the node.
-    */
+
     LM_INTERFACE_F(Type, PropertyNodeType());
+    LM_INTERFACE_F(Line, int());
+    LM_INTERFACE_F(Column, int());
 
     /*!
         Key of the node.
@@ -92,6 +92,11 @@ public:
     */
     LM_INTERFACE_F(At, const PropertyNode*(int));
 
+    /*!
+        Parent node (nullptr for root node).
+    */
+    LM_INTERFACE_F(Parent, const PropertyNode*());
+    
 public:
 
     #pragma region Type conversion functions

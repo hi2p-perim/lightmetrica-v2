@@ -22,31 +22,10 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
-#include <lightmetrica/component.h>
+#include <lightmetrica/renderer.h>
 
 LM_NAMESPACE_BEGIN
 
-class PropertyNode;
-class Scene;
 
-class RenderJob : public Component
-{
-public:
-
-    LM_INTERFACE_CLASS(RenderJob, Component);
-
-public:
-
-    RenderJob() = default;
-    LM_DISABLE_COPY_AND_MOVE(RenderJob);
-
-public:
-
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
-    LM_INTERFACE_F(Render, void(const Scene*));
-
-};
 
 LM_NAMESPACE_END

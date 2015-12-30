@@ -24,14 +24,13 @@
 
 #pragma once
 
-#include <lightmetrica/component.h>
+#include <lightmetrica/configurable.h>
 
 LM_NAMESPACE_BEGIN
 
 struct Primitive;
-class PropertyNode;
 
-class Accel : public Component
+class Accel : public Configurable
 {
 public:
 
@@ -44,7 +43,6 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
     LM_INTERFACE_F(Build, bool(const Primitive* primitives, int n));
     LM_INTERFACE_F(Intersect, void());
 

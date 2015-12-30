@@ -26,9 +26,10 @@
 #include <lightmetrica/exception.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/scene.h>
-#include <lightmetrica/renderjob.h>
+#include <lightmetrica/renderer.h>
 #include <lightmetrica/assets.h>
 #include <lightmetrica/accel.h>
+#include <lightmetrica/film.h>
 
 #include <iostream>
 #include <sstream>
@@ -36,6 +37,7 @@
 
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
+#include <boost/optional.hpp>
 
 using namespace lightmetrica_v2;
 
@@ -368,7 +370,7 @@ private:
                 LM_LOG_ERROR(boost::str(boost::format("Invalid version [ Expected: (%d.%d.%d)-(%d.%d.%d), Actual: (%d.%d.%d) ]")
                     % std::get<0>(MinVersion) % std::get<1>(MinVersion) % std::get<2>(MinVersion)
                     % std::get<0>(MaxVersion) % std::get<1>(MaxVersion) % std::get<2>(MaxVersion)
-                    % std::get<0>(version) % std::get<1>(version) % std::get<2>(version)));
+                    % std::get<0>(version)    % std::get<1>(version)    % std::get<2>(version)));
                 return false;
             }
         }
@@ -380,14 +382,13 @@ private:
         #pragma region Initialize asset manager
 
         const auto assets = ComponentFactory::Create<Assets>();
-        {    
-            const auto* assetsNode = root->Child("assets");
-            if (!assetsNode)
+        {
+            const auto* n = root->Child("assets");
+            if (!n)
             {
-                LM_LOG_ERROR("Missing 'assets' node");
                 return false;
             }
-            if (!assets->Initialize(assetsNode))
+            if (!assets->Initialize(n))
             {
                 return false;
             }
@@ -398,31 +399,12 @@ private:
         // --------------------------------------------------------------------------------
 
         #pragma region Initialize accel
-
-        const auto accel = [&]() -> Accel::UniquePointerType
+        
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", "NaiveAccel");
+        if (!accel)
         {
-            bool err = false;
-
-            const auto accelNode = root->Child("accel");
-            if (!accelNode)
-            {
-                err = true;
-            }
-
-            const auto tn = accelNode->Child("type");
-            if (!tn)
-            {
-                err = true;
-            }
-
-            if (err)
-            {
-                LM_LOG_INFO("Invalid 'accel' node, using default accel 'NaiveAccel'");
-                return ComponentFactory::Create<Accel>("NaiveAccel");
-            }
-
-            return ComponentFactory::Create<Accel>(tn->As<std::string>().c_str());
-        }();
+            return false;
+        }
 
         #pragma endregion
 
@@ -432,13 +414,12 @@ private:
 
         const auto scene = ComponentFactory::Create<Scene>();
         {
-            const auto* sceneNode = root->Child("scene");
-            if (!sceneNode)
+            const auto* n = root->Child("scene");
+            if (!n)
             {
-                LM_LOG_ERROR("Missing 'scene' node");
                 return false;
             }
-            if (!scene->Initialize(sceneNode, assets.get(), accel.get()))
+            if (!scene->Initialize(n, assets.get(), accel->get()))
             {
                 return false;
             }
@@ -448,10 +429,22 @@ private:
 
         // ---------------------------------------- ----------------------------------------
 
+        #pragma region Initialize film
+
+        const auto film = InitializeConfigurable<Film>(root, "film");
+        if (!film)
+        {
+            return false;
+        }
+
+        #pragma endregion
+
+        // ---------------------------------------- ----------------------------------------
+
         #pragma region Initialize renderer
 
-        const auto renderJob = ComponentFactory::Create<RenderJob>();
-        if (!renderJob->Initialize(nullptr))
+        const auto renderer = InitializeConfigurable<Renderer>(root, "renderer");
+        if (!renderer)
         {
             return false;
         }
@@ -462,7 +455,7 @@ private:
 
         #pragma region Process rendering
 
-        renderJob->Render(scene.get());
+        (*renderer)->Render(scene.get(), static_cast<Film*>(film->get()));
 
         #pragma endregion
 
@@ -474,6 +467,53 @@ private:
     auto ProcessCommand_Verify(const ProgramOption& opt) -> bool
     {
         throw std::runtime_error("not implemented");
+    }
+
+private:
+
+    // Function to initialize configurable component
+    template <typename AssetT>
+    auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::string& default = "") -> boost::optional<typename AssetT::UniquePtr>
+    {
+        static_assert(std::is_base_of<Configurable, AssetT>::value, "AssetT must inherits Configurable");
+
+        const auto* n = root->Child(name);
+        if (!n)
+        {
+            LM_LOG_ERROR("Missing '" + name + "' node");
+            if (!default.empty())
+            {
+                LM_LOG_INFO("Using default type: '" + default + "'");
+                return ComponentFactory::Create<AssetT>(default);
+            }
+            else
+            {
+                return boost::none;
+            }
+        }
+
+        const auto tn = n->Child("type");
+        if (!tn)
+        {
+            LM_LOG_ERROR("Missing '" + name + "/type' node");
+            return boost::none;
+        }
+
+        const auto pn = n->Child("params");
+        if (!pn)
+        {
+            LM_LOG_ERROR("Missing '" + name + "/params' node");
+            return boost::none;
+        }
+
+        auto p = ComponentFactory::Create<AssetT>(tn->As<std::string>());
+        if (!p)
+        {
+            LM_LOG_ERROR("Failed to initialize '" + tn->As<std::string>() + "'");
+            return boost::none;
+        }
+
+        return p;
     }
 
 };

@@ -129,7 +129,7 @@ private:
 
 private:
 
-    std::vector<Asset::UniquePointerType> assets_;
+    std::vector<Asset::UniquePtr> assets_;
     std::unordered_map<std::string, size_t> assetIndexMap_;
 
 };

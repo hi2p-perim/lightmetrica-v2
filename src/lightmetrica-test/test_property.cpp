@@ -41,7 +41,7 @@ TEST_F(PropertyTest, Scalar)
     | a
     )x");
 
-    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+    auto p = ComponentFactory::Create<PropertyTree>();
 
     ASSERT_TRUE(p->LoadFromString(Scalar_Input));
 
@@ -58,7 +58,7 @@ TEST_F(PropertyTest, Map)
     | B: b
     )x");
 
-    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+    auto p = ComponentFactory::Create<PropertyTree>();
 
     ASSERT_TRUE(p->LoadFromString(Map_Input));
     
@@ -86,7 +86,7 @@ TEST_F(PropertyTest, Sequence)
     | - b
     )x");
 
-    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+    auto p = ComponentFactory::Create<PropertyTree>();
 
     ASSERT_TRUE(p->LoadFromString(Sequence_Input));
 
@@ -114,7 +114,7 @@ TEST_F(PropertyTest, Tree)
     |   - B2
     )x");
 
-    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+    auto p = ComponentFactory::Create<PropertyTree>();
 
     ASSERT_TRUE(p->LoadFromString(Tree_Input));
 
@@ -134,7 +134,7 @@ TEST_F(PropertyTest, Tree_2)
     |   3 4
     )x");
 
-    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+    auto p = ComponentFactory::Create<PropertyTree>();
 
     ASSERT_TRUE(p->LoadFromString(Tree_Input_2));
 
@@ -155,7 +155,7 @@ TEST_F(PropertyTest, TypeConversion)
     | - 1.1
     )x");
 
-    auto p = std::move(ComponentFactory::Create<PropertyTree>());
+    auto p = ComponentFactory::Create<PropertyTree>();
 
     ASSERT_TRUE(p->LoadFromString(TypeConversion_Input));
 
@@ -163,6 +163,25 @@ TEST_F(PropertyTest, TypeConversion)
     EXPECT_EQ("hello", root->At(0)->As<std::string>());
     EXPECT_EQ(1, root->At(1)->As<int>());
     EXPECT_EQ(1.1, root->At(2)->As<double>());
+}
+
+TEST_F(PropertyTest, LineColumn)
+{
+    const auto ErrorHandling_Input = TestUtils::MultiLineLiteral(R"x(
+    | A:        # 1
+    |   A1:     # 2
+    |   A2:     # 3
+    |     A3:   # 4
+    )x");
+
+    auto p = ComponentFactory::Create<PropertyTree>();
+    ASSERT_TRUE(p->LoadFromString(ErrorHandling_Input));
+
+    EXPECT_EQ(0, p->Root()->Line());
+    EXPECT_EQ(1, p->Root()->Child("A")->Line());
+    EXPECT_EQ(2, p->Root()->Child("A")->Child("A1")->Line());
+    EXPECT_EQ(3, p->Root()->Child("A")->Child("A2")->Line());
+    EXPECT_EQ(4, p->Root()->Child("A")->Child("A2")->Child("A3")->Line());
 }
 
 LM_TEST_NAMESPACE_END

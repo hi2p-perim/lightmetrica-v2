@@ -68,6 +68,7 @@ set(
 	"${_INCLUDE_DIR}/surfacegeometry.h"
 	"${_INCLUDE_DIR}/ray.h"
 	"${_INCLUDE_DIR}/spectrum.h"
+	"${_INCLUDE_DIR}/configurable.h"
 )
 set(
     _CORE_SOURCE_FILES
@@ -133,6 +134,7 @@ set(
 	"${_INCLUDE_DIR}/sensor.h"
 	"${_INCLUDE_DIR}/bsdf.h"
 	"${_INCLUDE_DIR}/generalizedbsdf.h"
+	"${_INCLUDE_DIR}/film.h"
 )
 
 set(
@@ -193,11 +195,11 @@ list(APPEND _SOURCE_FILES ${_ACCEL_SOURCE_FILES})
 set(
     _RENDERER_HEADER_FILES
 	"${_INCLUDE_DIR}/renderer.h"
-	"${_INCLUDE_DIR}/renderjob.h"
 )
 
 set(
     _RENDERER_SOURCE_FILES
+	"renderer/renderer_raycast.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})
