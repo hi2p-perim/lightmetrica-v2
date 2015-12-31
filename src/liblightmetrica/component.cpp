@@ -52,18 +52,18 @@ public:
 
 public:
 
-    auto Register(const TypeInfo& implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void
+    auto Register(const std::string& implName, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void
     {
-        if (funcMap.find(implT.name) != funcMap.end())
+        if (funcMap.find(implName) != funcMap.end())
         {
             // Note that in this class the error message cannot be output
             // with logger framework(e.g., using LM_LOG_ERROR, etc.)
             // because the registration of creation / release function is processed
             // in static initialization phase, so LM_LOG_INIT is not yet be called.
-            std::cerr << "Failed to register [ " << implT.name << " ]. Already registered." << std::endl;
+            std::cerr << "Failed to register [ " << implName << " ]. Already registered." << std::endl;
         }
 
-        funcMap[implT.name] = CreateAndReleaseFuncs{createFunc, releaseFunc};
+        funcMap[implName] = CreateAndReleaseFuncs{createFunc, releaseFunc};
     }
 
     auto Create(const char* implName) -> Component*
@@ -85,7 +85,7 @@ private:
 
 };
 
-auto ComponentFactory_Register(TypeInfo implT, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactoryImpl::Instance().Register(implT, createFunc, releaseFunc); }
+auto ComponentFactory_Register(const char* implName, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactoryImpl::Instance().Register(implName, createFunc, releaseFunc); }
 auto ComponentFactory_Create(const char* implName) -> Component* { return ComponentFactoryImpl::Instance().Create(implName); }
 auto ComponentFactory_ReleaseFunc(const char* implName) -> ReleaseFuncPointerType { return ComponentFactoryImpl::Instance().ReleaseFunc(implName); }
 

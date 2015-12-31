@@ -32,12 +32,14 @@
 #include <lightmetrica/film.h>
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <regex>
 
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
+#include <boost/filesystem.hpp>
 
 using namespace lightmetrica_v2;
 
@@ -87,6 +89,8 @@ struct ProgramOption
         bool Help = false;
         std::string HelpDetail;
         std::string SceneFile;
+        std::string OutputPath;
+        bool Verbose;
     } Render;
 
 public:
@@ -161,7 +165,9 @@ public:
                     po::options_description renderOpt("Options");
                     renderOpt.add_options()
                         ("help", "Display help message (this message)")
-                        ("scene,s", po::value<std::string>()->required(), "Scene description file");
+                        ("scene,s", po::value<std::string>()->required(), "Scene description file")
+                        ("output,o", po::value<std::string>()->default_value("result"), "Output image")
+                        ("verbose,v", po::bool_switch()->default_value(false), "Adds detailed information on the output");
 
                     auto opts = po::collect_unrecognized(parsed.options, po::include_positional);
                     opts.erase(opts.begin());
@@ -178,7 +184,9 @@ public:
 
                     po::notify(vm);
 
-                    Render.SceneFile = vm["scene"].as<std::string>();
+                    Render.SceneFile  = vm["scene"].as<std::string>();
+                    Render.OutputPath = vm["output"].as<std::string>();
+                    Render.Verbose    = vm["verbose"].as<bool>();
 
                     return true;
                 }
@@ -276,6 +284,14 @@ private:
 
     auto ProcessCommand_Render(const ProgramOption& opt) -> bool
     {
+        #pragma region Configure logger
+
+        Logger::SetVerboseLevel(opt.Render.Verbose ? 2 : 0);
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Handle help message
 
         if (opt.Render.Help)
@@ -294,6 +310,11 @@ private:
         #pragma region Print initial message
 
         {
+            if (opt.Render.Verbose)
+            {
+                LM_LOG_INFO_SIMPLE("| TYPE  TIME  | FILENAME  | LINE  | TID |");
+            }
+
             LM_LOG_INFO(MultiLineLiteral(R"x(
             |
             | Lightmetrica
@@ -313,7 +334,7 @@ private:
 
         // Scene configuration
         const auto sceneConf = ComponentFactory::Create<PropertyTree>();
-        if (!sceneConf->LoadFromString(opt.Render.SceneFile))
+        if (!sceneConf->LoadFromFile(opt.Render.SceneFile))
         {
             return false;
         }
@@ -349,6 +370,7 @@ private:
             if (!versionNode)
             {
                 LM_LOG_ERROR("Missing 'version' node");
+                PrintPrettyError(root);
                 return false;
             }
 
@@ -360,6 +382,7 @@ private:
             if (!result)
             {
                 LM_LOG_ERROR("Invalid version string: " + versionStr);
+                PrintPrettyError(versionNode);
                 return false;
             }
 
@@ -367,10 +390,16 @@ private:
             VersionT version{ std::stoi(match[1]), std::stoi(match[2]), std::stoi(match[3]) };
             if (version < MinVersion || MaxVersion < version)
             {
-                LM_LOG_ERROR(boost::str(boost::format("Invalid version [ Expected: (%d.%d.%d)-(%d.%d.%d), Actual: (%d.%d.%d) ]")
-                    % std::get<0>(MinVersion) % std::get<1>(MinVersion) % std::get<2>(MinVersion)
-                    % std::get<0>(MaxVersion) % std::get<1>(MaxVersion) % std::get<2>(MaxVersion)
-                    % std::get<0>(version)    % std::get<1>(version)    % std::get<2>(version)));
+                {
+                    LM_LOG_ERROR("Invalid version");
+                    LM_LOG_INDENTER();
+                    LM_LOG_ERROR(boost::str(boost::format("Expected: %d.%d.%d - %d.%d.%d")
+                        % std::get<0>(MinVersion) % std::get<1>(MinVersion) % std::get<2>(MinVersion)
+                        % std::get<0>(MaxVersion) % std::get<1>(MaxVersion) % std::get<2>(MaxVersion)));
+                    LM_LOG_ERROR(boost::str(boost::format("Actual  : %d.%d.%d")
+                        % std::get<0>(version) % std::get<1>(version) % std::get<2>(version)));
+                }
+                PrintPrettyError(versionNode);
                 return false;
             }
         }
@@ -400,7 +429,7 @@ private:
 
         #pragma region Initialize accel
         
-        const auto accel = InitializeConfigurable<Accel>(root, "accel", "NaiveAccel");
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", "naiveaccel");
         if (!accel)
         {
             return false;
@@ -455,7 +484,18 @@ private:
 
         #pragma region Process rendering
 
-        (*renderer)->Render(scene.get(), static_cast<Film*>(film->get()));
+        renderer.get()->Render(scene.get(), static_cast<Film*>(film->get()));
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+
+        if (!film.get()->Save(opt.Render.OutputPath))
+        {
+            return false;
+        }
 
         #pragma endregion
 
@@ -471,6 +511,25 @@ private:
 
 private:
 
+    // Print pretty error message for property node
+    auto PrintPrettyError(const PropertyNode* node) -> void
+    {
+        int line = node->Line();
+        const auto path = node->Tree()->Path();
+        const auto filename = boost::filesystem::path(path).filename().string();
+        LM_LOG_ERROR("Error around line " + std::to_string(line) + " @ " + filename);
+        std::ifstream fs(path);
+        for (int i = 0; i <= line + 2; i++)
+        {
+            if (line - 2 <= i && i <= line + 2)
+            {
+                std::string t;
+                std::getline(fs, t, '\n');
+                LM_LOG_ERROR(boost::str(boost::format("% 4d%c| %s") % i % (i == line ? '*' : ' ') % t));
+            }
+        }
+    };
+
     // Function to initialize configurable component
     template <typename AssetT>
     auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::string& default = "") -> boost::optional<typename AssetT::UniquePtr>
@@ -480,14 +539,17 @@ private:
         const auto* n = root->Child(name);
         if (!n)
         {
-            LM_LOG_ERROR("Missing '" + name + "' node");
             if (!default.empty())
             {
+                LM_LOG_INFO("Missing '" + name + "' node");
+                LM_LOG_INDENTER();
                 LM_LOG_INFO("Using default type: '" + default + "'");
                 return ComponentFactory::Create<AssetT>(default);
             }
             else
             {
+                LM_LOG_ERROR("Missing '" + name + "' node");
+                PrintPrettyError(root);
                 return boost::none;
             }
         }
@@ -496,6 +558,7 @@ private:
         if (!tn)
         {
             LM_LOG_ERROR("Missing '" + name + "/type' node");
+            PrintPrettyError(n);
             return boost::none;
         }
 
@@ -503,6 +566,7 @@ private:
         if (!pn)
         {
             LM_LOG_ERROR("Missing '" + name + "/params' node");
+            PrintPrettyError(n);
             return boost::none;
         }
 
@@ -510,6 +574,7 @@ private:
         if (!p)
         {
             LM_LOG_ERROR("Failed to initialize '" + tn->As<std::string>() + "'");
+            PrintPrettyError(tn);
             return boost::none;
         }
 

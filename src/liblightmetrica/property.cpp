@@ -41,9 +41,9 @@ public:
 
 public:
 
+    LM_IMPL_F(Tree)   = [this]() -> const PropertyTree* { return tree_; };
     LM_IMPL_F(Type)   = [this]() -> PropertyNodeType { return type_; };
     LM_IMPL_F(Line)   = [this]() -> int { return line_; };
-    LM_IMPL_F(Column) = [this]() -> int { return column_; };
     LM_IMPL_F(Scalar) = [this]() -> std::string { return scalar_; };
     LM_IMPL_F(Key)    = [this]() -> std::string { return key_; };
     LM_IMPL_F(Size)   = [this]() -> int { return (int)(sequence_.size()); };
@@ -53,12 +53,14 @@ public:
 
 private:
 
+    // Pointer to property tree
+    const PropertyTree* tree_;
+
     // Type of the node
     PropertyNodeType type_;
 
-    // Line, column
+    // Line
     int line_;
-    int column_;
 
     // For map node type
     std::string key_;
@@ -75,7 +77,7 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(PropertyNode_);
+LM_COMPONENT_REGISTER_IMPL_2(PropertyNode_);
 
 // --------------------------------------------------------------------------------
 
@@ -87,6 +89,26 @@ public:
 
 public:
 
+    LM_IMPL_F(LoadFromFile) = [this](const std::string& path) -> bool
+    {
+        std::ifstream t(path);
+        if (!t.is_open())
+        {
+            LM_LOG_ERROR("Failed to open: " + path);
+            return false;
+        }
+
+        std::stringstream ss;
+        ss << t.rdbuf();
+        if (!LoadFromString(ss.str()))
+        {
+            return false;
+        }
+
+        path_ = path;
+        return true;
+    };
+
     LM_IMPL_F(LoadFromString) = [this](const std::string& input) -> bool
     {
         #pragma region Traverse YAML nodes and convert to the our node type
@@ -97,7 +119,7 @@ public:
             nodes_.push_back(ComponentFactory::Create<PropertyNode>());
             auto* node_internal = static_cast<PropertyNode_*>(nodes_.back().get());
             node_internal->line_ = yamlNode.Mark().line;
-            node_internal->column_ = yamlNode.Mark().column;
+            node_internal->tree_ = this;
 
             switch (yamlNode.Type())
             {
@@ -164,6 +186,11 @@ public:
         return true;
     };
 
+    LM_IMPL_F(Path) = [this]() -> std::string
+    {
+        return path_;
+    };
+
     LM_IMPL_F(Root) = [this]() -> const PropertyNode*
     {
         return root_;
@@ -171,11 +198,12 @@ public:
 
 private:
 
+    std::string path_;
     const PropertyNode* root_;
     std::vector<PropertyNode::UniquePtr> nodes_;
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(PropertyTree_);
+LM_COMPONENT_REGISTER_IMPL_2(PropertyTree_);
 
 LM_NAMESPACE_END

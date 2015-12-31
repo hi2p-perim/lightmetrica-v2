@@ -23,9 +23,26 @@
 */
 
 #include <lightmetrica/renderer.h>
+#include <lightmetrica/scene.h>
+#include <lightmetrica/film.h>
 
 LM_NAMESPACE_BEGIN
 
+class Raycast : public Renderer
+{
+public:
 
+    LM_IMPL_CLASS(Raycast, Renderer);
+
+public:
+
+    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    {
+        
+    };
+
+};
+
+LM_COMPONENT_REGISTER_IMPL(Raycast, "raycast");
 
 LM_NAMESPACE_END

@@ -50,8 +50,8 @@ struct TestAsset2 : public TestAsset
     LM_IMPL_F(Func) = [this]() -> int { return 43; };
 };
 
-LM_COMPONENT_REGISTER_IMPL(TestAsset1);
-LM_COMPONENT_REGISTER_IMPL(TestAsset2);
+LM_COMPONENT_REGISTER_IMPL_2(TestAsset1);
+LM_COMPONENT_REGISTER_IMPL_2(TestAsset2);
 
 TEST(AssetsTest, AssetByIDAndType)
 {

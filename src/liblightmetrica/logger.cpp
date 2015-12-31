@@ -80,86 +80,108 @@ public:
 		}
 	}
 
+    auto SetVerboseLevel(int level) -> void
+    {
+        verboseLevel_ = level;
+    }
+
 	auto Log(LogType type, const std::string& message, const char* filename, int line, bool inplace, bool simple) -> void
 	{
+        #pragma region Thread ID
+
+        // The thread ID is assigned from zero with moronically increasing manner
 		int threadId;
 		{
 			const auto id = boost::lexical_cast<std::string>(std::this_thread::get_id());
 			tbb::concurrent_hash_map<std::string, int>::accessor a;
-			if (threadIdMap.insert(a, id))
+			if (threadIdMap_.insert(a, id))
 			{
-                a->second = (int)(threadIdMap.size() - 1);
+                a->second = (int)(threadIdMap_.size() - 1);
 			}
 			threadId = a->second;
 		}
 
-		io.post([this, type, message, filename, line, threadId, inplace, simple]()
-		{
-			// Fill spaces to erase previous message
-			if (prevMessageIsInplace)
-			{
-				int consoleWidth;
-				const int DefaultConsoleWidth = 100;
-				#if LM_PLATFORM_WINDOWS
-				{
-					HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-					CONSOLE_SCREEN_BUFFER_INFO screenBufferInfo;
-					if (!GetConsoleScreenBufferInfo(consoleHandle, &screenBufferInfo))
-					{
-						consoleWidth = DefaultConsoleWidth;
-					}
-					else
-					{
-						consoleWidth = screenBufferInfo.dwSize.X - 1;
-					}
-				}
-				#elif LM_PLATFORM_LINUX
-				{
-					struct winsize w;
-					if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) < 0)
-					{
-						consoleWidth = DefaultConsoleWidth;
-					}
-					else
-					{
-						consoleWidth = w.ws_col;
-					}
-				}
-				#endif
-				std::cout << std::string(consoleWidth, ' ') << "\r";
-			}
+        #pragma endregion
 
-			// Print message
-			BeginTextColor(type);
-			const auto text = simple ? message : GenerateMessage(type, message, boost::filesystem::path(filename).filename().string(), line, threadId);
-			if (inplace)
-			{
-				std::cout << text << "\r";
-				std::cout.flush();
-				prevMessageIsInplace = true;
-			}
-			else
-			{
-				std::cout << text << std::endl;
-				prevMessageIsInplace = false;
-			}
-			EndTextColor();
-		});
+        // --------------------------------------------------------------------------------
+
+        #pragma region Post message
+
+        // Split the message by lines and post an event to print the formatted message
+        std::stringstream ss(message);
+        std::string messageLine;
+        while (std::getline(ss, messageLine, '\n'))
+        {
+		    io.post([this, type, messageLine, filename, line, threadId, inplace, simple]()
+		    {
+			    // Fill spaces to erase previous message
+			    if (prevMessageIsInplace_)
+			    {
+				    int consoleWidth;
+				    const int DefaultConsoleWidth = 100;
+				    #if LM_PLATFORM_WINDOWS
+				    {
+					    HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+					    CONSOLE_SCREEN_BUFFER_INFO screenBufferInfo;
+					    if (!GetConsoleScreenBufferInfo(consoleHandle, &screenBufferInfo))
+					    {
+						    consoleWidth = DefaultConsoleWidth;
+					    }
+					    else
+					    {
+						    consoleWidth = screenBufferInfo.dwSize.X - 1;
+					    }
+				    }
+				    #elif LM_PLATFORM_LINUX
+				    {
+					    struct winsize w;
+					    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) < 0)
+					    {
+						    consoleWidth = DefaultConsoleWidth;
+					    }
+					    else
+					    {
+						    consoleWidth = w.ws_col;
+					    }
+				    }
+				    #endif
+				    std::cout << std::string(consoleWidth, ' ') << "\r";
+			    }
+
+			    // Print message
+			    BeginTextColor(type);
+			    const auto text = simple ? messageLine : GenerateMessage(type, messageLine, boost::filesystem::path(filename).filename().string(), line, threadId);
+			    if (inplace)
+			    {
+				    std::cout << text << "\r";
+				    std::cout.flush();
+				    prevMessageIsInplace_ = true;
+			    }
+			    else
+			    {
+				    std::cout << text << std::endl;
+				    prevMessageIsInplace_ = false;
+			    }
+			    EndTextColor();
+		    });
+        }
+
+        #pragma endregion
 	}
 
     auto UpdateIndentation(bool push) -> void
     {
         io.post([this, push]()
         {
-            Indentation += push ? 1 : -1;
-            if (Indentation > 0)
+            indentation_ += push ? 1 : -1;
+            if (indentation_ > 0)
             {
-                IndentationString = std::string(4 * Indentation, '.') + " ";
+                indentationString_ = std::string(4 * indentation_, '.') + " ";
             }
             else
             {
-                Indentation = 0;
-                IndentationString = "";
+                indentation_ = 0;
+                indentationString_ = "";
             }
         });
     }
@@ -176,8 +198,11 @@ private:
 	{
 		const std::string LogTypeString[] = { "ERROR", "WARN", "INFO", "DEBUG" };
 		const auto now = std::chrono::high_resolution_clock::now();
-		const double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - LogStartTime).count() / 1000.0;
-		return boost::str(boost::format("| %-5s %.3f | %-8.8s~ | @%4d | #%2d | %s%s") % LogTypeString[(int)(type)] % elapsed % filename % line % threadId % IndentationString % message);
+		const double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - LogStartTime).count() / 1000.0;        
+        return
+            verboseLevel_ == 0 ? boost::str(boost::format("| %-5s %.3f | %s%s") % LogTypeString[(int)(type)] % elapsed % indentationString_ % message) :
+            verboseLevel_ == 1 ? boost::str(boost::format("| %-5s %.3f | #%2d | %s%s") % LogTypeString[(int)(type)] % elapsed % threadId % indentationString_ % message)
+                               : boost::str(boost::format("| %-5s %.3f | %-8.8s~ | @%4d | #%2d | %s%s") % LogTypeString[(int)(type)] % elapsed % filename % line % threadId % indentationString_ % message);
 	}
 
 	auto BeginTextColor(LogType type) -> void
@@ -228,10 +253,11 @@ private:
 private:
 
 	std::chrono::high_resolution_clock::time_point LogStartTime = std::chrono::high_resolution_clock::now();
-	int Indentation = 0;
-	std::string IndentationString;
-	bool prevMessageIsInplace = false;
-	tbb::concurrent_hash_map<std::string, int> threadIdMap;
+	int indentation_ = 0;
+	std::string indentationString_;
+	bool prevMessageIsInplace_ = false;
+	tbb::concurrent_hash_map<std::string, int> threadIdMap_;
+    int verboseLevel_ = 0;
 
 };
 
@@ -258,6 +284,7 @@ auto LoggerImpl::Instance() -> LoggerImpl*
 
 auto Logger_Run() -> void { LoggerImpl::Instance()->Run(); }
 auto Logger_Stop() -> void { LoggerImpl::Instance()->Stop(); }
+auto Logger_SetVerboseLevel(int level) -> void { LoggerImpl::Instance()->SetVerboseLevel(level); }
 auto Logger_Log(int type, const char* message, const char* filename, int line, bool inplace, bool simple) -> void { LoggerImpl::Instance()->Log((LogType)(type), message, filename, line, inplace, simple); }
 auto Logger_UpdateIndentation(bool push) -> void { LoggerImpl::Instance()->UpdateIndentation(push); }
 auto Logger_Flush() -> void { LoggerImpl::Instance()->Flush(); }

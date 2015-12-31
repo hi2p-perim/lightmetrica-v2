@@ -22,29 +22,21 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
-#include <lightmetrica/configurable.h>
+#include <lightmetrica/light.h>
 
 LM_NAMESPACE_BEGIN
 
-class Film : public Configurable
+class Light_Point : public Light
 {
 public:
 
-    LM_INTERFACE_CLASS(Film, Configurable);
+    LM_IMPL_CLASS(Light_Point, Light);
 
 public:
 
-    Film() = default;
-    LM_DISABLE_COPY_AND_MOVE(Film);
-
-public:
-
-    LM_INTERFACE_F(Save, bool(const std::string&));
-    LM_INTERFACE_F(Width, int());
-    LM_INTERFACE_F(Height, int());
 
 };
+
+LM_COMPONENT_REGISTER_IMPL(Light_Point, "point");
 
 LM_NAMESPACE_END

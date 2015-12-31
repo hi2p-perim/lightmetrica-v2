@@ -56,8 +56,8 @@ struct Stub_Accel : public Accel
     LM_IMPL_CLASS(Stub_Accel, Accel);
 };
 
-LM_COMPONENT_REGISTER_IMPL(Stub_Assets);
-LM_COMPONENT_REGISTER_IMPL(Stub_Accel);
+LM_COMPONENT_REGISTER_IMPL_2(Stub_Assets);
+LM_COMPONENT_REGISTER_IMPL_2(Stub_Accel);
 
 // --------------------------------------------------------------------------------
 
@@ -126,11 +126,11 @@ struct Stub_TriangleMesh_2 : public TriangleMesh
     LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
 };
 
-LM_COMPONENT_REGISTER_IMPL(Stub_Sensor);
-LM_COMPONENT_REGISTER_IMPL(Stub_Light);
-LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_1);
-LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_2);
-LM_COMPONENT_REGISTER_IMPL(Stub_BSDF);
+LM_COMPONENT_REGISTER_IMPL(Stub_Sensor, "stub_sensor");
+LM_COMPONENT_REGISTER_IMPL(Stub_Light, "stub_light");
+LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_1, "stub_trianglemesh_1");
+LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_2, "stub_trianglemesh_2");
+LM_COMPONENT_REGISTER_IMPL(Stub_BSDF, "stub_bsdf");
 
 // Tests simple loading of the scene with delayed loading of assets
 TEST_F(SceneTest, SimpleLoadWithAssets)
@@ -138,24 +138,24 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
     const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
     | assets:
     |   sensor_1:
-    |     interface: Sensor
-    |     type: Stub_Sensor
+    |     interface: sensor
+    |     type: stub_sensor
     |
     |   light_1:
-    |     interface: Light
-    |     type: Stub_Light
+    |     interface: light
+    |     type: stub_light
     |
     |   mesh_1:
-    |     interface: TriangleMesh
-    |     type: Stub_TriangleMesh_1
+    |     interface: trianglemesh
+    |     type: stub_trianglemesh_1
     |
     |   mesh_2:
-    |     interface: TriangleMesh
-    |     type: Stub_TriangleMesh_2
+    |     interface: trianglemesh
+    |     type: stub_trianglemesh_2
     |
     |   bsdf_1:
-    |     interface: BSDF
-    |     type: Stub_BSDF
+    |     interface: bsdf
+    |     type: stub_bsdf
     |
     | scene:
     |   sensor: n1

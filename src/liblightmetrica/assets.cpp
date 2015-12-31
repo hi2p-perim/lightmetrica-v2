@@ -72,14 +72,14 @@ public:
             return nullptr;
         }
 
-        // Check interface type
+        // Check interface type (case insensitive)
         const auto* interfaceNode = assetNode->Child("interface");
         if (!interfaceNode)
         {
             LM_LOG_ERROR("Missing 'interface' node");
             return nullptr;
         }
-        if (interfaceType != interfaceNode->As<std::string>())
+        if (!boost::iequals(interfaceType, interfaceNode->As<std::string>()))
         {
             LM_LOG_ERROR(boost::str(boost::format("Invalid asset type '%s' expected '%s'") % interfaceNode->As<std::string>() % interfaceType));
             return nullptr;
@@ -134,6 +134,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Assets_);
+LM_COMPONENT_REGISTER_IMPL_2(Assets_);
 
 LM_NAMESPACE_END

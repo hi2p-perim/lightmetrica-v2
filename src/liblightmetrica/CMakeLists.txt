@@ -151,6 +151,34 @@ list(APPEND _SOURCE_FILES ${_ASSET_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
+# Asset / Sensor
+#
+
+set(
+    _ASSET_SENSOR_SOURCE_FILES
+	"asset/sensor/sensor_perspective.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\asset\\sensor" FILES ${_ASSET_SENSOR_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ASSET_SENSOR_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Asset / Light
+#
+
+set(
+    _ASSET_LIGHT_SOURCE_FILES
+	"asset/light/light_point.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\asset\\light" FILES ${_ASSET_LIGHT_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ASSET_LIGHT_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
 # Scene
 #
 

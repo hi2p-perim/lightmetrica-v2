@@ -30,6 +30,8 @@
 
 LM_NAMESPACE_BEGIN
 
+class PropertyTree;
+
 enum class PropertyNodeType : int
 {
     Null,
@@ -57,10 +59,9 @@ public:
 
 public:
 
-
+    LM_INTERFACE_F(Tree, const PropertyTree*());
     LM_INTERFACE_F(Type, PropertyNodeType());
     LM_INTERFACE_F(Line, int());
-    LM_INTERFACE_F(Column, int());
 
     /*!
         Key of the node.
@@ -180,10 +181,14 @@ public:
 
 public:
     
+    LM_INTERFACE_F(LoadFromFile, bool(const std::string&));
+
     /*!
         Load property from YAML sequences.
     */
     LM_INTERFACE_F(LoadFromString, bool(const std::string&));
+
+    LM_INTERFACE_F(Path, std::string());
 
     /*!
         Get root node.

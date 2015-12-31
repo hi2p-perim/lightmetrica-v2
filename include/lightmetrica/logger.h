@@ -51,6 +51,7 @@ extern "C"
 {
     LM_PUBLIC_API auto Logger_Run() -> void;
     LM_PUBLIC_API auto Logger_Stop() -> void;
+    LM_PUBLIC_API auto Logger_SetVerboseLevel(int level) -> void;
     LM_PUBLIC_API auto Logger_Log(int type, const char* filename, const char* message, int line, bool inplace, bool simple) -> void;
     LM_PUBLIC_API auto Logger_UpdateIndentation(bool push) -> void;
     LM_PUBLIC_API auto Logger_Flush() -> void;
@@ -80,6 +81,7 @@ extern "C"
     - Indentation support
         + Indentation is helpful for readability of the log messages,
           e.g., the messages from the calling function can be indented.
+    - Controllable verbose level
 
     Example:
     
@@ -111,6 +113,7 @@ public:
 
     static auto Run()  -> void { LM_EXPORTED_F(Logger_Run); }
     static auto Stop() -> void { LM_EXPORTED_F(Logger_Stop); }
+    static auto SetVerboseLevel(int level) -> void { LM_EXPORTED_F(Logger_SetVerboseLevel, level); }
     static auto Log(LogType type, const std::string& message, const char* filename, int line, bool inplace, bool simple) -> void { LM_EXPORTED_F(Logger_Log, (int)(type), message.c_str(), filename, line, inplace, simple); }
     static auto UpdateIndentation(bool push) -> void { LM_EXPORTED_F(Logger_UpdateIndentation, push); }
 
