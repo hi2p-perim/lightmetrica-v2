@@ -33,6 +33,7 @@
 #include <lightmetrica/light.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/bsdf.h>
+#include <lightmetrica/detail/propertyutils.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -49,6 +50,9 @@ public:
         #pragma region Load primitives
         
         {
+            LM_LOG_INFO("Loading primitives");
+            LM_LOG_INDENTER();
+
             #pragma region Traverse scene nodes and create primitives
 
             const std::function<bool(const PropertyNode*, const Mat4&)> Traverse = [&](const PropertyNode* propNode, const Mat4& parentTransform) -> bool
@@ -56,6 +60,9 @@ public:
                 #pragma region Create primitive
 
                 std::unique_ptr<Primitive> primitive(new Primitive);
+
+                LM_LOG_INFO("Traversing node");
+                LM_LOG_INDENTER();
 
                 #pragma endregion
 
@@ -68,6 +75,7 @@ public:
                     if (idNode)
                     {
                         primitive->id = idNode->As<std::string>();
+                        LM_LOG_INFO("ID: '" + primitive->id + "'");
                     }
                 }
 
@@ -80,6 +88,9 @@ public:
                 Mat4 transform;
 
                 {
+                    LM_LOG_INFO("Parsing transform");
+                    LM_LOG_INDENTER();
+
                     const auto* transformNode = propNode->Child("transform");
                     if (!transformNode)
                     {
@@ -123,6 +134,7 @@ public:
                                     if (!angleNode || !axisNode)
                                     {
                                         LM_LOG_ERROR("Missing 'angle' or 'axis' node");
+                                        PropertyUtils::PrintPrettyError(rotateNode);
                                         return false;
                                     }
 
@@ -163,6 +175,8 @@ public:
                 if (L && E)
                 {
                     LM_LOG_ERROR("'light' and 'sensor' node cannot be used in the same time");
+                    PropertyUtils::PrintPrettyError(L);
+                    PropertyUtils::PrintPrettyError(E);
                     return false;
                 }
                 else if (L || E)
@@ -178,6 +192,7 @@ public:
                     if (!primitive->emitter)
                     {
                         LM_LOG_ERROR("Failed to create emitter");
+                        PropertyUtils::PrintPrettyError(L ? L : E);
                         return false;
                     }
                 }
@@ -250,6 +265,7 @@ public:
             if (!nodesNode)
             {
                 LM_LOG_ERROR("Missing 'nodes' node");
+                PropertyUtils::PrintPrettyError(sceneNode);
                 return false;
             }
             for (int i = 0; i < nodesNode->Size(); i++)

@@ -34,6 +34,10 @@ public:
 
 public:
 
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool
+    {
+        return true;
+    };
 
 };
 

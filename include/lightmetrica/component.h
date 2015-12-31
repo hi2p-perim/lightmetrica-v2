@@ -230,8 +230,11 @@ public:
         auto* p = static_cast<InterfaceType*>(Create(implName));
         if (!p)
         {
-            LM_LOG_ERROR("Failed to create instance (impl: " + implName + ", interface: " + std::string(InterfaceType::Type_().name) + ")");
-            return ReturnType(nullptr, [](Component*){});
+            LM_LOG_ERROR("Failed to create instance");
+            LM_LOG_INDENTER();
+            LM_LOG_ERROR("Impl: " + implName);
+            LM_LOG_ERROR("Interface: " + std::string(InterfaceType::Type_().name));
+            return ReturnType(nullptr, nullptr);
         }
 
         return ReturnType(p, ReleaseFunc(implName));

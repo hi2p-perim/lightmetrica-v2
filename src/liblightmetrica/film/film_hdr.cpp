@@ -22,25 +22,31 @@
     THE SOFTWARE.
 */
 
-#include <lightmetrica/sensor.h>
+#include <lightmetrica/film.h>
+#include <lightmetrica/property.h>
 
 LM_NAMESPACE_BEGIN
 
-class Sensor_Perspective : public Sensor
+class Film_HDR : public Film
 {
 public:
 
-    LM_IMPL_CLASS(Sensor_Perspective, Sensor);
+    LM_IMPL_CLASS(Film_HDR, Film);
 
 public:
 
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool
-    {
-        return true;
-    };
+    LM_IMPL_F(Initialize) = [this](const PropertyNode*) -> bool { return true; };
+    LM_IMPL_F(Save) = [this](const std::string&) -> bool { return false; };
+    LM_IMPL_F(Width) = [this]() -> int { return width_; };
+    LM_IMPL_F(Height) = [this]() -> int { return height_; };
 
+private:
+
+    int width_;
+    int height_;
+    
 };
 
-LM_COMPONENT_REGISTER_IMPL(Sensor_Perspective, "perspective");
+LM_COMPONENT_REGISTER_IMPL(Film_HDR, "hdr");
 
 LM_NAMESPACE_END

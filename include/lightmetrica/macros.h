@@ -38,7 +38,7 @@
 
 // --------------------------------------------------------------------------------
 
-#pragma region Platform and compiler flag
+#pragma region Platform flag
 
 #ifdef _WIN32
 	#define LM_PLATFORM_WINDOWS 1
@@ -57,6 +57,12 @@
 #else
 	#define LM_PLATFORM_APPLE 0
 #endif
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Compiler flag
 
 #ifdef _MSC_VER
 	#define LM_COMPILER_MSVC 1
@@ -85,6 +91,36 @@
 	#endif
 #else
 	#define LM_COMPILER_CLANG 0
+#endif
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Architecture flag
+
+#if LM_COMPILER_MSVC
+	#ifdef _M_IX86
+		#define LM_ARCH_X86 1
+	#else
+		#define LM_ARCH_X86 0
+	#endif
+	#ifdef _M_X64
+		#define LM_ARCH_X64 1
+	#else
+		#define LM_ARCH_X64 0
+	#endif
+#elif LM_COMPILER_GCC
+	#ifdef __i386__
+		#define LM_ARCH_X86 1
+	#else
+		#define LM_ARCH_X86 0
+	#endif
+	#ifdef __x86_64__
+		#define LM_ARCH_X64 1
+	#else
+		#define LM_ARCH_X64 0
+	#endif
 #endif
 
 #pragma endregion

@@ -22,25 +22,11 @@
     THE SOFTWARE.
 */
 
-#include <lightmetrica/sensor.h>
+#pragma once
 
-LM_NAMESPACE_BEGIN
-
-class Sensor_Perspective : public Sensor
-{
-public:
-
-    LM_IMPL_CLASS(Sensor_Perspective, Sensor);
-
-public:
-
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool
-    {
-        return true;
-    };
-
-};
-
-LM_COMPONENT_REGISTER_IMPL(Sensor_Perspective, "perspective");
-
-LM_NAMESPACE_END
+#define LM_VERSION_MAJOR "@LM_VERSION_MAJOR@"
+#define LM_VERSION_MINOR "@LM_VERSION_MINOR@"
+#define LM_VERSION_PATCH "@LM_VERSION_PATCH@"
+#define LM_VERSION_REVISION "@LM_VERSION_REVISION@"
+#define LM_VERSION_CODENAME "@LM_VERSION_CODENAME@"
+#define LM_BUILD_DATE "@LM_CURRENT_DATE@"

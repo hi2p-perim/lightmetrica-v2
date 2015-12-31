@@ -56,7 +56,6 @@ set(
     "${_INCLUDE_DIR}/macros.h"
     "${_INCLUDE_DIR}/component.h"
 	"${_INCLUDE_DIR}/portable.h"
-    "${_INCLUDE_DIR}/version.h"
     "${_INCLUDE_DIR}/reflection.h"
 	"${_INCLUDE_DIR}/logger.h"
 	"${_INCLUDE_DIR}/fp.h"
@@ -82,6 +81,8 @@ set(
     # detail
     "stringtemplate.cpp"
     "config.cpp"
+    "propertyutils.cpp"
+	"version.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core" FILES ${_CORE_HEADER_FILES})
@@ -92,13 +93,15 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
-# Core/detail
+# Core / Detail
 #
 
 set(
     _CORE_DETAIL_HEADER_FILES
 	"${_INCLUDE_DIR}/detail/stringtemplate.h"
 	"${_INCLUDE_DIR}/detail/config.h"
+	"${_INCLUDE_DIR}/detail/propertyutils.h"
+    "${_INCLUDE_DIR}/detail/version.h"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core\\detail" FILES ${_CORE_DETAIL_HEADER_FILES})
@@ -134,7 +137,6 @@ set(
 	"${_INCLUDE_DIR}/sensor.h"
 	"${_INCLUDE_DIR}/bsdf.h"
 	"${_INCLUDE_DIR}/generalizedbsdf.h"
-	"${_INCLUDE_DIR}/film.h"
 )
 
 set(
@@ -223,6 +225,7 @@ list(APPEND _SOURCE_FILES ${_ACCEL_SOURCE_FILES})
 set(
     _RENDERER_HEADER_FILES
 	"${_INCLUDE_DIR}/renderer.h"
+	"${_INCLUDE_DIR}/film.h"
 )
 
 set(
@@ -234,6 +237,35 @@ source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})
 source_group("${_SOURCE_FILES_ROOT}\\renderer" FILES ${_RENDERER_SOURCE_FILES})
 list(APPEND _HEADER_FILES ${_RENDERER_HEADER_FILES})
 list(APPEND _SOURCE_FILES ${_RENDERER_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Film
+#
+
+set(
+    _FILM_SOURCE_FILES
+	"film/film_hdr.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\film" FILES ${_FILM_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_FILM_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Generate header for the version number
+#
+
+set(_GENERATED_FILES_ROOT "Generated Files")
+set(_GENERATED_VERSION_DEF "${PROJECT_BINARY_DIR}/versiondef.h")
+configure_file(
+	"versiondef.h.in"
+	${_GENERATED_VERSION_DEF}
+)
+source_group("${_GENERATED_FILES_ROOT}" FILES ${_GENERATED_VERSION_DEF})
+list(APPEND _SOURCE_FILES ${_GENERATED_VERSION_DEF})
 
 # --------------------------------------------------------------------------------
 

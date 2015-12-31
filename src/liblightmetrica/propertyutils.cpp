@@ -22,25 +22,29 @@
     THE SOFTWARE.
 */
 
-#include <lightmetrica/sensor.h>
+#include <pch.h>
+#include <lightmetrica/detail/propertyutils.h>
+#include <lightmetrica/property.h>
+#include <lightmetrica/logger.h>
 
 LM_NAMESPACE_BEGIN
 
-class Sensor_Perspective : public Sensor
+auto PropertyUtils::PrintPrettyError(const PropertyNode* node) -> void
 {
-public:
-
-    LM_IMPL_CLASS(Sensor_Perspective, Sensor);
-
-public:
-
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool
+    int line = node->Line();
+    const auto path = node->Tree()->Path();
+    const auto filename = boost::filesystem::path(path).filename().string();
+    LM_LOG_ERROR("Error around line " + std::to_string(line) + " @ " + filename);
+    std::ifstream fs(path);
+    for (int i = 0; i <= line + 2; i++)
     {
-        return true;
-    };
-
-};
-
-LM_COMPONENT_REGISTER_IMPL(Sensor_Perspective, "perspective");
+        std::string t;
+        std::getline(fs, t, '\n');
+        if (line - 2 <= i && i <= line + 2)
+        {
+            LM_LOG_ERROR(boost::str(boost::format("% 4d%c| %s") % i % (i == line ? '*' : ' ') % t));
+        }
+    }
+}
 
 LM_NAMESPACE_END

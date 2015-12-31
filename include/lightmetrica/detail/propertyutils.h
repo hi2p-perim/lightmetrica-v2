@@ -24,4 +24,27 @@
 
 #pragma once
 
+#include <lightmetrica/macros.h>
 
+LM_NAMESPACE_BEGIN
+
+class PropertyNode;
+
+/*!
+*/
+class PropertyUtils
+{
+public:
+
+    LM_DISABLE_CONSTRUCT(PropertyUtils);
+
+public:
+
+    /*!
+        Print pretty error message for property node
+    */
+    LM_PUBLIC_API static auto PrintPrettyError(const PropertyNode* node) -> void;
+
+};
+
+LM_NAMESPACE_END

@@ -64,57 +64,62 @@ public:
 
         #pragma region If not found, try to load asset
         
-        // Find property node
-        const auto* assetNode = prop_->Child(id);
-        if (!assetNode)
         {
-            LM_LOG_ERROR("Missing '" + id + "' node");
-            return nullptr;
+            LM_LOG_INFO("Loading asset '" + id + "'");
+            LM_LOG_INDENTER();
+
+            // Find property node
+            const auto* assetNode = prop_->Child(id);
+            if (!assetNode)
+            {
+                LM_LOG_ERROR("Missing '" + id + "' node");
+                return nullptr;
+            }
+
+            // Check interface type (case insensitive)
+            const auto* interfaceNode = assetNode->Child("interface");
+            if (!interfaceNode)
+            {
+                LM_LOG_ERROR("Missing 'interface' node");
+                return nullptr;
+            }
+            if (!boost::iequals(interfaceType, interfaceNode->As<std::string>()))
+            {
+                LM_LOG_ERROR(boost::str(boost::format("Invalid asset type '%s' expected '%s'") % interfaceNode->As<std::string>() % interfaceType));
+                return nullptr;
+            }
+
+            // Check the interface inherits `Asset` class
+            // TODO
+
+            // Create asset instance
+            const auto* typeNode = assetNode->Child("type");
+            const auto implType = typeNode->As<std::string>();
+            auto asset = ComponentFactory::Create<Asset>(implType.c_str());   // This cannot be const (later we move it)
+            if (!asset)
+            {
+                LM_LOG_ERROR("Failed to create instance: " + implType);
+                return nullptr;
+            }
+
+            // Check interface type
+            //if (asset->Type_().name == interfaceType)
+            //{
+            //    LM_LOG_ERROR("");
+            //    return nullptr;
+            //}
+
+            // Load asset
+            if (!asset->Load(assetNode->Child("params"), this))
+            {
+                return nullptr;
+            }
+
+            // Register asset
+            assets_.push_back(std::move(asset));
+            assetIndexMap_[id] = assets_.size() - 1;
+            assets_.back()->SetID(id);
         }
-
-        // Check interface type (case insensitive)
-        const auto* interfaceNode = assetNode->Child("interface");
-        if (!interfaceNode)
-        {
-            LM_LOG_ERROR("Missing 'interface' node");
-            return nullptr;
-        }
-        if (!boost::iequals(interfaceType, interfaceNode->As<std::string>()))
-        {
-            LM_LOG_ERROR(boost::str(boost::format("Invalid asset type '%s' expected '%s'") % interfaceNode->As<std::string>() % interfaceType));
-            return nullptr;
-        }
-
-        // Check the interface inherits `Asset` class
-        // TODO
-
-        // Create asset instance
-        const auto* typeNode = assetNode->Child("type");
-        const auto implType = typeNode->As<std::string>();
-        auto asset = ComponentFactory::Create<Asset>(implType.c_str());   // This cannot be const (later we move it)
-        if (!asset)
-        {
-            LM_LOG_ERROR("Failed to create instance: " + implType);
-            return nullptr;
-        }
-
-        // Check interface type
-        //if (asset->Type_().name == interfaceType)
-        //{
-        //    LM_LOG_ERROR("");
-        //    return nullptr;
-        //}
-
-        // Load asset
-        if (!asset->Load(assetNode->Child("params"), this))
-        {
-            return nullptr;
-        }
-
-        // Register asset
-        assets_.push_back(std::move(asset));
-        assetIndexMap_[id] = assets_.size() - 1;
-        assets_.back()->SetID(id);
 
         #pragma endregion
 

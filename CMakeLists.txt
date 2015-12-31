@@ -147,10 +147,12 @@ include_directories("${PROJECT_SOURCE_DIR}/external/src/gtest-1.7.0/include")
 if (MSVC)
     # Ignore linker warnings in VS
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
     add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 
     # Increase stack size to 10MB
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:10000000")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /STACK:10000000")
 
     # Warning level 4, treat warning as errors
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX")
@@ -170,6 +172,9 @@ if (MSVC)
 	# TODO: Make it configurable
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
 endif()
+
+message("${CMAKE_EXE_LINKER_FLAGS}")
+message("${CMAKE_SHARED_LINKER_FLAGS}")
 
 # GCC
 if (CMAKE_COMPILER_IS_GNUCXX)
@@ -214,6 +219,34 @@ include_directories("pch")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+# --------------------------------------------------------------------------------
+
+#
+# Project version etc.
+#
+
+# Version number and codename
+set(LM_VERSION_MAJOR "2")
+set(LM_VERSION_MINOR "0")
+set(LM_VERSION_PATCH "0")
+set(LM_VERSION_CODENAME "cocoa")
+
+# Execute git command in the project root and check revision number
+find_package(Git REQUIRED)
+execute_process(
+	COMMAND "${GIT_EXECUTABLE}" "rev-parse" "--short" "HEAD"
+	OUTPUT_VARIABLE LM_VERSION_REVISION
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Current date
+if (WIN32)
+	execute_process(COMMAND "cmd" "/C date /T" OUTPUT_VARIABLE LM_CURRENT_DATE)
+else()
+	execute_process(COMMAND "date" "+%Y/%m/%d" OUTPUT_VARIABLE LM_CURRENT_DATE)
+endif()
+string(REGEX REPLACE "([0-9]+)/([0-9]+)/([0-9]+) *.*(\n|\r)$" "\\1.\\2.\\3" LM_CURRENT_DATE ${LM_CURRENT_DATE})
 
 # --------------------------------------------------------------------------------
 

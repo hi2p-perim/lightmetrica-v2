@@ -30,11 +30,17 @@
 #include <lightmetrica/assets.h>
 #include <lightmetrica/accel.h>
 #include <lightmetrica/film.h>
+#include <lightmetrica/detail/propertyutils.h>
+#include <lightmetrica/detail/stringtemplate.h>
+#include <lightmetrica/detail/version.h>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <regex>
+#include <chrono>
+#include <iomanip>
+#include <ctime>
 
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
@@ -310,20 +316,86 @@ private:
         #pragma region Print initial message
 
         {
+            #pragma region Header
+
             if (opt.Render.Verbose)
             {
                 LM_LOG_INFO_SIMPLE("| TYPE  TIME  | FILENAME  | LINE  | TID |");
             }
 
-            LM_LOG_INFO(MultiLineLiteral(R"x(
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Current time
+
+            std::string currentTime;
+            {
+                std::stringstream ss;
+                auto now = std::chrono::system_clock::now();
+                auto time = std::chrono::system_clock::to_time_t(now);
+                #if LM_PLATFORM_WINDOWS
+                struct tm timeinfo;
+                localtime_s(&timeinfo, &time);
+                ss << std::put_time(&timeinfo, "%Y.%m.%d.%H.%M.%S");
+                #elif LM_PLATFORM_LINUX
+                char timeStr[256];
+                std::strftime(timeStr, sizeof(timeStr), "%Y.%m.%d.%H.%M.%S", std::localtime(&time));
+                ss << timeStr;
+                #endif
+                currentTime = ss.str();
+            };
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Application flags
+
+            std::string flags;
+            {
+                flags += LM_SINGLE_PRECISION ? "single_precision " : "";
+                flags += LM_DOUBLE_PRECISION ? "double_precision " : "";
+                flags += LM_SSE ? "sse " : "";
+                flags += LM_AVX ? "avx " : "";
+            }
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Print message
+
+            const auto message = MultiLineLiteral(R"x(
             |
             | Lightmetrica
+            |
+            | A modern, research-oriented renderer
+            | Version {{version}} ({{codename}})
             |
             | Copyright (c) 2015 Hisanari Otsu
             | The software is distributed under the MIT license.
             | For detail see the LICENSE file along with the software.
             |
-            )x"));
+            | BUILD DATE   | {{date}}
+            | PLATFORM     | {{platform}} {{arch}}
+            | FLAGS        | {{flags}}
+            | CURRENT TIME | {{time}}
+            |
+            )x");
+
+            std::unordered_map<std::string, std::string> dict;
+            dict["version"]  = Version::Formatted();
+            dict["codename"] = Version::Codename();
+            dict["date"]     = Version::BuildDate();
+            dict["platform"] = Version::Platform();
+            dict["arch"]     = Version::Archtecture();
+            dict["flags"]    = flags;
+            dict["time"]     = currentTime;
+
+            LM_LOG_INFO(StringTemplate::Expand(message, dict));
+
+            #pragma endregion
         }
 
         #pragma endregion
@@ -370,7 +442,7 @@ private:
             if (!versionNode)
             {
                 LM_LOG_ERROR("Missing 'version' node");
-                PrintPrettyError(root);
+                PropertyUtils::PrintPrettyError(root);
                 return false;
             }
 
@@ -382,7 +454,7 @@ private:
             if (!result)
             {
                 LM_LOG_ERROR("Invalid version string: " + versionStr);
-                PrintPrettyError(versionNode);
+                PropertyUtils::PrintPrettyError(versionNode);
                 return false;
             }
 
@@ -399,7 +471,7 @@ private:
                     LM_LOG_ERROR(boost::str(boost::format("Actual  : %d.%d.%d")
                         % std::get<0>(version) % std::get<1>(version) % std::get<2>(version)));
                 }
-                PrintPrettyError(versionNode);
+                PropertyUtils::PrintPrettyError(versionNode);
                 return false;
             }
         }
@@ -412,6 +484,9 @@ private:
 
         const auto assets = ComponentFactory::Create<Assets>();
         {
+            LM_LOG_INFO("Initializing asset manager");
+            LM_LOG_INDENTER();
+
             const auto* n = root->Child("assets");
             if (!n)
             {
@@ -443,6 +518,9 @@ private:
 
         const auto scene = ComponentFactory::Create<Scene>();
         {
+            LM_LOG_INFO("Initializing scene");
+            LM_LOG_INDENTER();
+
             const auto* n = root->Child("scene");
             if (!n)
             {
@@ -484,7 +562,11 @@ private:
 
         #pragma region Process rendering
 
-        renderer.get()->Render(scene.get(), static_cast<Film*>(film->get()));
+        {
+            LM_LOG_INFO("Rendering");
+            LM_LOG_INDENTER();
+            renderer.get()->Render(scene.get(), static_cast<Film*>(film->get()));
+        }
 
         #pragma endregion
 
@@ -492,9 +574,13 @@ private:
 
         #pragma region Save image
 
-        if (!film.get()->Save(opt.Render.OutputPath))
         {
-            return false;
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            if (!film.get()->Save(opt.Render.OutputPath))
+            {
+                return false;
+            }
         }
 
         #pragma endregion
@@ -511,45 +597,29 @@ private:
 
 private:
 
-    // Print pretty error message for property node
-    auto PrintPrettyError(const PropertyNode* node) -> void
-    {
-        int line = node->Line();
-        const auto path = node->Tree()->Path();
-        const auto filename = boost::filesystem::path(path).filename().string();
-        LM_LOG_ERROR("Error around line " + std::to_string(line) + " @ " + filename);
-        std::ifstream fs(path);
-        for (int i = 0; i <= line + 2; i++)
-        {
-            if (line - 2 <= i && i <= line + 2)
-            {
-                std::string t;
-                std::getline(fs, t, '\n');
-                LM_LOG_ERROR(boost::str(boost::format("% 4d%c| %s") % i % (i == line ? '*' : ' ') % t));
-            }
-        }
-    };
-
     // Function to initialize configurable component
     template <typename AssetT>
     auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::string& default = "") -> boost::optional<typename AssetT::UniquePtr>
     {
         static_assert(std::is_base_of<Configurable, AssetT>::value, "AssetT must inherits Configurable");
 
+        LM_LOG_INFO("Initializing " + name);
+        LM_LOG_INDENTER();
+
         const auto* n = root->Child(name);
         if (!n)
         {
             if (!default.empty())
             {
-                LM_LOG_INFO("Missing '" + name + "' node");
+                LM_LOG_WARN("Missing '" + name + "' node");
                 LM_LOG_INDENTER();
-                LM_LOG_INFO("Using default type: '" + default + "'");
+                LM_LOG_WARN("Using default type: '" + default + "'");
                 return ComponentFactory::Create<AssetT>(default);
             }
             else
             {
                 LM_LOG_ERROR("Missing '" + name + "' node");
-                PrintPrettyError(root);
+                PropertyUtils::PrintPrettyError(root);
                 return boost::none;
             }
         }
@@ -558,7 +628,7 @@ private:
         if (!tn)
         {
             LM_LOG_ERROR("Missing '" + name + "/type' node");
-            PrintPrettyError(n);
+            PropertyUtils::PrintPrettyError(n);
             return boost::none;
         }
 
@@ -566,7 +636,7 @@ private:
         if (!pn)
         {
             LM_LOG_ERROR("Missing '" + name + "/params' node");
-            PrintPrettyError(n);
+            PropertyUtils::PrintPrettyError(n);
             return boost::none;
         }
 
@@ -574,7 +644,7 @@ private:
         if (!p)
         {
             LM_LOG_ERROR("Failed to initialize '" + tn->As<std::string>() + "'");
-            PrintPrettyError(tn);
+            PropertyUtils::PrintPrettyError(tn);
             return boost::none;
         }
 
