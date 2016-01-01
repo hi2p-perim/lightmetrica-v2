@@ -406,9 +406,14 @@ private:
 
         // Scene configuration
         const auto sceneConf = ComponentFactory::Create<PropertyTree>();
-        if (!sceneConf->LoadFromFile(opt.Render.SceneFile))
         {
-            return false;
+            LM_LOG_INFO("Loading scene file");
+            LM_LOG_INDENTER();
+            LM_LOG_INFO("Loading '" + opt.Render.SceneFile + "'");
+            if (!sceneConf->LoadFromFile(opt.Render.SceneFile))
+            {
+                return false;
+            }
         }
 
         #pragma endregion

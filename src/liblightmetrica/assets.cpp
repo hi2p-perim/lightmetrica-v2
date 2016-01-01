@@ -27,6 +27,7 @@
 #include <lightmetrica/logger.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/asset.h>
+#include <lightmetrica/detail/propertyutils.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -73,6 +74,7 @@ public:
             if (!assetNode)
             {
                 LM_LOG_ERROR("Missing '" + id + "' node");
+                PropertyUtils::PrintPrettyError(prop_);
                 return nullptr;
             }
 
@@ -81,6 +83,7 @@ public:
             if (!interfaceNode)
             {
                 LM_LOG_ERROR("Missing 'interface' node");
+                PropertyUtils::PrintPrettyError(assetNode);
                 return nullptr;
             }
             if (!boost::iequals(interfaceType, interfaceNode->As<std::string>()))
