@@ -74,6 +74,7 @@ public:
         Only available for `Scalar` type.
     */
     LM_INTERFACE_F(Scalar, std::string());
+    LM_INTERFACE_F(RawScalar, const char*());
 
     /*!
         Get a number of child elements.
@@ -103,6 +104,7 @@ public:
     #pragma region Type conversion functions
 
     template <typename T> auto As() const -> T;
+    template <> auto As<const char*>() const -> const char* { return RawScalar(); }
     template <> auto As<std::string>() const -> std::string { return Scalar(); }
     template <> auto As<int>() const -> int { return std::stoi(Scalar()); }
     template <> auto As<double>() const -> double { return std::stod(Scalar()); }

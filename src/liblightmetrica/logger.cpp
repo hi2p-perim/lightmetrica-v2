@@ -61,22 +61,30 @@ public:
 
 	auto Run() -> void
 	{
-		ioThread = std::thread(boost::bind(&boost::asio::io_service::run, &io));
+        logStartTime_ = std::chrono::high_resolution_clock::now();
+		ioThread_ = std::thread(boost::bind(&boost::asio::io_service::run, &io_));
 	}
 
 	auto Stop() -> void
 	{
-		if (ioThread.joinable())
+		if (ioThread_.joinable())
 		{
             // Clear the `work` associated to `io_service`
             // and wait for io thread ends.
-			work.reset();
-			ioThread.join();
+			work_.reset();
+			ioThread_.join();
 
             // Reset io_service for later invocation of the `run` function
             // Also we need to reassign a work.
-            io.reset();
-            work.reset(new boost::asio::io_service::work(io));
+            io_.reset();
+            work_.reset(new boost::asio::io_service::work(io_));
+
+            // Reset internal states
+            indentation_ = 0;
+            indentationString_ = "";
+            prevMessageIsInplace_ = false;
+            threadIdMap_.clear();
+            verboseLevel_ = 0;
 		}
 	}
 
@@ -112,7 +120,7 @@ public:
         std::string messageLine;
         while (std::getline(ss, messageLine, '\n'))
         {
-		    io.post([this, type, messageLine, filename, line, threadId, inplace, simple]()
+		    io_.post([this, type, messageLine, filename, line, threadId, inplace, simple]()
 		    {
 			    // Fill spaces to erase previous message
 			    if (prevMessageIsInplace_)
@@ -171,7 +179,7 @@ public:
 
     auto UpdateIndentation(bool push) -> void
     {
-        io.post([this, push]()
+        io_.post([this, push]()
         {
             indentation_ += push ? 1 : -1;
             if (indentation_ > 0)
@@ -198,7 +206,7 @@ private:
 	{
 		const std::string LogTypeString[] = { "ERROR", "WARN", "INFO", "DEBUG" };
 		const auto now = std::chrono::high_resolution_clock::now();
-		const double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - LogStartTime).count() / 1000.0;        
+		const double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - logStartTime_).count() / 1000.0;        
         return
             verboseLevel_ == 0 ? boost::str(boost::format("| %-5s %.3f | %s%s") % LogTypeString[(int)(type)] % elapsed % indentationString_ % message) :
             verboseLevel_ == 1 ? boost::str(boost::format("| %-5s %.3f | #%2d | %s%s") % LogTypeString[(int)(type)] % elapsed % threadId % indentationString_ % message)
@@ -241,18 +249,18 @@ private:
 
 private:
 
-	static std::atomic<LoggerImpl*> instance;
-	static std::mutex mutex;
+	static std::atomic<LoggerImpl*> instance_;
+	static std::mutex mutex_;
 
 private:
 
-	boost::asio::io_service io;
-	std::unique_ptr<boost::asio::io_service::work> work{new boost::asio::io_service::work(io)};
-	std::thread ioThread;
+	boost::asio::io_service io_;
+	std::unique_ptr<boost::asio::io_service::work> work_{new boost::asio::io_service::work(io_)};
+	std::thread ioThread_;
 
 private:
 
-	std::chrono::high_resolution_clock::time_point LogStartTime = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point logStartTime_;
 	int indentation_ = 0;
 	std::string indentationString_;
 	bool prevMessageIsInplace_ = false;
@@ -261,22 +269,22 @@ private:
 
 };
 
-std::atomic<LoggerImpl*> LoggerImpl::instance;
-std::mutex LoggerImpl::mutex;
+std::atomic<LoggerImpl*> LoggerImpl::instance_;
+std::mutex LoggerImpl::mutex_;
 
 auto LoggerImpl::Instance() -> LoggerImpl*
 {
-	auto* p = instance.load(std::memory_order_relaxed);
+	auto* p = instance_.load(std::memory_order_relaxed);
     std::atomic_thread_fence(std::memory_order_acquire);
 	if (p == nullptr)
 	{
-		std::lock_guard<std::mutex> lock(mutex);
-		p = instance.load(std::memory_order_relaxed);
+		std::lock_guard<std::mutex> lock(mutex_);
+		p = instance_.load(std::memory_order_relaxed);
 		if (p == nullptr)
 		{
 			p = new LoggerImpl;
 			std::atomic_thread_fence(std::memory_order_release);
-			instance.store(p, std::memory_order_relaxed);
+			instance_.store(p, std::memory_order_relaxed);
 		}
 	}
 	return p;

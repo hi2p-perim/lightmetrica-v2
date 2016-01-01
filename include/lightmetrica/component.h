@@ -236,7 +236,6 @@ public:
             LM_LOG_ERROR("Interface: " + std::string(InterfaceType::Type_().name));
             return ReturnType(nullptr, nullptr);
         }
-
         return ReturnType(p, ReleaseFunc(implName));
     }
 
@@ -321,7 +320,7 @@ private:
 
 #if LM_INTELLISENSE
     #define LM_COMPONENT_REGISTER_IMPL(ImplType, ImplName)
-    #define LM_COMPONENT_REGISTER_IMPL_2(ImplType)
+    #define LM_COMPONENT_REGISTER_IMPL_DEFAULT(ImplType)
 #else
     #define LM_COMPONENT_REGISTER_IMPL(ImplType, ImplName) \
 	    namespace { \
@@ -331,7 +330,7 @@ private:
             class ImplEntry_Init<ImplType> { static const ImplEntry<ImplType>& reg; }; \
             const ImplEntry<ImplType>& ImplEntry_Init<ImplType>::reg = ImplEntry<ImplType>::Instance(ImplName); \
         }
-    #define LM_COMPONENT_REGISTER_IMPL_2(ImplType) \
+    #define LM_COMPONENT_REGISTER_IMPL_DEFAULT(ImplType) \
         LM_COMPONENT_REGISTER_IMPL(ImplType, ImplType::Type_().name)
 #endif
 

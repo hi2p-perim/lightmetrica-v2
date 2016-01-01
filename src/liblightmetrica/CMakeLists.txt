@@ -66,6 +66,7 @@ set(
 	"${_INCLUDE_DIR}/metacounter.h"
 	"${_INCLUDE_DIR}/surfacegeometry.h"
 	"${_INCLUDE_DIR}/ray.h"
+	"${_INCLUDE_DIR}/intersection.h"
 	"${_INCLUDE_DIR}/spectrum.h"
 	"${_INCLUDE_DIR}/configurable.h"
 )
@@ -137,6 +138,7 @@ set(
 	"${_INCLUDE_DIR}/sensor.h"
 	"${_INCLUDE_DIR}/bsdf.h"
 	"${_INCLUDE_DIR}/generalizedbsdf.h"
+	"${_INCLUDE_DIR}/trianglemesh.h"
 )
 
 set(

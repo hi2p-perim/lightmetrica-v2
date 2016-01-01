@@ -119,6 +119,20 @@ list(APPEND _SOURCE_FILES ${_MATH_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
+# Accel
+#
+
+set(
+	_ACCEL_SOURCE_FILES
+	"test_accel.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\accel" FILES ${_ACCEL_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ACCEL_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
 # Create an executable
 #
 

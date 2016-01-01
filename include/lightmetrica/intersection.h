@@ -24,31 +24,24 @@
 
 #pragma once
 
-#include <lightmetrica/portable.h>
-#include <lightmetrica/math.h>
-#include <string>
+#include <lightmetrica/macros.h>
+#include <lightmetrica/surfacegeometry.h>
 
 LM_NAMESPACE_BEGIN
 
-class TriangleMesh;
-class BSDF;
-class Emitter;
+struct Primitive;
 
 /*!
-	\brief Primitive.
+	\brief Intersection.
 
-	Primitive is an element of the scene used for managing transformable objects.
-	A primitive corresponds to a node in the scene.
+	Intermediate structure for managing intersection data.
+	When intersection query is succeeded, the information on the intersected point
+	is stored in the structure.
 */
-struct Primitive
+struct Intersection
 {
-
-    const char* id;
-    Mat4 transform;
-    const TriangleMesh* mesh = nullptr;
-    const Emitter* emitter = nullptr;
-    const BSDF* bsdf = nullptr;
-
+    SurfaceGeometry geom;
+    const Primitive* primitive;
 };
 
 LM_NAMESPACE_END

@@ -197,6 +197,57 @@ struct SIMDTVecBase : public TVecBase<T, Opt, VecT_, NC_>
 
 // --------------------------------------------------------------------------------
 
+#pragma region Forward declaration
+
+template <typename T, SIMD Opt = SIMD::None>
+struct TVec2;
+
+template <typename T, SIMD Opt = SIMD::None>
+struct TVec3;
+
+template <typename T, SIMD Opt = SIMD::None>
+struct TVec4;
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Vec2
+
+/*!
+    2D vector.
+    
+    Generic 2-dimensional vector.
+*/
+
+template <typename T>
+struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
+{
+    union
+    {
+        VT v_[NC];
+        struct { VT x, y; };
+    };
+
+    LM_INLINE TVec2() : x(VT(0)), y(VT(0)) {}
+    LM_INLINE TVec2(ParamT x, ParamT y) : x(x), y(y) {}
+    LM_INLINE TVec2(const VecT& v) : x(v.x), y(v.y) {}
+    LM_INLINE TVec2(std::initializer_list<VT> l) { x = l.begin()[0]; y = l.begin()[1]; }
+
+    LM_INLINE auto operator[](int i)         -> VT& { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT { return (&x)[i]; }
+    LM_INLINE auto operator=(const VecT& v)  -> VecT& { x = v.x; y = v.y; return *this; }
+    LM_INLINE auto operator+=(const VecT& v) -> VecT& { x += v.x; y += v.y; return *this; }
+    LM_INLINE auto operator-=(const VecT& v) -> VecT& { x -= v.x; y -= v.y; return *this; }
+    LM_INLINE auto operator*=(const VecT& v) -> VecT& { x *= v.x; y *= v.y; return *this; }
+    LM_INLINE auto operator/=(const VecT& v) -> VecT& { x /= v.x; y /= v.y; return *this; }
+
+};
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
 #pragma region Vec3
 
 /*!
@@ -204,8 +255,6 @@ struct SIMDTVecBase : public TVecBase<T, Opt, VecT_, NC_>
     
     Generic 3-dimensional vector.
 */
-template <typename T, SIMD Opt = SIMD::None>
-struct TVec3;
 
 template <typename T>
 struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
@@ -219,6 +268,7 @@ struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
     LM_INLINE TVec3()                                   : x(VT(0)), y(VT(0)), z(VT(0)) {}
     LM_INLINE TVec3(ParamT x, ParamT y, ParamT z)       : x(x), y(y), z(z) {}
     LM_INLINE TVec3(const VecT& v)                      : x(v.x), y(v.y), z(v.z) {}
+    LM_INLINE TVec3(const TVec4<T, SIMD::None>& v)      : x(v.x), y(v.y), z(v.z) {}
     LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
@@ -243,6 +293,7 @@ struct LM_ALIGN_16 TVec3<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE TVec3()                                   : v_(_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f)) {}
     LM_INLINE TVec3(ParamT x, ParamT y, ParamT z)       : v_(_mm_set_ps(1.0f, z, y, x)) {}
     LM_INLINE TVec3(const VecT& v)                      : v_(v.v_) {}
+    LM_INLINE TVec3(const TVec4<float, SIMD::SSE>& v)   : v_(v.v_) {}
     LM_INLINE TVec3(SIMDT v)                            : v_(v) {}
     LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
@@ -269,6 +320,7 @@ struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE TVec3()                                   : v_(_mm256_set_pd(1, 0, 0, 0)) {}
     LM_INLINE TVec3(ParamT x, ParamT y, ParamT z)       : v_(_mm256_set_pd(1, z, y, x)) {}
     LM_INLINE TVec3(const VecT& v)                      : v_(v.v_) {}
+    LM_INLINE TVec3(const TVec4<double, SIMD::AVX>& v)  : v_(v.v_) {}
     LM_INLINE TVec3(SIMDT v)                            : v_(v) {}
     LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
@@ -293,8 +345,6 @@ struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     
     Generic 4-dimensional vector.
 */
-template <typename T, SIMD Opt = SIMD::None>
-struct TVec4;
 
 template <typename T>
 struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
@@ -826,6 +876,7 @@ LM_INLINE auto operator/<double, SIMD::AVX>(const TVec4<double, SIMD::AVX>& v1, 
 
 #pragma region Default types
 
+using Vec2 = TVec2<Float, SIMD::None>;
 using Vec3 = TVec3<Float, SIMD::Default>;
 using Vec4 = TVec4<Float, SIMD::Default>;
 using Mat3 = TMat3<Float, SIMD::Default>;
@@ -853,6 +904,8 @@ namespace Math
     template <typename T> constexpr auto Degrees(const T& v) -> T { return v * T(180) / Pi<T>(); }
     template <typename T> LM_INLINE auto Cos(const T& v)     -> T { return std::cos(v); }
     template <typename T> LM_INLINE auto Sin(const T& v)     -> T { return std::sin(v); }
+    template <typename T> LM_INLINE auto Tan(const T& v)     -> T { return std::tan(v); }
+    template <typename T> LM_INLINE auto Abs(const T& v)     -> T { return std::abs(v); }
     template <typename T> LM_INLINE auto Sqrt(const T& v)    -> T { return std::sqrt(v); }
 
     #pragma endregion
@@ -910,6 +963,31 @@ namespace Math
         __m128d t4 = _mm256_castpd256_pd128(t2);	// = ( x1 * x2 + y1 * y2, x1 * x2 + y1 * y2 )
         __m128d result = _mm_add_pd(t3, t4);		// = ( _, v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w )
         return _mm_cvtsd_f64(result);
+    }
+
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Cross
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Cross(const TVec3<T, Opt>& v1, const TVec3<T, Opt>& v2) -> TVec3<T, Opt>
+    {
+        return TVec3<T>(v1.y * v2.z - v2.y * v1.z, v1.z * v2.x - v2.z * v1.x, v1.x * v2.y - v2.x * v1.y);
+    }
+
+    template <>
+    LM_INLINE auto Cross<float, SIMD::SSE>(const TVec3<float, SIMD::SSE>& v1, const TVec3<float, SIMD::SSE>& v2) -> TVec3<float, SIMD::SSE>
+    {
+        return TVec3<float, SIMD::SSE>(
+            _mm_sub_ps(
+                _mm_mul_ps(
+                    _mm_shuffle_ps(v1.v_, v1.v_, _MM_SHUFFLE(3, 0, 2, 1)),
+                    _mm_shuffle_ps(v2.v_, v2.v_, _MM_SHUFFLE(3, 1, 0, 2))),
+                _mm_mul_ps(
+                    _mm_shuffle_ps(v1.v_, v1.v_, _MM_SHUFFLE(3, 1, 0, 2)),
+                    _mm_shuffle_ps(v2.v_, v2.v_, _MM_SHUFFLE(3, 0, 2, 1)))));
     }
 
     #pragma endregion

@@ -173,9 +173,6 @@ if (MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
 endif()
 
-message("${CMAKE_EXE_LINKER_FLAGS}")
-message("${CMAKE_SHARED_LINKER_FLAGS}")
-
 # GCC
 if (CMAKE_COMPILER_IS_GNUCXX)
     # Enabling C++11 for gcc

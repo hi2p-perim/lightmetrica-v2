@@ -31,7 +31,7 @@ LM_NAMESPACE_BEGIN
 class PropertyNode;
 
 /*!
-    Configurable components.
+    \brief Configurable components.
 
     Component with initialized with user defined types and properties.
     The configurable component has same format in the scene configuration file:
