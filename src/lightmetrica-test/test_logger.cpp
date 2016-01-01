@@ -28,15 +28,12 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
-/*
-    Check if the logger macros output
-    appropriate message for each log type.
-*/
+// Check if the logger macros output appropriate messages for each log type.
 TEST(LoggerTest, LogMessagesWithVariousLevels)
 {
     const auto CheckLogOutput = [](const std::string& type, const std::string& message, const std::string& out) -> void
     {
-        std::regex re(R"x(^\| ([[:upper:]]+) +[\d]*\.\d{3} \| .* \| @[ \d]{4} \| #[ \d]{2} \| (.*)\n)x");
+        std::regex re(R"x(^\| ([[:upper:]]+) +[\d]*\.\d{3} \| (.*)\n)x");
         std::smatch match;
         const bool result = std::regex_match(out, match, re);
         EXPECT_TRUE(result);
@@ -76,14 +73,12 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
     }));
 }
 
-/*
-    Check if the indentation feature works properly.
-*/
+// Check if the indentation feature works properly.
 TEST(LoggerTest, Indenter)
 {
     const auto ExtractMessage = [](const std::string& out) -> std::string
     {
-        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .* \| @[ \d]{4} \| #[ \d]{2} \| (.*))x");
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| (.*))x");
         std::smatch match;
         const bool result = std::regex_match(out, match, re);
         return result ? std::string(match[1]) : "";
@@ -117,6 +112,61 @@ TEST(LoggerTest, Indenter)
     EXPECT_EQ(".... B", NextMessage());
     EXPECT_EQ("........ C", NextMessage());
     EXPECT_EQ(".... D", NextMessage());
+}
+
+// Controlling verbose level
+TEST(LoggerTest, VerboseLevel)
+{
+    // L0 (default)
+    {
+        SCOPED_TRACE("L0");
+
+        const auto out = TestUtils::CaptureStdout([]()
+        {
+            Logger::SetVerboseLevel(0);
+            Logger::Run();
+            LM_LOG_DEBUG("A");
+            Logger::Stop();
+        });
+
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .*\n)x");
+        std::smatch match;
+        EXPECT_TRUE(std::regex_match(out, match, re)) << out;
+    }
+
+    // L1
+    {
+        SCOPED_TRACE("L1");
+
+        const auto out = TestUtils::CaptureStdout([]()
+        {
+            Logger::SetVerboseLevel(1);
+            Logger::Run();
+            LM_LOG_DEBUG("A");
+            Logger::Stop();
+        });
+
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| #[ \d]{2} \| .*\n)x");
+        std::smatch match;
+        EXPECT_TRUE(std::regex_match(out, match, re)) << out;
+    }
+
+    // L2
+    {
+        SCOPED_TRACE("L2");
+
+        const auto out = TestUtils::CaptureStdout([]()
+        {
+            Logger::SetVerboseLevel(2);
+            Logger::Run();
+            LM_LOG_DEBUG("A");
+            Logger::Stop();
+        });
+
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .* \| @[ \d]{4} \| #[ \d]{2} \| .*\n)x");
+        std::smatch match;
+        EXPECT_TRUE(std::regex_match(out, match, re)) << out;
+    }
 }
 
 //

@@ -54,6 +54,7 @@ public:
 
     auto Register(const std::string& implName, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void
     {
+        // Check if already registered
         if (funcMap.find(implName) != funcMap.end())
         {
             // Note that in this class the error message cannot be output

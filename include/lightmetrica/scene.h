@@ -32,7 +32,14 @@ class PropertyNode;
 class Assets;
 class Accel;
 struct Primitive;
+struct Ray;
+struct Intersection;
 
+/*!
+    \brief Scene.
+
+    A base class of the scene.
+*/
 class Scene : public Component
 {
 public:
@@ -55,10 +62,41 @@ public:
     LM_INTERFACE_F(Initialize, bool(const PropertyNode*, Assets*, Accel*));
 
     /*!
+        \brief Intersection query.
+
+        The function checks if `ray` hits with the scene.
+		Returns `true` if the ray intersected, otherwise returns `false`.
+        The information on the hit point is stored in the intersection data.
+
+        \param ray Ray.
+        \param isect Intersection data.
+        \retval true Intersected with the scene.
+        \retval false Not intersected with the scene.
+    */
+    LM_INTERFACE_F(Intersect, bool(const Ray& ray, Intersection&));
+
+    /*!
         \brief Get a primitive by ID.
+
+        \param id ID of a primitive.
+        \return Primitive.
     */
     LM_INTERFACE_F(PrimitiveByID, const Primitive*(const std::string&));
 
+    /*!
+        \brief Get the number of primitives.
+    */
+    LM_INTERFACE_F(NumPrimitives, int());
+
+    /*!
+        \brief Get a primitive by index.
+        \param index Index of a primitive.
+    */
+    LM_INTERFACE_F(PrimitiveAt, const Primitive*(int index));
+
+    /*!
+        \brief Get a sensor primitive.
+    */
     LM_INTERFACE_F(Sensor, const Primitive*());
 
 };

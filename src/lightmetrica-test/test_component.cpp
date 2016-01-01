@@ -66,7 +66,7 @@ struct A1 final : public A
     };
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(A1);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(A1);
 
 struct B1 final : public B
 {
@@ -93,7 +93,7 @@ struct B1 final : public B
     };
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(B1);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(B1);
 
 TEST(ComponentTest, Simple)
 {
@@ -191,7 +191,7 @@ struct C1 final : public C
     };
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(C1);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(C1);
 
 TEST(ComponentTest, PortableArguments)
 {
@@ -267,7 +267,7 @@ struct D_ final : public D_Internal, public D
     }
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(D_);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(D_);
 
 TEST(ComponentTest, InternalInterfaceMultiple)
 {
@@ -314,7 +314,7 @@ struct E_ final : public E_Internal
     }
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(E_);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(E_);
 
 TEST(ComponentTest, InternalInterface)
 {
@@ -354,7 +354,7 @@ struct F_ : public F
     LM_IMPL_F(Func) = [this]() -> int { return 42; };
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(F_);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(F_);
 
 TEST(ComponentTest, PortableMemberVariable)
 {

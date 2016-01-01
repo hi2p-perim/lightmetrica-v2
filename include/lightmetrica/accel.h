@@ -28,13 +28,16 @@
 
 LM_NAMESPACE_BEGIN
 
+class Scene;
 struct Primitive;
+struct Ray;
+struct Intersection;
 
 class Accel : public Configurable
 {
 public:
 
-    LM_INTERFACE_CLASS(Accel, Component);
+    LM_INTERFACE_CLASS(Accel, Configurable);
 
 public:
 
@@ -43,8 +46,8 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Build, bool(const Primitive* primitives, int n));
-    LM_INTERFACE_F(Intersect, void());
+    LM_INTERFACE_F(Build, bool(const Scene& scene));
+    LM_INTERFACE_F(Intersect, bool(const Ray& ray, Intersection&));
 
 };
 

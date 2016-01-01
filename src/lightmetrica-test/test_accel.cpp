@@ -22,33 +22,40 @@
     THE SOFTWARE.
 */
 
-#pragma once
+#include <pch_test.h>
+#include <lightmetrica/accel.h>
+#include <lightmetrica/scene.h>
 
-#include <lightmetrica/portable.h>
-#include <lightmetrica/math.h>
-#include <string>
+LM_TEST_NAMESPACE_BEGIN
 
-LM_NAMESPACE_BEGIN
-
-class TriangleMesh;
-class BSDF;
-class Emitter;
-
-/*!
-	\brief Primitive.
-
-	Primitive is an element of the scene used for managing transformable objects.
-	A primitive corresponds to a node in the scene.
-*/
-struct Primitive
+struct AccelTest : public ::testing::TestWithParam<const char*>
 {
+    virtual auto SetUp() -> void override { Logger::Run(); }
+    virtual auto TearDown() -> void override { Logger::Stop(); }
+};
 
-    const char* id;
-    Mat4 transform;
-    const TriangleMesh* mesh = nullptr;
-    const Emitter* emitter = nullptr;
-    const BSDF* bsdf = nullptr;
+INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("naiveaccel"));
+
+// --------------------------------------------------------------------------------
+
+struct Stub_Scene : public Scene
+{
+    LM_IMPL_CLASS(Stub_Scene, Scene);
 
 };
 
-LM_NAMESPACE_END
+LM_COMPONENT_REGISTER_IMPL(Stub_Scene, "test_accel:stub_scene");
+
+// --------------------------------------------------------------------------------
+
+TEST_P(AccelTest, Simple)
+{
+    const auto scene = ComponentFactory::Create<Scene>("test_accel:stub_scene");
+    const auto accel = ComponentFactory::Create<Accel>(GetParam());
+    EXPECT_TRUE(accel->Initialize(nullptr));
+    EXPECT_TRUE(accel->Build(*scene.get()));
+
+    
+}
+
+LM_TEST_NAMESPACE_END

@@ -41,15 +41,16 @@ public:
 
 public:
 
-    LM_IMPL_F(Tree)   = [this]() -> const PropertyTree* { return tree_; };
-    LM_IMPL_F(Type)   = [this]() -> PropertyNodeType { return type_; };
-    LM_IMPL_F(Line)   = [this]() -> int { return line_; };
-    LM_IMPL_F(Scalar) = [this]() -> std::string { return scalar_; };
-    LM_IMPL_F(Key)    = [this]() -> std::string { return key_; };
-    LM_IMPL_F(Size)   = [this]() -> int { return (int)(sequence_.size()); };
-    LM_IMPL_F(Child)  = [this](const std::string& key) -> const PropertyNode* { const auto it = map_.find(key); return it != map_.end() ? it->second : nullptr; };
-    LM_IMPL_F(At)     = [this](int index) -> const PropertyNode* { return sequence_.at(index); };
-    LM_IMPL_F(Parent) = [this]() -> const PropertyNode* { return parent_; };
+    LM_IMPL_F(Tree)      = [this]() -> const PropertyTree* { return tree_; };
+    LM_IMPL_F(Type)      = [this]() -> PropertyNodeType { return type_; };
+    LM_IMPL_F(Line)      = [this]() -> int { return line_; };
+    LM_IMPL_F(Scalar)    = [this]() -> std::string { return scalar_; };
+    LM_IMPL_F(RawScalar) = [this]() -> const char* { return scalar_.c_str(); };
+    LM_IMPL_F(Key)       = [this]() -> std::string { return key_; };
+    LM_IMPL_F(Size)      = [this]() -> int { return (int)(sequence_.size()); };
+    LM_IMPL_F(Child)     = [this](const std::string& key) -> const PropertyNode* { const auto it = map_.find(key); return it != map_.end() ? it->second : nullptr; };
+    LM_IMPL_F(At)        = [this](int index) -> const PropertyNode* { return sequence_.at(index); };
+    LM_IMPL_F(Parent)    = [this]() -> const PropertyNode* { return parent_; };
 
 private:
 
@@ -77,7 +78,7 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(PropertyNode_);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(PropertyNode_);
 
 // --------------------------------------------------------------------------------
 
@@ -204,6 +205,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(PropertyTree_);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(PropertyTree_);
 
 LM_NAMESPACE_END

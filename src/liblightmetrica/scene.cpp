@@ -33,6 +33,8 @@
 #include <lightmetrica/light.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/bsdf.h>
+#include <lightmetrica/ray.h>
+#include <lightmetrica/intersection.h>
 #include <lightmetrica/detail/propertyutils.h>
 
 LM_NAMESPACE_BEGIN
@@ -74,8 +76,8 @@ public:
                     const auto* idNode = propNode->Child("id");
                     if (idNode)
                     {
-                        primitive->id = idNode->As<std::string>();
-                        LM_LOG_INFO("ID: '" + primitive->id + "'");
+                        primitive->id = idNode->As<const char*>();
+                        LM_LOG_INFO("ID: '" + std::string(primitive->id) + "'");
                     }
                 }
 
@@ -227,7 +229,7 @@ public:
 
                 #pragma region Add primitive
 
-                if (!primitive->id.empty())
+                if (primitive->id)
                 {
                     primitiveIDMap_[primitive->id] = primitive.get();
                 }
@@ -287,6 +289,7 @@ public:
                 if (!mainSensorNode)
                 {
                     LM_LOG_ERROR("Missing 'sensor' node");
+                    PropertyUtils::PrintPrettyError(sceneNode);
                     return false;
                 }
 
@@ -294,6 +297,7 @@ public:
                 if (it == primitiveIDMap_.end())
                 {
                     LM_LOG_ERROR("Missing primitive ID: " + mainSensorNode->As<std::string>());
+                    PropertyUtils::PrintPrettyError(mainSensorNode);
                     return false;
                 }
 
@@ -309,13 +313,29 @@ public:
         
         #pragma region Build accel
 
-        
+        {
+            LM_LOG_INFO("Building acceleration structure");
+            LM_LOG_INDENTER();
+
+            if (accel->Build(*this))
+            {
+                return false;
+            }
+
+            accel_ = accel;
+        }
 
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         return true;
+    };
+
+    LM_IMPL_F(Intersect) = [this](const Ray& ray, Intersection& isect) -> bool
+    {
+        // TODO: Intersection with emitter shapes
+        return accel_->Intersect(ray, isect);
     };
 
     LM_IMPL_F(PrimitiveByID) = [this](const std::string& id) -> const Primitive*
@@ -329,15 +349,25 @@ public:
         return sensorPrimitive_;
     };
 
+    LM_IMPL_F(NumPrimitives) = [this]() -> int
+    {
+        return (int)(primitives_.size());
+    };
+
+    LM_IMPL_F(PrimitiveAt) = [this](int index) -> const Primitive*
+    {
+        return primitives_.at(index).get();
+    };
+
 private:
 
     std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
     std::unordered_map<std::string, Primitive*> primitiveIDMap_;    // Mapping from ID to primitive pointer
     Primitive* sensorPrimitive_;                                    // Index of main sensor
-    Accel* accel_;
+    const Accel* accel_;
 
 };
 
-LM_COMPONENT_REGISTER_IMPL_2(Scene_);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(Scene_);
 
 LM_NAMESPACE_END
