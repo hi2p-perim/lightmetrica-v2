@@ -892,7 +892,8 @@ namespace Math
 {
     #pragma region Constants
 
-    template <typename T> constexpr auto Pi() -> T { return T(3.14159265358979323846); }
+    template <typename T> constexpr auto Pi()  -> T { return T(3.14159265358979323846); }
+    template <typename T> constexpr auto Inf() -> T { return std::numeric_limits<T>::max(); }
 
     #pragma endregion
 
@@ -1068,6 +1069,49 @@ namespace Math
 
     // --------------------------------------------------------------------------------
 
+    #pragma region Matrix functions
+
+    #pragma region Transpose
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Transpose(const TMat3<T, Opt>& m) -> TMat3<T, Opt>
+    {
+        return TMat3<T, Opt>(
+            m[0][0], m[1][0], m[2][0],
+            m[0][1], m[1][1], m[2][1],
+            m[0][2], m[1][2], m[2][2]);
+    }
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Transpose(const TMat4<T, Opt>& m) -> TMat4<T, Opt>
+    {
+        return TMat3<T, Opt>(
+            m[0][0], m[1][0], m[2][0], m[3][0],
+            m[0][1], m[1][1], m[2][1], m[3][1],
+            m[0][2], m[1][2], m[2][2], m[3][2],
+            m[0][3], m[1][3], m[2][3], m[3][3]);
+    }
+
+    template <>
+    LM_INLINE auto Transpose<float, SIMD::SSE>(const TMat4<float, SIMD::SSE>& m) -> TMat4<float, SIMD::SSE>
+    {
+        __m128 t0 = _mm_unpacklo_ps(m[0].v_, m[1].v_);
+        __m128 t2 = _mm_unpacklo_ps(m[2].v_, m[3].v_);
+        __m128 t1 = _mm_unpackhi_ps(m[0].v_, m[1].v_);
+        __m128 t3 = _mm_unpackhi_ps(m[2].v_, m[3].v_);
+        return TMat4<float, SIMD::SSE>(
+            _mm_movelh_ps(t0, t2),
+            _mm_movehl_ps(t2, t0),
+            _mm_movelh_ps(t1, t3),
+            _mm_movehl_ps(t3, t1));
+    }
+
+    #pragma endregion
+
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
     #pragma region Transform
 
     #pragma region Translate
@@ -1148,6 +1192,19 @@ namespace Math
     #pragma endregion
 
     #pragma endregion   
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Linear algebra
+
+    template <typename T, SIMD Opt>
+    auto OrthonormalBasis(const TVec3<T, Opt>& a, TVec3<T, Opt>& b, TVec3<T, Opt>& c) -> void
+    {
+        c = Abs(a.x) > Abs(a.y) ? Normalize(Vec3(a.z, 0_f, -a.x)) : glm::normalize(glm::dvec3(0, a.z, -a.y));
+        b = Normalize(Cross(c, a));
+    }
+
+    #pragma endregion
 }
 
 #pragma endregion

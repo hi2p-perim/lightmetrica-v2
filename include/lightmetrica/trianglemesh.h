@@ -25,6 +25,7 @@
 #pragma once
 
 #include <lightmetrica/asset.h>
+#include <lightmetrica/math.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -43,9 +44,9 @@ public:
 
     LM_INTERFACE_F(NumVertices, int());
     LM_INTERFACE_F(NumFaces, int());
-    LM_INTERFACE_F(Positions, const double*());
-    LM_INTERFACE_F(Normals, const double*());
-    LM_INTERFACE_F(Texcoords, const double*());
+    LM_INTERFACE_F(Positions, const Float*());
+    LM_INTERFACE_F(Normals, const Float*());
+    LM_INTERFACE_F(Texcoords, const Float*());
     LM_INTERFACE_F(Faces, const unsigned int*());
 
 };

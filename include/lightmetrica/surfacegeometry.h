@@ -48,16 +48,6 @@ struct SurfaceGeometry
     Mat3 ToLocal;       //!< Conversion matrix from world coordinates to shading coordinates 
     Mat3 ToWorld;       //!< Conversion matrix from shading coordinates to world coordinates 
 
-    /*!
-        \brief Compute tangent space w.r.t. shading normal.
-	*/
-    //void ComputeTangentSpace()
-    //{
-    //    OrthonormalBasis(sn, dpdu, dpdv);
-    //    ToWorld = glm::dmat3(dpdu, dpdv, sn);
-    //    ToLocal = glm::transpose(ToWorld);
-    //}
-
 };
 
 LM_NAMESPACE_END
