@@ -53,11 +53,11 @@ struct Component
     // VTable entries and user-defined data
     // User-defined data is required to hold non-portable version
     static constexpr size_t VTableNumEntries = 100;
-    struct VTable
+    struct VTableEntry
     {
         void* f     = nullptr;
         void* implf = nullptr;
-    } data_[VTableNumEntries];
+    } vt_[VTableNumEntries];
 
     // Name of implementation type
     const char* implName = nullptr;
@@ -86,7 +86,7 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
     {
         // Convert argument types to portable types and call the functions stored in the vtable.
         using FuncType = Portable<ReturnType>(*)(void*, Portable<ArgTypes>...);
-        if (!o_->data_[ID].f)
+        if (!o_->vt_[ID].f)
         {
             LM_LOG_ERROR("Missing vtable entry for");
             {
@@ -103,7 +103,7 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
             }
             return ReturnType();
         }
-        return reinterpret_cast<FuncType>(o_->data_[ID].f)(o_->data_[ID].implf, Portable<ArgTypes>(args)...).Get();
+        return reinterpret_cast<FuncType>(o_->vt_[ID].f)(o_->vt_[ID].implf, Portable<ArgTypes>(args)...).Get();
     }
 };
 
@@ -198,8 +198,8 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
     #define LM_IMPL_F(Name) \
         struct Name ## _Init_ { \
             Name ## _Init_(ImplType* p) { \
-                p->data_[Name ## _ID_].f     = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
-                p->data_[Name ## _ID_].implf = (void*)(&p->Name ## _Impl_); \
+                p->vt_[Name ## _ID_].f     = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
+                p->vt_[Name ## _ID_].implf = (void*)(&p->Name ## _Impl_); \
             } \
         } Name ## _Init_Inst_{this}; \
         friend struct Name ## _Init_; \
@@ -256,7 +256,6 @@ public:
             LM_LOG_ERROR("Interface: " + std::string(InterfaceType::Type_().name));
             return ReturnType(nullptr, nullptr);
         }
-        //p->implName = p->InstanceType()->name;
         return ReturnType(p, ReleaseFunc(implName));
     }
 

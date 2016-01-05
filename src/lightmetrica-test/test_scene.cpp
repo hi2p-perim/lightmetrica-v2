@@ -39,7 +39,7 @@ LM_TEST_NAMESPACE_BEGIN
 
 struct SceneTest : public ::testing::Test
 {
-    virtual auto SetUp() -> void override { Logger::Run(); }
+    virtual auto SetUp() -> void override { Logger::SetVerboseLevel(2); Logger::Run(); }
     virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
@@ -48,13 +48,16 @@ struct SceneTest : public ::testing::Test
 struct Stub_Assets : public Assets
 {
     LM_IMPL_CLASS(Stub_Assets, Assets);
-    LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& type) -> const Asset*{ return nullptr; };
+    LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& type) -> const Asset* { return nullptr; };
 };
 
 struct Stub_Accel : public Accel
 {
     LM_IMPL_CLASS(Stub_Accel, Accel);
-
+    LM_IMPL_F(Build) = [this](const Scene& scene) -> bool
+    {
+        return true;
+    };
 };
 
 LM_COMPONENT_REGISTER_IMPL_DEFAULT(Stub_Assets);

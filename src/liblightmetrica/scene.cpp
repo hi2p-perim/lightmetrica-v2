@@ -317,7 +317,7 @@ public:
             LM_LOG_INFO("Building acceleration structure");
             LM_LOG_INDENTER();
 
-            if (accel->Build(*this))
+            if (!accel->Build(*this))
             {
                 return false;
             }
