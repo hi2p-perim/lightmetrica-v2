@@ -81,9 +81,17 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
         if (!o_->vtable_[ID])
         {
             LM_LOG_ERROR("Missing vtable entry for");
-            LM_LOG_INDENTER();
-            LM_LOG_ERROR("Interface: " + std::string(typeid(Iface).name()));
-            LM_LOG_ERROR("Function: " + std::string(name_) + " (ID: " + std::to_string(ID) + ")");
+            {
+                LM_LOG_INDENTER();
+                LM_LOG_ERROR("Interface: " + std::string(typeid(Iface).name()));
+                LM_LOG_ERROR("Function: " + std::string(name_) + " (ID: " + std::to_string(ID) + ")");
+            }
+            LM_LOG_ERROR("Possible cause of this error:");
+            {
+                LM_LOG_INDENTER();
+                LM_LOG_ERROR("Missing implementation. We recommend to "
+                             "check if the function '" + std::string(name_) + "' is properly implmeneted with RF_IMPL_F macro.");
+            }
             return ReturnType();
         }
         return reinterpret_cast<FuncType>(o_->vtable_[ID])(o_->userdata_[ID], Portable<ArgTypes>(args)...).Get();

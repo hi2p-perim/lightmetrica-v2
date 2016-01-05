@@ -197,50 +197,109 @@ struct SIMDTVecBase : public TVecBase<T, Opt, VecT_, NC_>
 
 // --------------------------------------------------------------------------------
 
-#pragma region Forward declaration
-
-template <typename T, SIMD Opt = SIMD::None>
-struct TVec2;
-
-template <typename T, SIMD Opt = SIMD::None>
-struct TVec3;
-
-template <typename T, SIMD Opt = SIMD::None>
-struct TVec4;
-
-#pragma endregion
+//#pragma region Forward declaration
+//
+//template <typename T, SIMD Opt> struct TVec2;
+////template <typename T> struct TVec2<T, SIMD::None>;
+//
+//template <typename T, SIMD Opt> struct TVec3;
+////template <typename T> struct TVec3<T, SIMD::None>;
+////template <> struct TVec3<float, SIMD::SSE>;
+////template <> struct TVec3<double, SIMD::AVX>;
+//
+//template <typename T, SIMD Opt> struct TVec4;
+////template <typename T> struct TVec4<T, SIMD::None>;
+////template <> struct TVec4<float, SIMD::SSE>;
+////template <> struct TVec4<double, SIMD::AVX>;
+//
+//#pragma endregion
 
 // --------------------------------------------------------------------------------
 
-#pragma region Vec2
+#pragma region Vec4
 
 /*!
-    2D vector.
+    4D vector.
     
-    Generic 2-dimensional vector.
+    Generic 4-dimensional vector.
 */
+template <typename T, SIMD Opt = SIMD::None>
+struct TVec4;
 
 template <typename T>
-struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
+struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
 {
+
     union
     {
         VT v_[NC];
-        struct { VT x, y; };
+        struct { VT x, y, z, w; };
     };
 
-    LM_INLINE TVec2() : x(VT(0)), y(VT(0)) {}
-    LM_INLINE TVec2(ParamT x, ParamT y) : x(x), y(y) {}
-    LM_INLINE TVec2(const VecT& v) : x(v.x), y(v.y) {}
-    LM_INLINE TVec2(std::initializer_list<VT> l) { x = l.begin()[0]; y = l.begin()[1]; }
+    LM_INLINE TVec4()                                       : x(VT(0)), y(VT(0)), z(VT(0)), w(VT(0)) {}
+    LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : x(x), y(y), z(z), w(w) {}
+    LM_INLINE TVec4(const VecT& v)                          : x(v.x), y(v.y), z(v.z), w(v.w) {}
+    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
 
-    LM_INLINE auto operator[](int i)         -> VT& { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetT { return (&x)[i]; }
-    LM_INLINE auto operator=(const VecT& v)  -> VecT& { x = v.x; y = v.y; return *this; }
-    LM_INLINE auto operator+=(const VecT& v) -> VecT& { x += v.x; y += v.y; return *this; }
-    LM_INLINE auto operator-=(const VecT& v) -> VecT& { x -= v.x; y -= v.y; return *this; }
-    LM_INLINE auto operator*=(const VecT& v) -> VecT& { x *= v.x; y *= v.y; return *this; }
-    LM_INLINE auto operator/=(const VecT& v) -> VecT& { x /= v.x; y /= v.y; return *this; }
+    LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
+    LM_INLINE auto operator=(const VecT& v)  -> VecT&       { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
+    LM_INLINE auto operator+=(const VecT& v) -> VecT&       { x += v.x; y += v.y; z += v.z; w += v.w; return *this; }
+    LM_INLINE auto operator-=(const VecT& v) -> VecT&       { x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this; }
+    LM_INLINE auto operator*=(const VecT& v) -> VecT&       { x *= v.x; y *= v.y; z *= v.z; w *= v.w; return *this; }
+    LM_INLINE auto operator/=(const VecT& v) -> VecT&       { x /= v.x; y /= v.y; z /= v.z; w /= v.w; return *this; }
+
+};
+
+template <>
+struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SSE, TVec4, 4>
+{
+
+    union
+    {
+        SIMDT v_;
+        struct { VT x, y, z, w; };
+    };
+
+    LM_INLINE TVec4()                                       : v_(_mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f)) {}
+    LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : v_(_mm_set_ps(w, z, y, x)) {}
+    LM_INLINE TVec4(const VecT& v)                          : v_(v.v_) {}
+    LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
+    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
+
+    LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
+    LM_INLINE auto operator=(const VecT& v)  -> VecT&       { v_ = v.v_; return *this; }
+    LM_INLINE auto operator+=(const VecT& v) -> VecT&       { v_ = _mm_add_ps(v_, v.v_); return *this; }
+    LM_INLINE auto operator-=(const VecT& v) -> VecT&       { v_ = _mm_sub_ps(v_, v.v_); return *this; }
+    LM_INLINE auto operator*=(const VecT& v) -> VecT&       { v_ = _mm_mul_ps(v_, v.v_); return *this; }
+    LM_INLINE auto operator/=(const VecT& v) -> VecT&       { v_ = _mm_div_ps(v_, v.v_); return *this; }
+
+};
+
+template <>
+struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::AVX, TVec4, 4>
+{
+
+    union
+    {
+        SIMDT v_;
+        struct { VT x, y, z, w; };
+    };
+
+    LM_INLINE TVec4()                                       : v_(_mm256_set_pd(0, 0, 0, 0)) {}
+    LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : v_(_mm256_set_pd(w, z, y, x)) {}
+    LM_INLINE TVec4(const VecT& v)                          : v_(v.v_) {}
+    LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
+    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
+
+    LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
+    LM_INLINE auto operator=(const VecT& v)  -> VecT&       { v_ = v.v_; return *this; }
+    LM_INLINE auto operator+=(const VecT& v) -> VecT&       { v_ = _mm256_add_pd(v_, v.v_); return *this; }
+    LM_INLINE auto operator-=(const VecT& v) -> VecT&       { v_ = _mm256_sub_pd(v_, v.v_); return *this; }
+    LM_INLINE auto operator*=(const VecT& v) -> VecT&       { v_ = _mm256_mul_pd(v_, v.v_); return *this; }
+    LM_INLINE auto operator/=(const VecT& v) -> VecT&       { v_ = _mm256_div_pd(v_, v.v_); return *this; }
 
 };
 
@@ -255,6 +314,8 @@ struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
     
     Generic 3-dimensional vector.
 */
+template <typename T, SIMD Opt = SIMD::None>
+struct TVec3;
 
 template <typename T>
 struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
@@ -338,88 +399,37 @@ struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
 
 // --------------------------------------------------------------------------------
 
-#pragma region Vec4
+#pragma region Vec2
 
 /*!
-    4D vector.
+    2D vector.
     
-    Generic 4-dimensional vector.
+    Generic 2-dimensional vector.
 */
+template <typename T, SIMD Opt = SIMD::None>
+struct TVec2;
 
 template <typename T>
-struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
+struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
 {
-
     union
     {
         VT v_[NC];
-        struct { VT x, y, z, w; };
+        struct { VT x, y; };
     };
 
-    LM_INLINE TVec4()                                       : x(VT(0)), y(VT(0)), z(VT(0)), w(VT(0)) {}
-    LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : x(x), y(y), z(z), w(w) {}
-    LM_INLINE TVec4(const VecT& v)                          : x(v.x), y(v.y), z(v.z), w(v.w) {}
-    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
+    LM_INLINE TVec2() : x(VT(0)), y(VT(0)) {}
+    LM_INLINE TVec2(ParamT x, ParamT y) : x(x), y(y) {}
+    LM_INLINE TVec2(const VecT& v) : x(v.x), y(v.y) {}
+    LM_INLINE TVec2(std::initializer_list<VT> l) { x = l.begin()[0]; y = l.begin()[1]; }
 
-    LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
-    LM_INLINE auto operator=(const VecT& v)  -> VecT&       { x = v.x; y = v.y; z = v.z; w = v.w; return *this; }
-    LM_INLINE auto operator+=(const VecT& v) -> VecT&       { x += v.x; y += v.y; z += v.z; w += v.w; return *this; }
-    LM_INLINE auto operator-=(const VecT& v) -> VecT&       { x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this; }
-    LM_INLINE auto operator*=(const VecT& v) -> VecT&       { x *= v.x; y *= v.y; z *= v.z; w *= v.w; return *this; }
-    LM_INLINE auto operator/=(const VecT& v) -> VecT&       { x /= v.x; y /= v.y; z /= v.z; w /= v.w; return *this; }
-
-};
-
-template <>
-struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SSE, TVec4, 4>
-{
-
-    union
-    {
-        SIMDT v_;
-        struct { VT x, y, z, w; };
-    };
-
-    LM_INLINE TVec4()                                       : v_(_mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f)) {}
-    LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : v_(_mm_set_ps(w, z, y, x)) {}
-    LM_INLINE TVec4(const VecT& v)                          : v_(v.v_) {}
-    LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
-    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
-
-    LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
-    LM_INLINE auto operator=(const VecT& v)  -> VecT&       { v_ = v.v_; return *this; }
-    LM_INLINE auto operator+=(const VecT& v) -> VecT&       { v_ = _mm_add_ps(v_, v.v_); return *this; }
-    LM_INLINE auto operator-=(const VecT& v) -> VecT&       { v_ = _mm_sub_ps(v_, v.v_); return *this; }
-    LM_INLINE auto operator*=(const VecT& v) -> VecT&       { v_ = _mm_mul_ps(v_, v.v_); return *this; }
-    LM_INLINE auto operator/=(const VecT& v) -> VecT&       { v_ = _mm_div_ps(v_, v.v_); return *this; }
-
-};
-
-template <>
-struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::AVX, TVec4, 4>
-{
-
-    union
-    {
-        SIMDT v_;
-        struct { VT x, y, z, w; };
-    };
-
-    LM_INLINE TVec4()                                       : v_(_mm256_set_pd(0, 0, 0, 0)) {}
-    LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : v_(_mm256_set_pd(w, z, y, x)) {}
-    LM_INLINE TVec4(const VecT& v)                          : v_(v.v_) {}
-    LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
-    LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
-
-    LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
-    LM_INLINE auto operator[](int i) const   -> RetT        { return (&x)[i]; }
-    LM_INLINE auto operator=(const VecT& v)  -> VecT&       { v_ = v.v_; return *this; }
-    LM_INLINE auto operator+=(const VecT& v) -> VecT&       { v_ = _mm256_add_pd(v_, v.v_); return *this; }
-    LM_INLINE auto operator-=(const VecT& v) -> VecT&       { v_ = _mm256_sub_pd(v_, v.v_); return *this; }
-    LM_INLINE auto operator*=(const VecT& v) -> VecT&       { v_ = _mm256_mul_pd(v_, v.v_); return *this; }
-    LM_INLINE auto operator/=(const VecT& v) -> VecT&       { v_ = _mm256_div_pd(v_, v.v_); return *this; }
+    LM_INLINE auto operator[](int i)         -> VT& { return (&x)[i]; }
+    LM_INLINE auto operator[](int i) const   -> RetT { return (&x)[i]; }
+    LM_INLINE auto operator=(const VecT& v)  -> VecT& { x = v.x; y = v.y; return *this; }
+    LM_INLINE auto operator+=(const VecT& v) -> VecT& { x += v.x; y += v.y; return *this; }
+    LM_INLINE auto operator-=(const VecT& v) -> VecT& { x -= v.x; y -= v.y; return *this; }
+    LM_INLINE auto operator*=(const VecT& v) -> VecT& { x *= v.x; y *= v.y; return *this; }
+    LM_INLINE auto operator/=(const VecT& v) -> VecT& { x /= v.x; y /= v.y; return *this; }
 
 };
 
@@ -1200,7 +1210,7 @@ namespace Math
     template <typename T, SIMD Opt>
     auto OrthonormalBasis(const TVec3<T, Opt>& a, TVec3<T, Opt>& b, TVec3<T, Opt>& c) -> void
     {
-        c = Abs(a.x) > Abs(a.y) ? Normalize(Vec3(a.z, 0_f, -a.x)) : glm::normalize(glm::dvec3(0, a.z, -a.y));
+        c = Abs(a.x) > Abs(a.y) ? Normalize(Vec3(a.z, 0_f, -a.x)) : Normalize(Vec3(0_f, a.z, -a.y));
         b = Normalize(Cross(c, a));
     }
 

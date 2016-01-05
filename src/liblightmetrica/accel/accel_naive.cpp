@@ -245,7 +245,7 @@ public:
             const auto& b = minB;
 
             // Store information into `isect`
-            const size_t primIndex = triangle.primIndex;
+            const int primIndex = triangle.primIndex;
             const int faceIndex = triangle.faceIndex;
             const auto* prim = scene.PrimitiveAt(primIndex);
             const auto* mesh = prim->mesh;

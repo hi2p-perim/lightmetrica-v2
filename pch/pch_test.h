@@ -26,4 +26,5 @@
 
 #include "pch.h"
 #include <gtest/gtest.h>
+#include <glm/glm.hpp>
 #include <lightmetrica-test/macros.h>
