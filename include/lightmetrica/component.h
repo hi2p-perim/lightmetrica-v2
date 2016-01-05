@@ -53,8 +53,16 @@ struct Component
     // VTable entries and user-defined data
     // User-defined data is required to hold non-portable version
     static constexpr size_t VTableNumEntries = 100;
-    void* vtable_[VTableNumEntries] = {};
-    void* userdata_[VTableNumEntries] = {};
+    struct VTable
+    {
+        void* f     = nullptr;
+        void* implf = nullptr;
+    } data_[VTableNumEntries];
+
+    // Name of implementation type
+    const char* implName = nullptr;
+
+    // Number of interface functions
     static constexpr int NumFuncs = 0;
 };
 
@@ -78,23 +86,24 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
     {
         // Convert argument types to portable types and call the functions stored in the vtable.
         using FuncType = Portable<ReturnType>(*)(void*, Portable<ArgTypes>...);
-        if (!o_->vtable_[ID])
+        if (!o_->data_[ID].f)
         {
             LM_LOG_ERROR("Missing vtable entry for");
             {
                 LM_LOG_INDENTER();
-                LM_LOG_ERROR("Interface: " + std::string(typeid(Iface).name()));
-                LM_LOG_ERROR("Function: " + std::string(name_) + " (ID: " + std::to_string(ID) + ")");
+                LM_LOG_ERROR("Interface: " + std::string(Iface::Type_().name));
+                LM_LOG_ERROR("Instance : " + std::string(o_->implName));
+                LM_LOG_ERROR("Function : " + std::string(name_) + " (ID: " + std::to_string(ID) + ")");
             }
             LM_LOG_ERROR("Possible cause of this error:");
             {
                 LM_LOG_INDENTER();
                 LM_LOG_ERROR("Missing implementation. We recommend to "
-                             "check if the function '" + std::string(name_) + "' is properly implmeneted with RF_IMPL_F macro.");
+                             "check if the function '" + std::string(o_->implName) + "::" + std::string(name_) + "' is properly implmeneted with RF_IMPL_F macro.");
             }
             return ReturnType();
         }
-        return reinterpret_cast<FuncType>(o_->vtable_[ID])(o_->userdata_[ID], Portable<ArgTypes>(args)...).Get();
+        return reinterpret_cast<FuncType>(o_->data_[ID].f)(o_->data_[ID].implf, Portable<ArgTypes>(args)...).Get();
     }
 };
 
@@ -177,7 +186,10 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
 #define LM_IMPL_CLASS(Impl, Base) \
     LM_DEFINE_CLASS_TYPE(Impl, Base); \
     using ImplType = Impl; \
-    using BaseType = Base
+    using BaseType = Base; \
+    const struct Impl ## _Init_ { \
+        Impl ## _Init_(ImplType* p) { p->implName = ImplType::Type_().name; } \
+    } Impl ## _Init_Inst_{this}
 
 #if LM_INTELLISENSE
     #define LM_IMPL_F(Name) \
@@ -186,8 +198,8 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
     #define LM_IMPL_F(Name) \
         struct Name ## _Init_ { \
             Name ## _Init_(ImplType* p) { \
-                p->vtable_[Name ## _ID_]   = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
-                p->userdata_[Name ## _ID_] = (void*)(&p->Name ## _Impl_); \
+                p->data_[Name ## _ID_].f     = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
+                p->data_[Name ## _ID_].implf = (void*)(&p->Name ## _Impl_); \
             } \
         } Name ## _Init_Inst_{this}; \
         friend struct Name ## _Init_; \
@@ -244,6 +256,7 @@ public:
             LM_LOG_ERROR("Interface: " + std::string(InterfaceType::Type_().name));
             return ReturnType(nullptr, nullptr);
         }
+        //p->implName = p->InstanceType()->name;
         return ReturnType(p, ReleaseFunc(implName));
     }
 

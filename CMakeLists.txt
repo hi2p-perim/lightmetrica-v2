@@ -161,6 +161,9 @@ if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:strict")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHa")
 
+	# Parallel build
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+
     # Platform flag (required for boost)
     # cf. http://stackoverflow.com/questions/9742003/platform-detection-in-cmake
     set(_VERSION ${CMAKE_SYSTEM_VERSION})

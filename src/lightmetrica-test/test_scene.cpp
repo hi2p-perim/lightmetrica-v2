@@ -54,6 +54,7 @@ struct Stub_Assets : public Assets
 struct Stub_Accel : public Accel
 {
     LM_IMPL_CLASS(Stub_Accel, Accel);
+
 };
 
 LM_COMPONENT_REGISTER_IMPL_DEFAULT(Stub_Assets);
