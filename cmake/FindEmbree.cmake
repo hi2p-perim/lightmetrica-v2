@@ -58,7 +58,7 @@ if (WIN32)
 
 	find_library(
 		EMBREE_LIBRARY_DEBUG
-		NAMES embreed
+		NAMES embree
 		PATHS
 			$ENV{PROGRAMFILES}/lib
 			${EMBREE_ROOT_DIR}/lib)

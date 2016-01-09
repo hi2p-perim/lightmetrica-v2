@@ -116,8 +116,8 @@ include_directories(${TBB_INCLUDE_DIRS})
 # include_directories(${FREEIMAGE_INCLUDE_DIRS})
 
 # Embree
-# find_package(Embree REQUIRED)
-# include_directories(${EMBREE_INCLUDE_DIRS})
+find_package(Embree REQUIRED)
+include_directories(${EMBREE_INCLUDE_DIRS})
 
 # yaml-cpp
 find_package(YamlCpp REQUIRED)

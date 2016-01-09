@@ -213,6 +213,7 @@ set(
     _ACCEL_SOURCE_FILES
 	"accel/accel_naive.cpp"
 	"accel/accel_embree.cpp"
+	"accel/accel_nanort.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\accel" FILES ${_ACCEL_SOURCE_FILES})

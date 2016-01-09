@@ -902,8 +902,10 @@ namespace Math
 {
     #pragma region Constants
 
-    template <typename T> constexpr auto Pi()  -> T { return T(3.14159265358979323846); }
-    template <typename T> constexpr auto Inf() -> T { return std::numeric_limits<T>::max(); }
+    template <typename T = Float> constexpr auto Pi()              -> T     { return T(3.14159265358979323846); }
+    template <typename T = Float> constexpr auto Inf()             -> T     { return std::numeric_limits<T>::max(); }
+    template <typename T = Float> constexpr auto EpsLarge()        -> T     { return T(1e-5); }
+    template <>                   constexpr auto EpsLarge<float>() -> float { return 1e-3f; }
 
     #pragma endregion
 
