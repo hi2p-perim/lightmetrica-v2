@@ -54,14 +54,16 @@ if (WIN32)
 		NAMES embree
 		PATHS
 			$ENV{PROGRAMFILES}/lib
-			${EMBREE_ROOT_DIR}/lib)
+			${EMBREE_ROOT_DIR}/lib
+			${LM_EXTERNAL_LIBRARY_PATH}/Release)
 
 	find_library(
 		EMBREE_LIBRARY_DEBUG
 		NAMES embree
 		PATHS
 			$ENV{PROGRAMFILES}/lib
-			${EMBREE_ROOT_DIR}/lib)
+			${EMBREE_ROOT_DIR}/lib
+			${LM_EXTERNAL_LIBRARY_PATH}/Debug)
 else()
 	# Find include files
 	find_path(

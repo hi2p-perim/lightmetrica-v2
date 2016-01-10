@@ -45,12 +45,12 @@ public:
 
     LM_IMPL_F(Build) = [this](const Scene& scene) -> bool
     {
-        
+        return false;
     };
 
     LM_IMPL_F(Intersect) = [this](const Scene& scene, const Ray& ray, Intersection& isect) -> bool
     {
-        
+        return false;
     };
 
 private:

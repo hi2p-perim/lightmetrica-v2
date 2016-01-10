@@ -277,7 +277,7 @@ list(APPEND _SOURCE_FILES ${_GENERATED_VERSION_DEF})
 #
 
 pch_add_library(${_PROJECT_NAME} SHARED PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${CTEMPLATE_LIBRARIES})
+target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${CTEMPLATE_LIBRARIES} ${EMBREE_LIBRARIES})
 
 # Proprocessor definition for exporting symbols
 set_target_properties(${_PROJECT_NAME} PROPERTIES COMPILE_DEFINITIONS "LM_EXPORTS")
@@ -297,12 +297,18 @@ set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "lib")
 if(WIN32)
 
     # Libraries in external directory
-    file(GLOB EXT_BINARY_FILES "${CMAKE_SOURCE_DIR}/external/${_GENERATOR_PREFIX}/bin/${CMAKE_LIBRARY_ARCHITECTURE}/*.dll")
+    file(GLOB EXT_BINARY_FILES "${LM_EXTERNAL_BINARY_PATH}/*.dll")
     foreach(BINARY_FILE_NAME ${EXT_BINARY_FILES})
         add_custom_command_copy_dll(
             NAME ${_PROJECT_NAME}
             DLL ${BINARY_FILE_NAME})
     endforeach()
+
+    # Embree
+    add_custom_command_copy_dll_release_debug(
+        NAME ${_PROJECT_NAME}
+        DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll
+        DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/embree.dll)
 
     # TBB
     get_filename_component(_TBB_DLL_PATH_RELEASE "$ENV{TBB_ROOT}/bin/$ENV{TBB_ARCH_PLATFORM}/${_GENERATOR_PREFIX}/tbb.dll" ABSOLUTE)
