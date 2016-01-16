@@ -367,4 +367,47 @@ TEST(ComponentTest, PortableMemberVariable)
 
 #pragma endregion
 
+// --------------------------------------------------------------------------------
+
+#pragma region Contructor and descturctor
+
+struct G : public Component
+{
+    LM_INTERFACE_CLASS(G, Component);
+    LM_INTERFACE_F(Func, void());
+};
+
+struct G_ final : public G
+{
+    LM_IMPL_CLASS(G_, G);
+
+    G_()
+    {
+        std::cout << "ctor" << std::endl;
+    }
+
+    ~G_()
+    {
+        std::cout << "dtor" << std::endl;
+    }
+
+    LM_IMPL_F(Func) = [this]() -> void
+    {
+        std::cout << "hello" << std::endl;
+    };
+};
+
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(G_);
+
+TEST(ComponentTest, ContructorAndDescturctor)
+{
+    EXPECT_EQ("ctor\nhello\ndtor\n", TestUtils::CaptureStdout([&]()
+    {
+        const auto p = ComponentFactory::Create<G>();
+        p->Func();
+    }));
+}
+
+#pragma endregion
+
 LM_TEST_NAMESPACE_END

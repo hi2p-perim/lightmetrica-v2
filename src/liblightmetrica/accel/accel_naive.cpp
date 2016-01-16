@@ -218,18 +218,17 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene& scene, const Ray& ray, Intersection& isect) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene& scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         bool intersected = false;
         size_t minIndex = 0;
         Vec2 minB;
-        Float maxT = Math::Inf<Float>();
 
         for (size_t i = 0; i < triangles_.size(); i++)
         {
             Float t;
             Vec2 b;
-            if (triangles_[i].Intersect(ray, 0, maxT, b[0], b[1], t))
+            if (triangles_[i].Intersect(ray, minT, maxT, b[0], b[1], t))
             {
                 intersected = true;
                 maxT = t;

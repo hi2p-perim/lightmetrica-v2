@@ -335,7 +335,7 @@ public:
     LM_IMPL_F(Intersect) = [this](const Ray& ray, Intersection& isect) -> bool
     {
         // TODO: Intersection with emitter shapes
-        return accel_->Intersect(*this, ray, isect);
+        return accel_->Intersect(*this, ray, isect, 0_f, Math::Inf());
     };
 
     LM_IMPL_F(PrimitiveByID) = [this](const std::string& id) -> const Primitive*

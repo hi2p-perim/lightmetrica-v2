@@ -39,7 +39,7 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
     virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
-INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("naiveaccel"));
+INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("naiveaccel", "embree"));
 
 // --------------------------------------------------------------------------------
 
@@ -266,7 +266,7 @@ TEST_P(AccelTest, Simple)
             ray.o = Vec3(0, 0, 1);
             ray.d = Math::Normalize(Vec3(x, y, 0) - ray.o);
 
-            ASSERT_TRUE(accel->Intersect(scene, ray, isect));
+            ASSERT_TRUE(accel->Intersect(scene, ray, isect, 0_f, Math::Inf()));
             EXPECT_TRUE(ExpectVecNear(Vec3(x, y, 0), isect.geom.p,  Math::EpsLarge()));
             EXPECT_TRUE(ExpectVecNear(Vec3(0, 0, 1), isect.geom.gn, Math::EpsLarge()));
             EXPECT_TRUE(ExpectVecNear(Vec3(0, 0, 1), isect.geom.sn, Math::EpsLarge()));
@@ -300,7 +300,7 @@ TEST_P(AccelTest, Simple2)
             ray.o = Vec3(x, y, 1);
             ray.d = Vec3(0, 0, -1);
 
-            ASSERT_TRUE(accel->Intersect(scene, ray, isect));
+            ASSERT_TRUE(accel->Intersect(scene, ray, isect, 0_f, Math::Inf()));
             EXPECT_TRUE(ExpectVecNear(Vec3(x, y, -x), isect.geom.p, Math::EpsLarge()));
             EXPECT_TRUE(ExpectVecNear(Math::Normalize(Vec3(1, 0, 1)), isect.geom.gn, Math::EpsLarge()));
             EXPECT_TRUE(ExpectVecNear(Math::Normalize(Vec3(1, 0, 1)), isect.geom.sn, Math::EpsLarge()));

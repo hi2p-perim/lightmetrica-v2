@@ -25,6 +25,7 @@
 #pragma once
 
 #include <lightmetrica/configurable.h>
+#include <lightmetrica/math.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -47,7 +48,7 @@ public:
 public:
 
     LM_INTERFACE_F(Build, bool(const Scene& scene));
-    LM_INTERFACE_F(Intersect, bool(const Scene& scene, const Ray& ray, Intersection&));
+    LM_INTERFACE_F(Intersect, bool(const Scene& scene, const Ray& ray, Intersection& isect, Float minT, Float maxT));
 
 };
 
