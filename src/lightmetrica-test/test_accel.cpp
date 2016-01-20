@@ -268,6 +268,10 @@ TEST_P(AccelTest, Simple)
 
             ASSERT_TRUE(accel->Intersect(scene, ray, isect, 0_f, Math::Inf()));
             EXPECT_TRUE(ExpectVecNear(Vec3(x, y, 0), isect.geom.p,  Math::EpsLarge()));
+            //if (!ExpectVecNear(Vec3(x, y, 0), isect.geom.p, Math::EpsLarge()))
+            //{
+            //    __debugbreak();
+            //}
             EXPECT_TRUE(ExpectVecNear(Vec3(0, 0, 1), isect.geom.gn, Math::EpsLarge()));
             EXPECT_TRUE(ExpectVecNear(Vec3(0, 0, 1), isect.geom.sn, Math::EpsLarge()));
             EXPECT_TRUE(ExpectVecNear(Vec2(x, y),    isect.geom.uv, Math::EpsLarge()));

@@ -67,6 +67,7 @@ set(
 	"${_INCLUDE_DIR}/surfacegeometry.h"
 	"${_INCLUDE_DIR}/ray.h"
 	"${_INCLUDE_DIR}/intersection.h"
+	"${_INCLUDE_DIR}/intersectionutils.h"
 	"${_INCLUDE_DIR}/spectrum.h"
 	"${_INCLUDE_DIR}/configurable.h"
 )

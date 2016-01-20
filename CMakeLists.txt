@@ -208,6 +208,9 @@ endif()
 # Include and output directories
 #
 
+# Include directory for header-only libraries
+include_directories("external/include")
+
 # Include directory for generated headers
 include_directories(${PROJECT_BINARY_DIR})
 

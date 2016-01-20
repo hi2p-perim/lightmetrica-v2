@@ -40,8 +40,10 @@ struct Primitive;
 */
 struct Intersection
 {
+
     SurfaceGeometry geom;
     const Primitive* primitive;
+
 };
 
 LM_NAMESPACE_END

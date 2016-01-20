@@ -58,7 +58,7 @@ extern "C"
 }
 
 /*!
-    Logger.
+    \brief Logger.
     
     This class is responsible for the log output of the framework.
     The output message is designed to be natural and human-readable.

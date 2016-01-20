@@ -32,7 +32,7 @@ extern "C" LM_PUBLIC_API auto FPUtils_EnableFPControl() -> bool;
 extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
 
 /*
-    Floating point exception control.
+    \brief Floating point exception control.
     
     Controls floating point exceptions.
     In this framework, the floating-point exception should be enabled by default.
