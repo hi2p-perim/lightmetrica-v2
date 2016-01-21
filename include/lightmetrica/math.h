@@ -920,6 +920,10 @@ namespace Math
     template <typename T> LM_INLINE auto Tan(const T& v)     -> T { return std::tan(v); }
     template <typename T> LM_INLINE auto Abs(const T& v)     -> T { return std::abs(v); }
     template <typename T> LM_INLINE auto Sqrt(const T& v)    -> T { return std::sqrt(v); }
+    template <typename T> LM_INLINE auto Pow(const T& base, const T& exp) -> T { return std::pow(base, exp); }
+    template <typename T> LM_INLINE auto Min(const T& v1, const T& v2)    -> T { return std::min(v1, v2); }
+    template <typename T> LM_INLINE auto Max(const T& v1, const T& v2)    -> T { return std::max(v1, v2); }
+    template <typename T> LM_INLINE auto Clamp(const T& v, const T& min, const T& max) -> T { return std::min(std::max(v, min), max); }
 
     #pragma endregion
 

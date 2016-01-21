@@ -114,8 +114,8 @@ include_directories(${TBB_INCLUDE_DIRS})
 # include_directories(${ASSIMP_INCLUDE_DIRS})
 
 # FreeImage
-# find_package(FreeImage REQUIRED)
-# include_directories(${FREEIMAGE_INCLUDE_DIRS})
+find_package(FreeImage REQUIRED)
+include_directories(${FREEIMAGE_INCLUDE_DIRS})
 
 # Embree
 find_package(Embree REQUIRED)

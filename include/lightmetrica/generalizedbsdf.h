@@ -71,7 +71,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(EvaluateDirection, bool(const SurfaceGeometry&, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta));
+    LM_INTERFACE_F(EvaluateDirection, bool(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool));
 
 };
 

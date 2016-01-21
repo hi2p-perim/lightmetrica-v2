@@ -648,8 +648,14 @@ private:
         auto p = ComponentFactory::Create<AssetT>(tn->As<std::string>());
         if (!p)
         {
-            LM_LOG_ERROR("Failed to initialize '" + tn->As<std::string>() + "'");
+            LM_LOG_ERROR("Failed to create '" + tn->As<std::string>() + "'");
             PropertyUtils::PrintPrettyError(tn);
+            return boost::none;
+        }
+
+        if (!p->Initialize(pn))
+        {
+            LM_LOG_ERROR("Failed to initialize '" + tn->As<std::string>() + "'");
             return boost::none;
         }
 

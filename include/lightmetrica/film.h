@@ -25,6 +25,7 @@
 #pragma once
 
 #include <lightmetrica/configurable.h>
+#include <lightmetrica/spectrum.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -41,9 +42,10 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Save, bool(const std::string&));
     LM_INTERFACE_F(Width, int());
     LM_INTERFACE_F(Height, int());
+    LM_INTERFACE_F(SetPixel, void(int x, int y, const SPD& v));
+    LM_INTERFACE_F(Save, bool(const std::string&));
 
 };
 

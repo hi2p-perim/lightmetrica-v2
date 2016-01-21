@@ -133,6 +133,20 @@ list(APPEND _SOURCE_FILES ${_ACCEL_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
+# Film
+#
+
+set(
+	_FILM_SOURCE_FILES
+	"test_film.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\film" FILES ${_FILM_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_FILM_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
 # Create an executable
 #
 

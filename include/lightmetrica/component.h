@@ -121,7 +121,25 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
     }
 };
 
-// Define interface class
+/*
+    Define interface class.
+
+    The `Base` class must be one that the `Current` class directly inherits.
+    Specifying indirectly inherited classes might invoke the unexpected behavior.
+    For instance, if the class is defined as
+        ```
+        class B : public A { ... };
+        class C : public B { ... };
+        ```
+    the `LM_INTERFACE_CLASS` macro for the class `C` must be
+        ```
+        LM_INTERFACE_CLASS(C, B);
+        ```
+    but not
+        ```
+        LM_INTERFACE_CLASS(C, A);
+        ```
+*/
 #define LM_INTERFACE_CLASS(Current, Base) \
         LM_DEFINE_CLASS_TYPE(Current, Base); \
         using BaseType = Base; \

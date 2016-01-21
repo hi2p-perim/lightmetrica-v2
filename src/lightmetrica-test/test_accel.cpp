@@ -33,6 +33,8 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
+#pragma region Fixture
+
 struct AccelTest : public ::testing::TestWithParam<const char*>
 {
     virtual auto SetUp() -> void override { Logger::SetVerboseLevel(2); Logger::Run(); }
@@ -40,6 +42,8 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
 };
 
 INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("naiveaccel", "embree"));
+
+#pragma endregion
 
 // --------------------------------------------------------------------------------
 
@@ -241,6 +245,8 @@ private:
 
 // --------------------------------------------------------------------------------
 
+#pragma region Tests
+
 TEST_P(AccelTest, Simple)
 {
     StubTriangleMesh_Simple mesh;
@@ -312,5 +318,7 @@ TEST_P(AccelTest, Simple2)
         }
     }
 }
+
+#pragma endregion
 
 LM_TEST_NAMESPACE_END

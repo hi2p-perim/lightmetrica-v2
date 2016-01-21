@@ -26,6 +26,11 @@
 
 LM_NAMESPACE_BEGIN
 
+class DirectionSampler_Perspective : public PDF
+{
+
+};
+
 class Sensor_Perspective : public Sensor
 {
 public:
@@ -37,6 +42,16 @@ public:
     LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool
     {
         return true;
+    };
+
+    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> bool
+    {
+
+    };
+
+    LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> bool
+    {
+
     };
 
 };

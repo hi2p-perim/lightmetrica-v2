@@ -37,7 +37,7 @@ class Renderer : public Configurable
 {
 public:
 
-    LM_INTERFACE_CLASS(Renderer, Component);
+    LM_INTERFACE_CLASS(Renderer, Configurable);
 
 public:
 

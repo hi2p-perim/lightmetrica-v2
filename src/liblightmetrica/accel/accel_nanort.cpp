@@ -44,6 +44,9 @@
 
 LM_NAMESPACE_BEGIN
 
+/*
+    TODO: Falling tests. Fix it.
+*/
 class Accel_NanoRT : public Accel
 {
 public:
@@ -102,7 +105,6 @@ public:
 
             fsCDF_.push_back(fsCDF_.back() + mesh->NumFaces() / 3);
         }
-
 
         // Build
         nanort::BVHBuildOptions options;

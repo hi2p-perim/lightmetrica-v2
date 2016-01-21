@@ -85,6 +85,7 @@ public:
             prevMessageIsInplace_ = false;
             threadIdMap_.clear();
             verboseLevel_ = 0;
+            unprocessedMessages_ = 0;
 		}
 	}
 
@@ -95,6 +96,14 @@ public:
 
 	auto Log(LogType type, const std::string& message, const char* filename, int line, bool inplace, bool simple) -> void
 	{
+        // Ignore the `inplace` message if there are unprocessed posts
+        if (inplace && unprocessedMessages_ > 0)
+        {
+            return;
+        }
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Thread ID
 
         // The thread ID is assigned from zero with moronically increasing manner
@@ -120,13 +129,14 @@ public:
         std::string messageLine;
         while (std::getline(ss, messageLine, '\n'))
         {
+            unprocessedMessages_++;
 		    io_.post([this, type, messageLine, filename, line, threadId, inplace, simple]()
 		    {
 			    // Fill spaces to erase previous message
 			    if (prevMessageIsInplace_)
 			    {
 				    int consoleWidth;
-				    const int DefaultConsoleWidth = 100;
+				    constexpr int DefaultConsoleWidth = 100;
 				    #if LM_PLATFORM_WINDOWS
 				    {
 					    HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -171,6 +181,12 @@ public:
 				    prevMessageIsInplace_ = false;
 			    }
 			    EndTextColor();
+
+                // Mark finished
+                if (unprocessedMessages_ > 0)
+                {
+                    unprocessedMessages_--;
+                }
 		    });
         }
 
@@ -266,6 +282,7 @@ private:
 	bool prevMessageIsInplace_ = false;
 	tbb::concurrent_hash_map<std::string, int> threadIdMap_;
     int verboseLevel_ = 0;
+    std::atomic<int> unprocessedMessages_ = 0;
 
 };
 

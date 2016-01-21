@@ -25,24 +25,49 @@
 #include <lightmetrica/renderer.h>
 #include <lightmetrica/scene.h>
 #include <lightmetrica/film.h>
+#include <lightmetrica/ray.h>
 
 LM_NAMESPACE_BEGIN
 
-class Raycast : public Renderer
+class Renderer_Raycast : public Renderer
 {
 public:
 
-    LM_IMPL_CLASS(Raycast, Renderer);
+    LM_IMPL_CLASS(Renderer_Raycast, Renderer);
 
 public:
 
+    LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
+    {
+        return true;
+    };
+
     LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
     {
-        
+        const int w = film->Width();
+        const int h = film->Height();
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                // Raster position
+                Vec2 rasterPos((Float(x) + 0.5_f) / Float(w), (Float(y) + 0.5_f) / Float(h));
+
+                // Create a ray
+                Ray ray;
+                
+
+                film->SetPixel(x, y, SPD());
+            }
+
+            const double progress = 100.0 * y / film->Height();
+            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+        }
+        LM_LOG_INFO("Progress: 100.0%");
     };
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Raycast, "raycast");
+LM_COMPONENT_REGISTER_IMPL(Renderer_Raycast, "raycast");
 
 LM_NAMESPACE_END

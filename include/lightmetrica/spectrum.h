@@ -25,14 +25,62 @@
 #pragma once
 
 #include <lightmetrica/macros.h>
+#include <lightmetrica/math.h>
 
 LM_NAMESPACE_BEGIN
 
+// TODO: Make configurable
+// #define LM_USE_SPECTRUM_SINGLE
+#define LM_USE_SPECTRUM_RGB
+// #define LM_USE_SPECTRUM_MULTI
+
+#ifdef LM_USE_SPECTRUM_SINGLE
+    #define LM_SPECTRUM_SINGLE 1
+#endif
+#ifdef LM_USE_SPECTRUM_RGB
+    #define LM_SPECTRUM_RGB 1
+#endif
+#ifdef LM_USE_SPECTRUM_MULTI
+    #define LM_SPECTRUM_MULTI 1
+    #ifndef LM_SPECTRUM_SPD_N
+        #error "Missing number of elements in SPD"
+    #endif
+#endif
+
 /*!
+    Base template type for spectrum class.
+
+    This class is an abstract of discrete spectrum power distribution.
+    utilized in various class (e.g., BSDF) for representing basic quantities of light transport.
+
+    \tparam N Number of elements in the spectrum.
 */
-struct Spectrum
+template <int N>
+struct DiscreteSPD
 {
-    
+    // Values for the spectrum
+    Float p[N]{};
 };
 
+/*!
+    Specialization for the SPD representing RGB colors.
+*/
+template <>
+struct DiscreteSPD<3>
+{
+    using T = DiscreteSPD<3>;
+    Vec3 v;
+
+    auto ToRGB() const -> Vec3 { return v; }
+};
+
+#if LM_SPECTRUM_MULTI
+    using SPD = DiscreteSPD<LM_SPECTRUM_SPD_N>;
+#elif LM_SPECTRUM_RGB
+    using SPD = DiscreteSPD<3>;
+#elif LM_SPECTRUM_SINGLE
+    using SPD = DiscreteSPD<1>;
+#endif
+
 LM_NAMESPACE_END
+

@@ -212,25 +212,6 @@
 #define LM_UNUSED(x) (void)x
 #define LM_UNREACHABLE() assert(0)
 
-#define LM_ENUM_TYPE_MAP(EnumType)																				\
-	template <typename T>																						\
-	class EnumTypeMap;																							\
-	template <>																									\
-	class EnumTypeMap<EnumType> {																				\
-	public:																										\
-		EnumTypeMap() {																							\
-			for (size_t i = 0; i < sizeof(EnumType##_String) / sizeof(EnumType##_String[0]); i++)				\
-				TypeMap[EnumType##_String[i]] = (EnumType)(i);													\
-		}																										\
-		static EnumType ToEnum(const std::string& s) { return Instance().TypeMap[s]; }							\
-		static EnumTypeMap<EnumType>& Instance() { static EnumTypeMap<EnumType> instance; return instance; }	\
-	private:																									\
-		std::unordered_map<std::string, EnumType> TypeMap;														\
-	}
-
-#define LM_ENUM_TO_STRING(EnumType, EnumValue)  EnumType##_String[(int)(EnumValue)]
-#define LM_STRING_TO_ENUM(EnumType, EnumString) EnumTypeMap<EnumType>::ToEnum(EnumString)
-
 #if LM_PLATFORM_WINDOWS
 	#define LM_PRAGMA(x) __pragma(x)
 #else

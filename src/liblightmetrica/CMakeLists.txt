@@ -70,6 +70,8 @@ set(
 	"${_INCLUDE_DIR}/intersectionutils.h"
 	"${_INCLUDE_DIR}/spectrum.h"
 	"${_INCLUDE_DIR}/configurable.h"
+	"${_INCLUDE_DIR}/enum.h"
+	"${_INCLUDE_DIR}/probability.h"
 )
 set(
     _CORE_SOURCE_FILES
@@ -234,6 +236,7 @@ set(
 
 set(
     _RENDERER_SOURCE_FILES
+	"renderer/renderer_null.cpp"
 	"renderer/renderer_raycast.cpp"
 )
 
@@ -278,7 +281,7 @@ list(APPEND _SOURCE_FILES ${_GENERATED_VERSION_DEF})
 #
 
 pch_add_library(${_PROJECT_NAME} SHARED PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${CTEMPLATE_LIBRARIES} ${EMBREE_LIBRARIES})
+target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${CTEMPLATE_LIBRARIES} ${EMBREE_LIBRARIES} ${FREEIMAGE_LIBRARIES})
 
 # Proprocessor definition for exporting symbols
 set_target_properties(${_PROJECT_NAME} PROPERTIES COMPILE_DEFINITIONS "LM_EXPORTS")
