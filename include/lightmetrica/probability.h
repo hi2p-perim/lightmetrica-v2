@@ -29,58 +29,80 @@
 
 LM_NAMESPACE_BEGIN
 
-class ProbabilityMeasure;
+/*!
+    Probability distribution $P_X$ on the random variable $X$.
+
+    The inherited classes are expected to (implicitly) define
+      - Probability space $(\Omega, F, P)$
+      - Random variable $X: \Omega \to \mathcal{X}$
+      - Probability space with the random variable $X$ : $(\mathcal{X}, \mathcal{A}, \mu)$
+    
+    From the above information (and some additional assumptions) we can derive
+      - CDF $F_X(E) = P(X^{-1}(X)), \forall E \in \mathcal{A}$
+      - PDF $p_\mu(x)$ defined by $P(X \in A) = \inf_{x\in A} p_\mu(x) d\mu(x), \forall A\in F$
+*/
+class ProbabilityDist : public Component
+{
+public:
+
+    LM_INTERFACE_CLASS(ProbabilityDist, Component);
+
+public:
+
+    ProbabilityDist() = default;
+    LM_DISABLE_COPY_AND_MOVE(ProbabilityDist);
+    
+public:
+
+    // Probability space
+    // RandomVariableType
+    // EvalPDF
+    // EvalInverseCDF
+    
+};
+
+struct SurfaceGeometry;
+
+class ProbabilityDist_Area
+{
+public:
+
+    LM_INTERFACE_CLASS(ProbabilityDist_Area, Component);
+
+public:
+
+    ProbabilityDist_Area() = default;
+    LM_DISABLE_COPY_AND_MOVE(ProbabilityDist_Area);
+
+public:
+
+    LM_INTERFACE_F(EvaluatePDF, Float(const SurfaceGeometry& geom, bool evalDelta));
+    LM_INTERFACE_F(Sample, void(const Vec2& u, SurfaceGeometry& geom));
+    
+};
 
 /*!
-    Probability density.
-
-    An quantity that PDF is evaluated to.
+    Distribution for directional sampling of hemisphere
+      - $\Omega \equiv \mathbb{R}$ : 3D vector
+      - $\mathcal{X} \equiv \Omega$ : Solid angle
+      - $\mu \equiv \sigma$ : Solid angle measure
 */
-struct Density
-{
-    Float v;
-    const ProbabilityMeasure* measure;
-};
-
-class ProbabilityMeasure : public Component
+class ProbabilityDist_SolidAngle
 {
 public:
 
-    LM_INTERFACE_CLASS(ProbabilityMeasure, Component);
+    LM_INTERFACE_CLASS(ProbabilityDist_SolidAngle, Component);
 
 public:
 
-    ProbabilityMeasure() = default;
-    LM_DISABLE_COPY_AND_MOVE(ProbabilityMeasure);
-
-public:
+    ProbabilityDist_SolidAngle() = default;
+    LM_DISABLE_COPY_AND_MOVE(ProbabilityDist_SolidAngle);
     
-    Density ConvertFrom(const Density& density);
+public:
+
     
 
 };
 
-/*!
-    Probability density function.
-
-    A base class for PDFs in this framework.
-*/
-class PDF : public Component
-{
-public:
-
-    LM_INTERFACE_CLASS(PDF, Component);
-
-public:
-
-    PDF() = default;
-    LM_DISABLE_COPY_AND_MOVE(PDF);
-
-public:
-    
-    //Float Eval();
-    //Density EvalInverse();
-
-};
 
 LM_NAMESPACE_END
