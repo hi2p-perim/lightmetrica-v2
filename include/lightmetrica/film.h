@@ -24,16 +24,16 @@
 
 #pragma once
 
-#include <lightmetrica/configurable.h>
+#include <lightmetrica/asset.h>
 #include <lightmetrica/spectrum.h>
 
 LM_NAMESPACE_BEGIN
 
-class Film : public Configurable
+class Film : public Asset
 {
 public:
 
-    LM_INTERFACE_CLASS(Film, Configurable);
+    LM_INTERFACE_CLASS(Film, Asset);
 
 public:
 

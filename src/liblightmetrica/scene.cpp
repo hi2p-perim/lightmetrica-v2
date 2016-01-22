@@ -170,39 +170,6 @@ public:
 
                 // --------------------------------------------------------------------------------
 
-                #pragma region Emitter
-
-                const auto* L = propNode->Child("light");
-                const auto* E = propNode->Child("sensor");
-                if (L && E)
-                {
-                    LM_LOG_ERROR("'light' and 'sensor' node cannot be used in the same time");
-                    PropertyUtils::PrintPrettyError(L);
-                    PropertyUtils::PrintPrettyError(E);
-                    return false;
-                }
-                else if (L || E)
-                {
-                    if (L)
-                    {
-                        primitive->emitter = static_cast<const Emitter*>(assets->AssetByID<Light>(L->As<std::string>()));
-                    }
-                    else if (E)
-                    {
-                        primitive->emitter = static_cast<const Emitter*>(assets->AssetByID<Sensor>(E->As<std::string>()));
-                    }
-                    if (!primitive->emitter)
-                    {
-                        LM_LOG_ERROR("Failed to create emitter");
-                        PropertyUtils::PrintPrettyError(L ? L : E);
-                        return false;
-                    }
-                }
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
                 #pragma region Triangle mesh
 
                 const auto* meshNode = propNode->Child("mesh");
@@ -221,6 +188,39 @@ public:
                 if (bsdfNode)
                 {
                     primitive->bsdf = assets->AssetByID<BSDF>(bsdfNode->As<std::string>());
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Emitter
+
+                const auto* L = propNode->Child("light");
+                const auto* E = propNode->Child("sensor");
+                if (L && E)
+                {
+                    LM_LOG_ERROR("'light' and 'sensor' node cannot be used in the same time");
+                    PropertyUtils::PrintPrettyError(L);
+                    PropertyUtils::PrintPrettyError(E);
+                    return false;
+                }
+                else if (L || E)
+                {
+                    if (L)
+                    {
+                        primitive->emitter = static_cast<const Emitter*>(assets->AssetByID<Light>(L->As<std::string>(), primitive.get()));
+                    }
+                    else if (E)
+                    {
+                        primitive->emitter = static_cast<const Emitter*>(assets->AssetByID<Sensor>(E->As<std::string>(), primitive.get()));
+                    }
+                    if (!primitive->emitter)
+                    {
+                        LM_LOG_ERROR("Failed to create emitter");
+                        PropertyUtils::PrintPrettyError(L ? L : E);
+                        return false;
+                    }
                 }
 
                 #pragma endregion

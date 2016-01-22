@@ -30,6 +30,8 @@
 #include <lightmetrica/assets.h>
 #include <lightmetrica/accel.h>
 #include <lightmetrica/film.h>
+#include <lightmetrica/primitive.h>
+#include <lightmetrica/sensor.h>
 #include <lightmetrica/detail/propertyutils.h>
 #include <lightmetrica/detail/stringtemplate.h>
 #include <lightmetrica/detail/version.h>
@@ -541,18 +543,6 @@ private:
 
         // ---------------------------------------- ----------------------------------------
 
-        #pragma region Initialize film
-
-        const auto film = InitializeConfigurable<Film>(root, "film");
-        if (!film)
-        {
-            return false;
-        }
-
-        #pragma endregion
-
-        // ---------------------------------------- ----------------------------------------
-
         #pragma region Initialize renderer
 
         const auto renderer = InitializeConfigurable<Renderer>(root, "renderer");
@@ -570,7 +560,8 @@ private:
         {
             LM_LOG_INFO("Rendering");
             LM_LOG_INDENTER();
-            renderer.get()->Render(scene.get(), static_cast<Film*>(film->get()));
+            const auto* film = static_cast<const Sensor*>(scene.get()->Sensor()->emitter)->GetFilm();
+            renderer.get()->Render(scene.get(), film);
         }
 
         #pragma endregion
@@ -582,7 +573,8 @@ private:
         {
             LM_LOG_INFO("Saving image");
             LM_LOG_INDENTER();
-            if (!film.get()->Save(opt.Render.OutputPath))
+            const auto* film = static_cast<const Sensor*>(scene.get()->Sensor()->emitter)->GetFilm();
+            if (!film->Save(opt.Render.OutputPath))
             {
                 return false;
             }

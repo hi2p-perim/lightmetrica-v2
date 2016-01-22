@@ -142,6 +142,7 @@ set(
 	"${_INCLUDE_DIR}/bsdf.h"
 	"${_INCLUDE_DIR}/generalizedbsdf.h"
 	"${_INCLUDE_DIR}/trianglemesh.h"
+	"${_INCLUDE_DIR}/film.h"
 )
 
 set(
@@ -163,7 +164,7 @@ list(APPEND _SOURCE_FILES ${_ASSET_SOURCE_FILES})
 
 set(
     _ASSET_SENSOR_SOURCE_FILES
-	"asset/sensor/sensor_perspective.cpp"
+	"asset/sensor/sensor_pinhole.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\sensor" FILES ${_ASSET_SENSOR_SOURCE_FILES})
@@ -182,6 +183,20 @@ set(
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\light" FILES ${_ASSET_LIGHT_SOURCE_FILES})
 list(APPEND _SOURCE_FILES ${_ASSET_LIGHT_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Asset / Film
+#
+
+set(
+	_ASSET_FILM_SOURCE_FILES
+	"asset/film/film_hdr.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\asset\\film" FILES ${_ASSET_FILM_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ASSET_FILM_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 
@@ -231,7 +246,6 @@ list(APPEND _SOURCE_FILES ${_ACCEL_SOURCE_FILES})
 set(
     _RENDERER_HEADER_FILES
 	"${_INCLUDE_DIR}/renderer.h"
-	"${_INCLUDE_DIR}/film.h"
 )
 
 set(
@@ -244,20 +258,6 @@ source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})
 source_group("${_SOURCE_FILES_ROOT}\\renderer" FILES ${_RENDERER_SOURCE_FILES})
 list(APPEND _HEADER_FILES ${_RENDERER_HEADER_FILES})
 list(APPEND _SOURCE_FILES ${_RENDERER_SOURCE_FILES})
-
-# --------------------------------------------------------------------------------
-
-#
-# Film
-#
-
-set(
-    _FILM_SOURCE_FILES
-	"film/film_hdr.cpp"
-)
-
-source_group("${_SOURCE_FILES_ROOT}\\film" FILES ${_FILM_SOURCE_FILES})
-list(APPEND _SOURCE_FILES ${_FILM_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 

@@ -30,6 +30,7 @@ LM_NAMESPACE_BEGIN
 
 class Asset;
 class PropertyNode;
+struct Primitive;
 
 /*!
     Asset library.
@@ -50,15 +51,15 @@ public:
 public:
 
     LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
-    LM_INTERFACE_F(AssetByIDAndType, const Asset*(const std::string& id, const std::string& type));
+    LM_INTERFACE_F(AssetByIDAndType, const Asset*(const std::string& id, const std::string& type, const Primitive* primitive));
 
 public:
 
     template <typename AssetType>
-    auto AssetByID(const std::string& id) const -> const AssetType*
+    auto AssetByID(const std::string& id, const Primitive* primitive = nullptr) const -> const AssetType*
     {
         static_assert(std::is_base_of<Asset, AssetType>::value, "Asset must be a base of AssetType");
-        const auto* asset = AssetByIDAndType(id, AssetType::Type_().name);
+        const auto* asset = AssetByIDAndType(id, AssetType::Type_().name, primitive);
         return static_cast<const AssetType*>(asset);
     }
 

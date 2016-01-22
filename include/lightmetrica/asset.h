@@ -33,6 +33,7 @@ LM_NAMESPACE_BEGIN
 class Assets;
 class PropertyNode;
 struct SurfaceGeometry;
+struct Primitive;
 
 /*!
     Asset.
@@ -57,7 +58,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Load, bool(const PropertyNode*, Assets*));
+    LM_INTERFACE_F(Load, bool(const PropertyNode* prop, Assets* assets, Primitive* primitive));
 
 public:
 

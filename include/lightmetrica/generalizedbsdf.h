@@ -26,10 +26,12 @@
 
 #include <lightmetrica/asset.h>
 #include <lightmetrica/math.h>
+#include <lightmetrica/spectrum.h>
 
 LM_NAMESPACE_BEGIN
 
 struct SurfaceGeometry;
+class DirectionSampler;
 
 /*!
 */
@@ -71,7 +73,9 @@ public:
 
 public:
 
-    LM_INTERFACE_F(EvaluateDirection, bool(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool));
+    LM_INTERFACE_F(SampleDirection, void(const Vec2& u, double uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo));
+    LM_INTERFACE_F(EvaluateDirectionPDF, Float(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta));
+    LM_INTERFACE_F(EvaluateDirection, SPD(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta));
 
 };
 

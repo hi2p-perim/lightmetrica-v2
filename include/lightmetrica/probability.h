@@ -29,6 +29,8 @@
 
 LM_NAMESPACE_BEGIN
 
+#pragma region Probability distribution
+
 /*!
     Probability distribution $P_X$ on the random variable $X$.
 
@@ -51,58 +53,58 @@ public:
 
     ProbabilityDist() = default;
     LM_DISABLE_COPY_AND_MOVE(ProbabilityDist);
-    
-public:
-
-    // Probability space
-    // RandomVariableType
-    // EvalPDF
-    // EvalInverseCDF
-    
+   
 };
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Typical distributions
 
 struct SurfaceGeometry;
 
-class ProbabilityDist_Area
+class PositionSampler : public ProbabilityDist
 {
 public:
 
-    LM_INTERFACE_CLASS(ProbabilityDist_Area, Component);
+    LM_INTERFACE_CLASS(PositionSampler, Component);
 
 public:
 
-    ProbabilityDist_Area() = default;
-    LM_DISABLE_COPY_AND_MOVE(ProbabilityDist_Area);
+    PositionSampler() = default;
+    LM_DISABLE_COPY_AND_MOVE(PositionSampler);
 
 public:
 
-    LM_INTERFACE_F(EvaluatePDF, Float(const SurfaceGeometry& geom, bool evalDelta));
     LM_INTERFACE_F(Sample, void(const Vec2& u, SurfaceGeometry& geom));
+    LM_INTERFACE_F(EvaluatePDF, Float(const SurfaceGeometry& geom, bool evalDelta));
     
 };
 
 /*!
-    Distribution for directional sampling of hemisphere
-      - $\Omega \equiv \mathbb{R}$ : 3D vector
-      - $\mathcal{X} \equiv \Omega$ : Solid angle
-      - $\mu \equiv \sigma$ : Solid angle measure
+    Distribution for directional sampling on the scene surface.
+      - PDF $p_{\sigma}(\omega_o | \omega_i, \mathbf{x})$
+      - Solid angle measure $\sigma$
 */
-class ProbabilityDist_SolidAngle
+class DirectionSampler : public ProbabilityDist
 {
 public:
 
-    LM_INTERFACE_CLASS(ProbabilityDist_SolidAngle, Component);
+    LM_INTERFACE_CLASS(DirectionSampler, Component);
 
 public:
 
-    ProbabilityDist_SolidAngle() = default;
-    LM_DISABLE_COPY_AND_MOVE(ProbabilityDist_SolidAngle);
+    DirectionSampler() = default;
+    LM_DISABLE_COPY_AND_MOVE(DirectionSampler);
     
 public:
 
-    
+    LM_INTERFACE_F(Sample, void(const Vec2& u, double uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo));
+    LM_INTERFACE_F(EvaluatePDF, Float(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta));
 
 };
 
+#pragma endregion
 
 LM_NAMESPACE_END
