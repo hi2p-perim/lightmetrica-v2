@@ -27,6 +27,7 @@
 #include <lightmetrica/component.h>
 #include <lightmetrica/math.h>
 #include <sstream>
+#include <vector>
 
 LM_NAMESPACE_BEGIN
 
@@ -157,6 +158,26 @@ public:
         int i = 0;
         while (ss >> t) { m[i/4][i%4] = Float(t); i++; }
         return m;
+    }
+
+    template <>
+    auto As<std::vector<Float>>() const -> std::vector<Float>
+    {
+        std::vector<Float> v;
+        std::stringstream ss(Scalar());
+        double t;
+        while (ss >> t) { v.push_back(Float(t)); }
+        return v;
+    }
+
+    template <>
+    auto As<std::vector<unsigned int>>() const -> std::vector<unsigned int>
+    {
+        std::vector<unsigned int> v;
+        std::stringstream ss(Scalar());
+        unsigned int t;
+        while (ss >> t) { v.push_back(t); }
+        return v;
     }
 
     #pragma endregion

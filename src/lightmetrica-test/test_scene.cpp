@@ -48,7 +48,7 @@ struct SceneTest : public ::testing::Test
 struct Stub_Assets : public Assets
 {
     LM_IMPL_CLASS(Stub_Assets, Assets);
-    LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& type, const Primitive* primitive) -> const Asset* { return nullptr; };
+    LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& type, const Primitive* primitive) -> Asset* { return nullptr; };
 };
 
 struct Stub_Accel : public Accel

@@ -133,16 +133,17 @@ list(APPEND _SOURCE_FILES ${_ACCEL_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
-# Film
+# Asset
 #
 
 set(
-	_FILM_SOURCE_FILES
+	_ASSET_SOURCE_FILES
 	"test_film.cpp"
+	"test_trianglemesh.cpp"
 )
 
-source_group("${_SOURCE_FILES_ROOT}\\film" FILES ${_FILM_SOURCE_FILES})
-list(APPEND _SOURCE_FILES ${_FILM_SOURCE_FILES})
+source_group("${_SOURCE_FILES_ROOT}\\asset" FILES ${_ASSET_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ASSET_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 

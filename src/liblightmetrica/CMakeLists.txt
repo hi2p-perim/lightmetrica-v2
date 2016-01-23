@@ -203,6 +203,20 @@ list(APPEND _SOURCE_FILES ${_ASSET_FILM_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
+# Asset / TriangleMesh
+#
+
+set(
+	_ASSET_TRIANGLE_MESH_SOURCE_FILES
+	"asset/trianglemesh/trianglemesh_raw.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\asset\\trianglemesh" FILES ${_ASSET_TRIANGLE_MESH_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ASSET_TRIANGLE_MESH_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
 # Scene
 #
 

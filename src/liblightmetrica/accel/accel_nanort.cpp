@@ -22,6 +22,7 @@
     THE SOFTWARE.
 */
 
+#include <pch.h>
 #include <lightmetrica/accel.h>
 #include <lightmetrica/scene.h>
 #include <lightmetrica/property.h>
