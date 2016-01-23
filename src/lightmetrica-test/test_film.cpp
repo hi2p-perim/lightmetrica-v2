@@ -38,7 +38,7 @@ struct FilmTest : public ::testing::TestWithParam<const char*>
     virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
-INSTANTIATE_TEST_CASE_P(FilmTypes, FilmTest, ::testing::Values("hdr"));
+INSTANTIATE_TEST_CASE_P(FilmTypes, FilmTest, ::testing::Values("film::hdr"));
 
 #pragma endregion
 

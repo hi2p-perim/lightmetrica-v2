@@ -194,6 +194,19 @@ public:
 
                 // --------------------------------------------------------------------------------
 
+                #pragma region Check if mesh and bsdf are both loaded
+
+                if ((primitive->mesh == nullptr) != (primitive->bsdf == nullptr))
+                {
+                    LM_LOG_ERROR("Missing one of 'mesh' or 'bsdf' node");
+                    PropertyUtils::PrintPrettyError(propNode);
+                    return false;
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
                 #pragma region Emitter
 
                 const auto* L = propNode->Child("light");
@@ -317,7 +330,7 @@ public:
             LM_LOG_INFO("Building acceleration structure");
             LM_LOG_INDENTER();
 
-            if (!accel->Build(*this))
+            if (!accel->Build(this))
             {
                 return false;
             }
@@ -335,7 +348,7 @@ public:
     LM_IMPL_F(Intersect) = [this](const Ray& ray, Intersection& isect) -> bool
     {
         // TODO: Intersection with emitter shapes
-        return accel_->Intersect(*this, ray, isect, 0_f, Math::Inf());
+        return accel_->Intersect(this, ray, isect, 0_f, Math::Inf());
     };
 
     LM_IMPL_F(PrimitiveByID) = [this](const std::string& id) -> const Primitive*

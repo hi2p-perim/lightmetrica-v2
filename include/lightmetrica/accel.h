@@ -47,8 +47,8 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Build, bool(const Scene& scene));
-    LM_INTERFACE_F(Intersect, bool(const Scene& scene, const Ray& ray, Intersection& isect, Float minT, Float maxT));
+    LM_INTERFACE_F(Build, bool(const Scene* scene));
+    LM_INTERFACE_F(Intersect, bool(const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT));
 
 };
 

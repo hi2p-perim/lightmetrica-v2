@@ -41,6 +41,6 @@ public:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Light_Point, "point");
+LM_COMPONENT_REGISTER_IMPL(Light_Point, "light::point");
 
 LM_NAMESPACE_END

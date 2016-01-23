@@ -37,7 +37,7 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        return false;
+        return true;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
@@ -57,6 +57,6 @@ public:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::null");
+LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::nulltype");
 
 LM_NAMESPACE_END

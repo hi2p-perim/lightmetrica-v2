@@ -253,6 +253,6 @@ private:
     
 };
 
-LM_COMPONENT_REGISTER_IMPL(Film_HDR, "hdr");
+LM_COMPONENT_REGISTER_IMPL(Film_HDR, "film::hdr");
 
 LM_NAMESPACE_END

@@ -62,13 +62,13 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene& scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
     {
         // Convert a set of primitives to one large mesh
         fsCDF_.push_back(0);
-        for (int i = 0; i < scene.NumPrimitives(); i++)
+        for (int i = 0; i < scene->NumPrimitives(); i++)
         {
-            const auto* prim = scene.PrimitiveAt(i);
+            const auto* prim = scene->PrimitiveAt(i);
             const auto* mesh = prim->mesh;
             if (!mesh)
             {
@@ -78,7 +78,7 @@ public:
             const auto* ps = mesh->Positions();
             const auto* faces = mesh->Faces();
             const auto nps = (unsigned int)(ps_.size()) / 3;
-            for (int j = 0; j < mesh->NumFaces() / 3; j++)
+            for (int j = 0; j < mesh->NumFaces(); j++)
             {
                 // Positions
                 unsigned int i1 = faces[3 * j];
@@ -104,7 +104,7 @@ public:
                 faceIDToPrimitive_.push_back(i);
             }
 
-            fsCDF_.push_back(fsCDF_.back() + mesh->NumFaces() / 3);
+            fsCDF_.push_back(fsCDF_.back() + mesh->NumFaces());
         }
 
         // Build
@@ -117,7 +117,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene& scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         nanort::Ray rayRT;
         rayRT.org[0] = ray.o[0];
@@ -141,10 +141,9 @@ public:
         const int faceIndex = isectRT.faceID - fsCDF_[primIndex];
 
         isect = IntersectionUtils::CreateTriangleIntersection(
-            scene,
+            scene->PrimitiveAt(faceIndex),
             ray.o + ray.d * (Float)(isectRT.t),
             Vec2(isectRT.u, isectRT.v),
-            faceIndex,
             primIndex);
 
         return true;
@@ -160,6 +159,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Accel_NanoRT, "nanort");
+LM_COMPONENT_REGISTER_IMPL(Accel_NanoRT, "accel::nanort");
 
 LM_NAMESPACE_END

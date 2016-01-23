@@ -39,6 +39,7 @@ public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
+        c_ = prop->Child("c")->As<Vec3>();
         return true;
     };
 
@@ -49,7 +50,7 @@ public:
         {
             for (int x = 0; x < film->Width(); x++)
             {
-                film->SetPixel(x, y, SPD());
+                film->SetPixel(x, y, SPD::FromRGB(c_));
             }
 
             const double progress = 100.0 * y / film->Height();
@@ -58,8 +59,12 @@ public:
         LM_LOG_INFO("Progress: 100.0%");
     };
 
+private:
+
+    Vec3 c_;
+
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_Null, "renderer::null");
+LM_COMPONENT_REGISTER_IMPL(Renderer_Null, "renderer::nulltype");
 
 LM_NAMESPACE_END

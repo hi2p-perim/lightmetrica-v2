@@ -26,13 +26,10 @@
 
 #include <lightmetrica/static.h>
 #include <lightmetrica/intersection.h>
-#include <lightmetrica/scene.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/trianglemesh.h>
 
 LM_NAMESPACE_BEGIN
-
-class Scene;
 
 /*!
     \brief Intersection utilities.
@@ -53,17 +50,16 @@ public:
         Helper function to fill in the intersection data from the triangle intersection info.
         This function is useful with the implementation of Accel interface.
 
+        \param prim Primitive on the intersection point.
         \param p Intersection point
         \param b Barycentric coordinates of the triangle at the intersection point.
-        \param primIndex Primitive index.
         \param faceIndex Triangle face index.
     */
-    static auto CreateTriangleIntersection(const Scene& scene, const Vec3& p, const Vec2& b, int primIndex, int faceIndex) -> Intersection
+    static auto CreateTriangleIntersection(const Primitive* prim, const Vec3& p, const Vec2& b, int faceIndex) -> Intersection
     {
         Intersection isect;
 
         // Store information
-        const auto* prim = scene.PrimitiveAt(primIndex);
         const auto* mesh = prim->mesh;
         isect.primitive = prim;
 

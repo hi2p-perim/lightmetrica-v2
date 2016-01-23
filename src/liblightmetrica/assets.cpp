@@ -89,6 +89,7 @@ public:
             if (!boost::iequals(interfaceType, interfaceNode->As<std::string>()))
             {
                 LM_LOG_ERROR(boost::str(boost::format("Invalid asset type '%s' expected '%s'") % interfaceNode->As<std::string>() % interfaceType));
+                PropertyUtils::PrintPrettyError(assetNode);
                 return nullptr;
             }
 
@@ -102,6 +103,7 @@ public:
             if (!asset)
             {
                 LM_LOG_ERROR("Failed to create instance: " + implType);
+                PropertyUtils::PrintPrettyError(assetNode);
                 return nullptr;
             }
 
@@ -115,6 +117,8 @@ public:
             // Load asset
             if (!asset->Load(assetNode->Child("params"), this, primitive))
             {
+                LM_LOG_ERROR("Failed to load asset '" + id + "'");
+                PropertyUtils::PrintPrettyError(assetNode);
                 return nullptr;
             }
 

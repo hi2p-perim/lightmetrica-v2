@@ -180,22 +180,19 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene& scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
     {
-        //LM_LOG_BEGIN_PROGRESS();
-        //signal_ReportBuildProgress(0, false);
-
-        int np = scene.NumPrimitives();
+        int np = scene->NumPrimitives();
         for (int i = 0; i < np; i++)
         {
-            const auto* prim = scene.PrimitiveAt(i);
+            const auto* prim = scene->PrimitiveAt(i);
             const auto* mesh = prim->mesh;
             if (mesh)
             {
                 // Enumerate all triangles and create triaccels
                 const auto* ps = mesh->Positions();
                 const auto* faces = mesh->Faces();
-                for (int j = 0; j < mesh->NumFaces() / 3; j++)
+                for (int j = 0; j < mesh->NumFaces(); j++)
                 {
                     // Create a triaccel
                     triangles_.push_back(TriAccelTriangle());
@@ -210,17 +207,12 @@ public:
                     triangles_.back().Load(p1, p2, p3);
                 }
             }
-
-            //LM_LOG_BEGIN_TICK_PROGRESS();
-            //signal_ReportBuildProgress(static_cast<double>(i) / numPrimitives, i == numPrimitives - 1);
         }
-
-        //LM_LOG_END_PROGRESS();
 
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene& scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         bool intersected = false;
         size_t minIndex = 0;
@@ -245,10 +237,9 @@ public:
         }
 
         isect = IntersectionUtils::CreateTriangleIntersection(
-            scene,
+            scene->PrimitiveAt(triangles_[minIndex].primIndex),
             ray.o + ray.d * maxT,
             minB,
-            triangles_[minIndex].primIndex,
             triangles_[minIndex].faceIndex);
 
         return true;
@@ -260,6 +251,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Accel_Naive, "naiveaccel");
+LM_COMPONENT_REGISTER_IMPL(Accel_Naive, "accel::naive");
 
 LM_NAMESPACE_END

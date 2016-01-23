@@ -26,6 +26,10 @@
 #include <lightmetrica/scene.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/ray.h>
+#include <lightmetrica/primitive.h>
+#include <lightmetrica/surfacegeometry.h>
+#include <lightmetrica/emitter.h>
+#include <lightmetrica/intersection.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -46,6 +50,7 @@ public:
     {
         const int w = film->Width();
         const int h = film->Height();
+
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
@@ -53,21 +58,39 @@ public:
                 // Raster position
                 Vec2 rasterPos((Float(x) + 0.5_f) / Float(w), (Float(y) + 0.5_f) / Float(h));
 
-                // Create a ray
-                Ray ray;
-                
+                // Position and direction of a ray
+                const auto* E = scene->Sensor()->emitter;
+                SurfaceGeometry geomE;
+                E->SamplePosition(Vec2(), geomE);
+                Vec3 wo;
+                E->SampleDirection(rasterPos, 0_f, 0, geomE, Vec3(), wo);
 
-                film->SetPixel(x, y, SPD());
+                // Setup a ray
+                Ray ray = { geomE.p, wo };
+
+                // Intersection query
+                Intersection isect;
+                if (!scene->Intersect(ray, isect))
+                {
+                    // No intersection -> black
+                    film->SetPixel(x, y, SPD());
+                    continue;
+                }
+
+                // Set color to the pixel
+                const auto c = Math::Abs(Math::Dot(isect.geom.sn, -ray.d));
+                film->SetPixel(x, y, SPD(c));
             }
 
             const double progress = 100.0 * y / film->Height();
             LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
         }
+
         LM_LOG_INFO("Progress: 100.0%");
     };
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_Raycast, "raycast");
+LM_COMPONENT_REGISTER_IMPL(Renderer_Raycast, "renderer::raycast");
 
 LM_NAMESPACE_END

@@ -23,28 +23,44 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/detail/propertyutils.h>
-#include <lightmetrica/property.h>
-#include <lightmetrica/logger.h>
+#include <lightmetrica/trianglemesh.h>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tinyobjloader/tiny_obj_loader.h>
 
 LM_NAMESPACE_BEGIN
 
-auto PropertyUtils::PrintPrettyError(const PropertyNode* node) -> void
+class TriangleMesh_Obj : public TriangleMesh
 {
-    int line = node->Line();
-    const auto path = node->Tree()->Path();
-    const auto filename = boost::filesystem::path(path).filename().string();
-    LM_LOG_ERROR("See around line " + std::to_string(line) + " @ " + filename);
-    std::ifstream fs(path);
-    for (int i = 0; i <= line + 2; i++)
+public:
+
+    LM_IMPL_CLASS(TriangleMesh_Obj, TriangleMesh);
+
+public:
+
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        std::string t;
-        std::getline(fs, t, '\n');
-        if (line - 2 <= i && i <= line + 2)
-        {
-            LM_LOG_ERROR(boost::str(boost::format("% 4d%c| %s") % i % (i == line ? '*' : ' ') % t));
-        }
-    }
-}
+        throw std::runtime_error("unimplemented")
+
+        return true;
+    };
+
+    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()) / 3; };
+    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()) / 3; };
+    LM_IMPL_F(Positions)   = [this]() -> const Float*{ return ps.data(); };
+    LM_IMPL_F(Normals)     = [this]() -> const Float*{ return ns.data(); };
+    LM_IMPL_F(Texcoords)   = [this]() -> const Float*{ return ts.data(); };
+    LM_IMPL_F(Faces)       = [this]() -> const unsigned int* { return fs.data(); };
+
+protected:
+
+    std::vector<Float> ps;
+    std::vector<Float> ns;
+    std::vector<Float> ts;
+    std::vector<unsigned int> fs;
+
+};
+
+LM_COMPONENT_REGISTER_IMPL(TriangleMesh_Obj, "trianglemesh::obj");
 
 LM_NAMESPACE_END

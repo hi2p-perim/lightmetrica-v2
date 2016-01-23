@@ -884,6 +884,33 @@ LM_INLINE auto operator/<double, SIMD::AVX>(const TVec4<double, SIMD::AVX>& v1, 
 
 #pragma endregion
 
+// --------------------------------------------------------------------------------
+
+#pragma region operator- (unary)
+
+template <typename T, template <typename, SIMD> class VecT>
+LM_INLINE auto operator-(const VecT<T, SIMD::None>& v) -> VecT<T, SIMD::None>
+{
+    constexpr int N = VecT<T, SIMD::None>::NC;
+    VecT<T, SIMD::None> result;
+    for (int i = 0; i < N; i++) result[i] = -v[i];
+    return result;
+}
+
+template <template <typename, SIMD> class VecT>
+LM_INLINE auto operator-(const VecT<float, SIMD::SSE>& v) -> VecT<float, SIMD::SSE>
+{
+    return VecT<float, SIMD::SSE>(_mm_sub_ps(_mm_setzero_ps(), v.v_));
+}
+
+template <template <typename, SIMD> class VecT>
+LM_INLINE auto operator-(const VecT<double, SIMD::AVX>& v) -> VecT<double, SIMD::AVX>
+{
+    return VecT<double, SIMD::AVX>(_mm256_sub_pd(_mm256_setzero_pd(), v.v_));
+}
+
+#pragma endregion
+
 #pragma endregion
 
 // --------------------------------------------------------------------------------

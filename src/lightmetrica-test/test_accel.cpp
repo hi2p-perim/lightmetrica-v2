@@ -41,7 +41,7 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
     virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
-INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("naiveaccel", "embree"));
+INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naiveaccel", "accel::embree"));
 
 #pragma endregion
 

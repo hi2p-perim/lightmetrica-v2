@@ -209,6 +209,7 @@ list(APPEND _SOURCE_FILES ${_ASSET_FILM_SOURCE_FILES})
 set(
 	_ASSET_TRIANGLE_MESH_SOURCE_FILES
 	"asset/trianglemesh/trianglemesh_raw.cpp"
+	"asset/trianglemesh/trianglemesh_obj.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\trianglemesh" FILES ${_ASSET_TRIANGLE_MESH_SOURCE_FILES})

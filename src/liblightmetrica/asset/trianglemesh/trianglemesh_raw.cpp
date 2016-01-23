@@ -93,6 +93,6 @@ protected:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(TriangleMesh_Raw, "raw");
+LM_COMPONENT_REGISTER_IMPL(TriangleMesh_Raw, "trianglemesh::raw");
 
 LM_NAMESPACE_END

@@ -75,6 +75,7 @@ struct DiscreteSPD<3>
     DiscreteSPD(Float s) : v(s) {}
 
     auto ToRGB() const -> Vec3 { return v; }
+    static auto FromRGB(const Vec3& rgb) -> T { T s; s.v = rgb; return s; }
 };
 
 #if LM_SPECTRUM_MULTI

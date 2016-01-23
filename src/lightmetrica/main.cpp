@@ -511,7 +511,7 @@ private:
 
         #pragma region Initialize accel
         
-        const auto accel = InitializeConfigurable<Accel>(root, "accel", "naiveaccel");
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", "naive");
         if (!accel)
         {
             return false;
@@ -612,7 +612,7 @@ private:
                 LM_LOG_WARN("Missing '" + name + "' node");
                 LM_LOG_INDENTER();
                 LM_LOG_WARN("Using default type: '" + default + "'");
-                return ComponentFactory::Create<AssetT>(default);
+                return ComponentFactory::Create<AssetT>(name + "::" + default);
             }
             else
             {
@@ -638,7 +638,7 @@ private:
         //    return boost::none;
         //}
 
-        auto p = ComponentFactory::Create<AssetT>(tn->As<std::string>());
+        auto p = ComponentFactory::Create<AssetT>(name + "::" + tn->As<std::string>());
         if (!p)
         {
             LM_LOG_ERROR("Failed to create '" + tn->As<std::string>() + "'");

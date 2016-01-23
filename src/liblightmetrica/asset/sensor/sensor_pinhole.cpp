@@ -170,6 +170,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Sensor_Pinhole, "pinhole");
+LM_COMPONENT_REGISTER_IMPL(Sensor_Pinhole, "sensor::pinhole");
 
 LM_NAMESPACE_END

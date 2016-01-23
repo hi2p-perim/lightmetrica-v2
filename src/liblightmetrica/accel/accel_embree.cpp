@@ -83,16 +83,16 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene& scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
     {
         // Create scene
         RtcScene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
 
         // Add meshes to the scene
-        int np = scene.NumPrimitives();
+        int np = scene->NumPrimitives();
         for (int i = 0; i < np; i++)
         {
-            const auto* prim = scene.PrimitiveAt(i);
+            const auto* prim = scene->PrimitiveAt(i);
             const auto* mesh = prim->mesh;
             if (!mesh)
             {
@@ -100,7 +100,7 @@ public:
             }
 
             // Create a triangle mesh
-            unsigned int geomID = rtcNewTriangleMesh(RtcScene, RTC_GEOMETRY_STATIC, mesh->NumFaces() / 3, mesh->NumFaces());
+            unsigned int geomID = rtcNewTriangleMesh(RtcScene, RTC_GEOMETRY_STATIC, mesh->NumFaces(), mesh->NumFaces() * 3);
             RtcGeomIDToPrimitiveIndexMap[geomID] = i;
 
             // Copy vertices & faces
@@ -109,7 +109,7 @@ public:
 
             const auto* ps = mesh->Positions();
             const auto* faces = mesh->Faces();
-            for (int j = 0; j < mesh->NumFaces() / 3; j++)
+            for (int j = 0; j < mesh->NumFaces(); j++)
             {
                 // Positions
                 unsigned int i1 = faces[3 * j];
@@ -143,7 +143,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene& scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         // Create RTCRay
         RTCRay rtcRay;
@@ -172,10 +172,9 @@ public:
 
         // Fill in the intersection structure
         isect = IntersectionUtils::CreateTriangleIntersection(
-            scene,
+            scene->PrimitiveAt((int)(RtcGeomIDToPrimitiveIndexMap.at(rtcRay.geomID))),
             ray.o + ray.d * (Float)(rtcRay.tfar),
             Vec2(rtcRay.u, rtcRay.v),
-            (int)(RtcGeomIDToPrimitiveIndexMap.at(rtcRay.geomID)),
             rtcRay.primID);
 
         return true;
@@ -188,6 +187,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Accel_Embree, "embree");
+LM_COMPONENT_REGISTER_IMPL(Accel_Embree, "accel::embree");
 
 LM_NAMESPACE_END
