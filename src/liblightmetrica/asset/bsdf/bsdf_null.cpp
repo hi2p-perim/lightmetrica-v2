@@ -22,44 +22,41 @@
     THE SOFTWARE.
 */
 
-#include <lightmetrica/renderer.h>
-#include <lightmetrica/scene.h>
-#include <lightmetrica/film.h>
-#include <lightmetrica/property.h>
+#include <pch.h>
+#include <lightmetrica/bsdf.h>
 
 LM_NAMESPACE_BEGIN
 
-class Renderer_Null : public Renderer
+class BSDF_Null : public BSDF
 {
 public:
 
-    LM_IMPL_CLASS(Renderer_Null, Renderer);
+    LM_IMPL_CLASS(BSDF_Null, BSDF);
 
 public:
 
-    LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        return true;
+        return false;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
     {
-        // Do nothing. Just output blank image.
-        for (int y = 0; y < film->Height(); y++)
-        {
-            for (int x = 0; x < film->Width(); x++)
-            {
-                film->SetPixel(x, y, SPD());
-            }
 
-            const double progress = 100.0 * y / film->Height();
-            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
-        }
-        LM_LOG_INFO("Progress: 100.0%");
+    };
+
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    {
+        return 0_f;
+    };
+
+    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta)
+    {
+        return SPD();
     };
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_Null, "renderer::null");
+LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::null");
 
 LM_NAMESPACE_END

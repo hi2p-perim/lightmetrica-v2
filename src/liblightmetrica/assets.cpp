@@ -98,7 +98,7 @@ public:
             // Create asset instance
             const auto* typeNode = assetNode->Child("type");
             const auto implType = typeNode->As<std::string>();
-            auto asset = ComponentFactory::Create<Asset>(implType.c_str());   // This cannot be const (later we move it)
+            auto asset = ComponentFactory::Create<Asset>(interfaceType + "::" + implType);   // This cannot be const (later we move it)
             if (!asset)
             {
                 LM_LOG_ERROR("Failed to create instance: " + implType);

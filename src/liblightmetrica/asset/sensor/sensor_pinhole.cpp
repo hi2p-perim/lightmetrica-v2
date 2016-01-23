@@ -57,7 +57,7 @@ public:
 
         // Aspect ratio
         const auto filmID = prop->Child("film")->As<std::string>();
-        film_ = assets->AssetByID<Film>(filmID, primitive);
+        film_ = static_cast<Film*>(assets->AssetByIDAndType(filmID, "film", primitive));
         aspect_ = (Float)(film_->Width()) / (Float)(film_->Height());
 
         return true;

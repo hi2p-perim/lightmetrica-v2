@@ -264,12 +264,12 @@ using ReleaseFuncPointerType = void(*)(Component*);
     Component factory.
 
     Instance factory class for component creation.
-    All components are instanciated with this class.
+    All components are instantiated with this class.
 */
 
 extern "C"
 {
-    LM_PUBLIC_API auto ComponentFactory_Register(const char* implName, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void;
+    LM_PUBLIC_API auto ComponentFactory_Register(const char* key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void;
     LM_PUBLIC_API auto ComponentFactory_Create(const char* implName)->Component*;
     LM_PUBLIC_API auto ComponentFactory_ReleaseFunc(const char* implName)->ReleaseFuncPointerType;
 }
@@ -282,9 +282,9 @@ public:
 
 public:
 
-    static auto Register(const std::string& implName, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { LM_EXPORTED_F(ComponentFactory_Register, implName.c_str(), createFunc, releaseFunc); }
-    static auto Create(const std::string& implName) -> Component* { LM_EXPORTED_F(ComponentFactory_Create, implName.c_str()); }
-    static auto ReleaseFunc(const std::string& implName) -> ReleaseFuncPointerType { LM_EXPORTED_F(ComponentFactory_ReleaseFunc, implName.c_str()); }
+    static auto Register(const std::string& key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { LM_EXPORTED_F(ComponentFactory_Register, key.c_str(), createFunc, releaseFunc); }
+    static auto Create(const std::string& key) -> Component* { LM_EXPORTED_F(ComponentFactory_Create, key.c_str()); }
+    static auto ReleaseFunc(const std::string& key) -> ReleaseFuncPointerType { LM_EXPORTED_F(ComponentFactory_ReleaseFunc, key.c_str()); }
 
 public:
 

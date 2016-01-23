@@ -55,13 +55,13 @@ public:
 
 public:
 
-    template <typename AssetType>
-    auto AssetByID(const std::string& id, const Primitive* primitive = nullptr) const -> AssetType*
-    {
-        static_assert(std::is_base_of<Asset, AssetType>::value, "Asset must be a base of AssetType");
-        auto* asset = AssetByIDAndType(id, AssetType::Type_().name, primitive);
-        return static_cast<AssetType*>(asset);
-    }
+    //template <typename AssetType>
+    //auto AssetByID(const std::string& id, const Primitive* primitive = nullptr) const -> AssetType*
+    //{
+    //    static_assert(std::is_base_of<Asset, AssetType>::value, "Asset must be a base of AssetType");
+    //    auto* asset = AssetByIDAndType(id, AssetType::Type_().name, primitive);
+    //    return static_cast<AssetType*>(asset);
+    //}
 
 public:
 

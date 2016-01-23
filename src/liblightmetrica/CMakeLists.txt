@@ -217,6 +217,20 @@ list(APPEND _SOURCE_FILES ${_ASSET_TRIANGLE_MESH_SOURCE_FILES})
 # --------------------------------------------------------------------------------
 
 #
+# Asset / BSDF
+#
+
+set(
+	_ASSET_BSDF_SOURCE_FILES
+	"asset/bsdf/bsdf_null.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\asset\\bsdf" FILES ${_ASSET_BSDF_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ASSET_BSDF_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
 # Scene
 #
 

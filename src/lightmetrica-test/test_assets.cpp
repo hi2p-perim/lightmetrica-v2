@@ -50,19 +50,19 @@ struct TestAsset2 : public TestAsset
     LM_IMPL_F(Func) = [this]() -> int { return 43; };
 };
 
-LM_COMPONENT_REGISTER_IMPL_DEFAULT(TestAsset1);
-LM_COMPONENT_REGISTER_IMPL_DEFAULT(TestAsset2);
+LM_COMPONENT_REGISTER_IMPL(TestAsset1, "testasset::testasset1");
+LM_COMPONENT_REGISTER_IMPL(TestAsset2, "testasset::testasset2");
 
 TEST(AssetsTest, AssetByIDAndType)
 {
     const std::string AssetByIDAndType_Input = TestUtils::MultiLineLiteral(R"x(
     | test_1:
-    |   interface: TestAsset
-    |   type: TestAsset1
+    |   interface: testasset
+    |   type: testasset1
     |
     | test_2:
-    |   interface: TestAsset
-    |   type: TestAsset2
+    |   interface: testasset
+    |   type: testasset2
     )x");
 
     const auto prop = ComponentFactory::Create<PropertyTree>();
@@ -72,13 +72,13 @@ TEST(AssetsTest, AssetByIDAndType)
     EXPECT_TRUE(assets->Initialize(prop->Root()));
 
     {
-        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_1", "TestAsset", nullptr));
+        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_1", "testasset", nullptr));
         ASSERT_NE(nullptr, asset);
         EXPECT_EQ(42, asset->Func());
     }
 
     {
-        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_2", "TestAsset", nullptr));
+        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_2", "testasset", nullptr));
         ASSERT_NE(nullptr, asset);
         EXPECT_EQ(43, asset->Func());
     }

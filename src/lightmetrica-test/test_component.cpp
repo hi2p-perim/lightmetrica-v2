@@ -99,7 +99,7 @@ LM_COMPONENT_REGISTER_IMPL_DEFAULT(B1);
 
 TEST(ComponentTest, Simple)
 {
-    auto p = std::move(ComponentFactory::Create<A>("A1"));
+    auto p = ComponentFactory::Create<A>("A1");
     ASSERT_FALSE(p == nullptr);
 
     EXPECT_EQ("42\n", TestUtils::CaptureStdout([&]()
@@ -123,7 +123,7 @@ TEST(ComponentTest, FailedToCreate)
 
 TEST(ComponentTest, InheritedInterface)
 {
-    auto p = std::move(ComponentFactory::Create<B>("B1"));
+    auto p = ComponentFactory::Create<B>("B1");
 
     ASSERT_FALSE(p == nullptr);
 
@@ -198,7 +198,7 @@ LM_COMPONENT_REGISTER_IMPL_DEFAULT(C1);
 
 TEST(ComponentTest, PortableArguments)
 {
-    auto p = std::move(ComponentFactory::Create<C>("C1"));
+    auto p = ComponentFactory::Create<C>("C1");
 
     std::vector<int> v{ 1,2,3 };
     

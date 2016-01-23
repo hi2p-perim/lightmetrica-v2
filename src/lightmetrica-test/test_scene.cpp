@@ -130,11 +130,11 @@ struct Stub_TriangleMesh_2 : public TriangleMesh
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
 };
 
-LM_COMPONENT_REGISTER_IMPL(Stub_Sensor, "stub_sensor");
-LM_COMPONENT_REGISTER_IMPL(Stub_Light, "stub_light");
-LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_1, "stub_trianglemesh_1");
-LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_2, "stub_trianglemesh_2");
-LM_COMPONENT_REGISTER_IMPL(Stub_BSDF, "stub_bsdf");
+LM_COMPONENT_REGISTER_IMPL(Stub_Sensor, "sensor::stub_sensor");
+LM_COMPONENT_REGISTER_IMPL(Stub_Light, "light::stub_light");
+LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_1, "trianglemesh::stub_trianglemesh_1");
+LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_2, "trianglemesh::stub_trianglemesh_2");
+LM_COMPONENT_REGISTER_IMPL(Stub_BSDF, "bsdf::stub_bsdf");
 
 // Tests simple loading of the scene with delayed loading of assets
 TEST_F(SceneTest, SimpleLoadWithAssets)

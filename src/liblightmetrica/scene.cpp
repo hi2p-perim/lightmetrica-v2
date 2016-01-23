@@ -175,7 +175,7 @@ public:
                 const auto* meshNode = propNode->Child("mesh");
                 if (meshNode)
                 {
-                    primitive->mesh = assets->AssetByID<TriangleMesh>(meshNode->As<std::string>());
+                    primitive->mesh = static_cast<const TriangleMesh*>(assets->AssetByIDAndType(meshNode->As<std::string>(), "trianglemesh", primitive.get()));
                 }
 
                 #pragma endregion
@@ -187,7 +187,7 @@ public:
                 const auto* bsdfNode = propNode->Child("bsdf");
                 if (bsdfNode)
                 {
-                    primitive->bsdf = assets->AssetByID<BSDF>(bsdfNode->As<std::string>());
+                    primitive->bsdf = static_cast<const BSDF*>(assets->AssetByIDAndType(bsdfNode->As<std::string>(), "bsdf", primitive.get()));
                 }
 
                 #pragma endregion
@@ -209,11 +209,11 @@ public:
                 {
                     if (L)
                     {
-                        primitive->emitter = static_cast<Emitter*>(assets->AssetByID<Light>(L->As<std::string>(), primitive.get()));
+                        primitive->emitter = static_cast<Emitter*>(assets->AssetByIDAndType(L->As<std::string>(), "light", primitive.get()));
                     }
                     else if (E)
                     {
-                        primitive->emitter = static_cast<Emitter*>(assets->AssetByID<Sensor>(E->As<std::string>(), primitive.get()));
+                        primitive->emitter = static_cast<Emitter*>(assets->AssetByIDAndType(E->As<std::string>(), "sensor", primitive.get()));
                     }
                     if (!primitive->emitter)
                     {

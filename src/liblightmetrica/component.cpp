@@ -52,30 +52,30 @@ public:
 
 public:
 
-    auto Register(const std::string& implName, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void
+    auto Register(const std::string& key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void
     {
         // Check if already registered
-        if (funcMap.find(implName) != funcMap.end())
+        if (funcMap.find(key) != funcMap.end())
         {
             // Note that in this class the error message cannot be output
             // with logger framework(e.g., using LM_LOG_ERROR, etc.)
             // because the registration of creation / release function is processed
             // in static initialization phase, so LM_LOG_INIT is not yet be called.
-            std::cerr << "Failed to register [ " << implName << " ]. Already registered." << std::endl;
+            std::cerr << "Failed to register [ " << key << " ]. Already registered." << std::endl;
         }
 
-        funcMap[implName] = CreateAndReleaseFuncs{createFunc, releaseFunc};
+        funcMap[key] = CreateAndReleaseFuncs{createFunc, releaseFunc};
     }
 
-    auto Create(const char* implName) -> Component*
+    auto Create(const char* key) -> Component*
     {
-        auto it = funcMap.find(implName);
+        auto it = funcMap.find(key);
         return it == funcMap.end() ? nullptr : it->second.createFunc();
     }
 
-    auto ReleaseFunc(const char* implName) -> ReleaseFuncPointerType
+    auto ReleaseFunc(const char* key) -> ReleaseFuncPointerType
     {
-        auto it = funcMap.find(implName);
+        auto it = funcMap.find(key);
         return it == funcMap.end() ? nullptr : it->second.releaseFunc;
     }
 
@@ -86,8 +86,8 @@ private:
 
 };
 
-auto ComponentFactory_Register(const char* implName, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactoryImpl::Instance().Register(implName, createFunc, releaseFunc); }
-auto ComponentFactory_Create(const char* implName) -> Component* { return ComponentFactoryImpl::Instance().Create(implName); }
-auto ComponentFactory_ReleaseFunc(const char* implName) -> ReleaseFuncPointerType { return ComponentFactoryImpl::Instance().ReleaseFunc(implName); }
+auto ComponentFactory_Register(const char* key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactoryImpl::Instance().Register(key, createFunc, releaseFunc); }
+auto ComponentFactory_Create(const char* key) -> Component* { return ComponentFactoryImpl::Instance().Create(key); }
+auto ComponentFactory_ReleaseFunc(const char* key) -> ReleaseFuncPointerType { return ComponentFactoryImpl::Instance().ReleaseFunc(key); }
 
 LM_NAMESPACE_END
