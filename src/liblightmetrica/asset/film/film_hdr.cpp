@@ -181,7 +181,7 @@ public:
 
 public:
 
-    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, Primitive* primitive) -> bool
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
         width_  = prop->Child("w")->As<int>();
         height_ = prop->Child("h")->As<int>();

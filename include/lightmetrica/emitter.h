@@ -45,8 +45,8 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Sample, void(const Vec2& u, SurfaceGeometry& geom));
-    LM_INTERFACE_F(EvaluatePDF, Float(const SurfaceGeometry& geom, bool evalDelta));
+    LM_INTERFACE_F(SamplePosition, void(const Vec2& u, SurfaceGeometry& geom));
+    LM_INTERFACE_F(EvaluatePositionPDF, Float(const SurfaceGeometry& geom, bool evalDelta));
     LM_INTERFACE_F(EvaluatePosition, SPD(const SurfaceGeometry& geom, bool evalDelta));
 
 };

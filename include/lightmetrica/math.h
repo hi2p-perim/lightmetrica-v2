@@ -330,6 +330,7 @@ struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
     LM_INLINE TVec3(ParamT x, ParamT y, ParamT z)       : x(x), y(y), z(z) {}
     LM_INLINE TVec3(const VecT& v)                      : x(v.x), y(v.y), z(v.z) {}
     LM_INLINE TVec3(const TVec4<T, SIMD::None>& v)      : x(v.x), y(v.y), z(v.z) {}
+    LM_INLINE TVec3(ParamT s)                           : x(s), y(s), z(s) {}
     LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
@@ -356,6 +357,7 @@ struct LM_ALIGN_16 TVec3<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE TVec3(const VecT& v)                      : v_(v.v_) {}
     LM_INLINE TVec3(const TVec4<float, SIMD::SSE>& v)   : v_(v.v_) {}
     LM_INLINE TVec3(SIMDT v)                            : v_(v) {}
+    LM_INLINE TVec3(ParamT s)                           : v_(_mm_set_ps(1.0f, s, s, s)) {}
     LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
@@ -383,6 +385,7 @@ struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE TVec3(const VecT& v)                      : v_(v.v_) {}
     LM_INLINE TVec3(const TVec4<double, SIMD::AVX>& v)  : v_(v.v_) {}
     LM_INLINE TVec3(SIMDT v)                            : v_(v) {}
+    LM_INLINE TVec3(ParamT s)                           : v_(_mm256_set_pd(1, s, s, s)) {}
     LM_INLINE TVec3(std::initializer_list<VT> l)        { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; }
 
     LM_INLINE auto operator[](int i)         -> VT&     { return (&x)[i]; }
@@ -421,6 +424,7 @@ struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
     LM_INLINE TVec2() : x(VT(0)), y(VT(0)) {}
     LM_INLINE TVec2(ParamT x, ParamT y) : x(x), y(y) {}
     LM_INLINE TVec2(const VecT& v) : x(v.x), y(v.y) {}
+    LM_INLINE TVec2(ParamT s) : x(s), y(s) {}
     LM_INLINE TVec2(std::initializer_list<VT> l) { x = l.begin()[0]; y = l.begin()[1]; }
 
     LM_INLINE auto operator[](int i)         -> VT& { return (&x)[i]; }
@@ -1077,6 +1081,18 @@ namespace Math
     LM_INLINE auto Normalize<float, SIMD::SSE, TVec4>(const TVec4<float, SIMD::SSE>& v) -> TVec4<float, SIMD::SSE>
     {
         return TVec4<float, SIMD::SSE>(_mm_mul_ps(v.v_, _mm_rsqrt_ps(_mm_dp_ps(v.v_, v.v_, 0xff))));
+    }
+
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Shading coordinates
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto LocalCos(const TVec3<T, Opt>& v) -> T
+    {
+        return v.z;
     }
 
     #pragma endregion

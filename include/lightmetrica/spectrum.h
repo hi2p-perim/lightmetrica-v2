@@ -72,7 +72,7 @@ struct DiscreteSPD<3>
     Vec3 v;
 
     DiscreteSPD() {}
-    DiscreteSPD(const Float& s) v(s) {}
+    DiscreteSPD(Float s) : v(s) {}
 
     auto ToRGB() const -> Vec3 { return v; }
 };

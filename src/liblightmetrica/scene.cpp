@@ -209,11 +209,11 @@ public:
                 {
                     if (L)
                     {
-                        primitive->emitter = static_cast<const Emitter*>(assets->AssetByID<Light>(L->As<std::string>(), primitive.get()));
+                        primitive->emitter = static_cast<Emitter*>(assets->AssetByID<Light>(L->As<std::string>(), primitive.get()));
                     }
                     else if (E)
                     {
-                        primitive->emitter = static_cast<const Emitter*>(assets->AssetByID<Sensor>(E->As<std::string>(), primitive.get()));
+                        primitive->emitter = static_cast<Emitter*>(assets->AssetByID<Sensor>(E->As<std::string>(), primitive.get()));
                     }
                     if (!primitive->emitter)
                     {

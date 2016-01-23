@@ -55,7 +55,7 @@ TEST_P(FilmTest, Initialize)
     )x")));
 
     const auto film = ComponentFactory::Create<Film>(GetParam());
-    EXPECT_TRUE(film->Initialize(prop->Root()));
+    EXPECT_TRUE(film->Load(prop->Root(), nullptr, nullptr));
 
     EXPECT_EQ(1000, film->Width());
     EXPECT_EQ(500, film->Height());

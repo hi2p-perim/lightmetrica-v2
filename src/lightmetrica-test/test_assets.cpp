@@ -39,14 +39,14 @@ struct TestAsset : public Asset
 struct TestAsset1 : public TestAsset
 {
     LM_IMPL_CLASS(TestAsset1, TestAsset);
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets* assets) -> bool { return true; };
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets* assets, const Primitive* primitive) -> bool { return true; };
     LM_IMPL_F(Func) = [this]() -> int { return 42; };
 };
 
 struct TestAsset2 : public TestAsset
 {
     LM_IMPL_CLASS(TestAsset2, TestAsset);
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets* assets) -> bool { return true; };
+    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets* assets, const Primitive* primitive) -> bool { return true; };
     LM_IMPL_F(Func) = [this]() -> int { return 43; };
 };
 
@@ -72,13 +72,13 @@ TEST(AssetsTest, AssetByIDAndType)
     EXPECT_TRUE(assets->Initialize(prop->Root()));
 
     {
-        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_1", "TestAsset"));
+        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_1", "TestAsset", nullptr));
         ASSERT_NE(nullptr, asset);
         EXPECT_EQ(42, asset->Func());
     }
 
     {
-        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_2", "TestAsset"));
+        const auto* asset = static_cast<const TestAsset*>(assets->AssetByIDAndType("test_2", "TestAsset", nullptr));
         ASSERT_NE(nullptr, asset);
         EXPECT_EQ(43, asset->Func());
     }

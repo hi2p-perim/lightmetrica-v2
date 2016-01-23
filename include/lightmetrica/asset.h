@@ -58,7 +58,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Load, bool(const PropertyNode* prop, Assets* assets, Primitive* primitive));
+    LM_INTERFACE_F(Load, bool(const PropertyNode* prop, Assets* assets, const Primitive* primitive));
 
 public:
 

@@ -39,7 +39,7 @@ public:
 
 public:
 
-    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, Primitive* primitive) -> bool
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
         // Load parameters
         We_  = prop->Child("We")->As<Vec3>();
@@ -62,25 +62,24 @@ public:
         return true;
     };
 
-    LM_IMPL_F(GetFilm) = [this]() -> const Film*
+    LM_IMPL_F(GetFilm) = [this]() -> Film*
     {
         return film_;
     };
 
-
     LM_IMPL_F(RasterPosition) = [this](const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) -> bool
     {
         // Check if wo is coming from bind the camera
-        const auto V = Math::Transpose(Math::Mat3(vx_, vy_, vz_));
+        const auto V = Math::Transpose(Mat3(vx_, vy_, vz_));
         const auto woEye = V * wo;
-        if (LocalCos(woEye) >= 0_f)
+        if (Math::LocalCos(woEye) >= 0_f)
         {
             return false;
         }
 
         // Calculate raster position
         // Check if #wo is outside of the screen
-        const double tanFov = Math::Tan(fov_ * 0.5_f);
+        const Float tanFov = Math::Tan(fov_ * 0.5_f);
         rasterPos = (Vec2(-woEye.x / woEye.z / tanFov / aspect_, -woEye.y / woEye.z / tanFov) + Vec2(1_f)) * 0.5_f;
         if (rasterPos.x < 0_f || rasterPos.x > 1_f || rasterPos.y < 0_f || rasterPos.y > 1_f)
         {
@@ -94,50 +93,22 @@ public:
 
     #pragma region GeneralizedBSDF
 
-    LM_IMPL_F(Sample) = [this](const Vec2& u, double uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
     {
-        const auto rasterPos = 2.0_f * u - 1.0_f;
-        const double tanFov = Math::Tan(fov_ * 0.5_f);
+        const auto rasterPos = 2.0_f * u - Vec2(1.0_f);
+        const Float tanFov = Math::Tan(fov_ * 0.5_f);
         const auto woEye = Math::Normalize(Vec3(aspect_ * tanFov * rasterPos.x, tanFov * rasterPos.y, -1_f));
         wo = vx_ * woEye.x + vy_ * woEye.y + vz_ * woEye.z;
     };
 
-    LM_IMPL_F(EvaluatePDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
     {
-        // Calculate raster position
-        glm::dvec2 rasterPos;
-        if (!RasterPosition(wo, geom, rasterPos))
-        {
-            return 0;
-        }
-
-        // Evaluate importance
-        const auto V = glm::transpose(glm::dmat3(Params.E.Pinhole.Vx, Params.E.Pinhole.Vy, Params.E.Pinhole.Vz));
-        const auto woEye = V * wo;
-        const double tanFov = glm::tan(Params.E.Pinhole.Fov * 0.5);
-        const double cosTheta = -LocalCos(woEye);
-        const double invCosTheta = 1.0 / cosTheta;
-        const double A = tanFov * tanFov * Params.E.Pinhole.Aspect * 4.0;
-        return invCosTheta * invCosTheta * invCosTheta / A;
+        return Importance(wo, geom);
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
-        // Calculate raster position
-        glm::dvec2 rasterPos;
-        if (!RasterPosition(wo, geom, rasterPos))
-        {
-            return glm::dvec3();
-        }
-
-        // Evaluate importance
-        const auto V = glm::transpose(glm::dmat3(Params.E.Pinhole.Vx, Params.E.Pinhole.Vy, Params.E.Pinhole.Vz));
-        const auto woEye = V * wo;
-        const double tanFov = glm::tan(Params.E.Pinhole.Fov * 0.5);
-        const double cosTheta = -LocalCos(woEye);
-        const double invCosTheta = 1.0 / cosTheta;
-        const double A = tanFov * tanFov * Params.E.Pinhole.Aspect * 4.0;
-        return glm::dvec3(invCosTheta * invCosTheta * invCosTheta / A);
+        return SPD(Importance(wo, geom));
     };
 
     #pragma endregion
@@ -154,7 +125,7 @@ public:
 
     LM_IMPL_F(EvaluatePositionPDF) = [this](const SurfaceGeometry& geom, bool evalDelta) -> Float
     {
-        return !evalDelta ? 1 : 0;
+        return !evalDelta ? 1_f : 0_f;
     };
 
     LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
@@ -166,13 +137,34 @@ public:
 
 private:
 
+    auto Importance(const Vec3& wo, const SurfaceGeometry& geom) const -> Float
+    {
+        // Calculate raster position
+        Vec2 rasterPos;
+        if (!RasterPosition(wo, geom, rasterPos))
+        {
+            return 0_f;
+        }
+
+        // Evaluate importance
+        const auto V = Math::Transpose(Mat3(vx_, vy_, vz_));
+        const auto woEye = V * wo;
+        const Float tanFov = Math::Tan(fov_ * 0.5_f);
+        const Float cosTheta = -Math::LocalCos(woEye);
+        const Float invCosTheta = 1_f / cosTheta;
+        const Float A = tanFov * tanFov * aspect_ * 4_f;
+        return invCosTheta * invCosTheta * invCosTheta / A;
+    }
+
+private:
+
     Vec3 We_;
     Float fov_;
     Vec3 position_;
     Vec3 vx_;
     Vec3 vy_;
     Vec3 vz_;
-    const Film* film_;
+    Film* film_;
     Float aspect_;
 
 };

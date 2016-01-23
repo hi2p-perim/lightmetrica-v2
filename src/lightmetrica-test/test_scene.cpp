@@ -48,7 +48,7 @@ struct SceneTest : public ::testing::Test
 struct Stub_Assets : public Assets
 {
     LM_IMPL_CLASS(Stub_Assets, Assets);
-    LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& type) -> const Asset* { return nullptr; };
+    LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& type, const Primitive* primitive) -> const Asset* { return nullptr; };
 };
 
 struct Stub_Accel : public Accel
@@ -103,31 +103,31 @@ TEST_F(SceneTest, SimpleLoad)
 struct Stub_Sensor : public Sensor
 {
     LM_IMPL_CLASS(Stub_Sensor, Sensor);
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
 };
 
 struct Stub_Light : public Light
 {
     LM_IMPL_CLASS(Stub_Light, Light);
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
 };
 
 struct Stub_BSDF : public BSDF
 {
     LM_IMPL_CLASS(Stub_BSDF, BSDF);
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
 };
 
 struct Stub_TriangleMesh_1 : public TriangleMesh
 {
     LM_IMPL_CLASS(Stub_TriangleMesh_1, TriangleMesh);
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
 };
 
 struct Stub_TriangleMesh_2 : public TriangleMesh
 {
     LM_IMPL_CLASS(Stub_TriangleMesh_2, TriangleMesh);
-    LM_IMPL_F(Load) = [this](const PropertyNode*, Assets*) -> bool { return true; };
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
 };
 
 LM_COMPONENT_REGISTER_IMPL(Stub_Sensor, "stub_sensor");

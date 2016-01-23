@@ -560,7 +560,8 @@ private:
         {
             LM_LOG_INFO("Rendering");
             LM_LOG_INDENTER();
-            const auto* film = static_cast<const Sensor*>(scene.get()->Sensor()->emitter)->GetFilm();
+            const auto* sensor = static_cast<const Sensor*>(scene.get()->Sensor()->emitter);
+            auto* film = sensor->GetFilm();
             renderer.get()->Render(scene.get(), film);
         }
 
@@ -573,7 +574,7 @@ private:
         {
             LM_LOG_INFO("Saving image");
             LM_LOG_INDENTER();
-            const auto* film = static_cast<const Sensor*>(scene.get()->Sensor()->emitter)->GetFilm();
+            auto* film = static_cast<const Sensor*>(scene.get()->Sensor()->emitter)->GetFilm();
             if (!film->Save(opt.Render.OutputPath))
             {
                 return false;
@@ -630,12 +631,12 @@ private:
         }
 
         const auto pn = n->Child("params");
-        if (!pn)
-        {
-            LM_LOG_ERROR("Missing '" + name + "/params' node");
-            PropertyUtils::PrintPrettyError(n);
-            return boost::none;
-        }
+        //if (!pn)
+        //{
+        //    LM_LOG_ERROR("Missing '" + name + "/params' node");
+        //    PropertyUtils::PrintPrettyError(n);
+        //    return boost::none;
+        //}
 
         auto p = ComponentFactory::Create<AssetT>(tn->As<std::string>());
         if (!p)
