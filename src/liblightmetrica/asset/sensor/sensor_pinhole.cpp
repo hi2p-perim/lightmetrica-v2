@@ -22,6 +22,7 @@
     THE SOFTWARE.
 */
 
+#include <pch.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/primitive.h>

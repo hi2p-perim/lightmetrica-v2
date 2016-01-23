@@ -49,6 +49,10 @@ public:
     LM_INTERFACE_F(Texcoords, const Float*());
     LM_INTERFACE_F(Faces, const unsigned int*());
 
+public:
+
+    LM_INTERFACE_CLASS_END(TriangleMesh);
+
 };
 
 LM_NAMESPACE_END

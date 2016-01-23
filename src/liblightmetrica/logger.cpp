@@ -59,9 +59,12 @@ public:
 
 public:
 
-	auto Run() -> void
+	auto Run(bool restart = false) -> void
 	{
-        logStartTime_ = std::chrono::high_resolution_clock::now();
+        if (!restart)
+        {
+            logStartTime_ = std::chrono::high_resolution_clock::now();
+        }
 		ioThread_ = std::thread(boost::bind(&boost::asio::io_service::run, &io_));
 	}
 
@@ -213,7 +216,7 @@ public:
     auto Flush() -> void
     {
         Stop();
-        Run();
+        Run(true);
     }
 
 private:

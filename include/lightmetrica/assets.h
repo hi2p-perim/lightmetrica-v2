@@ -63,6 +63,10 @@ public:
         return static_cast<AssetType*>(asset);
     }
 
+public:
+
+    LM_INTERFACE_CLASS_END(Assets);
+
 };
 
 LM_NAMESPACE_END

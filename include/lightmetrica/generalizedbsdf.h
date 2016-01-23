@@ -77,6 +77,10 @@ public:
     LM_INTERFACE_F(EvaluateDirectionPDF, Float(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta));
     LM_INTERFACE_F(EvaluateDirection, SPD(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta));
 
+public:
+
+    LM_INTERFACE_CLASS_END(GeneralizedBSDF);
+
 };
 
 LM_NAMESPACE_END

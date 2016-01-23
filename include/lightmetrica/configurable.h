@@ -58,6 +58,10 @@ public:
 
     LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
 
+public:
+
+    LM_INTERFACE_CLASS_END(Configurable);
+
 };
 
 LM_NAMESPACE_END

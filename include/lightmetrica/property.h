@@ -161,6 +161,10 @@ public:
 
     #pragma endregion
 
+public:
+
+    LM_INTERFACE_CLASS_END(PropertyNode);
+
 };
 
 /*!
@@ -196,6 +200,10 @@ public:
         Get root node.
     */
     LM_INTERFACE_F(Root, const PropertyNode*());
+
+public:
+
+    LM_INTERFACE_CLASS_END(PropertyTree);
 
 };
 

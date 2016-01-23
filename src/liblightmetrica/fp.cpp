@@ -22,7 +22,7 @@
     THE SOFTWARE.
 */
 
-#include "pch.h"
+#include <pch.h>
 #include <lightmetrica/fp.h>
 #include <lightmetrica/logger.h>
 

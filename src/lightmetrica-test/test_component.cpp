@@ -38,12 +38,14 @@ struct A : public Component
     LM_INTERFACE_F(Func1, void(int));
     LM_INTERFACE_F(Func2, int(int, int));
     LM_INTERFACE_F(Func3, void());
+    LM_INTERFACE_CLASS_END(A);
 };
 
 struct B : public A
 {
     LM_INTERFACE_CLASS(B, A);
     LM_INTERFACE_F(Func4, void());
+    LM_INTERFACE_CLASS_END(B);
 };
 
 struct A1 final : public A
@@ -157,6 +159,7 @@ struct C : public Component
     LM_INTERFACE_F(Func3, void(int&));
     LM_INTERFACE_F(Func4, void(const int&));
     LM_INTERFACE_F(Func5, void(const std::string&));
+    LM_INTERFACE_CLASS_END(C);
 };
 
 struct C1 final : public C
@@ -245,6 +248,7 @@ struct D : public Component
 {
     LM_INTERFACE_CLASS(D, Component);
     LM_INTERFACE_F(Func_Public, void());
+    LM_INTERFACE_CLASS_END(D);
 };
 
 struct D_Internal
@@ -292,6 +296,7 @@ struct E : public Component
 {
     LM_INTERFACE_CLASS(E, Component);
     LM_INTERFACE_F(Func_Public, void());
+    LM_INTERFACE_CLASS_END(E);
 };
 
 struct E_Internal : public E
@@ -346,6 +351,7 @@ struct F : public Component
     LM_INTERFACE_CLASS(F, Component);
     LM_INTERFACE_F(Func, int());
     auto ID() const -> std::string { return id.Get(); }
+    LM_INTERFACE_CLASS_END(F);
 };
 
 struct F_ : public F
@@ -375,6 +381,7 @@ struct G : public Component
 {
     LM_INTERFACE_CLASS(G, Component);
     LM_INTERFACE_F(Func, void());
+    LM_INTERFACE_CLASS_END(G);
 };
 
 struct G_ final : public G

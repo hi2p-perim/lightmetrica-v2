@@ -47,6 +47,10 @@ public:
     LM_INTERFACE_F(SetPixel, void(int x, int y, const SPD& v));
     LM_INTERFACE_F(Save, bool(const std::string&));
 
+public:
+
+    LM_INTERFACE_CLASS_END(Film);
+
 };
 
 LM_NAMESPACE_END

@@ -30,6 +30,9 @@
 #include <lightmetrica/static.h>
 #include <lightmetrica/logger.h>
 #include <lightmetrica/metacounter.h>
+#if LM_DEBUG_MODE
+#include <lightmetrica/debug.h>
+#endif
 
 #include <functional>
 #include <type_traits>
@@ -63,7 +66,7 @@ struct Component
     const char* implName = nullptr;
 
     // Number of interface functions
-    static constexpr int NumFuncs = 0;
+    static constexpr int NumInterfaces = 0;
 };
 
 #pragma endregion
@@ -94,6 +97,13 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
                 LM_LOG_ERROR("Interface: " + std::string(Iface::Type_().name));
                 LM_LOG_ERROR("Instance : " + std::string(o_->implName));
                 LM_LOG_ERROR("Function : " + std::string(name_) + " (ID: " + std::to_string(ID) + ")");
+                #if LM_DEBUG_MODE
+                LM_LOG_INFO("Stack");
+                {
+                    LM_LOG_INDENTER();
+                    DebugUtils::StackTrace();
+                }
+                #endif
             }
             LM_LOG_ERROR("Possible cause of this error:");
             {
@@ -103,6 +113,20 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
             }
             return ReturnType();
         }
+        
+        #if 0
+        #if LM_DEBUG_MODE
+        // Print calling function
+        LM_LOG_INFO("Calling interface");
+        {
+            LM_LOG_INDENTER();
+            LM_LOG_INFO("Interface: " + std::string(Iface::Type_().name));
+            LM_LOG_INFO("Instance : " + std::string(o_->implName));
+            LM_LOG_INFO("Function : " + std::string(name_) + " (ID: " + std::to_string(ID) + ")");
+        }
+        #endif
+        #endif
+
         return reinterpret_cast<FuncType>(o_->vt_[ID].f)(o_->vt_[ID].implf, Portable<ArgTypes>(args)...).Get();
     }
 };
@@ -141,10 +165,13 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
         ```
 */
 #define LM_INTERFACE_CLASS(Current, Base) \
-        LM_DEFINE_CLASS_TYPE(Current, Base); \
-        using BaseType = Base; \
-        using InterfaceType = Current; \
-        using UniquePtr = std::unique_ptr<InterfaceType, void(*)(Component*)>
+    LM_DEFINE_CLASS_TYPE(Current, Base); \
+    using BaseType = Base; \
+    using InterfaceType = Current; \
+    using UniquePtr = std::unique_ptr<InterfaceType, void(*)(Component*)>
+
+#define LM_INTERFACE_CLASS_END(Current) \
+    static constexpr int NumInterfaces = BaseType::NumInterfaces + MetaCounter<InterfaceType>::Value()
 
 // Define interface member function
 #if LM_INTELLISENSE
@@ -153,7 +180,7 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
             const std::function<Signature> Name
 #else
     #define LM_INTERFACE_F(Name, Signature) \
-            static constexpr int Name ## _ID_ = MetaCounter<BaseType>::Value() + MetaCounter<InterfaceType>::Next() - 1; \
+            static constexpr int Name ## _ID_ = BaseType::NumInterfaces + MetaCounter<InterfaceType>::Next() - 1; \
             const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this, #Name)
 #endif
 

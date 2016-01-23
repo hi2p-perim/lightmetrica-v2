@@ -24,54 +24,21 @@
 
 #pragma once
 
-#include <lightmetrica/component.h>
-#include <lightmetrica/math.h>
-#include <lightmetrica/spectrum.h>
+#include <lightmetrica/static.h>
 
 LM_NAMESPACE_BEGIN
 
-class Assets;
-class PropertyNode;
-struct SurfaceGeometry;
-struct Primitive;
+extern "C" LM_PUBLIC_API auto DebugUtils_StackTrace() -> bool;
 
-/*!
-    Asset.
-
-    The base class of the asset classes.
-    The `asset` is an important concept in the framework.
-    All user-defined resources such as triangle meshes or BSDFs must inherits this class.
-    The construction of assets are fully automated with asset management class (`Assets` class),
-    which make it possible to extend your own assets consistently.
-    For the design of the asset management in Lightmetrica,ra see <TODO>.
-*/
-class Asset : public Component
+class DebugUtils
 {
 public:
 
-    LM_INTERFACE_CLASS(Asset, Component);
+    LM_DISABLE_CONSTRUCT(DebugUtils);
 
 public:
 
-    Asset() = default;
-    LM_DISABLE_COPY_AND_MOVE(Asset);
-
-public:
-
-    LM_INTERFACE_F(Load, bool(const PropertyNode* prop, Assets* assets, const Primitive* primitive));
-
-public:
-
-    auto ID() const -> std::string { return id_.Get(); }
-    auto SetID(const std::string& id) -> void { id_.Reset(id); }
-
-private:
-
-    Portable<std::string> id_;
-
-public:
-
-    LM_INTERFACE_CLASS_END(Asset);
+    static auto StackTrace() -> bool { LM_EXPORTED_F(DebugUtils_StackTrace); }
 
 };
 

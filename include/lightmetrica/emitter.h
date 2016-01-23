@@ -49,6 +49,10 @@ public:
     LM_INTERFACE_F(EvaluatePositionPDF, Float(const SurfaceGeometry& geom, bool evalDelta));
     LM_INTERFACE_F(EvaluatePosition, SPD(const SurfaceGeometry& geom, bool evalDelta));
 
+public:
+
+    LM_INTERFACE_CLASS_END(Emitter);
+
 };
 
 LM_NAMESPACE_END
