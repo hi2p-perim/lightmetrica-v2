@@ -24,9 +24,13 @@
 
 #include <pch.h>
 #include <lightmetrica/trianglemesh.h>
+#include <lightmetrica/property.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
+#pragma warning(push)
+#pragma warning(disable:4706)
 #include <tinyobjloader/tiny_obj_loader.h>
+#pragma warning(pop)
 
 LM_NAMESPACE_BEGIN
 
@@ -40,24 +44,76 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        throw std::runtime_error("unimplemented")
+        const auto localpath = prop->Child("path")->As<std::string>();
+        const auto basepath = boost::filesystem::path(prop->Tree()->Path()).parent_path();
+        const auto path = basepath / localpath;
+
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+
+        std::string err;
+        bool ret = tinyobj::LoadObj(shapes, materials, err, path.string().c_str(), nullptr);
+        if (!ret)
+        {
+            LM_LOG_ERROR(err);
+            return false;
+        }
+
+        // Obj model must contain at least one shape
+        assert(!shapes.empty());
+
+        // There must not be the shape with normals and the shape with no normals in the same model
+        bool nonormal   = shapes[0].mesh.normals.empty();
+        bool notexcoord = shapes[0].mesh.texcoords.empty();
+        for (size_t i = 1; i < shapes.size(); i++)
+        {
+            if (nonormal != shapes[i].mesh.normals.empty() || notexcoord != shapes[i].mesh.texcoords.empty())
+            {
+                LM_LOG_ERROR("Inconsistency of normal or texcoords");
+                return false;
+            }
+        }
+
+        // Copy
+        for (const auto& shape : shapes)
+        {
+            const auto& mesh = shape.mesh;
+            const size_t psN = ps_.size() / 3;
+            ps_.insert(ps_.begin(), mesh.positions.begin(), mesh.positions.end());
+            ns_.insert(ns_.begin(), mesh.normals.begin(), mesh.normals.end());
+            ts_.insert(ts_.begin(), mesh.texcoords.begin(), mesh.texcoords.end());
+            std::transform(mesh.indices.begin(), mesh.indices.end(), std::back_inserter(fs_), [&](unsigned int i)
+            {
+                return i + (unsigned int)(psN);
+            });
+        }
+
+        // TODO: support shape groups and materials
+        // Implement it as a generator for scene nodes
+
+        //const auto& shape = shapes[0];
+        //const auto& mesh = shape.mesh;
+        //ps_ = mesh.positions;
+        //ns_ = mesh.normals;
+        //ts_ = mesh.texcoords;
+        //fs_ = mesh.indices;
 
         return true;
     };
 
-    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()) / 3; };
-    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()) / 3; };
-    LM_IMPL_F(Positions)   = [this]() -> const Float*{ return ps.data(); };
-    LM_IMPL_F(Normals)     = [this]() -> const Float*{ return ns.data(); };
-    LM_IMPL_F(Texcoords)   = [this]() -> const Float*{ return ts.data(); };
-    LM_IMPL_F(Faces)       = [this]() -> const unsigned int* { return fs.data(); };
+    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps_.size()) / 3; };
+    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs_.size()) / 3; };
+    LM_IMPL_F(Positions)   = [this]() -> const Float*{ return ps_.data(); };
+    LM_IMPL_F(Normals)     = [this]() -> const Float*{ return ns_.data(); };
+    LM_IMPL_F(Texcoords)   = [this]() -> const Float*{ return ts_.data(); };
+    LM_IMPL_F(Faces)       = [this]() -> const unsigned int* { return fs_.data(); };
 
 protected:
 
-    std::vector<Float> ps;
-    std::vector<Float> ns;
-    std::vector<Float> ts;
-    std::vector<unsigned int> fs;
+    std::vector<Float> ps_;
+    std::vector<Float> ns_;
+    std::vector<Float> ts_;
+    std::vector<unsigned int> fs_;
 
 };
 

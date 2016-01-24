@@ -80,16 +80,25 @@ public:
         isect.geom.gn = Math::Normalize(Math::Cross(p2 - p1, p3 - p1));
 
         // Shading normal
+        Vec3 n1, n2, n3;
         const auto* ns = mesh->Normals();
-        Vec3 n1(ns[3 * v1], ns[3 * v1 + 1], ns[3 * v1 + 2]);
-        Vec3 n2(ns[3 * v2], ns[3 * v2 + 1], ns[3 * v2 + 2]);
-        Vec3 n3(ns[3 * v3], ns[3 * v3 + 1], ns[3 * v3 + 2]);
-        isect.geom.sn = Math::Normalize(n1 * (1_f - b[0] - b[1]) + n2 * b[0] + n3 * b[1]);
-        if (std::isnan(isect.geom.sn.x) || std::isnan(isect.geom.sn.y) || std::isnan(isect.geom.sn.z))
+        if (ns)
         {
-            // There is a case with one of n1 ~ n3 generates NaN
-            // possibly a bug of mesh loader?
-            isect.geom.sn = isect.geom.gn;
+            n1 = Vec3(ns[3 * v1], ns[3 * v1 + 1], ns[3 * v1 + 2]);
+            n2 = Vec3(ns[3 * v2], ns[3 * v2 + 1], ns[3 * v2 + 2]);
+            n3 = Vec3(ns[3 * v3], ns[3 * v3 + 1], ns[3 * v3 + 2]);
+            isect.geom.sn = Math::Normalize(n1 * (1_f - b[0] - b[1]) + n2 * b[0] + n3 * b[1]);
+            if (std::isnan(isect.geom.sn.x) || std::isnan(isect.geom.sn.y) || std::isnan(isect.geom.sn.z))
+            {
+                // There is a case with one of n1 ~ n3 generates NaN
+                // possibly a bug of mesh loader?
+                isect.geom.sn = isect.geom.gn;
+            }
+        }
+        else
+        {
+            // Use geometric normal
+            isect.geom.sn = n1 = n2 = n3 = isect.geom.gn;
         }
 
         // Texture coordinates
