@@ -66,34 +66,41 @@ TEST(FPTest, SupportedExceptions)
 
     // --------------------------------------------------------------------------------
 
+    SCOPED_TRACE("T0");
     Trial("FLT_INVALID_OPERATION", [&]()
     {
-        const double t = std::numeric_limits<double>::infinity() * 0;
+        const volatile double t = std::numeric_limits<double>::infinity() * 0;
         LM_UNUSED(t);
     });
 
+    SCOPED_TRACE("T1");
     Trial("FLT_INVALID_OPERATION", [&]()
     {
         double z = 0;
-        const double t = 0 / z;
+        const volatile double t = 0 / z;
         LM_UNUSED(t);
     });
 
+    SCOPED_TRACE("T2");
     Trial("FLT_INVALID_OPERATION", [&]()
     {
-        std::sqrt(-1);
-    });
-
-    Trial("FLT_INVALID_OPERATION", [&]()
-    {
-        const double t = 1.0 * std::numeric_limits<double>::signaling_NaN();
+        const volatile double t = std::sqrt(-1);
         LM_UNUSED(t);
     });
 
+    SCOPED_TRACE("T3");
+    Trial("FLT_INVALID_OPERATION", [&]()
+    {
+        const volatile double one = 1.0;
+        const volatile double t = one * std::numeric_limits<double>::signaling_NaN();
+        LM_UNUSED(t);
+    });
+
+    SCOPED_TRACE("T4");
     Trial("FLT_DIVIDE_BY_ZERO", [&]()
     {
         double z = 0;
-        const double t = 1.0 / z;
+        const volatile double t = 1.0 / z;
         LM_UNUSED(t);
     });
 }
@@ -142,13 +149,13 @@ TEST(FPTest, UnsupportedExceptions)
     // Inexact
     EXPECT_NO_THROW(
     {
-        const double t = 2.0 / 3.0;
+        const volatile double t = 2.0 / 3.0;
         LM_UNUSED(t);
     });
 
     EXPECT_NO_THROW(
     {
-        const double t = std::log(1.1);
+        const volatile double t = std::log(1.1);
         LM_UNUSED(t);
     });
 }

@@ -54,7 +54,7 @@ struct Stub_Assets : public Assets
 struct Stub_Accel : public Accel
 {
     LM_IMPL_CLASS(Stub_Accel, Accel);
-    LM_IMPL_F(Build) = [this](const Scene& scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
     {
         return true;
     };

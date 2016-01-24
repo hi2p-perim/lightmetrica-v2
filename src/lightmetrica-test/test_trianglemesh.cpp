@@ -60,7 +60,8 @@ TEST_F(TriangleMeshTest, Raw)
     |   0 2 3
     )x")));
 
-    const auto mesh = ComponentFactory::Create<TriangleMesh>("raw");
+    const auto mesh = ComponentFactory::Create<TriangleMesh>("trianglemesh::raw");
+    ASSERT_NE(nullptr, mesh);
     ASSERT_TRUE(mesh->Load(prop->Root(), nullptr, nullptr));
 
     const Float ans_ps[] =

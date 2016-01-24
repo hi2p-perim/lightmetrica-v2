@@ -39,37 +39,37 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        ps = prop->Child("positions")->As<std::vector<Float>>();
-        if (ps.size() % 3 != 0)
+        ps_ = prop->Child("positions")->As<std::vector<Float>>();
+        if (ps_.size() % 3 != 0)
         {
-            LM_LOG_ERROR("Invalid number of elements in 'positions': " + std::to_string(ps.size()));
+            LM_LOG_ERROR("Invalid number of elements in 'positions': " + std::to_string(ps_.size()));
             PropertyUtils::PrintPrettyError(prop->Child("positions"));
             return false;
         }
 
-        ns = prop->Child("normals")->As<std::vector<Float>>();
-        if (ns.size() != ps.size())
+        ns_ = prop->Child("normals")->As<std::vector<Float>>();
+        if (ns_.size() != ps_.size())
         {
-            LM_LOG_ERROR("Invalid number of elements in 'normals': " + std::to_string(ns.size()));
+            LM_LOG_ERROR("Invalid number of elements in 'normals': " + std::to_string(ns_.size()));
             PropertyUtils::PrintPrettyError(prop->Child("normals"));
             return false;
         }
 
         if (prop->Child("texcoords"))
         {
-            ts = prop->Child("texcoords")->As<std::vector<Float>>();
-            if (ts.size() != ps.size() / 3 * 2)
+            ts_ = prop->Child("texcoords")->As<std::vector<Float>>();
+            if (ts_.size() != ps_.size() / 3 * 2)
             {
-                LM_LOG_ERROR("Invalid number of elements in 'normals': " + std::to_string(ts.size()));
+                LM_LOG_ERROR("Invalid number of elements in 'normals': " + std::to_string(ts_.size()));
                 PropertyUtils::PrintPrettyError(prop->Child("texcoords"));
                 return false;
             }
         }
 
-        fs = prop->Child("faces")->As<std::vector<unsigned int>>();
-        if (fs.size() % 3 != 0)
+        fs_ = prop->Child("faces")->As<std::vector<unsigned int>>();
+        if (fs_.size() % 3 != 0)
         {
-            LM_LOG_ERROR("Invalid number of elements in 'faces': " + std::to_string(fs.size()));
+            LM_LOG_ERROR("Invalid number of elements in 'faces': " + std::to_string(fs_.size()));
             PropertyUtils::PrintPrettyError(prop->Child("faces"));
             return false;
         }
@@ -79,19 +79,19 @@ public:
 
 public:
 
-    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()) / 3; };
-    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()) / 3; };
-    LM_IMPL_F(Positions)   = [this]() -> const Float*{ return ps.data(); };
-    LM_IMPL_F(Normals)     = [this]() -> const Float*{ return ns.data(); };
-    LM_IMPL_F(Texcoords)   = [this]() -> const Float*{ return ts.data(); };
-    LM_IMPL_F(Faces)       = [this]() -> const unsigned int* { return fs.data(); };
+    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps_.size()) / 3; };
+    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs_.size()) / 3; };
+    LM_IMPL_F(Positions)   = [this]() -> const Float* { return ps_.data(); };
+    LM_IMPL_F(Normals)     = [this]() -> const Float* { return ns_.data(); };
+    LM_IMPL_F(Texcoords)   = [this]() -> const Float* { return ts_.data(); };
+    LM_IMPL_F(Faces)       = [this]() -> const unsigned int* { return fs_.data(); };
 
 protected:
 
-    std::vector<Float> ps;
-    std::vector<Float> ns;
-    std::vector<Float> ts;
-    std::vector<unsigned int> fs;
+    std::vector<Float> ps_;
+    std::vector<Float> ns_;
+    std::vector<Float> ts_;
+    std::vector<unsigned int> fs_;
 
 };
 

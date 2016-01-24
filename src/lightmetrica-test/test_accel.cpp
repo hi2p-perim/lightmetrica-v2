@@ -41,7 +41,7 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
     virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
-INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naiveaccel", "accel::embree"));
+INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree"));
 
 #pragma endregion
 
@@ -58,8 +58,8 @@ public:
 
 public:
 
-    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()); };
-    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()); };
+    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()) / 3; };
+    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()) / 3; };
     LM_IMPL_F(Positions)   = [this]() -> const Float* { return ps.data(); };
     LM_IMPL_F(Normals)     = [this]() -> const Float* { return ns.data(); };
     LM_IMPL_F(Texcoords)   = [this]() -> const Float* { return ts.data(); };
@@ -114,8 +114,8 @@ public:
 
 public:
 
-    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()); };
-    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()); };
+    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()) / 3; };
+    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()) / 3; };
     LM_IMPL_F(Positions)   = [this]() -> const Float* { return ps.data(); };
     LM_IMPL_F(Normals)     = [this]() -> const Float* { return ns.data(); };
     LM_IMPL_F(Texcoords)   = [this]() -> const Float* { return ts.data(); };
@@ -157,8 +157,8 @@ public:
 
 public:
 
-    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()); };
-    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()); };
+    LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()) / 3; };
+    LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()) / 3; };
     LM_IMPL_F(Positions)   = [this]() -> const Float* { return ps.data(); };
     LM_IMPL_F(Normals)     = [this]() -> const Float* { return ns.data(); };
     LM_IMPL_F(Texcoords)   = [this]() -> const Float* { return ts.data(); };
@@ -253,8 +253,9 @@ TEST_P(AccelTest, Simple)
     Stub_Scene scene(mesh);
 
     const auto accel = ComponentFactory::Create<Accel>(GetParam());
+    ASSERT_NE(nullptr, accel);
     EXPECT_TRUE(accel->Initialize(nullptr));
-    EXPECT_TRUE(accel->Build(scene));
+    EXPECT_TRUE(accel->Build(&scene));
 
     // Trace rays in the region of [0, 1]^2
     Ray ray;
@@ -272,7 +273,7 @@ TEST_P(AccelTest, Simple)
             ray.o = Vec3(0, 0, 1);
             ray.d = Math::Normalize(Vec3(x, y, 0) - ray.o);
 
-            ASSERT_TRUE(accel->Intersect(scene, ray, isect, 0_f, Math::Inf()));
+            ASSERT_TRUE(accel->Intersect(&scene, ray, isect, 0_f, Math::Inf()));
             EXPECT_TRUE(ExpectVecNear(Vec3(x, y, 0), isect.geom.p,  Math::EpsLarge()));
             //if (!ExpectVecNear(Vec3(x, y, 0), isect.geom.p, Math::EpsLarge()))
             //{
@@ -292,7 +293,7 @@ TEST_P(AccelTest, Simple2)
 
     const auto accel = ComponentFactory::Create<Accel>(GetParam());
     EXPECT_TRUE(accel->Initialize(nullptr));
-    EXPECT_TRUE(accel->Build(scene));
+    EXPECT_TRUE(accel->Build(&scene));
 
     // Trace rays in the region of [0, 1]^2
     Ray ray;
@@ -310,7 +311,7 @@ TEST_P(AccelTest, Simple2)
             ray.o = Vec3(x, y, 1);
             ray.d = Vec3(0, 0, -1);
 
-            ASSERT_TRUE(accel->Intersect(scene, ray, isect, 0_f, Math::Inf()));
+            ASSERT_TRUE(accel->Intersect(&scene, ray, isect, 0_f, Math::Inf()));
             EXPECT_TRUE(ExpectVecNear(Vec3(x, y, -x), isect.geom.p, Math::EpsLarge()));
             EXPECT_TRUE(ExpectVecNear(Math::Normalize(Vec3(1, 0, 1)), isect.geom.gn, Math::EpsLarge()));
             EXPECT_TRUE(ExpectVecNear(Math::Normalize(Vec3(1, 0, 1)), isect.geom.sn, Math::EpsLarge()));
