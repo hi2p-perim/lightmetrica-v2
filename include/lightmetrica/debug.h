@@ -38,7 +38,7 @@ public:
 
 public:
 
-    static auto StackTrace() -> bool { LM_EXPORTED_F(DebugUtils_StackTrace); }
+    static auto StackTrace() -> bool { return LM_EXPORTED_F(DebugUtils_StackTrace); }
 
 };
 

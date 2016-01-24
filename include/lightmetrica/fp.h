@@ -77,13 +77,13 @@ public:
         Enable floating point exceptions.
         Returns `true` if succeed, otherwise `false`.
     */
-    static auto EnableFPControl()  -> bool { LM_EXPORTED_F(FPUtils_EnableFPControl); }
+    static auto EnableFPControl()  -> bool { return LM_EXPORTED_F(FPUtils_EnableFPControl); }
 
     /*!
         Disables floating point exceptions.
         Returns `true` if succeed, otherwise `false`.
     */
-    static auto DisableFPControl() -> bool { LM_EXPORTED_F(FPUtils_DisableFPControl); }
+    static auto DisableFPControl() -> bool { return LM_EXPORTED_F(FPUtils_DisableFPControl); }
 
 };
 

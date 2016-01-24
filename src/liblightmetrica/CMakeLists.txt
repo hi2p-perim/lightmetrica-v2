@@ -122,10 +122,24 @@ list(APPEND _HEADER_FILES ${_CORE_DETAIL_HEADER_FILES})
 set(
     _MATH_HEADER_FILES
     "${_INCLUDE_DIR}/math.h"
+    "${_INCLUDE_DIR}/random.h"
+)
+
+set(_DSFMT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/src/dSFMT-src-2.2.3")
+set(
+    _MATH_SOURCE_FILES
+    "random.cpp"
+
+	# dSFMT
+	"${_DSFMT_SOURCE_DIR}/dSFMT.h"
+	"${_DSFMT_SOURCE_DIR}/dSFMT.c"
+	"${_DSFMT_SOURCE_DIR}/dSFMT-params.h"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\math" FILES ${_MATH_HEADER_FILES})
+source_group("${_SOURCE_FILES_ROOT}\\math" FILES ${_MATH_SOURCE_FILES})
 list(APPEND _HEADER_FILES ${_MATH_HEADER_FILES})
+list(APPEND _SOURCE_FILES ${_MATH_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 
@@ -284,6 +298,7 @@ set(
     _RENDERER_SOURCE_FILES
 	"renderer/renderer_null.cpp"
 	"renderer/renderer_raycast.cpp"
+	"renderer/renderer_pt.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})

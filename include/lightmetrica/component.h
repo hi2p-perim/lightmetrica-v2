@@ -283,8 +283,8 @@ public:
 public:
 
     static auto Register(const std::string& key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { LM_EXPORTED_F(ComponentFactory_Register, key.c_str(), createFunc, releaseFunc); }
-    static auto Create(const std::string& key) -> Component* { LM_EXPORTED_F(ComponentFactory_Create, key.c_str()); }
-    static auto ReleaseFunc(const std::string& key) -> ReleaseFuncPointerType { LM_EXPORTED_F(ComponentFactory_ReleaseFunc, key.c_str()); }
+    static auto Create(const std::string& key) -> Component* { return LM_EXPORTED_F(ComponentFactory_Create, key.c_str()); }
+    static auto ReleaseFunc(const std::string& key) -> ReleaseFuncPointerType { return LM_EXPORTED_F(ComponentFactory_ReleaseFunc, key.c_str()); }
 
 public:
 

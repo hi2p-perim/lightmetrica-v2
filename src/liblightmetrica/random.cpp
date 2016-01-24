@@ -23,49 +23,40 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/renderer.h>
-#include <lightmetrica/scene.h>
-#include <lightmetrica/film.h>
-#include <lightmetrica/property.h>
+#include <lightmetrica/random.h>
+#include <dSFMT.h>
 
 LM_NAMESPACE_BEGIN
 
-class Renderer_Null final : public Renderer
+class Random::Impl
 {
 public:
-
-    LM_IMPL_CLASS(Renderer_Null, Renderer);
-
-public:
-
-    LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
-    {
-        c_ = prop->Child("c")->As<Vec3>();
-        return true;
-    };
-
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
-    {
-        // Do nothing. Just output blank image.
-        for (int y = 0; y < film->Height(); y++)
-        {
-            for (int x = 0; x < film->Width(); x++)
-            {
-                film->SetPixel(x, y, SPD::FromRGB(c_));
-            }
-
-            const double progress = 100.0 * y / film->Height();
-            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
-        }
-        LM_LOG_INFO("Progress: 100.0%");
-    };
-
-private:
-
-    Vec3 c_;
-
+    dsfmt_t dsfmt;
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_Null, "renderer::nulltype");
+auto Random_Constructor(Random* p) -> void
+{
+    p->p_ = new Random::Impl;
+}
+
+auto Random_Destructor(Random* p) -> void
+{
+    LM_SAFE_DELETE(p->p_);
+}
+
+auto Random_SetSeed(Random* p, unsigned int seed) -> void
+{
+    dsfmt_init_gen_rand(&p->p_->dsfmt, seed);
+}
+
+auto Random_NextUInt(Random* p) -> unsigned int
+{
+    return dsfmt_genrand_uint32(&p->p_->dsfmt);
+}
+
+auto Random_Next(Random* p) -> double
+{
+    return dsfmt_genrand_close_open(&p->p_->dsfmt);
+}
 
 LM_NAMESPACE_END

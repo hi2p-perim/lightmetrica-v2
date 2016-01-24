@@ -22,6 +22,7 @@
     THE SOFTWARE.
 */
 
+#include <pch.h>
 #include <lightmetrica/renderer.h>
 #include <lightmetrica/scene.h>
 #include <lightmetrica/film.h>
@@ -33,7 +34,7 @@
 
 LM_NAMESPACE_BEGIN
 
-class Renderer_Raycast : public Renderer
+class Renderer_Raycast final : public Renderer
 {
 public:
 

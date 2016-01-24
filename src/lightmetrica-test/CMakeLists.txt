@@ -111,6 +111,7 @@ list(APPEND _SOURCE_FILES ${_SCENE_SOURCE_FILES})
 set(
 	_MATH_SOURCE_FILES
 	"test_math.cpp"
+	"test_random.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\math" FILES ${_MATH_SOURCE_FILES})

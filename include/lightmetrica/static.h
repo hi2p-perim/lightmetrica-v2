@@ -186,17 +186,19 @@ namespace
 */
 
 #ifdef LM_EXPORTS
-    #define LM_EXPORTED_F(Func, ...) return Func(__VA_ARGS__);
+    #define LM_EXPORTED_F(Func, ...) Func(__VA_ARGS__)
 #else
     #define LM_EXPORTED_F(Func, ...) \
-        using FuncPtrType = decltype(&Func); \
-        static auto func = []() -> FuncPtrType { \
-            const auto* lib = StaticInit<ExternalPolicy>::Instance().Library(); \
-            const auto* f = static_cast<FuncPtrType>(lib->GetFuncPointer(#Func)); \
-            if (!f) std::exit(EXIT_FAILURE); \
-            return f; \
-        }(); \
-        return func(__VA_ARGS__);
+        [&]() { \
+            using FuncPtrType = decltype(&Func); \
+            static auto func = []() -> FuncPtrType { \
+                const auto* lib = StaticInit<ExternalPolicy>::Instance().Library(); \
+                const auto* f = static_cast<FuncPtrType>(lib->GetFuncPointer(#Func)); \
+                if (!f) std::exit(EXIT_FAILURE); \
+                return f; \
+            }(); \
+            return func(__VA_ARGS__); \
+        }()
 #endif
 
 LM_NAMESPACE_END

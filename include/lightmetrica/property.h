@@ -108,6 +108,7 @@ public:
     template <> auto As<const char*>() const -> const char* { return RawScalar(); }
     template <> auto As<std::string>() const -> std::string { return Scalar(); }
     template <> auto As<int>() const -> int { return std::stoi(Scalar()); }
+    template <> auto As<long long>() const -> long long { return std::stoll(Scalar()); }
     template <> auto As<double>() const -> double { return std::stod(Scalar()); }
 
     template <>

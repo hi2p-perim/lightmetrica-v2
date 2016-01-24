@@ -138,6 +138,10 @@ include_directories("${PROJECT_SOURCE_DIR}/external/src/gtest-1.7.0/include")
 #     add_definitions(-D_VARIADIC_MAX=10)
 # endif()
 
+# dSFMT
+include_directories("${PROJECT_SOURCE_DIR}/external/src/dSFMT-src-2.2.3")
+add_definitions(-DDSFMT_MEXP=19937)
+
 # --------------------------------------------------------------------------------
 
 #
