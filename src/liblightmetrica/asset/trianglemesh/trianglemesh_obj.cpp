@@ -88,24 +88,16 @@ public:
             });
         }
 
-        // TODO: support shape groups and materials
-        // Implement it as a generator for scene nodes
-
-        //const auto& shape = shapes[0];
-        //const auto& mesh = shape.mesh;
-        //ps_ = mesh.positions;
-        //ns_ = mesh.normals;
-        //ts_ = mesh.texcoords;
-        //fs_ = mesh.indices;
-
         return true;
     };
 
+public:
+
     LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps_.size()) / 3; };
     LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs_.size()) / 3; };
-    LM_IMPL_F(Positions)   = [this]() -> const Float*{ return ps_.data(); };
-    LM_IMPL_F(Normals)     = [this]() -> const Float*{ return ns_.data(); };
-    LM_IMPL_F(Texcoords)   = [this]() -> const Float*{ return ts_.data(); };
+    LM_IMPL_F(Positions)   = [this]() -> const Float* { return ps_.data(); };
+    LM_IMPL_F(Normals)     = [this]() -> const Float* { return ns_.data(); };
+    LM_IMPL_F(Texcoords)   = [this]() -> const Float* { return ts_.data(); };
     LM_IMPL_F(Faces)       = [this]() -> const unsigned int* { return fs_.data(); };
 
 protected:

@@ -77,6 +77,8 @@ public:
         return true;
     };
 
+public:
+
     LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps.size()) / 3; };
     LM_IMPL_F(NumFaces)    = [this]() -> int { return (int)(fs.size()) / 3; };
     LM_IMPL_F(Positions)   = [this]() -> const Float*{ return ps.data(); };

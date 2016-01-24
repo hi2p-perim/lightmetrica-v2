@@ -110,8 +110,8 @@ find_package(TBB REQUIRED)
 include_directories(${TBB_INCLUDE_DIRS})
 
 # Assimp
-# find_package(Assimp REQUIRED)
-# include_directories(${ASSIMP_INCLUDE_DIRS})
+find_package(Assimp REQUIRED)
+include_directories(${ASSIMP_INCLUDE_DIRS})
 
 # FreeImage
 find_package(FreeImage REQUIRED)
