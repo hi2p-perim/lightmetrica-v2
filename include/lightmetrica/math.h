@@ -846,6 +846,8 @@ LM_INLINE auto operator*<double, SIMD::AVX>(const TMat4<double, SIMD::AVX>& m, c
 
 #pragma region operator/
 
+#pragma region Vec / Vec
+
 template <
     typename T,
     SIMD Opt,
@@ -881,6 +883,50 @@ LM_INLINE auto operator/<double, SIMD::AVX>(const TVec4<double, SIMD::AVX>& v1, 
 {
     return TVec4<double, SIMD::AVX>(_mm256_div_pd(v1.v_, v2.v_));
 }
+
+#pragma endregion
+
+#pragma region Vec / Scalar
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator/(const VecT<T, Opt>& v, const T& s) -> VecT<T, Opt>
+{
+    constexpr int N = VecT<T, Opt>::NC;
+    VecT<T, Opt> result;
+    for (int i = 0; i < N; i++) result[i] = v[i] / s;
+    return result;
+}
+
+template <>
+LM_INLINE auto operator/<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v, const float& s) -> TVec3<float, SIMD::SSE>
+{
+    return TVec3<float, SIMD::SSE>(_mm_div_ps(v.v_, _mm_set1_ps(s)));
+}
+
+template <>
+LM_INLINE auto operator/<float, SIMD::SSE, TVec4>(const TVec4<float, SIMD::SSE>& v, const float& s) -> TVec4<float, SIMD::SSE>
+{
+    return TVec4<float, SIMD::SSE>(_mm_div_ps(v.v_, _mm_set1_ps(s)));
+}
+
+template <>
+LM_INLINE auto operator/<double, SIMD::AVX, TVec3>(const TVec3<double, SIMD::AVX>& v, const double& s) -> TVec3<double, SIMD::AVX>
+{
+    return TVec3<double, SIMD::AVX>(_mm256_div_pd(v.v_, _mm256_set1_pd(s)));
+}
+
+template <>
+LM_INLINE auto operator/<double, SIMD::AVX, TVec4>(const TVec4<double, SIMD::AVX>& v, const double& s) -> TVec4<double, SIMD::AVX>
+{
+    return TVec4<double, SIMD::AVX>(_mm256_div_pd(v.v_, _mm256_set1_pd(s)));
+}
+
+#pragma endregion
 
 #pragma endregion
 
@@ -1120,6 +1166,24 @@ namespace Math
     LM_INLINE auto LocalCos(const TVec3<T, Opt>& v) -> T
     {
         return v.z;
+    }
+
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Zero check
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto IsZero(const TVec3<T, Opt>& v) -> bool
+    {
+        return v.x == 0_f && v.y == 0_f && v.z == 0_f;
+    }
+
+    template <>
+    LM_INLINE auto IsZero<float, SIMD::SSE>(const TVec3<float, SIMD::SSE>& v) -> bool
+    {
+        return (_mm_movemask_ps(_mm_cmpeq_ps(v.v_, _mm_setzero_ps())) & 0x7) == 7;
     }
 
     #pragma endregion

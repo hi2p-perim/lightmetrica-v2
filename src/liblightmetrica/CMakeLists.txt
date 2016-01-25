@@ -73,6 +73,7 @@ set(
 	"${_INCLUDE_DIR}/enum.h"
 	"${_INCLUDE_DIR}/probability.h"
 	"${_INCLUDE_DIR}/debug.h"
+	"${_INCLUDE_DIR}/surfaceinteraction.h"
 )
 set(
     _CORE_SOURCE_FILES

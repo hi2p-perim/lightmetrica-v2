@@ -247,6 +247,11 @@ public:
                     primitiveIDMap_[primitive->id] = primitive.get();
                 }
 
+                if (primitive->emitter)
+                {
+                    lightPrimitiveIndices_.push_back(primitives_.size());
+                }
+
                 primitives_.push_back(std::move(primitive));
                 
                 #pragma endregion
@@ -372,11 +377,47 @@ public:
         return primitives_.at(index).get();
     };
 
+    LM_IMPL_F(SampleEmitter) = [this](int type, Float u) -> const Emitter*
+    {
+        if ((type & SurfaceInteraction::L) > 0)
+        {
+            int n = static_cast<int>(lightPrimitiveIndices_.size());
+            int i = Math::Clamp(static_cast<int>(u * n), 0, n - 1);
+            return primitives_.at(lightPrimitiveIndices_[i]).get()->emitter;
+        }
+
+        if ((type & SurfaceInteraction::E) > 0)
+        {
+            return sensorPrimitive_->emitter;
+        }
+
+        LM_UNREACHABLE();
+        return nullptr;
+    };
+
+    LM_IMPL_F(EvaluateEmitterPDF) = [this](int type) -> Float
+    {
+        if ((type & SurfaceInteraction::L) > 0)
+        {
+            const int n = static_cast<int>(lightPrimitiveIndices_.size());
+            return 1_f / Float(n);
+        }
+
+        if ((type & SurfaceInteraction::E) > 0)
+        {
+            return 1_f;
+        }
+
+        LM_UNREACHABLE();
+        return 0_f;
+    };
+
 private:
 
     std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
     std::unordered_map<std::string, Primitive*> primitiveIDMap_;    // Mapping from ID to primitive pointer
-    Primitive* sensorPrimitive_;                                    // Index of main sensor
+    Primitive* sensorPrimitive_;                                    // Pointer to sensor primitive
+    std::vector<size_t> lightPrimitiveIndices_;                     // Pointers to light primitives
     const Accel* accel_;
 
 };

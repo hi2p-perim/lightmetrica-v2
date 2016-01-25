@@ -213,6 +213,13 @@ public:
         return height_;
     };
 
+    LM_IMPL_F(Splat) = [this](const Vec2& rasterPos, const SPD& v) -> void
+    {
+        const int pX = Math::Clamp((int)(rasterPos.x * Float(width_)), 0, width_ - 1);
+        const int pY = Math::Clamp((int)(rasterPos.y * Float(height_)), 0, height_ - 1);
+        data_[pY * width_ + pX] = v.ToRGB();
+    };
+
     LM_IMPL_F(SetPixel) = [this](int x, int y, const SPD& v) -> void
     {
         #if LM_DEBUG_MODE

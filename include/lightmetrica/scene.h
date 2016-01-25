@@ -25,6 +25,7 @@
 #pragma once
 
 #include <lightmetrica/component.h>
+#include <lightmetrica/math.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -34,6 +35,7 @@ class Accel;
 struct Primitive;
 struct Ray;
 struct Intersection;
+class Emitter;
 
 /*!
     \brief Scene.
@@ -98,6 +100,9 @@ public:
         \brief Get a sensor primitive.
     */
     LM_INTERFACE_F(Sensor, const Primitive*());
+
+    LM_INTERFACE_F(SampleEmitter, const Emitter*(int type, Float u));
+    LM_INTERFACE_F(EvaluateEmitterPDF, Float(int type));
 
 };
 

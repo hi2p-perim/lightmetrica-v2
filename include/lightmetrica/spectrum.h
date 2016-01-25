@@ -53,6 +53,8 @@ LM_NAMESPACE_BEGIN
     This class is an abstract of discrete spectrum power distribution.
     utilized in various class (e.g., BSDF) for representing basic quantities of light transport.
 
+    TODO: Implement general version.
+
     \tparam N Number of elements in the spectrum.
 */
 template <int N>
@@ -73,10 +75,20 @@ struct DiscreteSPD<3>
 
     DiscreteSPD() {}
     DiscreteSPD(Float s) : v(s) {}
+    DiscreteSPD(const Vec3& v) : v(v) {}
 
     auto ToRGB() const -> Vec3 { return v; }
     static auto FromRGB(const Vec3& rgb) -> T { T s; s.v = rgb; return s; }
+
+    auto Black() const -> bool { return Math::IsZero(v); }
+
+    LM_INLINE auto operator*=(Float s) -> T& { v *= s; return *this; }
 };
+
+LM_INLINE auto operator/(const DiscreteSPD<3>& spd, Float s) -> DiscreteSPD<3>
+{
+    return DiscreteSPD<3>(spd.v / s);
+}
 
 #if LM_SPECTRUM_MULTI
     using SPD = DiscreteSPD<LM_SPECTRUM_SPD_N>;

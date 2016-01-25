@@ -24,39 +24,33 @@
 
 #pragma once
 
-#include <lightmetrica/asset.h>
-#include <lightmetrica/math.h>
-#include <lightmetrica/spectrum.h>
-#include <lightmetrica/surfaceinteraction.h>
+#include <lightmetrica/macros.h>
 
 LM_NAMESPACE_BEGIN
 
-struct SurfaceGeometry;
-class DirectionSampler;
+/*!
+*/
+namespace SurfaceInteraction
+{
+    enum Type
+    {
+        D = 1 << 0,
+        G = 1 << 1,
+        S = 1 << 2,
+        L = 1 << 3,
+        E = 1 << 4,
+        BSDF = D | G | S,
+        Emitter = L | E,
+        None = 0
+    };
+};
 
 /*!
 */
-class GeneralizedBSDF : public Asset
+enum class TransportDirection
 {
-public:
-
-    LM_INTERFACE_CLASS(GeneralizedBSDF, Asset);
-
-public:
-
-    GeneralizedBSDF() = default;
-    LM_DISABLE_COPY_AND_MOVE(GeneralizedBSDF);
-
-public:
-
-    LM_INTERFACE_F(SampleDirection, void(const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo));
-    LM_INTERFACE_F(EvaluateDirectionPDF, Float(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta));
-    LM_INTERFACE_F(EvaluateDirection, SPD(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta));
-
-public:
-
-    LM_INTERFACE_CLASS_END(GeneralizedBSDF);
-
+    LE,
+    EL
 };
 
 LM_NAMESPACE_END

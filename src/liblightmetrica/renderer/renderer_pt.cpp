@@ -27,7 +27,13 @@
 #include <lightmetrica/logger.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/random.h>
+#include <lightmetrica/scene.h>
 #include <lightmetrica/film.h>
+#include <lightmetrica/bsdf.h>
+#include <lightmetrica/ray.h>
+#include <lightmetrica/intersection.h>
+#include <lightmetrica/emitter.h>
+#include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/detail/stringtemplate.h>
 #include <tbb/tbb.h>
 
@@ -352,9 +358,152 @@ public:
         initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
         #endif
 
-        sched_.Process(scene, film, &initRng, [](const Scene* scene, Film* film, Random* rng)
+        sched_.Process(scene, film, &initRng, [this](const Scene* scene, Film* film, Random* rng)
         {
+            #pragma region Sample a sensor
 
+            const auto* E = scene->SampleEmitter(SurfaceInteraction::E, rng->Next());
+            const Float pdfE = scene->EvaluateEmitterPDF(SurfaceInteraction::E);
+            assert(pdfE > 0);
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Sample a position on the sensor
+
+            SurfaceGeometry geomE;
+            E->SamplePosition(rng->Next2D(), geomE);
+            const Float pdfPE = E->EvaluatePositionPDF(geomE, true);
+            assert(pdfPE > 0);
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Temporary variables
+
+            auto throughput = E->EvaluatePosition(geomE, true) / pdfPE / pdfE;
+            const GeneralizedBSDF* bsdf = E;
+            int type = SurfaceInteraction::E;
+            auto geom = geomE;
+            Vec3 wi;
+            int numVertices = 1;
+            Vec2 rasterPos;
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            while (true)
+            {
+                if (maxNumVertices_ != -1 && numVertices >= maxNumVertices_)
+                {
+                    break;
+                }
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Sample direction
+
+                Vec3 wo;
+                bsdf->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                const double pdfD = prim->EvaluateDirectionPDF(geom, type, wi, wo, true);
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Calculate raster position for initial vertex
+
+                if (type == SurfaceInteraction::E)
+                {
+                    bool result = static_cast<const Emitter*>(bsdf)->RasterPosition(wo, geom, rasterPos);
+                    assert(result);
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Evaluate direction
+
+                const auto fs = bsdf->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, true);
+                if (fs.Black())
+                {
+                    break;
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Update throughput
+
+                assert(pdfD > 0);
+                throughput *= fs / pdfD;
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Intersection
+
+                // Setup next ray
+                Ray ray = { geom.p, wo };
+
+                // Intersection query
+                Intersection isect;
+                if (!scene->Intersect(ray, isect))
+                {
+                    break;
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Handle hit with light source
+
+                if ((isect.primitive-> .Prim->Type & PrimitiveType::L) > 0)
+                {
+                    // Accumulate to film
+                    ctx.film[pixelIndex] +=
+                        throughput
+                        * isect.Prim->EvaluateDirection(isect.geom, PrimitiveType::L, glm::dvec3(), -ray.d, TransportDirection::EL, false)
+                        * isect.Prim->EvaluatePosition(isect.geom, false);
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Path termination
+
+                const Float rrProb = 0.5;
+                if (rng->Next() > rrProb)
+                {
+                    break;
+                }
+                else
+                {
+                    throughput /= rrProb;
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Update information
+
+                geom = isect.geom;
+                prim = isect.Prim;
+                type = isect.Prim->Type & ~PrimitiveType::Emitter;
+                wi = -ray.d;
+                numVertices++;
+
+                #pragma endregion
+            }
         });
     };
 

@@ -44,6 +44,7 @@ public:
 
     LM_INTERFACE_F(Width, int());
     LM_INTERFACE_F(Height, int());
+    LM_INTERFACE_F(Splat, void(const Vec2& rasterPos, const SPD& v));
     LM_INTERFACE_F(SetPixel, void(int x, int y, const SPD& v));
     LM_INTERFACE_F(Save, bool(const std::string&));
     LM_INTERFACE_F(Accumulate, void(const Film* film));

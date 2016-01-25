@@ -249,7 +249,7 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
 
 #if LM_INTELLISENSE
     #define LM_IMPL_F(Name) \
-        const std::function<decltype(BaseType::Name)::Type> Name ## _Impl_ 
+        const decltype(BaseType::Name) Name ## _Impl_ 
 #else
     #define LM_IMPL_F(Name) \
         struct Name ## _Init_ { \
