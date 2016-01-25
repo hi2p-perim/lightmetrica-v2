@@ -43,6 +43,10 @@ LM_NAMESPACE_BEGIN
 
 #pragma region Component
 
+class Component;
+using CreateFuncPointerType = Component* (*)();
+using ReleaseFuncPointerType = void(*)(Component*);
+
 /*!
     Component.
 
@@ -51,8 +55,10 @@ LM_NAMESPACE_BEGIN
     retaining portability of the framework.
     For technical details, see <TODO>.
 */
-struct Component
+class Component
 {
+public:
+
     // VTable entries and user-defined data
     // User-defined data is required to hold non-portable version
     static constexpr size_t VTableNumEntries = 100;
@@ -65,8 +71,13 @@ struct Component
     // Name of implementation type
     const char* implName = nullptr;
 
+    // Create and release function of the instance
+    CreateFuncPointerType  createFunc  = nullptr;
+    ReleaseFuncPointerType releaseFunc = nullptr;
+
     // Number of interface functions
     static constexpr int NumInterfaces = 0;
+
 };
 
 #pragma endregion
@@ -255,10 +266,34 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
 
 // --------------------------------------------------------------------------------
 
-#pragma region Component factory
+#pragma region Clonable component
 
-using CreateFuncPointerType = Component* (*)();
-using ReleaseFuncPointerType = void(*)(Component*);
+class Clonable : public Component
+{
+public:
+
+    LM_INTERFACE_CLASS(Clonable, Component);
+
+public:
+
+    Clonable() = default;
+    LM_DISABLE_COPY_AND_MOVE(Clonable);
+
+public:
+
+    LM_INTERFACE_F(Clone, void(Clonable* o));
+
+public:
+
+    LM_INTERFACE_CLASS_END(Component);
+
+};
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Component factory
 
 /*!
     Component factory.
@@ -270,8 +305,8 @@ using ReleaseFuncPointerType = void(*)(Component*);
 extern "C"
 {
     LM_PUBLIC_API auto ComponentFactory_Register(const char* key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void;
-    LM_PUBLIC_API auto ComponentFactory_Create(const char* implName)->Component*;
-    LM_PUBLIC_API auto ComponentFactory_ReleaseFunc(const char* implName)->ReleaseFuncPointerType;
+    LM_PUBLIC_API auto ComponentFactory_Create(const char* key) -> Component*;
+    LM_PUBLIC_API auto ComponentFactory_ReleaseFunc(const char* key) -> ReleaseFuncPointerType;
 }
 
 class ComponentFactory
@@ -289,26 +324,39 @@ public:
 public:
 
     template <typename InterfaceType>
-    static auto Create(const std::string& implName) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    static auto Create(const std::string& key) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
+        static_assert(std::is_base_of<Component, InterfaceType>::value, "InterfaceType must inherit Component");
         using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
-        auto* p = static_cast<InterfaceType*>(Create(implName));
+        auto* p = static_cast<InterfaceType*>(Create(key));
         if (!p)
         {
             LM_LOG_ERROR("Failed to create instance");
             LM_LOG_INDENTER();
-            LM_LOG_ERROR("Impl: " + implName);
+            LM_LOG_ERROR("Impl: " + key);
             LM_LOG_ERROR("Interface: " + std::string(InterfaceType::Type_().name));
             return ReturnType(nullptr, nullptr);
         }
-        return ReturnType(p, ReleaseFunc(implName));
+        return ReturnType(p, ReleaseFunc(key));
     }
 
     template <typename InterfaceType>
     static auto Create() -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
-        const auto implName = std::string(InterfaceType::Type_().name) + "_";
-        return Create<InterfaceType>(implName);
+        static_assert(std::is_base_of<Component, InterfaceType>::value, "InterfaceType must inherit Component");
+        const auto key = std::string(InterfaceType::Type_().name) + "_";
+        return Create<InterfaceType>(key);
+    }
+
+    template <typename InterfaceType>
+    static auto Clone(InterfaceType* p) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    {
+        static_assert(std::is_base_of<Clonable, InterfaceType>::value, "InterfaceType must inherit Clonable");
+        using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
+        auto* p2 = static_cast<InterfaceType*>(p->createFunc());
+        assert(p2);
+        p->Clone(p2);
+        return ReturnType(p2, p->releaseFunc);
     }
 
 };
@@ -360,18 +408,18 @@ class ImplEntry
 {
 public:
 
-    static auto Instance(const std::string& implName) -> ImplEntry<ImplType>&
+    static auto Instance(const std::string& key) -> ImplEntry<ImplType>&
     {
-        static ImplEntry<ImplType> instance(implName);
+        static ImplEntry<ImplType> instance(key);
         return instance;
     }
 
 private:
 
-    ImplEntry(const std::string& implName)
+    ImplEntry(const std::string& key)
     {
         ComponentFactory::Register(
-            implName,
+            key,
             []() -> Component* { return new ImplType; },
             [](Component* p) -> void
             {
@@ -384,16 +432,16 @@ private:
 };
 
 #if LM_INTELLISENSE
-    #define LM_COMPONENT_REGISTER_IMPL(ImplType, ImplName)
+    #define LM_COMPONENT_REGISTER_IMPL(ImplType, Key)
     #define LM_COMPONENT_REGISTER_IMPL_DEFAULT(ImplType)
 #else
-    #define LM_COMPONENT_REGISTER_IMPL(ImplType, ImplName) \
+    #define LM_COMPONENT_REGISTER_IMPL(ImplType, Key) \
 	    namespace { \
 		    template <typename T> \
 		    class ImplEntry_Init; \
 		    template <> \
             class ImplEntry_Init<ImplType> { static const ImplEntry<ImplType>& reg; }; \
-            const ImplEntry<ImplType>& ImplEntry_Init<ImplType>::reg = ImplEntry<ImplType>::Instance(ImplName); \
+            const ImplEntry<ImplType>& ImplEntry_Init<ImplType>::reg = ImplEntry<ImplType>::Instance(Key); \
         }
     #define LM_COMPONENT_REGISTER_IMPL_DEFAULT(ImplType) \
         LM_COMPONENT_REGISTER_IMPL(ImplType, ImplType::Type_().name)

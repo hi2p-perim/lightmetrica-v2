@@ -184,4 +184,20 @@ TEST_F(PropertyTest, LineColumn)
     EXPECT_EQ(4, p->Root()->Child("A")->Child("A2")->Child("A3")->Line());
 }
 
+TEST_F(PropertyTest, ValueOrDefault)
+{
+    auto p = ComponentFactory::Create<PropertyTree>();
+    ASSERT_TRUE(p->LoadFromString(TestUtils::MultiLineLiteral(R"x(
+    | A: hello
+    )x")));
+
+    EXPECT_EQ("hello", p->Root()->ChildAs<std::string>("A", "world"));
+    EXPECT_EQ("world", p->Root()->ChildAs<std::string>("B", "world"));
+}
+
+//TEST_F(PropertyTest, ErrorHandling)
+//{
+//    FAIL();
+//}
+
 LM_TEST_NAMESPACE_END

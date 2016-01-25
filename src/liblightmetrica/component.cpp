@@ -70,7 +70,15 @@ public:
     auto Create(const char* key) -> Component*
     {
         auto it = funcMap.find(key);
-        return it == funcMap.end() ? nullptr : it->second.createFunc();
+        if (it == funcMap.end())
+        {
+            return nullptr;
+        }
+
+        auto* p = it->second.createFunc();
+        p->createFunc = it->second.createFunc;
+        p->releaseFunc = it->second.releaseFunc;
+        return p;
     }
 
     auto ReleaseFunc(const char* key) -> ReleaseFuncPointerType

@@ -26,7 +26,6 @@
 
 #include <lightmetrica/static.h>
 #include <lightmetrica/math.h>
-#include <memory>
 
 LM_NAMESPACE_BEGIN
 

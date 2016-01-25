@@ -44,8 +44,8 @@ namespace detail
 
     public:
 
-        static auto Func1() -> int { LM_EXPORTED_F(StaticFuncTest_Func1); }
-        static auto Func2(int v1, int v2) -> int { LM_EXPORTED_F(StaticFuncTest_Func2, v1, v2); }
+        static auto Func1() -> int { return LM_EXPORTED_F(StaticFuncTest_Func1); }
+        static auto Func2(int v1, int v2) -> int { return LM_EXPORTED_F(StaticFuncTest_Func2, v1, v2); }
 
     };
 }

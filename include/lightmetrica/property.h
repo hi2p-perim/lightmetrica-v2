@@ -99,7 +99,22 @@ public:
         Parent node (nullptr for root node).
     */
     LM_INTERFACE_F(Parent, const PropertyNode*());
-    
+
+public:
+
+    template <typename T>
+    auto ChildAs(const std::string& name, const T& default) const -> T
+    {
+        const auto* child = Child(name);
+        if (!child)
+        {
+            LM_LOG_WARN("Missing '" + name + "' element. Using default value.");
+            return default;
+        }
+
+        return child->As<T>();
+    };
+
 public:
 
     #pragma region Type conversion functions

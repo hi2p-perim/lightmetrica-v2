@@ -45,11 +45,11 @@ struct Primitive;
     which make it possible to extend your own assets consistently.
     For the design of the asset management in Lightmetrica,ra see <TODO>.
 */
-class Asset : public Component
+class Asset : public Clonable
 {
 public:
 
-    LM_INTERFACE_CLASS(Asset, Component);
+    LM_INTERFACE_CLASS(Asset, Clonable);
 
 public:
 

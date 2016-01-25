@@ -46,6 +46,9 @@ public:
     LM_INTERFACE_F(Height, int());
     LM_INTERFACE_F(SetPixel, void(int x, int y, const SPD& v));
     LM_INTERFACE_F(Save, bool(const std::string&));
+    LM_INTERFACE_F(Accumulate, void(const Film* film));
+    LM_INTERFACE_F(Rescale, void(Float w));
+    LM_INTERFACE_F(Clear, void());
 
 public:
 

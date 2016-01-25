@@ -417,4 +417,45 @@ TEST(ComponentTest, ContructorAndDescturctor)
 
 #pragma endregion
 
+// --------------------------------------------------------------------------------
+
+#pragma region Clone
+
+struct H : public Clonable
+{
+    LM_INTERFACE_CLASS(H, Clonable);
+    LM_INTERFACE_F(Load, void(int v));
+    LM_INTERFACE_F(V, int());
+    LM_INTERFACE_CLASS_END(H);
+};
+
+struct H_ final : public H
+{
+    LM_IMPL_CLASS(H_, H);
+    
+    LM_IMPL_F(Load) = [this](int v_) -> void { v = v_; };
+    LM_IMPL_F(V) = [this]() -> int { return v; };
+
+    LM_IMPL_F(Clone) = [this](Clonable* o) -> void
+    {
+        auto* p = static_cast<H_*>(o);
+        p->v = v;
+    };
+
+    int v;
+};
+
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(H_);
+
+TEST(ComponentTest, CloneTest)
+{
+    const auto p = ComponentFactory::Create<H>();
+    EXPECT_NE(nullptr, p);
+    p->Load(42);
+    const auto p2 = ComponentFactory::Clone<H>(p.get());
+    EXPECT_EQ(42, p2->V());
+}
+
+#pragma endregion
+
 LM_TEST_NAMESPACE_END

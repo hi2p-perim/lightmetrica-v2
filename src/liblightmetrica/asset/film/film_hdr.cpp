@@ -195,6 +195,14 @@ public:
         return true;
     };
 
+    LM_IMPL_F(Clone) = [this](Clonable* o) -> void
+    {
+        auto* film = static_cast<Film_HDR*>(o);
+        film->width_ = width_;
+        film->height_ = height_;
+        film->data_ = data_;
+    };
+
     LM_IMPL_F(Width) = [this]() -> int
     {
         return width_;
@@ -242,6 +250,24 @@ public:
         }
 
         return SaveImage(p.string(), data_, width_, height_);
+    };
+
+    LM_IMPL_F(Accumulate) = [this](const Film* film_) -> void
+    {
+        assert(implName == film_->implName);                            // Internal type must be same
+        const auto* film = static_cast<const Film_HDR*>(film_);
+        assert(width_ == film->width_ && height_ == film->height_);     // Image size must be same
+        std::transform(data_.begin(), data_.end(), film->data_.begin(), data_.begin(), std::plus<Vec3>());
+    };
+
+    LM_IMPL_F(Rescale) = [this](Float w) -> void
+    {
+        for (auto& v : data_) { v *= w; }
+    };
+
+    LM_IMPL_F(Clear) = [this]() -> void
+    {
+        data_.assign(width_ * height_, Vec3());
     };
 
 private:
