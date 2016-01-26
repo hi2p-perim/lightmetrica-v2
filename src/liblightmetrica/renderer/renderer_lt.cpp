@@ -35,20 +35,18 @@
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/scheduler.h>
-#include <lightmetrica/renderutils.h>
 
 LM_NAMESPACE_BEGIN
 
-class Renderer_PTDirect final : public Renderer
+class Renderer_LT final : public Renderer
 {
 public:
 
-    LM_IMPL_CLASS(Renderer_PTDirect, Renderer);
-
+    LM_IMPL_CLASS(Renderer_LT, Renderer);
 
 public:
 
-    Renderer_PTDirect()
+    Renderer_LT()
         : sched_(ComponentFactory::Create<Scheduler>())
     {}
 
@@ -72,21 +70,22 @@ public:
 
         sched_->Process(scene, film, &initRng, [this](const Scene* scene, Film* film, Random* rng)
         {
-            #pragma region Sample a sensor
+            #pragma region Sample a light
 
-            const auto* E = scene->SampleEmitter(SurfaceInteraction::E, rng->Next());
-            const Float pdfE = scene->EvaluateEmitterPDF(SurfaceInteraction::E);
-            assert(pdfE > 0);
+            const auto* L = scene->SampleEmitter(SurfaceInteraction::L, rng->Next());
+            const Float pdfL = scene->EvaluateEmitterPDF(SurfaceInteraction::L);
+            assert(pdfL > 0);
 
             #pragma endregion
 
             // --------------------------------------------------------------------------------
 
-            #pragma region Sample a position on the sensor
+            #pragma region Sample a position on the light
 
-            SurfaceGeometry geomE;
-            E->SamplePosition(rng->Next2D(), geomE);
-            const Float pdfPE = E->EvaluatePositionPDF(geomE, false);
+            SurfaceGeometry geomL;
+            L->SamplePosition(rng->Next2D(), geomL);
+            const Float pdfPL = L->EvaluatePositionPDF(geomL, false);
+            assert(pdfPL > 0);
 
             #pragma endregion
 
@@ -94,12 +93,11 @@ public:
 
             #pragma region Temporary variables
 
-            auto throughput = E->EvaluatePosition(geomE, false) / pdfPE / pdfE;
-            const auto* primitive = E;
-            int type = SurfaceInteraction::E;
-            auto geom = geomE;
+            auto throughput = L->EvaluatePosition(geomL, false) / pdfPL / pdfL;
+            const auto* prim = L;
+            int type = SurfaceInteraction::L;
+            auto geom = geomL;
             Vec3 wi;
-            Vec2 rasterPos;
             int numVertices = 1;
 
             #pragma endregion
@@ -115,85 +113,11 @@ public:
 
                 // --------------------------------------------------------------------------------
 
-                #pragma region Direct light sampling
-
-                {
-                    #pragma region Sample a light
-
-                    const auto* L = scene->SampleEmitter(SurfaceInteraction::L, rng->Next());
-                    const Float pdfL = scene->EvaluateEmitterPDF(SurfaceInteraction::L);
-                    assert(pdfL > 0);
-
-                    #pragma endregion
-
-                    // --------------------------------------------------------------------------------
-
-                    #pragma region Sample a position on the light
-
-                    SurfaceGeometry geomL;
-                    L->SamplePosition(rng->Next2D(), geomL);
-                    const Float pdfPL = L->EvaluatePositionPDF(geomL, false);
-                    assert(pdfPL > 0);
-
-                    #pragma endregion
-
-                    // --------------------------------------------------------------------------------
-
-                    #pragma region Evaluate contribution
-
-                    const auto ppL = Math::Normalize(geomL.p - geom.p);
-                    const auto fsE = primitive->EvaluateDirection(geom, type, wi, ppL, TransportDirection::EL, true);
-                    const auto fsL = L->EvaluateDirection(geomL, SurfaceInteraction::L, Vec3(), -ppL, TransportDirection::LE, true);
-                    const auto G = RenderUtils::GeometryTerm(geom, geomL);
-                    const auto V = scene->Visible(geom.p, geomL.p) ? 1_f : 0_f;
-                    const auto LeP = L->EvaluatePosition(geomL, false);
-                    const auto C = throughput * fsE * G * V * fsL * LeP / pdfL / pdfPL;
-
-                    #pragma endregion
-
-                    // --------------------------------------------------------------------------------
-
-                    #pragma region Record to film
-
-                    if (!C.Black())
-                    {
-                        // Recompute pixel index if necessary
-                        auto rp = rasterPos;
-                        if (type == SurfaceInteraction::E)
-                        {
-                            primitive->emitter->RasterPosition(ppL, geom, rp);
-                        }
-
-                        // Accumulate to film
-                        film->Splat(rp, C);
-                    }
-
-                    #pragma endregion
-                }
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Sample next direction
+                #pragma region Sample direction
 
                 Vec3 wo;
-                primitive->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
-                const Float pdfD = primitive->EvaluateDirectionPDF(geom, type, wi, wo, false);
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Calculate pixel index for initial vertex
-
-                if (type == SurfaceInteraction::E)
-                {
-                    if (!primitive->emitter->RasterPosition(wo, geom, rasterPos))
-                    {
-                        break;
-                    }
-                }
+                prim->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                const Float pdfD = prim->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
@@ -201,7 +125,7 @@ public:
 
                 #pragma region Evaluate direction
 
-                const auto fs = primitive->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, false);
+                const auto fs = prim->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
                 if (fs.Black())
                 {
                     break;
@@ -236,9 +160,40 @@ public:
 
                 // --------------------------------------------------------------------------------
 
+                #pragma region Handle hit with sensor
+
+                if ((isect.primitive->Type() & SurfaceInteraction::E) > 0)
+                {
+                    #pragma region Calculate raster position
+
+                    Vec2 rasterPos;
+                    if (!isect.primitive->emitter->RasterPosition(-wo, isect.geom, rasterPos))
+                    {
+                        break;
+                    }
+
+                    #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    #pragma region Accumulate to film
+
+                    const auto C =
+                        throughput
+                        * isect.primitive->EvaluateDirection(isect.geom, SurfaceInteraction::E, Vec3(), -ray.d, TransportDirection::LE, true)
+                        * isect.primitive->EvaluatePosition(isect.geom, true);
+                    film->Splat(rasterPos, C);
+
+                    #pragma endregion
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
                 #pragma region Path termination
 
-                Float rrProb = 0.5;
+                Float rrProb = 0.5_f;
                 if (rng->Next() > rrProb)
                 {
                     break;
@@ -255,7 +210,7 @@ public:
                 #pragma region Update information
 
                 geom = isect.geom;
-                primitive = isect.primitive;
+                prim = isect.primitive;
                 type = isect.primitive->Type() & ~SurfaceInteraction::Emitter;
                 wi = -ray.d;
                 numVertices++;
@@ -272,6 +227,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_PTDirect, "renderer::ptdirect");
+LM_COMPONENT_REGISTER_IMPL(Renderer_LT, "renderer::lt");
 
 LM_NAMESPACE_END

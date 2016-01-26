@@ -359,6 +359,11 @@ public:
         return accel_->Intersect(this, ray, isect, Math::Eps(), Math::Inf());
     };
 
+    LM_IMPL_F(IntersectWithRange) = [this](const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    {
+        return accel_->Intersect(this, ray, isect, minT, maxT);
+    };
+
     LM_IMPL_F(PrimitiveByID) = [this](const std::string& id) -> const Primitive*
     {
         const auto it = primitiveIDMap_.find(id);

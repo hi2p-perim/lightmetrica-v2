@@ -38,7 +38,7 @@ public:
 
 public:
 
-    auto GeometryTerm(const SurfaceGeometry& geom1, const SurfaceGeometry& geom2) -> Float
+    static auto GeometryTerm(const SurfaceGeometry& geom1, const SurfaceGeometry& geom2) -> Float
     {
         auto p1p2 = geom2.p - geom1.p;
         const auto p1p2L2 = Math::Dot(p1p2, p1p2);

@@ -148,7 +148,7 @@ public:
 
             // UV
             const auto* tc = mesh->Texcoords();
-            if (!tc)
+            if (tc)
             {
                 Vec2 uv1(tc[2 * i1], tc[2 * i1 + 1]);
                 Vec2 uv2(tc[2 * i2], tc[2 * i2 + 1]);

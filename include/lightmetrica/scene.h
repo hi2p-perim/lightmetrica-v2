@@ -26,6 +26,8 @@
 
 #include <lightmetrica/component.h>
 #include <lightmetrica/math.h>
+#include <lightmetrica/ray.h>
+#include <lightmetrica/intersection.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -75,6 +77,7 @@ public:
         \retval false Not intersected with the scene.
     */
     LM_INTERFACE_F(Intersect, bool(const Ray& ray, Intersection&));
+    LM_INTERFACE_F(IntersectWithRange, bool(const Ray& ray, Intersection& isect, Float minT, Float maxT));
 
     /*!
         \brief Get a primitive by ID.
@@ -102,6 +105,19 @@ public:
 
     LM_INTERFACE_F(SampleEmitter, const Primitive*(int type, Float u));
     LM_INTERFACE_F(EvaluateEmitterPDF, Float(int type));
+
+public:
+
+    auto Visible(const Vec3& p1, const Vec3& p2) const -> bool
+    {
+        Ray shadowRay;
+        const auto p1p2 = p2 - p1;
+        const auto p1p2L = Math::Length(p1p2);
+        shadowRay.d = p1p2 / p1p2L;
+        shadowRay.o = p1;
+        Intersection _;
+        return !IntersectWithRange(shadowRay, _, Math::Eps(), p1p2L * (1_f - Math::Eps()));
+    }
 
 };
 

@@ -145,6 +145,11 @@ public:
 
     LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
+        if (minT > maxT)
+        {
+            return false;
+        }
+
         // Create RTCRay
         RTCRay rtcRay;
         rtcRay.org[0] = (float)(ray.o[0]);
