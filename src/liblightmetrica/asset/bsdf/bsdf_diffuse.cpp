@@ -29,6 +29,8 @@
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/bsdfutils.h>
 #include <lightmetrica/sampler.h>
+#include <lightmetrica/texture.h>
+#include <lightmetrica/assets.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -42,7 +44,16 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        R_ = SPD::FromRGB(prop->ChildAs<Vec3>("R", Vec3()));
+        if (prop->Child("TexR"))
+        {
+            const auto id = prop->Child("TexR")->As<std::string>();
+            texR_  = static_cast<const Texture*>(assets->AssetByIDAndType(id, "texture", primitive));
+        }
+        else
+        {
+            R_ = SPD::FromRGB(prop->ChildAs<Vec3>("R", Vec3()));
+        }
+
         return true;
     };
 
@@ -84,13 +95,14 @@ public:
             return SPD();
         }
 
-        //const auto R = Params.D.TexR ? Params.D.TexR->Evaluate(geom.uv) : Params.D.R;
-        return R_ * Math::InvPi() * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
+        const auto R = texR_ ? SPD::FromRGB(texR_->Evaluate(geom.uv)) : R_;
+        return R * Math::InvPi() * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
     };
 
 public:
 
     SPD R_;
+    const Texture* texR_ = nullptr;
 
 };
 

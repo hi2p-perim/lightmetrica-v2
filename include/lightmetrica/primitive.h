@@ -48,7 +48,7 @@ class Emitter;
 struct Primitive
 {
 
-    const char* id;
+    const char* id = nullptr;
     Mat4 transform;
     Mat3 normalTransform;
     const TriangleMesh* mesh = nullptr;

@@ -163,6 +163,7 @@ set(
 	"${_INCLUDE_DIR}/generalizedbsdf.h"
 	"${_INCLUDE_DIR}/trianglemesh.h"
 	"${_INCLUDE_DIR}/film.h"
+	"${_INCLUDE_DIR}/texture.h"
 )
 
 set(
@@ -249,6 +250,20 @@ set(
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\bsdf" FILES ${_ASSET_BSDF_SOURCE_FILES})
 list(APPEND _SOURCE_FILES ${_ASSET_BSDF_SOURCE_FILES})
+
+# --------------------------------------------------------------------------------
+
+#
+# Asset / Texture
+#
+
+set(
+	_ASSET_TEXTURE_SOURCE_FILES
+	"asset/texture/texture_bitmap.cpp"
+)
+
+source_group("${_SOURCE_FILES_ROOT}\\asset\\texture" FILES ${_ASSET_TEXTURE_SOURCE_FILES})
+list(APPEND _SOURCE_FILES ${_ASSET_TEXTURE_SOURCE_FILES})
 
 # --------------------------------------------------------------------------------
 

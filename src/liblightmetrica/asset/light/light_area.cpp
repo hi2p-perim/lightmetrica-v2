@@ -129,6 +129,8 @@ public:
 
             #pragma endregion
 
+            // --------------------------------------------------------------------------------
+
             #pragma region Store surface geometry information
 
             const auto* mesh = primitive->mesh;
