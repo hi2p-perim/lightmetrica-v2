@@ -35,21 +35,20 @@
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/scheduler.h>
+#include <lightmetrica/renderutils.h>
 
 LM_NAMESPACE_BEGIN
 
-/*!
-    Implementation of path tracing.
-*/
-class Renderer_PT final : public Renderer
+class Renderer_PTDirect final : public Renderer
 {
 public:
 
-    LM_IMPL_CLASS(Renderer_PT, Renderer);
+    LM_IMPL_CLASS(Renderer_PTDirect, Renderer);
+
 
 public:
 
-    Renderer_PT()
+    Renderer_PTDirect()
         : sched_(ComponentFactory::Create<Scheduler>())
     {}
 
@@ -88,7 +87,6 @@ public:
             SurfaceGeometry geomE;
             E->SamplePosition(rng->Next2D(), geomE);
             const Float pdfPE = E->EvaluatePositionPDF(geomE, false);
-            assert(pdfPE > 0);
 
             #pragma endregion
 
@@ -101,8 +99,8 @@ public:
             int type = SurfaceInteraction::E;
             auto geom = geomE;
             Vec3 wi;
-            int numVertices = 1;
             Vec2 rasterPos;
+            int numVertices = 1;
 
             #pragma endregion
 
@@ -117,25 +115,82 @@ public:
 
                 // --------------------------------------------------------------------------------
 
-                #pragma region Sample direction
+                #pragma region Direct light sampling
+
+                {
+                    #pragma region Sample a light
+
+                    const auto* L = scene->SampleEmitter(SurfaceInteraction::L, rng->Next());
+                    const Float pdfL = scene->EvaluateEmitterPDF(SurfaceInteraction::L);
+                    assert(pdfL > 0);
+
+                    #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    #pragma region Sample a position on the light
+
+                    SurfaceGeometry geomL;
+                    L->SamplePosition(rng->Next2D(), geomL);
+                    const Float pdfPL = L->EvaluatePositionPDF(geomL, false);
+                    assert(pdfPL > 0);
+
+                    #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    #pragma region Evaluate contribution
+
+                    const auto ppL = Math::Normalize(geomL.p - geom.p);
+                    const auto fsE = primitive->EvaluateDirection(geom, type, wi, ppL, TransportDirection::EL, true);
+                    const auto fsL = L->EvaluateDirection(geomL, SurfaceInteraction::L, Vec3(), -ppL, TransportDirection::LE, true);
+                    const auto G = RenderUtils::GeometryTerm(geom, geomL);
+                    const auto V = scene->Visible(geom.p, geomL.p) ? 1.0 : 0.0;
+                    const auto LeP = L->EvaluatePosition(geomL, false);
+                    const auto C = throughput * fsE * G * V * fsL * LeP / pdfL / pdfPL;
+
+                    #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    #pragma region Record to film
+
+                    if (C != Vec3())
+                    {
+                        // Recompute pixel index if necessary
+                        auto rp = rasterPos;
+                        if (type == SurfaceInteraction::E)
+                        {
+                            primitive->emitter->RasterPosition(ppL, geom, rp);
+                        }
+
+                        // Accumulate to film
+                        film->Splat(rp, C);
+                    }
+
+                    #pragma endregion
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Sample next direction
 
                 Vec3 wo;
-                auto u2 = rng->Next2D();
-                primitive->SampleDirection(u2, rng->Next(), type, geom, wi, wo);
+                primitive->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
                 const Float pdfD = primitive->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
-                #pragma region Calculate raster position for initial vertex
+                #pragma region Calculate pixel index for initial vertex
 
                 if (type == SurfaceInteraction::E)
                 {
-                    bool result = primitive->emitter->RasterPosition(wo, geom, rasterPos);
-                    if (!result)
+                    if (!primitive->emitter->RasterPosition(wo, geom, rasterPos))
                     {
-                        // This can be happened due to numerical errors
                         break;
                     }
                 }
@@ -181,25 +236,9 @@ public:
 
                 // --------------------------------------------------------------------------------
 
-                #pragma region Handle hit with light source
-
-                if ((isect.primitive->Type() & SurfaceInteraction::L) > 0)
-                {
-                    // Accumulate to film
-                    const auto C =
-                          throughput
-                        * isect.primitive->EvaluateDirection(isect.geom, SurfaceInteraction::L, Vec3(), -ray.d, TransportDirection::EL, true)
-                        * isect.primitive->EvaluatePosition(isect.geom, true);
-                    film->Splat(rasterPos, C);
-                }
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
                 #pragma region Path termination
 
-                const Float rrProb = 0.5;
+                Float rrProb = 0.5;
                 if (rng->Next() > rrProb)
                 {
                     break;
@@ -233,6 +272,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_PT, "renderer::pt");
+LM_COMPONENT_REGISTER_IMPL(Renderer_PTDirect, "renderer::ptdirect");
 
 LM_NAMESPACE_END

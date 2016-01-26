@@ -75,6 +75,8 @@ set(
 	"${_INCLUDE_DIR}/debug.h"
 	"${_INCLUDE_DIR}/surfaceinteraction.h"
 	"${_INCLUDE_DIR}/bsdfutils.h"
+	"${_INCLUDE_DIR}/scheduler.h"
+	"${_INCLUDE_DIR}/renderutils.h"
 )
 set(
     _CORE_SOURCE_FILES
@@ -85,6 +87,7 @@ set(
 	"exception.cpp"
 	"property.cpp"
 	"debug.cpp"
+	"scheduler.cpp"
 
     # detail
     "stringtemplate.cpp"
@@ -320,6 +323,7 @@ set(
 	"renderer/renderer_null.cpp"
 	"renderer/renderer_raycast.cpp"
 	"renderer/renderer_pt.cpp"
+	"renderer/renderer_ptdirect.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})
