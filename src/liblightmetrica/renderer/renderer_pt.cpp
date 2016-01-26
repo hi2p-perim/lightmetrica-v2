@@ -34,6 +34,7 @@
 #include <lightmetrica/intersection.h>
 #include <lightmetrica/emitter.h>
 #include <lightmetrica/surfacegeometry.h>
+#include <lightmetrica/primitive.h>
 #include <lightmetrica/detail/stringtemplate.h>
 #include <tbb/tbb.h>
 
@@ -48,8 +49,11 @@ private:
     long long progressUpdateInterval_;
     double progressImageUpdateInterval_;
     std::string progressImageUpdateFormat_;
+
     long long numSamples_;      //!< Number of samples
     double renderTime_;         //!< Render time
+
+    tbb::task_scheduler_init init{ tbb::task_scheduler_init::deferred };
 
 public:
 
@@ -73,6 +77,7 @@ public:
         {
             numThreads_ = static_cast<int>(std::thread::hardware_concurrency()) + numThreads_;
         }
+        init.initialize(numThreads_);
 
         #if LM_DEBUG_MODE
         grainSize_ = prop->ChildAs<long long>("grain_size", 10);
@@ -374,7 +379,7 @@ public:
 
             SurfaceGeometry geomE;
             E->SamplePosition(rng->Next2D(), geomE);
-            const Float pdfPE = E->EvaluatePositionPDF(geomE, true);
+            const Float pdfPE = E->EvaluatePositionPDF(geomE, false);
             assert(pdfPE > 0);
 
             #pragma endregion
@@ -383,8 +388,8 @@ public:
 
             #pragma region Temporary variables
 
-            auto throughput = E->EvaluatePosition(geomE, true) / pdfPE / pdfE;
-            const GeneralizedBSDF* bsdf = E;
+            auto throughput = E->EvaluatePosition(geomE, false) / pdfPE / pdfE;
+            const auto* primitive = E;
             int type = SurfaceInteraction::E;
             auto geom = geomE;
             Vec3 wi;
@@ -407,8 +412,9 @@ public:
                 #pragma region Sample direction
 
                 Vec3 wo;
-                bsdf->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
-                const double pdfD = prim->EvaluateDirectionPDF(geom, type, wi, wo, true);
+                auto u2 = rng->Next2D();
+                primitive->SampleDirection(u2, rng->Next(), type, geom, wi, wo);
+                const Float pdfD = primitive->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
@@ -418,8 +424,12 @@ public:
 
                 if (type == SurfaceInteraction::E)
                 {
-                    bool result = static_cast<const Emitter*>(bsdf)->RasterPosition(wo, geom, rasterPos);
-                    assert(result);
+                    bool result = static_cast<const Emitter*>(primitive->emitter)->RasterPosition(wo, geom, rasterPos);
+                    if (!result)
+                    {
+                        // This can be happened due to numerical errors
+                        break;
+                    }
                 }
 
                 #pragma endregion
@@ -428,7 +438,7 @@ public:
 
                 #pragma region Evaluate direction
 
-                const auto fs = bsdf->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, true);
+                const auto fs = primitive->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, false);
                 if (fs.Black())
                 {
                     break;
@@ -465,13 +475,14 @@ public:
 
                 #pragma region Handle hit with light source
 
-                if ((isect.primitive-> .Prim->Type & PrimitiveType::L) > 0)
+                if ((isect.primitive->Type() & SurfaceInteraction::L) > 0)
                 {
                     // Accumulate to film
-                    ctx.film[pixelIndex] +=
-                        throughput
-                        * isect.Prim->EvaluateDirection(isect.geom, PrimitiveType::L, glm::dvec3(), -ray.d, TransportDirection::EL, false)
-                        * isect.Prim->EvaluatePosition(isect.geom, false);
+                    const auto C =
+                          throughput
+                        * isect.primitive->EvaluateDirection(isect.geom, SurfaceInteraction::L, Vec3(), -ray.d, TransportDirection::EL, true)
+                        * isect.primitive->EvaluatePosition(isect.geom, true);
+                    film->Splat(rasterPos, C);
                 }
 
                 #pragma endregion
@@ -497,8 +508,8 @@ public:
                 #pragma region Update information
 
                 geom = isect.geom;
-                prim = isect.Prim;
-                type = isect.Prim->Type & ~PrimitiveType::Emitter;
+                primitive = isect.primitive;
+                type = isect.primitive->Type() & ~SurfaceInteraction::Emitter;
                 wi = -ray.d;
                 numVertices++;
 

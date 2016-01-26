@@ -166,7 +166,7 @@ struct TriAccelTriangle
     We simply utilizes a list of triangles from the primitives as a structure.
     We utilize this class only for testing, not recommend in the practical use.
 */
-class Accel_Naive : public Accel
+class Accel_Naive final : public Accel
 {
 public:
 

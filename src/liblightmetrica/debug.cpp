@@ -78,7 +78,7 @@ auto DebugUtils_StackTrace() -> bool
         ss << "*** " << i << ": " << callers_stack[i] << " " << symbol->Name << " - 0x" << symbol->Address << std::endl;
     }
 
-    LM_LOG_INFO(ss.str());
+    LM_LOG_ERROR(ss.str());
 
     free(symbol);
     return true;

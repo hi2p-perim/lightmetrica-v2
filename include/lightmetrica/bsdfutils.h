@@ -22,26 +22,36 @@
     THE SOFTWARE.
 */
 
-#include <pch.h>
-#include <lightmetrica/light.h>
+#pragma once
+
+#include <lightmetrica/macros.h>
+#include <lightmetrica/math.h>
+#include <lightmetrica/surfacegeometry.h>
+#include <lightmetrica/surfaceinteraction.h>
 
 LM_NAMESPACE_BEGIN
 
-class Light_Point final : public Light
+class BSDFUtils
 {
 public:
 
-    LM_IMPL_CLASS(Light_Point, Light);
+    LM_DISABLE_CONSTRUCT(BSDFUtils);
 
 public:
 
-    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
+    static auto ShadingNormalCorrection(const SurfaceGeometry& geom, const Vec3& wi, const Vec3& wo, TransportDirection transDir) -> Float
     {
-        return true;
-    };
+        const auto localWi = geom.ToLocal * wi;
+        const auto localWo = geom.ToLocal * wo;
+        const Float wiDotNg = Math::Dot(wi, geom.gn);
+        const Float woDotNg = Math::Dot(wo, geom.gn);
+        const Float wiDotNs = Math::LocalCos(localWi);
+        const Float woDotNs = Math::LocalCos(localWo);
+        if (wiDotNg * wiDotNs <= 0_f || woDotNg * woDotNs <= 0_f) { return 0_f; }
+        if (transDir == TransportDirection::LE) { return wiDotNs * woDotNg / (woDotNs * wiDotNg); }
+        return 1_f;
+    }
 
 };
-
-LM_COMPONENT_REGISTER_IMPL(Light_Point, "light::point");
 
 LM_NAMESPACE_END

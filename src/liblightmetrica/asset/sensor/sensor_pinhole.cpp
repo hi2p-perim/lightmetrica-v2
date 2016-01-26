@@ -32,7 +32,7 @@
 
 LM_NAMESPACE_BEGIN
 
-class Sensor_Pinhole : public Sensor
+class Sensor_Pinhole final : public Sensor
 {
 public:
 
@@ -68,31 +68,14 @@ public:
         return film_;
     };
 
-    LM_IMPL_F(RasterPosition) = [this](const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) -> bool
-    {
-        // Check if wo is coming from bind the camera
-        const auto V = Math::Transpose(Mat3(vx_, vy_, vz_));
-        const auto woEye = V * wo;
-        if (Math::LocalCos(woEye) >= 0_f)
-        {
-            return false;
-        }
-
-        // Calculate raster position
-        // Check if #wo is outside of the screen
-        const Float tanFov = Math::Tan(fov_ * 0.5_f);
-        rasterPos = (Vec2(-woEye.x / woEye.z / tanFov / aspect_, -woEye.y / woEye.z / tanFov) + Vec2(1_f)) * 0.5_f;
-        if (rasterPos.x < 0_f || rasterPos.x > 1_f || rasterPos.y < 0_f || rasterPos.y > 1_f)
-        {
-            return false;
-        }
-
-        return true;
-    };
-
 public:
 
     #pragma region GeneralizedBSDF
+
+    LM_IMPL_F(Type) = [this]() -> int
+    {
+        return SurfaceInteraction::E;
+    };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
     {
@@ -133,7 +116,29 @@ public:
     {
         return !evalDelta ? SPD(1) : SPD();
     };
-    
+
+    LM_IMPL_F(RasterPosition) = [this](const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) -> bool
+    {
+        // Check if wo is coming from bind the camera
+        const auto V = Math::Transpose(Mat3(vx_, vy_, vz_));
+        const auto woEye = V * wo;
+        if (Math::LocalCos(woEye) >= 0_f)
+        {
+            return false;
+        }
+
+        // Calculate raster position
+        // Check if #wo is outside of the screen
+        const Float tanFov = Math::Tan(fov_ * 0.5_f);
+        rasterPos = (Vec2(-woEye.x / woEye.z / tanFov / aspect_, -woEye.y / woEye.z / tanFov) + Vec2(1_f)) * 0.5_f;
+        if (rasterPos.x < 0_f || rasterPos.x > 1_f || rasterPos.y < 0_f || rasterPos.y > 1_f)
+        {
+            return false;
+        }
+
+        return true;
+    };
+
     #pragma endregion
 
 private:

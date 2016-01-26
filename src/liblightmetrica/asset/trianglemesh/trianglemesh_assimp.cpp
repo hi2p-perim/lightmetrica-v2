@@ -66,7 +66,7 @@ private:
 
 };
 
-class TriangleMesh_Assimp : public TriangleMesh
+class TriangleMesh_Assimp final : public TriangleMesh
 {
 public:
 

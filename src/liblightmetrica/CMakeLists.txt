@@ -74,6 +74,7 @@ set(
 	"${_INCLUDE_DIR}/probability.h"
 	"${_INCLUDE_DIR}/debug.h"
 	"${_INCLUDE_DIR}/surfaceinteraction.h"
+	"${_INCLUDE_DIR}/bsdfutils.h"
 )
 set(
     _CORE_SOURCE_FILES
@@ -124,6 +125,8 @@ set(
     _MATH_HEADER_FILES
     "${_INCLUDE_DIR}/math.h"
     "${_INCLUDE_DIR}/random.h"
+    "${_INCLUDE_DIR}/sampler.h"
+    "${_INCLUDE_DIR}/dist.h"
 )
 
 set(_DSFMT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/src/dSFMT-src-2.2.3")
@@ -196,6 +199,7 @@ list(APPEND _SOURCE_FILES ${_ASSET_SENSOR_SOURCE_FILES})
 set(
     _ASSET_LIGHT_SOURCE_FILES
 	"asset/light/light_point.cpp"
+	"asset/light/light_area.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\light" FILES ${_ASSET_LIGHT_SOURCE_FILES})
@@ -240,6 +244,7 @@ list(APPEND _SOURCE_FILES ${_ASSET_TRIANGLE_MESH_SOURCE_FILES})
 set(
 	_ASSET_BSDF_SOURCE_FILES
 	"asset/bsdf/bsdf_null.cpp"
+	"asset/bsdf/bsdf_diffuse.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\bsdf" FILES ${_ASSET_BSDF_SOURCE_FILES})

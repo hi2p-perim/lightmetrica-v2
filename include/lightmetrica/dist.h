@@ -24,39 +24,69 @@
 
 #pragma once
 
-#include <lightmetrica/asset.h>
 #include <lightmetrica/math.h>
-#include <lightmetrica/spectrum.h>
-#include <lightmetrica/surfaceinteraction.h>
+#include <vector>
+#include <algorithm>
 
 LM_NAMESPACE_BEGIN
 
-struct SurfaceGeometry;
-class DirectionSampler;
-
-/*!
-*/
-class GeneralizedBSDF : public Asset
+class Distribution1D
 {
 public:
 
-    LM_INTERFACE_CLASS(GeneralizedBSDF, Asset);
+    Distribution1D() { Clear(); }
+    LM_DISABLE_COPY_AND_MOVE(Distribution1D);
 
 public:
 
-    GeneralizedBSDF() = default;
-    LM_DISABLE_COPY_AND_MOVE(GeneralizedBSDF);
+    auto Add(Float v) -> void
+    {
+        cdf.push_back(cdf.back() + v);
+    }
 
-public:
+    auto Normalize() -> void
+    {
+        const Float sum = cdf.back();
+        const Float invSum = 1_f / sum;
+        for (auto& v : cdf)
+        {
+            v *= invSum;
+        }
+    }
 
-    LM_INTERFACE_F(Type, int());
-    LM_INTERFACE_F(SampleDirection, void(const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo));
-    LM_INTERFACE_F(EvaluateDirectionPDF, Float(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta));
-    LM_INTERFACE_F(EvaluateDirection, SPD(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta));
+    auto Sample(Float u) const -> int
+    {
+        int v = static_cast<int>(std::upper_bound(cdf.begin(), cdf.end(), u) - cdf.begin()) - 1;
+        return Math::Clamp<int>(v, 0, static_cast<int>(cdf.size()) - 2);
+    }
 
-public:
+    auto SampleReuse(Float u, Float& u2) const -> int
+    {
+        int v = static_cast<int>(std::upper_bound(cdf.begin(), cdf.end(), u) - cdf.begin()) - 1;
+        int i = Math::Clamp<int>(v, 0, static_cast<int>(cdf.size()) - 2);
+        u2 = (u - cdf[i]) / (cdf[i + 1] - cdf[i]);
+        return i;
+    }
 
-    LM_INTERFACE_CLASS_END(GeneralizedBSDF);
+    auto EvaluatePDF(int i) const -> Float
+    {
+        return (i < 0 || i + 1 >= static_cast<int>(cdf.size())) ? 0 : cdf[i + 1] - cdf[i];
+    }
+
+    auto Clear() -> void
+    {
+        cdf.clear();
+        cdf.push_back(0);
+    }
+
+    auto Empty() const -> bool
+    {
+        return cdf.size() == 1;
+    }
+
+private:
+
+    std::vector<Float> cdf;
 
 };
 

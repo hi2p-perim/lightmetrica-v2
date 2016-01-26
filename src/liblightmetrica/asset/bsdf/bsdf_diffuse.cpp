@@ -24,39 +24,76 @@
 
 #include <pch.h>
 #include <lightmetrica/bsdf.h>
+#include <lightmetrica/property.h>
+#include <lightmetrica/spectrum.h>
+#include <lightmetrica/surfacegeometry.h>
+#include <lightmetrica/bsdfutils.h>
+#include <lightmetrica/sampler.h>
 
 LM_NAMESPACE_BEGIN
 
-class BSDF_Null final : public BSDF
+class BSDF_Diffuse final : public BSDF
 {
 public:
 
-    LM_IMPL_CLASS(BSDF_Null, BSDF);
+    LM_IMPL_CLASS(BSDF_Diffuse, BSDF);
 
 public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
+        R_ = SPD::FromRGB(prop->ChildAs<Vec3>("R", Vec3()));
         return true;
+    };
+
+    LM_IMPL_F(Type) = [this]() -> int
+    {
+        return SurfaceInteraction::D;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
     {
+        const auto localWi = geom.ToLocal * wi;
+        if (Math::LocalCos(localWi) <= 0)
+        {
+            return;
+        }
 
+        const auto localWo = Sampler::CosineSampleHemisphere(u);
+        wo = geom.ToWorld * localWo;
     };
 
     LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
     {
-        return 0_f;
+        const auto localWi = geom.ToLocal * wi;
+        const auto localWo = geom.ToLocal * wo;
+        if (Math::LocalCos(localWi) <= 0 || Math::LocalCos(localWo) <= 0)
+        {
+            return 0;
+        }
+
+        return Sampler::CosineSampleHemispherePDFProjSA(localWo);
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta)
     {
-        return SPD();
+        const auto localWi = geom.ToLocal * wi;
+        const auto localWo = geom.ToLocal * wo;
+        if (Math::LocalCos(localWi) <= 0 || Math::LocalCos(localWo) <= 0)
+        {
+            return SPD();
+        }
+
+        //const auto R = Params.D.TexR ? Params.D.TexR->Evaluate(geom.uv) : Params.D.R;
+        return R_ * Math::InvPi() * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
     };
+
+public:
+
+    SPD R_;
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::nulltype");
+LM_COMPONENT_REGISTER_IMPL(BSDF_Diffuse, "bsdf::diffuse");
 
 LM_NAMESPACE_END

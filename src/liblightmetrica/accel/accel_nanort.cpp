@@ -48,7 +48,7 @@ LM_NAMESPACE_BEGIN
 /*
     TODO: Falling tests. Fix it.
 */
-class Accel_NanoRT : public Accel
+class Accel_NanoRT final : public Accel
 {
 public:
 

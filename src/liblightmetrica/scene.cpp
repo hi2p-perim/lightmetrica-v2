@@ -164,6 +164,9 @@ public:
                         transform = parentTransform * transform;
                         primitive->transform = transform;
                     }
+
+                    // Compute normal transform
+                    primitive->normalTransform = Mat3(Math::Transpose(Math::Inverse(primitive->transform)));
                 }
 
                 #pragma endregion
@@ -353,7 +356,7 @@ public:
     LM_IMPL_F(Intersect) = [this](const Ray& ray, Intersection& isect) -> bool
     {
         // TODO: Intersection with emitter shapes
-        return accel_->Intersect(this, ray, isect, 0_f, Math::Inf());
+        return accel_->Intersect(this, ray, isect, Math::Eps(), Math::Inf());
     };
 
     LM_IMPL_F(PrimitiveByID) = [this](const std::string& id) -> const Primitive*
@@ -377,18 +380,18 @@ public:
         return primitives_.at(index).get();
     };
 
-    LM_IMPL_F(SampleEmitter) = [this](int type, Float u) -> const Emitter*
+    LM_IMPL_F(SampleEmitter) = [this](int type, Float u) -> const Primitive*
     {
         if ((type & SurfaceInteraction::L) > 0)
         {
             int n = static_cast<int>(lightPrimitiveIndices_.size());
             int i = Math::Clamp(static_cast<int>(u * n), 0, n - 1);
-            return primitives_.at(lightPrimitiveIndices_[i]).get()->emitter;
+            return primitives_.at(lightPrimitiveIndices_[i]).get();
         }
 
         if ((type & SurfaceInteraction::E) > 0)
         {
-            return sensorPrimitive_->emitter;
+            return sensorPrimitive_;
         }
 
         LM_UNREACHABLE();

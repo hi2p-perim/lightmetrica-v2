@@ -173,7 +173,7 @@ const std::string HDRImageType_String[] =
 
 LM_ENUM_TYPE_MAP(HDRImageType);
 
-class Film_HDR : public Film
+class Film_HDR final : public Film
 {
 public:
 
@@ -217,7 +217,7 @@ public:
     {
         const int pX = Math::Clamp((int)(rasterPos.x * Float(width_)), 0, width_ - 1);
         const int pY = Math::Clamp((int)(rasterPos.y * Float(height_)), 0, height_ - 1);
-        data_[pY * width_ + pX] = v.ToRGB();
+        data_[pY * width_ + pX] += v.ToRGB();
     };
 
     LM_IMPL_F(SetPixel) = [this](int x, int y, const SPD& v) -> void

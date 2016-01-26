@@ -48,20 +48,20 @@ public:
         \brief Create intersection structure.
 
         Helper function to fill in the intersection data from the triangle intersection info.
-        This function is useful with the implementation of Accel interface.
+        This function is utilized in the implementation of Accel interface.
 
-        \param prim Primitive on the intersection point.
+        \param primitive Primitive on the intersection point.
         \param p Intersection point
         \param b Barycentric coordinates of the triangle at the intersection point.
         \param faceIndex Triangle face index.
     */
-    static auto CreateTriangleIntersection(const Primitive* prim, const Vec3& p, const Vec2& b, int faceIndex) -> Intersection
+    static auto CreateTriangleIntersection(const Primitive* primitive, const Vec3& p, const Vec2& b, int faceIndex) -> Intersection
     {
         Intersection isect;
 
         // Store information
-        const auto* mesh = prim->mesh;
-        isect.primitive = prim;
+        const auto* mesh = primitive->mesh;
+        isect.primitive = primitive;
 
         // Intersection point
         isect.geom.p = p;
@@ -74,9 +74,9 @@ public:
 
         // Geometry normal
         const auto* ps = mesh->Positions();
-        Vec3 p1(ps[3 * v1], ps[3 * v1 + 1], ps[3 * v1 + 2]);
-        Vec3 p2(ps[3 * v2], ps[3 * v2 + 1], ps[3 * v2 + 2]);
-        Vec3 p3(ps[3 * v3], ps[3 * v3 + 1], ps[3 * v3 + 2]);
+        Vec3 p1(primitive->transform * Vec4(ps[3 * v1], ps[3 * v1 + 1], ps[3 * v1 + 2], 1_f));
+        Vec3 p2(primitive->transform * Vec4(ps[3 * v2], ps[3 * v2 + 1], ps[3 * v2 + 2], 1_f));
+        Vec3 p3(primitive->transform * Vec4(ps[3 * v3], ps[3 * v3 + 1], ps[3 * v3 + 2], 1_f));
         isect.geom.gn = Math::Normalize(Math::Cross(p2 - p1, p3 - p1));
 
         // Shading normal
@@ -84,9 +84,9 @@ public:
         const auto* ns = mesh->Normals();
         if (ns)
         {
-            n1 = Vec3(ns[3 * v1], ns[3 * v1 + 1], ns[3 * v1 + 2]);
-            n2 = Vec3(ns[3 * v2], ns[3 * v2 + 1], ns[3 * v2 + 2]);
-            n3 = Vec3(ns[3 * v3], ns[3 * v3 + 1], ns[3 * v3 + 2]);
+            n1 = primitive->normalTransform * Vec3(ns[3 * v1], ns[3 * v1 + 1], ns[3 * v1 + 2]);
+            n2 = primitive->normalTransform * Vec3(ns[3 * v2], ns[3 * v2 + 1], ns[3 * v2 + 2]);
+            n3 = primitive->normalTransform * Vec3(ns[3 * v3], ns[3 * v3 + 1], ns[3 * v3 + 2]);
             isect.geom.sn = Math::Normalize(n1 * (1_f - b[0] - b[1]) + n2 * b[0] + n3 * b[1]);
             if (std::isnan(isect.geom.sn.x) || std::isnan(isect.geom.sn.y) || std::isnan(isect.geom.sn.z))
             {
@@ -102,12 +102,12 @@ public:
         }
 
         // Texture coordinates
-        const auto* uvs = mesh->Texcoords();
-        if (uvs)
+        const auto* tc = mesh->Texcoords();
+        if (tc)
         {
-            Vec2 uv1(uvs[2 * v1], uvs[2 * v1 + 1]);
-            Vec2 uv2(uvs[2 * v2], uvs[2 * v2 + 1]);
-            Vec2 uv3(uvs[2 * v3], uvs[2 * v3 + 1]);
+            Vec2 uv1(tc[2 * v1], tc[2 * v1 + 1]);
+            Vec2 uv2(tc[2 * v2], tc[2 * v2 + 1]);
+            Vec2 uv3(tc[2 * v3], tc[2 * v3 + 1]);
             isect.geom.uv = uv1 * (1_f - b[0] - b[1]) + uv2 * b[0] + uv3 * b[1];
         }
 

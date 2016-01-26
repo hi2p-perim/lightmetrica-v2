@@ -55,7 +55,7 @@ namespace
     }
 }
 
-class Accel_Embree : public Accel
+class Accel_Embree final : public Accel
 {
 public:
 

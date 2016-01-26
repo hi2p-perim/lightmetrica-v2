@@ -109,8 +109,8 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
                 LM_LOG_ERROR("Instance : " + std::string(o_->implName));
                 LM_LOG_ERROR("Function : " + std::string(name_) + " (ID: " + std::to_string(ID) + ")");
                 #if LM_DEBUG_MODE
-                LM_LOG_INFO("Stack");
                 {
+                    LM_LOG_ERROR("Stack");
                     LM_LOG_INDENTER();
                     DebugUtils::StackTrace();
                 }

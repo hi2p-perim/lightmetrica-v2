@@ -26,7 +26,10 @@
 
 #include <lightmetrica/portable.h>
 #include <lightmetrica/math.h>
+#include <lightmetrica/bsdf.h>
+#include <lightmetrica/emitter.h>
 #include <string>
+#include <cassert>
 
 LM_NAMESPACE_BEGIN
 
@@ -39,15 +42,106 @@ class Emitter;
 
 	Primitive is an element of the scene used for managing transformable objects.
 	A primitive corresponds to a node in the scene.
+
+    TODO: Redesign sampling related functions.
 */
 struct Primitive
 {
 
     const char* id;
     Mat4 transform;
+    Mat3 normalTransform;
     const TriangleMesh* mesh = nullptr;
     const Emitter* emitter = nullptr;
     const BSDF* bsdf = nullptr;
+
+public:
+
+    auto Type() const -> int
+    {
+        int type = 0;
+
+        if (emitter)
+        {
+            type |= emitter->Type();
+        }
+        if (bsdf)
+        {
+            type |= bsdf->Type();
+        }
+
+        return type;
+    }
+
+    auto SampleDirection(const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) const -> void
+    {
+        assert((queryType & SurfaceInteraction::Emitter) == 0 || (queryType & SurfaceInteraction::BSDF) == 0);
+        
+        if ((queryType & SurfaceInteraction::Emitter) > 0)
+        {
+            emitter->SampleDirection(u, uComp, queryType, geom, wi, wo);
+            return;
+        }
+        else if ((queryType & SurfaceInteraction::BSDF) > 0)
+        {
+            bsdf->SampleDirection(u, uComp, queryType, geom, wi, wo);
+            return;
+        }
+
+        LM_UNREACHABLE();
+    }
+
+    auto EvaluateDirectionPDF(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) const -> Float
+    {
+        assert((queryType & SurfaceInteraction::Emitter) == 0 || (queryType & SurfaceInteraction::BSDF) == 0);
+
+        if ((queryType & SurfaceInteraction::Emitter) > 0)
+        {
+            return emitter->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
+        }
+        else if ((queryType & SurfaceInteraction::BSDF) > 0)
+        {
+            return bsdf->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
+        }
+
+        LM_UNREACHABLE();
+        return 0_f;
+    }
+
+    auto EvaluateDirection(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) const -> SPD
+    {
+        assert((types & SurfaceInteraction::Emitter) == 0 || (types & SurfaceInteraction::BSDF) == 0);
+
+        if ((types & SurfaceInteraction::Emitter) > 0)
+        {
+            return emitter->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
+        }
+        else if ((types & SurfaceInteraction::BSDF) > 0)
+        {
+            return bsdf->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
+        }
+
+        LM_UNREACHABLE();
+        return SPD();
+    }
+
+    auto SamplePosition(const Vec2& u, SurfaceGeometry& geom) const -> void
+    {
+        assert(emitter);
+        emitter->SamplePosition(u, geom);
+    }
+
+    auto EvaluatePositionPDF(const SurfaceGeometry& geom, bool evalDelta) const -> Float
+    {
+        assert(emitter);
+        return emitter->EvaluatePositionPDF(geom, evalDelta);
+    }
+
+    auto EvaluatePosition(const SurfaceGeometry& geom, bool evalDelta) const -> SPD
+    {
+        assert(emitter);
+        return emitter->EvaluatePosition(geom, evalDelta);
+    }
 
 };
 

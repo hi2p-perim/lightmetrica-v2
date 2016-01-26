@@ -46,7 +46,6 @@ public:
 public:
 
     LM_INTERFACE_F(GetFilm, Film*());
-    LM_INTERFACE_F(RasterPosition, bool(const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos));
 
 public:
 

@@ -35,7 +35,6 @@ class Accel;
 struct Primitive;
 struct Ray;
 struct Intersection;
-class Emitter;
 
 /*!
     \brief Scene.
@@ -101,7 +100,7 @@ public:
     */
     LM_INTERFACE_F(Sensor, const Primitive*());
 
-    LM_INTERFACE_F(SampleEmitter, const Emitter*(int type, Float u));
+    LM_INTERFACE_F(SampleEmitter, const Primitive*(int type, Float u));
     LM_INTERFACE_F(EvaluateEmitterPDF, Float(int type));
 
 };

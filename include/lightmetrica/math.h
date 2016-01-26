@@ -474,54 +474,6 @@ struct TMatBase
 
 // --------------------------------------------------------------------------------
 
-#pragma region Mat3
-
-/*!
-	3x3 matrix.
-
-    Generic column major 3x3 matrix.
-    A matrix
-        v00 v01 v02
-        v10 v11 v12
-        v20 v21 v22
-    is stored sequentially as v00, v10, ..., v22.
-*/
-template <typename T, SIMD Opt = SIMD::None>
-struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
-{
-
-    VecT v_[NC];
-
-    LM_INLINE TMat3() {}
-    LM_INLINE TMat3(const MatT& m) : v_{m.v_[0], m.v_[1], m.v_[2]} {}
-    LM_INLINE TMat3(const VecT& v0, const VecT& v1, const VecT& v2) : v_{v0, v1, v2} {}
-    LM_INLINE TMat3(
-        ParamT v00, ParamT v10, ParamT v20,
-        ParamT v01, ParamT v11, ParamT v21,
-        ParamT v02, ParamT v12, ParamT v22)
-        : v_{{v00, v10, v20},
-             {v01, v11, v21},
-             {v02, v12, v22}}
-    {}
-    LM_INLINE TMat3(std::initializer_list<VT> l)
-    {
-        for (int i = 0; i < NC; i++)
-            for (int j = 0; j < NC; j++)
-                v_[i][j] = l.begin()[i*NC+j];
-    }
-
-    static auto Identity() -> MatT { return MatT{ 1,0,0, 0,1,0, 0,1,0 }; }
-
-	LM_INLINE auto operator[](int i) -> VecT& { return v_[i]; }
-	LM_INLINE auto operator[](int i) const -> const VecT& { return v_[i]; }
-    LM_INLINE auto operator*=(const MatT& m) -> MatT& { *this = *this * m; return *this; }
-
-};
-
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
 #pragma region Mat4
 
 /*!
@@ -565,6 +517,55 @@ struct TMat4 : public TMatBase<T, Opt, TMat4, TVec4, 4>
     
 	LM_INLINE auto operator[](int i) -> VecT& { return v_[i]; }
     LM_INLINE auto operator[](int i) const -> const VecT& { return v_[i]; }
+    LM_INLINE auto operator*=(const MatT& m) -> MatT& { *this = *this * m; return *this; }
+
+};
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Mat3
+
+/*!
+	3x3 matrix.
+
+    Generic column major 3x3 matrix.
+    A matrix
+        v00 v01 v02
+        v10 v11 v12
+        v20 v21 v22
+    is stored sequentially as v00, v10, ..., v22.
+*/
+template <typename T, SIMD Opt = SIMD::None>
+struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
+{
+
+    VecT v_[NC];
+
+    LM_INLINE TMat3() {}
+    LM_INLINE TMat3(const MatT& m) : v_{m.v_[0], m.v_[1], m.v_[2]} {}
+    LM_INLINE TMat3(const TMat4<T, Opt>& m) : v_{VecT(m.v_[0]), VecT(m.v_[1]), VecT(m.v_[2])} {}
+    LM_INLINE TMat3(const VecT& v0, const VecT& v1, const VecT& v2) : v_{v0, v1, v2} {}
+    LM_INLINE TMat3(
+        ParamT v00, ParamT v10, ParamT v20,
+        ParamT v01, ParamT v11, ParamT v21,
+        ParamT v02, ParamT v12, ParamT v22)
+        : v_{{v00, v10, v20},
+             {v01, v11, v21},
+             {v02, v12, v22}}
+    {}
+    LM_INLINE TMat3(std::initializer_list<VT> l)
+    {
+        for (int i = 0; i < NC; i++)
+            for (int j = 0; j < NC; j++)
+                v_[i][j] = l.begin()[i*NC+j];
+    }
+
+    static auto Identity() -> MatT { return MatT{ 1,0,0, 0,1,0, 0,1,0 }; }
+
+	LM_INLINE auto operator[](int i) -> VecT& { return v_[i]; }
+	LM_INLINE auto operator[](int i) const -> const VecT& { return v_[i]; }
     LM_INLINE auto operator*=(const MatT& m) -> MatT& { *this = *this * m; return *this; }
 
 };
@@ -980,9 +981,12 @@ namespace Math
     #pragma region Constants
 
     template <typename T = Float> constexpr auto Pi()              -> T     { return T(3.14159265358979323846); }
+    template <typename T = Float> constexpr auto InvPi()           -> T     { return T(1.0 / 3.14159265358979323846); }
     template <typename T = Float> constexpr auto Inf()             -> T     { return std::numeric_limits<T>::max(); }
     template <typename T = Float> constexpr auto EpsLarge()        -> T     { return T(1e-5); }
     template <>                   constexpr auto EpsLarge<float>() -> float { return 1e-3f; }
+    template <typename T = Float> constexpr auto Eps()             -> T     { return T(1e-7); }
+    template <>                   constexpr auto Eps<float>()      -> float { return 1e-4f; }
 
     #pragma endregion
 
@@ -1227,6 +1231,238 @@ namespace Math
             _mm_movehl_ps(t2, t0),
             _mm_movelh_ps(t1, t3),
             _mm_movehl_ps(t3, t1));
+    }
+
+    #pragma endregion
+
+    #pragma region Inverse
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Inverse(const TMat3<T, Opt>& m) -> TMat3<T, Opt>
+    {
+        const T det =
+              m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2])
+            - m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2])
+            + m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
+
+        return TMat3<T, Opt>(
+            +(m[1][1] * m[2][2] - m[2][1] * m[1][2]),
+            -(m[0][1] * m[2][2] - m[2][1] * m[0][2]),
+            +(m[0][1] * m[1][2] - m[1][1] * m[0][2]),
+            -(m[1][0] * m[2][2] - m[2][0] * m[1][2]),
+            +(m[0][0] * m[2][2] - m[2][0] * m[0][2]),
+            -(m[0][0] * m[1][2] - m[1][0] * m[0][2]),
+            +(m[1][0] * m[2][1] - m[2][0] * m[1][1]),
+            -(m[0][0] * m[2][1] - m[2][0] * m[0][1]),
+            +(m[0][0] * m[1][1] - m[1][0] * m[0][1])) / det;
+    }
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Inverse(const TMat4<T, Opt>& m) -> TMat4<T, Opt>
+    {
+        const T c00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+        const T c02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
+        const T c03 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+        const T c04 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+        const T c06 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+        const T c07 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+        const T c08 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+        const T c10 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
+        const T c11 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+        const T c12 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+        const T c14 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
+        const T c15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+        const T c16 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+        const T c18 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
+        const T c19 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+        const T c20 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+        const T c22 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+        const T c23 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+
+        const TVec4<T, Opt> f0(c00, c00, c02, c03);
+        const TVec4<T, Opt> f1(c04, c04, c06, c07);
+        const TVec4<T, Opt> f2(c08, c08, c10, c11);
+        const TVec4<T, Opt> f3(c12, c12, c14, c15);
+        const TVec4<T, Opt> f4(c16, c16, c18, c19);
+        const TVec4<T, Opt> f5(c20, c20, c22, c23);
+
+        const TVec4<T, Opt> v0(m[1][0], m[0][0], m[0][0], m[0][0]);
+        const TVec4<T, Opt> v1(m[1][1], m[0][1], m[0][1], m[0][1]);
+        const TVec4<T, Opt> v2(m[1][2], m[0][2], m[0][2], m[0][2]);
+        const TVec4<T, Opt> v3(m[1][3], m[0][3], m[0][3], m[0][3]);
+
+        const TVec4<T, Opt> sA(T(+1), T(-1), T(+1), T(-1));
+        const TVec4<T, Opt> sB(T(-1), T(+1), T(-1), T(+1));
+
+        const auto inv_v0 = sA * (v1 * f0 - v2 * f1 + v3 * f2);
+        const auto inv_v1 = sB * (v0 * f0 - v2 * f3 + v3 * f4);
+        const auto inv_v2 = sA * (v0 * f1 - v1 * f3 + v3 * f5);
+        const auto inv_v3 = sB * (v0 * f2 - v1 * f4 + v2 * f5);
+
+        const TMat4<T, Opt> inv(inv_v0, inv_v1, inv_v2, inv_v3);
+        const T det = Dot(m[0], TVec4<T, Opt>(inv[0][0], inv[1][0], inv[2][0], inv[3][0]));
+
+        return inv / det;
+    }
+
+    // cf.
+    // http://download.intel.com/design/PentiumIII/sml/24504301.pdf
+    // http://devmaster.net/posts/16799/sse-mat4-inverse
+    template <>
+    LM_INLINE auto Inverse<float, SIMD::SSE>(const TMat4<float, SIMD::SSE>& m) -> TMat4<float, SIMD::SSE>
+    {
+        __m128 Fac0;
+        {
+            __m128 Swp0a = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(3, 3, 3, 3));
+            __m128 Swp0b = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(2, 2, 2, 2));
+
+            __m128 Swp00 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(2, 2, 2, 2));
+            __m128 Swp01 = _mm_shuffle_ps(Swp0a, Swp0a, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp02 = _mm_shuffle_ps(Swp0b, Swp0b, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp03 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(3, 3, 3, 3));
+
+            __m128 Mul00 = _mm_mul_ps(Swp00, Swp01);
+            __m128 Mul01 = _mm_mul_ps(Swp02, Swp03);
+            Fac0 = _mm_sub_ps(Mul00, Mul01);
+        }
+
+        __m128 Fac1;
+        {
+            __m128 Swp0a = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(3, 3, 3, 3));
+            __m128 Swp0b = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(1, 1, 1, 1));
+
+            __m128 Swp00 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(1, 1, 1, 1));
+            __m128 Swp01 = _mm_shuffle_ps(Swp0a, Swp0a, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp02 = _mm_shuffle_ps(Swp0b, Swp0b, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp03 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(3, 3, 3, 3));
+
+            __m128 Mul00 = _mm_mul_ps(Swp00, Swp01);
+            __m128 Mul01 = _mm_mul_ps(Swp02, Swp03);
+            Fac1 = _mm_sub_ps(Mul00, Mul01);
+        }
+
+
+        __m128 Fac2;
+        {
+            __m128 Swp0a = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(2, 2, 2, 2));
+            __m128 Swp0b = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(1, 1, 1, 1));
+
+            __m128 Swp00 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(1, 1, 1, 1));
+            __m128 Swp01 = _mm_shuffle_ps(Swp0a, Swp0a, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp02 = _mm_shuffle_ps(Swp0b, Swp0b, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp03 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(2, 2, 2, 2));
+
+            __m128 Mul00 = _mm_mul_ps(Swp00, Swp01);
+            __m128 Mul01 = _mm_mul_ps(Swp02, Swp03);
+            Fac2 = _mm_sub_ps(Mul00, Mul01);
+        }
+
+        __m128 Fac3;
+        {
+            __m128 Swp0a = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(3, 3, 3, 3));
+            __m128 Swp0b = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(0, 0, 0, 0));
+
+            __m128 Swp00 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(0, 0, 0, 0));
+            __m128 Swp01 = _mm_shuffle_ps(Swp0a, Swp0a, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp02 = _mm_shuffle_ps(Swp0b, Swp0b, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp03 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(3, 3, 3, 3));
+
+            __m128 Mul00 = _mm_mul_ps(Swp00, Swp01);
+            __m128 Mul01 = _mm_mul_ps(Swp02, Swp03);
+            Fac3 = _mm_sub_ps(Mul00, Mul01);
+        }
+
+        __m128 Fac4;
+        {
+            __m128 Swp0a = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(2, 2, 2, 2));
+            __m128 Swp0b = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(0, 0, 0, 0));
+
+            __m128 Swp00 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(0, 0, 0, 0));
+            __m128 Swp01 = _mm_shuffle_ps(Swp0a, Swp0a, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp02 = _mm_shuffle_ps(Swp0b, Swp0b, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp03 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(2, 2, 2, 2));
+
+            __m128 Mul00 = _mm_mul_ps(Swp00, Swp01);
+            __m128 Mul01 = _mm_mul_ps(Swp02, Swp03);
+            Fac4 = _mm_sub_ps(Mul00, Mul01);
+        }
+
+        __m128 Fac5;
+        {
+            __m128 Swp0a = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(1, 1, 1, 1));
+            __m128 Swp0b = _mm_shuffle_ps(m[3].v_, m[2].v_, _MM_SHUFFLE(0, 0, 0, 0));
+
+            __m128 Swp00 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(0, 0, 0, 0));
+            __m128 Swp01 = _mm_shuffle_ps(Swp0a, Swp0a, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp02 = _mm_shuffle_ps(Swp0b, Swp0b, _MM_SHUFFLE(2, 0, 0, 0));
+            __m128 Swp03 = _mm_shuffle_ps(m[2].v_, m[1].v_, _MM_SHUFFLE(1, 1, 1, 1));
+
+            __m128 Mul00 = _mm_mul_ps(Swp00, Swp01);
+            __m128 Mul01 = _mm_mul_ps(Swp02, Swp03);
+            Fac5 = _mm_sub_ps(Mul00, Mul01);
+        }
+
+        __m128 SignA = _mm_set_ps(1.0f, -1.0f, 1.0f, -1.0f);
+        __m128 SignB = _mm_set_ps(-1.0f, 1.0f, -1.0f, 1.0f);
+
+        __m128 Temp0 = _mm_shuffle_ps(m[1].v_, m[0].v_, _MM_SHUFFLE(0, 0, 0, 0));
+        __m128 Vec0 = _mm_shuffle_ps(Temp0, Temp0, _MM_SHUFFLE(2, 2, 2, 0));
+
+        __m128 Temp1 = _mm_shuffle_ps(m[1].v_, m[0].v_, _MM_SHUFFLE(1, 1, 1, 1));
+        __m128 Vec1 = _mm_shuffle_ps(Temp1, Temp1, _MM_SHUFFLE(2, 2, 2, 0));
+
+        __m128 Temp2 = _mm_shuffle_ps(m[1].v_, m[0].v_, _MM_SHUFFLE(2, 2, 2, 2));
+        __m128 Vec2 = _mm_shuffle_ps(Temp2, Temp2, _MM_SHUFFLE(2, 2, 2, 0));
+
+        __m128 Temp3 = _mm_shuffle_ps(m[1].v_, m[0].v_, _MM_SHUFFLE(3, 3, 3, 3));
+        __m128 Vec3 = _mm_shuffle_ps(Temp3, Temp3, _MM_SHUFFLE(2, 2, 2, 0));
+
+        // col0
+        __m128 Mul00 = _mm_mul_ps(Vec1, Fac0);
+        __m128 Mul01 = _mm_mul_ps(Vec2, Fac1);
+        __m128 Mul02 = _mm_mul_ps(Vec3, Fac2);
+        __m128 Sub00 = _mm_sub_ps(Mul00, Mul01);
+        __m128 Add00 = _mm_add_ps(Sub00, Mul02);
+        __m128 Inv0 = _mm_mul_ps(SignB, Add00);
+
+        // col1
+        __m128 Mul03 = _mm_mul_ps(Vec0, Fac0);
+        __m128 Mul04 = _mm_mul_ps(Vec2, Fac3);
+        __m128 Mul05 = _mm_mul_ps(Vec3, Fac4);
+        __m128 Sub01 = _mm_sub_ps(Mul03, Mul04);
+        __m128 Add01 = _mm_add_ps(Sub01, Mul05);
+        __m128 Inv1 = _mm_mul_ps(SignA, Add01);
+
+        // col2
+        __m128 Mul06 = _mm_mul_ps(Vec0, Fac1);
+        __m128 Mul07 = _mm_mul_ps(Vec1, Fac3);
+        __m128 Mul08 = _mm_mul_ps(Vec3, Fac5);
+        __m128 Sub02 = _mm_sub_ps(Mul06, Mul07);
+        __m128 Add02 = _mm_add_ps(Sub02, Mul08);
+        __m128 Inv2 = _mm_mul_ps(SignB, Add02);
+
+        // col3
+        __m128 Mul09 = _mm_mul_ps(Vec0, Fac2);
+        __m128 Mul10 = _mm_mul_ps(Vec1, Fac4);
+        __m128 Mul11 = _mm_mul_ps(Vec2, Fac5);
+        __m128 Sub03 = _mm_sub_ps(Mul09, Mul10);
+        __m128 Add03 = _mm_add_ps(Sub03, Mul11);
+        __m128 Inv3 = _mm_mul_ps(SignA, Add03);
+
+        __m128 Row0 = _mm_shuffle_ps(Inv0, Inv1, _MM_SHUFFLE(0, 0, 0, 0));
+        __m128 Row1 = _mm_shuffle_ps(Inv2, Inv3, _MM_SHUFFLE(0, 0, 0, 0));
+        __m128 Row2 = _mm_shuffle_ps(Row0, Row1, _MM_SHUFFLE(2, 0, 2, 0));
+
+        // Determinant
+        __m128 Det0 = _mm_dp_ps(m[0].v_, Row2, 0xff);
+        __m128 Rcp0 = _mm_div_ps(_mm_set_ps1(1.0f), Det0);
+
+        // Inverse /= Determinant;
+        return TMat4<float, SIMD::SSE>(
+            TVec4<float, SIMD::SSE>(_mm_mul_ps(Inv0, Rcp0)),
+            TVec4<float, SIMD::SSE>(_mm_mul_ps(Inv1, Rcp0)),
+            TVec4<float, SIMD::SSE>(_mm_mul_ps(Inv2, Rcp0)),
+            TVec4<float, SIMD::SSE>(_mm_mul_ps(Inv3, Rcp0)));
     }
 
     #pragma endregion

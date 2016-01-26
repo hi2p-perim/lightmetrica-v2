@@ -29,7 +29,7 @@
 
 LM_NAMESPACE_BEGIN
 
-class TriangleMesh_Raw : public TriangleMesh
+class TriangleMesh_Raw final : public TriangleMesh
 {
 public:
 
