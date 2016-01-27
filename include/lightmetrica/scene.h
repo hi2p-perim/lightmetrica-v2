@@ -116,7 +116,7 @@ public:
         shadowRay.d = p1p2 / p1p2L;
         shadowRay.o = p1;
         Intersection _;
-        return !IntersectWithRange(shadowRay, _, Math::Eps(), p1p2L * (1_f - Math::Eps()));
+        return !IntersectWithRange(shadowRay, _, Math::EpsIsect(), p1p2L * (1_f - Math::EpsIsect()));
     }
 
 };

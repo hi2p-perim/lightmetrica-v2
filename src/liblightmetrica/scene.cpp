@@ -352,7 +352,7 @@ public:
     LM_IMPL_F(Intersect) = [this](const Ray& ray, Intersection& isect) -> bool
     {
         // TODO: Intersection with emitter shapes
-        return accel_->Intersect(this, ray, isect, Math::Eps(), Math::Inf());
+        return accel_->Intersect(this, ray, isect, Math::EpsIsect(), Math::Inf());
     };
 
     LM_IMPL_F(IntersectWithRange) = [this](const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool

@@ -47,12 +47,15 @@ public:
             return false;
         }
 
-        ns_ = prop->Child("normals")->As<std::vector<Float>>();
-        if (ns_.size() != ps_.size())
+        if (prop->Child("normals"))
         {
-            LM_LOG_ERROR("Invalid number of elements in 'normals': " + std::to_string(ns_.size()));
-            PropertyUtils::PrintPrettyError(prop->Child("normals"));
-            return false;
+            ns_ = prop->Child("normals")->As<std::vector<Float>>();
+            if (ns_.size() != ps_.size())
+            {
+                LM_LOG_ERROR("Invalid number of elements in 'normals': " + std::to_string(ns_.size()));
+                PropertyUtils::PrintPrettyError(prop->Child("normals"));
+                return false;
+            }
         }
 
         if (prop->Child("texcoords"))

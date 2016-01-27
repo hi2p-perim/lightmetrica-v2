@@ -1012,6 +1012,7 @@ namespace Math
     template <>                   constexpr auto EpsLarge<float>() -> float { return 1e-3f; }
     template <typename T = Float> constexpr auto Eps()             -> T     { return T(1e-7); }
     template <>                   constexpr auto Eps<float>()      -> float { return 1e-4f; }
+    template <typename T = Float> constexpr auto EpsIsect()        -> T     { return T(1e-4); }
 
     #pragma endregion
 
