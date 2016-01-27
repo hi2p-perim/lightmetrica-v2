@@ -329,6 +329,7 @@ set(
 	"renderer/renderer_ptdirect.cpp"
 	"renderer/renderer_sampledensity.cpp"
 	"renderer/renderer_sampledensity2.cpp"
+	"renderer/renderer_bdpt.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})

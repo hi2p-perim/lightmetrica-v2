@@ -75,7 +75,7 @@ public:
             #pragma region Sample a sensor
 
             const auto* E = scene->SampleEmitter(SurfaceInteraction::E, rng->Next());
-            const Float pdfE = scene->EvaluateEmitterPDF(SurfaceInteraction::E);
+            const Float pdfE = scene->EvaluateEmitterPDF(E);
             assert(pdfE > 0);
 
             #pragma endregion
@@ -122,7 +122,7 @@ public:
                     #pragma region Sample a light
 
                     const auto* L = scene->SampleEmitter(SurfaceInteraction::L, rng->Next());
-                    const Float pdfL = scene->EvaluateEmitterPDF(SurfaceInteraction::L);
+                    const Float pdfL = scene->EvaluateEmitterPDF(L);
                     assert(pdfL > 0);
 
                     #pragma endregion

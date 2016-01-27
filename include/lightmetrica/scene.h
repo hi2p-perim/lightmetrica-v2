@@ -104,7 +104,7 @@ public:
     LM_INTERFACE_F(Sensor, const Primitive*());
 
     LM_INTERFACE_F(SampleEmitter, const Primitive*(int type, Float u));
-    LM_INTERFACE_F(EvaluateEmitterPDF, Float(int type));
+    LM_INTERFACE_F(EvaluateEmitterPDF, Float(const Primitive* primitive));
 
 public:
 

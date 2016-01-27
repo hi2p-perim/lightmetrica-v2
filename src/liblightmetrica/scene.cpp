@@ -399,15 +399,15 @@ public:
         return nullptr;
     };
 
-    LM_IMPL_F(EvaluateEmitterPDF) = [this](int type) -> Float
+    LM_IMPL_F(EvaluateEmitterPDF) = [this](const Primitive* primitive) -> Float
     {
-        if ((type & SurfaceInteraction::L) > 0)
+        if ((primitive->Type() & SurfaceInteraction::L) > 0)
         {
             const int n = static_cast<int>(lightPrimitiveIndices_.size());
             return 1_f / Float(n);
         }
 
-        if ((type & SurfaceInteraction::E) > 0)
+        if ((primitive->Type() & SurfaceInteraction::E) > 0)
         {
             return 1_f;
         }
