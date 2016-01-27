@@ -350,7 +350,7 @@ public:
         return alphaL * cst * alphaE;
     }
 
-    Float EvaluateSimpleMISWeight(const Scene* scene, int s) const
+    auto EvaluateSimpleMISWeight(const Scene* scene, int s) const -> Float
     {
         const int n = (int)(vertices.size());
         int nonzero = 0;
@@ -367,7 +367,7 @@ public:
         return 1.0 / nonzero;
     }
 
-    Float EvaluatePowerHeuristicsMISWeightOpt(const Scene* scene, int s) const
+    auto EvaluatePowerHeuristicsMISWeightOpt(const Scene* scene, int s) const -> Float
     {
         Float invWeight = 0;
         const int n = static_cast<int>(vertices.size());
@@ -387,7 +387,7 @@ public:
         return 1.0 / invWeight;
     }
 
-    Float EvaluateMISWeight(const Scene* scene, int s) const
+    auto EvaluateMISWeight(const Scene* scene, int s) const -> Float
     {
         Float piDivps;
         bool prevPDFIsZero;
@@ -456,7 +456,7 @@ public:
         return 1.0 / invWeight;
     }
 
-    Float EvaluatePDFRatio(const Scene* scene, int i) const
+    auto EvaluatePDFRatio(const Scene* scene, int i) const -> Float
     {
         const int n = static_cast<int>(vertices.size());
 
@@ -496,7 +496,7 @@ public:
         }
     }
 
-    Float EvaluatePDF(const Scene* scene, int s) const
+    auto EvaluatePDF(const Scene* scene, int s) const -> Float
     {
         // Cases with p_{s,t}(x) = 0
         // i.e. the strategy (s,t) cannot generate the path
