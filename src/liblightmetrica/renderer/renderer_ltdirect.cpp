@@ -74,7 +74,7 @@ public:
             #pragma region Sample a light
 
             const auto* L = scene->SampleEmitter(SurfaceInteraction::L, rng->Next());
-            const Float pdfL = scene->EvaluateEmitterPDF(SurfaceInteraction::L);
+            const Float pdfL = scene->EvaluateEmitterPDF(L);
             assert(pdfL > 0);
 
             #pragma endregion
@@ -120,7 +120,7 @@ public:
                     #pragma region Sample a sensor
 
                     const auto* E = scene->SampleEmitter(SurfaceInteraction::E, rng->Next());
-                    const Float pdfE = scene->EvaluateEmitterPDF(SurfaceInteraction::E);
+                    const Float pdfE = scene->EvaluateEmitterPDF(E);
                     assert(pdfE > 0);
 
                     #pragma endregion
@@ -131,7 +131,7 @@ public:
 
                     SurfaceGeometry geomE;
                     E->SamplePosition(rng->Next2D(), geomE);
-                    const Float pdfPE = L->EvaluatePositionPDF(geomE, false);
+                    const Float pdfPE = E->EvaluatePositionPDF(geomE, false);
                     assert(pdfPE > 0);
 
                     #pragma endregion
@@ -145,8 +145,8 @@ public:
                     const auto fsE = E->EvaluateDirection(geomE, SurfaceInteraction::E, Vec3(), -ppE, TransportDirection::EL, true);
                     const auto G = RenderUtils::GeometryTerm(geom, geomE);
                     const auto V = scene->Visible(geom.p, geomE.p) ? 1_f : 0_f;
-                    const auto LeP = L->EvaluatePosition(geomE, false);
-                    const auto C = throughput * fsL * G * V * fsE * LeP / pdfE / pdfPE;
+                    const auto WeP = E->EvaluatePosition(geomE, false);
+                    const auto C = throughput * fsL * G * V * fsE * WeP / pdfE / pdfPE;
 
                     #pragma endregion
 

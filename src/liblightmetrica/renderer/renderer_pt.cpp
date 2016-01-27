@@ -97,7 +97,6 @@ public:
             #pragma region Temporary variables
 
             auto throughput = E->EvaluatePosition(geomE, false) / pdfPE / pdfE;
-            //SPD throughput(1_f);
             const auto* primitive = E;
             int type = SurfaceInteraction::E;
             auto geom = geomE;
@@ -192,7 +191,6 @@ public:
                         * isect.primitive->EvaluateDirection(isect.geom, SurfaceInteraction::L, Vec3(), -ray.d, TransportDirection::EL, true)
                         * isect.primitive->EvaluatePosition(isect.geom, true);
                     film->Splat(rasterPos, C);
-                    //film->Splat(rasterPos, SPD(1_f));
                 }
 
                 #pragma endregion

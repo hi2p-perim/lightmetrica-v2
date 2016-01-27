@@ -73,7 +73,7 @@ public:
             #pragma region Sample a light
 
             const auto* L = scene->SampleEmitter(SurfaceInteraction::L, rng->Next());
-            const Float pdfL = scene->EvaluateEmitterPDF(SurfaceInteraction::L);
+            const Float pdfL = scene->EvaluateEmitterPDF(L);
             assert(pdfL > 0);
 
             #pragma endregion
