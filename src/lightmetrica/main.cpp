@@ -35,6 +35,7 @@
 #include <lightmetrica/detail/propertyutils.h>
 #include <lightmetrica/detail/stringtemplate.h>
 #include <lightmetrica/detail/version.h>
+#include <lightmetrica/fp.h>
 
 #include <iostream>
 #include <fstream>
@@ -562,7 +563,9 @@ private:
             LM_LOG_INDENTER();
             const auto* sensor = static_cast<const Sensor*>(scene.get()->Sensor()->emitter);
             auto* film = sensor->GetFilm();
+            FPUtils::EnableFPControl();
             renderer.get()->Render(scene.get(), film);
+            FPUtils::DisableFPControl();
         }
 
         #pragma endregion
@@ -629,6 +632,7 @@ private:
             PropertyUtils::PrintPrettyError(n);
             return boost::none;
         }
+        LM_LOG_INFO("Type: '" + tn->As<std::string>() + "'");
 
         const auto pn = n->Child("params");
         //if (!pn)

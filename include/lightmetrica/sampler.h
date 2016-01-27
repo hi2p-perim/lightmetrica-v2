@@ -54,12 +54,12 @@ public:
         if (v.x > -v.y)
         {
             if (v.x > v.y) { r = v.x; theta = (Math::Pi() * 0.25_f) * v.y / v.x; }
-            else { r = v.y; theta = (Math::Pi() * 0.25_f) * (2_f - v.x / v.y); }
+            else           { r = v.y; theta = (Math::Pi() * 0.25_f) * (2_f - v.x / v.y); }
         }
         else
         {
             if (v.x < v.y) { r = -v.x; theta = (Math::Pi() * 0.25_f) * (4_f + v.y / v.x); }
-            else { r = -v.y; theta = (Math::Pi() * 0.25_f) * (6_f - v.x / v.y); }
+            else           { r = -v.y; theta = (Math::Pi() * 0.25_f) * (6_f - v.x / v.y); }
         }
         return Vec2(r * Math::Cos(theta), r * Math::Sin(theta));
     }

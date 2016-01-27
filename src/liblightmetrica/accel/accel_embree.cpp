@@ -31,6 +31,7 @@
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/intersectionutils.h>
+#include <lightmetrica/fp.h>
 
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
@@ -128,9 +129,9 @@ public:
                 mappedFaces[mi3] = mi3;
                 for (int k = 0; k < 3; k++)
                 {
-                    mappedPositions[4 * mi1 + k] = p1[k];
-                    mappedPositions[4 * mi2 + k] = p2[k];
-                    mappedPositions[4 * mi3 + k] = p3[k];
+                    mappedPositions[4 * mi1 + k] = (float)(p1[k]);
+                    mappedPositions[4 * mi2 + k] = (float)(p2[k]);
+                    mappedPositions[4 * mi3 + k] = (float)(p3[k]);
                 }
             }
 
@@ -158,8 +159,8 @@ public:
         rtcRay.dir[0] = (float)(ray.d[0]);
         rtcRay.dir[1] = (float)(ray.d[1]);
         rtcRay.dir[2] = (float)(ray.d[2]);
-        rtcRay.tnear = minT;
-        rtcRay.tfar = maxT;
+        rtcRay.tnear  = (float)(minT);
+        rtcRay.tfar   = (float)(maxT);
         rtcRay.geomID = RTC_INVALID_GEOMETRY_ID;
         rtcRay.primID = RTC_INVALID_GEOMETRY_ID;
         rtcRay.instID = RTC_INVALID_GEOMETRY_ID;
@@ -167,9 +168,9 @@ public:
         rtcRay.time = 0;
 
         // Intersection query
-        //LM_DISABLE_FP_EXCEPTION();     // TODO: push
+        FPUtils::DisableFPControl();     // TODO: push
         rtcIntersect(RtcScene, rtcRay);
-        //LM_ENABLE_FP_EXCEPTION();      // TODO: pop
+        FPUtils::EnableFPControl();      // TODO: pop
         if ((unsigned int)(rtcRay.geomID) == RTC_INVALID_GEOMETRY_ID)
         {
             return false;

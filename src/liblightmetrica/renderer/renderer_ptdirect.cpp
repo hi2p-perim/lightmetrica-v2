@@ -95,6 +95,7 @@ public:
             #pragma region Temporary variables
 
             auto throughput = E->EvaluatePosition(geomE, false) / pdfPE / pdfE;
+            //SPD throughput(1_f);
             const auto* primitive = E;
             int type = SurfaceInteraction::E;
             auto geom = geomE;
@@ -166,6 +167,7 @@ public:
 
                         // Accumulate to film
                         film->Splat(rp, C);
+                        //film->Splat(rasterPos, SPD(1_f));
                     }
 
                     #pragma endregion
@@ -238,7 +240,7 @@ public:
 
                 #pragma region Path termination
 
-                Float rrProb = 0.5;
+                Float rrProb = 0.5_f;
                 if (rng->Next() > rrProb)
                 {
                     break;

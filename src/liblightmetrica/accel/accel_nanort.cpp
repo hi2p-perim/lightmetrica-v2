@@ -120,12 +120,12 @@ public:
     LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         nanort::Ray rayRT;
-        rayRT.org[0] = ray.o[0];
-        rayRT.org[1] = ray.o[1];
-        rayRT.org[2] = ray.o[2];
-        rayRT.dir[0] = ray.d[0];
-        rayRT.dir[1] = ray.d[1];
-        rayRT.dir[2] = ray.d[2];
+        rayRT.org[0] = (float)(ray.o[0]);
+        rayRT.org[1] = (float)(ray.o[1]);
+        rayRT.org[2] = (float)(ray.o[2]);
+        rayRT.dir[0] = (float)(ray.d[0]);
+        rayRT.dir[1] = (float)(ray.d[1]);
+        rayRT.dir[2] = (float)(ray.d[2]);
 
         nanort::Intersection isectRT;
         isectRT.t = (float)(maxT);

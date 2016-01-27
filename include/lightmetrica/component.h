@@ -30,6 +30,7 @@
 #include <lightmetrica/static.h>
 #include <lightmetrica/logger.h>
 #include <lightmetrica/metacounter.h>
+#include <lightmetrica/align.h>
 #if LM_DEBUG_MODE
 #include <lightmetrica/debug.h>
 #endif
@@ -55,7 +56,7 @@ using ReleaseFuncPointerType = void(*)(Component*);
     retaining portability of the framework.
     For technical details, see <TODO>.
 */
-class Component
+class Component : public SIMDAlignedType
 {
 public:
 

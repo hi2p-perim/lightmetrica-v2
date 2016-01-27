@@ -28,6 +28,7 @@
 #include <lightmetrica/math.h>
 #include <lightmetrica/bsdf.h>
 #include <lightmetrica/emitter.h>
+#include <lightmetrica/align.h>
 #include <string>
 #include <cassert>
 
@@ -45,7 +46,7 @@ class Emitter;
 
     TODO: Redesign sampling related functions.
 */
-struct Primitive
+struct Primitive : public SIMDAlignedType
 {
 
     const char* id = nullptr;

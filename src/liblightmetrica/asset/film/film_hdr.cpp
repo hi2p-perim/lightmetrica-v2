@@ -88,9 +88,12 @@ namespace
                     for (int x = 0; x < width; x++)
                     {
                         const int i = y * width + x;
-                        bits[x].red   = (float)(Math::Clamp(film[i][0], 0_f, 1_f));
-                        bits[x].green = (float)(Math::Clamp(film[i][1], 0_f, 1_f));
-                        bits[x].blue  = (float)(Math::Clamp(film[i][2], 0_f, 1_f));
+                        //bits[x].red   = (float)(Math::Clamp(film[i][0], 0_f, 1_f));
+                        //bits[x].green = (float)(Math::Clamp(film[i][1], 0_f, 1_f));
+                        //bits[x].blue  = (float)(Math::Clamp(film[i][2], 0_f, 1_f));
+                        bits[x].red   = (float)(Math::Max(film[i][0], 0_f));
+                        bits[x].green = (float)(Math::Max(film[i][1], 0_f));
+                        bits[x].blue  = (float)(Math::Max(film[i][2], 0_f));
                     }
                 }
 

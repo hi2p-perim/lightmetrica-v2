@@ -226,6 +226,7 @@ public:
                     if (L)
                     {
                         primitive->emitter = static_cast<Emitter*>(assets->AssetByIDAndType(L->As<std::string>(), "light", primitive.get()));
+                        lightPrimitiveIndices_.push_back(primitives_.size());
                     }
                     else if (E)
                     {
@@ -248,11 +249,6 @@ public:
                 if (primitive->id)
                 {
                     primitiveIDMap_[primitive->id] = primitive.get();
-                }
-
-                if (primitive->emitter)
-                {
-                    lightPrimitiveIndices_.push_back(primitives_.size());
                 }
 
                 primitives_.push_back(std::move(primitive));

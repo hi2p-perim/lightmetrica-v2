@@ -29,7 +29,8 @@
 #include <initializer_list>
 
 // TODO. Make configurable from cmake file 
-#define LM_USE_SINGLE_PRECISION
+//#define LM_USE_SINGLE_PRECISION
+#define LM_USE_DOUBLE_PRECISION
 #define LM_USE_SSE
 #define LM_USE_AVX
 
@@ -239,6 +240,7 @@ struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
     LM_INLINE TVec4()                                       : x(VT(0)), y(VT(0)), z(VT(0)), w(VT(0)) {}
     LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : x(x), y(y), z(z), w(w) {}
     LM_INLINE TVec4(const VecT& v)                          : x(v.x), y(v.y), z(v.z), w(v.w) {}
+    LM_INLINE TVec4(ParamT s)                               : x(s), y(s), z(s), w(s) {}
     LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
@@ -265,6 +267,7 @@ struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : v_(_mm_set_ps(w, z, y, x)) {}
     LM_INLINE TVec4(const VecT& v)                          : v_(v.v_) {}
     LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
+    LM_INLINE TVec4(ParamT s)                               : v_(_mm_set_ps(s, s, s, s)) {}
     LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
@@ -291,6 +294,7 @@ struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE TVec4(ParamT x, ParamT y, ParamT z, ParamT w) : v_(_mm256_set_pd(w, z, y, x)) {}
     LM_INLINE TVec4(const VecT& v)                          : v_(v.v_) {}
     LM_INLINE TVec4(SIMDT v)                                : v_(v) {}
+    LM_INLINE TVec4(ParamT s)                               : v_(_mm256_set_pd(s, s, s, s)) {}
     LM_INLINE TVec4(std::initializer_list<VT> l)            { x = l.begin()[0]; y = l.begin()[1]; z = l.begin()[2]; w = l.begin()[3]; }
 
     LM_INLINE auto operator[](int i)         -> VT&         { return (&x)[i]; }
@@ -496,6 +500,7 @@ struct TMat4 : public TMatBase<T, Opt, TMat4, TVec4, 4>
     LM_INLINE TMat4() {}
     LM_INLINE TMat4(const MatT& m) : v_{m.v_[0], m.v_[1], m.v_[2], m.v_[3]} {}
     LM_INLINE TMat4(const VecT& v0, const VecT& v1, const VecT& v2, const VecT& v3) : v_{v0, v1, v2, v3} {}
+    LM_INLINE TMat4(const T& s) : v_{VecT(s), VecT(s), VecT(s), VecT(s)} {}
     LM_INLINE TMat4(
         ParamT v00, ParamT v10, ParamT v20, ParamT v30,
         ParamT v01, ParamT v11, ParamT v21, ParamT v31,
@@ -547,6 +552,7 @@ struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
     LM_INLINE TMat3(const MatT& m) : v_{m.v_[0], m.v_[1], m.v_[2]} {}
     LM_INLINE TMat3(const TMat4<T, Opt>& m) : v_{VecT(m.v_[0]), VecT(m.v_[1]), VecT(m.v_[2])} {}
     LM_INLINE TMat3(const VecT& v0, const VecT& v1, const VecT& v2) : v_{v0, v1, v2} {}
+    LM_INLINE TMat3(const T& s) : v_{VecT(s), VecT(s), VecT(s)} {}
     LM_INLINE TMat3(
         ParamT v00, ParamT v10, ParamT v20,
         ParamT v01, ParamT v11, ParamT v21,
@@ -841,6 +847,25 @@ LM_INLINE auto operator*<double, SIMD::AVX>(const TMat4<double, SIMD::AVX>& m, c
 
 #pragma endregion
 
+// --------------------------------------------------------------------------------
+
+#pragma region Mat * Scalar
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat3<T, Opt>& m, const T& s) -> TMat3<T, Opt>
+{
+    return TMat3<T, Opt>(m[0] * s, m[1] * s, m[2] * s);
+}
+
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat4<T, Opt>& m, const T& s) -> TMat4<T, Opt>
+{
+    return TMat4<T, Opt>(m[0] * s, m[1] * s, m[2] * s, m[3] * s);
+}
+
+#pragma endregion
+
 #pragma endregion
 
 // --------------------------------------------------------------------------------
@@ -980,8 +1005,8 @@ namespace Math
 {
     #pragma region Constants
 
-    template <typename T = Float> constexpr auto Pi()              -> T     { return T(3.14159265358979323846); }
-    template <typename T = Float> constexpr auto InvPi()           -> T     { return T(1.0 / 3.14159265358979323846); }
+    template <typename T = Float> constexpr auto Pi()              -> T     { return T(3.141592653589793238462643383279502884e+00); }
+    template <typename T = Float> constexpr auto InvPi()           -> T     { return T(1.0 / 3.141592653589793238462643383279502884e+00); }
     template <typename T = Float> constexpr auto Inf()             -> T     { return std::numeric_limits<T>::max(); }
     template <typename T = Float> constexpr auto EpsLarge()        -> T     { return T(1e-5); }
     template <>                   constexpr auto EpsLarge<float>() -> float { return 1e-3f; }
@@ -1073,7 +1098,7 @@ namespace Math
     template <typename T, SIMD Opt>
     LM_INLINE auto Cross(const TVec3<T, Opt>& v1, const TVec3<T, Opt>& v2) -> TVec3<T, Opt>
     {
-        return TVec3<T>(v1.y * v2.z - v2.y * v1.z, v1.z * v2.x - v2.z * v1.x, v1.x * v2.y - v2.x * v1.y);
+        return TVec3<T, Opt>(v1.y * v2.z - v2.y * v1.z, v1.z * v2.x - v2.z * v1.x, v1.x * v2.y - v2.x * v1.y);
     }
 
     template <>
@@ -1213,7 +1238,7 @@ namespace Math
     template <typename T, SIMD Opt>
     LM_INLINE auto Transpose(const TMat4<T, Opt>& m) -> TMat4<T, Opt>
     {
-        return TMat3<T, Opt>(
+        return TMat4<T, Opt>(
             m[0][0], m[1][0], m[2][0], m[3][0],
             m[0][1], m[1][1], m[2][1], m[3][1],
             m[0][2], m[1][2], m[2][2], m[3][2],
@@ -1302,8 +1327,9 @@ namespace Math
 
         const TMat4<T, Opt> inv(inv_v0, inv_v1, inv_v2, inv_v3);
         const T det = Dot(m[0], TVec4<T, Opt>(inv[0][0], inv[1][0], inv[2][0], inv[3][0]));
+        const T invDet = 1_f / det;
 
-        return inv / det;
+        return inv * invDet;
     }
 
     // cf.

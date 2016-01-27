@@ -77,6 +77,8 @@ set(
 	"${_INCLUDE_DIR}/bsdfutils.h"
 	"${_INCLUDE_DIR}/scheduler.h"
 	"${_INCLUDE_DIR}/renderutils.h"
+	"${_INCLUDE_DIR}/align.h"
+	"${_INCLUDE_DIR}/triangleutils.h"
 )
 set(
     _CORE_SOURCE_FILES
@@ -189,6 +191,7 @@ list(APPEND _SOURCE_FILES ${_ASSET_SOURCE_FILES})
 set(
     _ASSET_SENSOR_SOURCE_FILES
 	"asset/sensor/sensor_pinhole.cpp"
+	"asset/sensor/sensor_area.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\sensor" FILES ${_ASSET_SENSOR_SOURCE_FILES})
@@ -324,6 +327,8 @@ set(
 	"renderer/renderer_raycast.cpp"
 	"renderer/renderer_pt.cpp"
 	"renderer/renderer_ptdirect.cpp"
+	"renderer/renderer_sampledensity.cpp"
+	"renderer/renderer_sampledensity2.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})

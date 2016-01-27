@@ -23,7 +23,7 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/light.h>
+#include <lightmetrica/sensor.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/dist.h>
@@ -31,21 +31,27 @@
 #include <lightmetrica/sampler.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/triangleutils.h>
+#include <lightmetrica/assets.h>
+#include <lightmetrica/film.h>
 
 LM_NAMESPACE_BEGIN
 
-class Light_Area final : public Light
+class Sensor_Area final : public Sensor
 {
 public:
 
-    LM_IMPL_CLASS(Light_Area, Light);
+    LM_IMPL_CLASS(Sensor_Area, Sensor);
 
 public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
         // Load parameters
-        Le_ = SPD::FromRGB(prop->ChildAs<Vec3>("Le", Vec3()));
+        We_ = SPD::FromRGB(prop->ChildAs<Vec3>("We", Vec3()));
+
+        // Film
+        const auto filmID = prop->Child("film")->As<std::string>();
+        film_ = static_cast<Film*>(assets->AssetByIDAndType(filmID, "film", primitive));
 
         // Create distribution according to triangle area
         primitive_ = primitive;
@@ -54,11 +60,16 @@ public:
         return true;
     };
 
+    LM_IMPL_F(GetFilm) = [this]() -> Film*
+    {
+        return film_;
+    };
+
 public:
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::L;
+        return SurfaceInteraction::E;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
@@ -78,7 +89,7 @@ public:
     {
         const auto localWo = geom.ToLocal * wo;
         if (Math::LocalCos(localWo) <= 0) { return SPD(); }
-        return Le_;
+        return We_;
     };
 
 public:
@@ -100,18 +111,20 @@ public:
 
     LM_IMPL_F(RasterPosition) = [this](const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) -> bool
     {
-        return false;
+        rasterPos = geom.uv;
+        return true;
     };
 
 private:
 
-    SPD Le_;
+    SPD We_;
     Distribution1D dist_;
     Float invArea_;
     const Primitive* primitive_;
+    Film* film_;
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Light_Area, "light::area");
+LM_COMPONENT_REGISTER_IMPL(Sensor_Area, "sensor::area");
 
 LM_NAMESPACE_END

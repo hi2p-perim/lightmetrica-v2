@@ -55,7 +55,7 @@ public:
         vx_ = Math::Normalize(Math::Cross(up, vz_));
         vy_ = Math::Cross(vz_, vx_);
 
-        // Aspect ratio
+        // Film & aspect ratio
         const auto filmID = prop->Child("film")->As<std::string>();
         film_ = static_cast<Film*>(assets->AssetByIDAndType(filmID, "film", primitive));
         aspect_ = (Float)(film_->Width()) / (Float)(film_->Height());

@@ -24,7 +24,6 @@
 
 #pragma once
 
-#include <lightmetrica/static.h>
 #include <lightmetrica/intersection.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/trianglemesh.h>

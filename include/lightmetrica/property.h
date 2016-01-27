@@ -125,12 +125,7 @@ public:
     template <> auto As<int>() const -> int { return std::stoi(Scalar()); }
     template <> auto As<long long>() const -> long long { return std::stoll(Scalar()); }
     template <> auto As<double>() const -> double { return std::stod(Scalar()); }
-
-    template <>
-    auto As<Float>() const -> Float
-    {
-        return Float(As<double>());
-    }
+    template <> auto As<float>() const -> float { return std::stof(Scalar()); }
 
     template <>
     auto As<Vec3>() const -> Vec3
