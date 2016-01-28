@@ -28,16 +28,50 @@
 #include <string>
 #include <initializer_list>
 
+/*!
+    \defgroup math Math library
+    \brief A SIMD-optimized math library for renderers
+
+    Math library is the basic constructs for everywhere in the framework.
+    We offer the simple yet moderately optimized math library,
+    specified for implementing various components in the framework.
+    The interface design is heavily inspired by [glm](http://glm.g-truc.net/).
+    So those who are familiar with glm would find it easy to use this library.
+
+    ### Precisions
+    The library offers configuration to the precision of the floating-point types.
+    We can control the underlying floating point types of the framework
+    with build parameters for CMake.
+    Options:
+      - `-D LM_USE_DOUBLE_PRECISION` specifies to use double precision floating-point type.
+      - `-D LM_USE_SINGLE_PRECISION` specifies to use single precision floating-point type.
+
+    ### SIMD optimization
+    We can use SIMD-optimized functions for various operations.
+    We can control the SIMD optimization for basic math types (e.g., `Vec3`, `Mat3`, etc.) with
+    the `Opt` template argument. The optimization is currently supported only on `x86` environment
+    with two modes: (1) `SSE` for the environment supporting `SSE2`, `SSE3`, and `SSE4.*`, and
+    (2) `AVX` for the environment supporting `AVX` and `AVX2`.
+    These mode can be controlled by the build options for CMake:
+      - `-D LM_USE_SSE` to use `SSE` types (`LM_USE_SINGLE_PRECISION` must be defined)
+      - `-D LM_USE_AVX` to use `AVX` types (`LM_USE_DOUBLE_PRECISION` must be defined)
+
+    \{
+*/
+
+//! \cond
 // TODO. Make configurable from cmake file 
 //#define LM_USE_SINGLE_PRECISION
 #define LM_USE_DOUBLE_PRECISION
 #define LM_USE_SSE
 #define LM_USE_AVX
+//! \endcond
 
 // --------------------------------------------------------------------------------
 
 #pragma region Precision mode
 
+//! \cond
 #ifdef LM_USE_SINGLE_PRECISION
 	#define LM_SINGLE_PRECISION 1
 #else
@@ -51,6 +85,7 @@
 #if LM_SINGLE_PRECISION + LM_DOUBLE_PRECISION != 1
 	#error "Invalid precision mode"
 #endif
+//! \endcond
 
 #pragma endregion
 
@@ -58,6 +93,7 @@
 
 #pragma region SIMD support
 
+//! \cond
 #ifdef LM_USE_NO_SIMD
     #define LM_NO_SIMD 1
 #else
@@ -73,6 +109,7 @@
 #else
 	#define LM_AVX 0
 #endif
+//! \endcond
 
 #if LM_AVX
 #include <immintrin.h>  // Assume AVX2
@@ -119,23 +156,34 @@ namespace
 #pragma region SIMD flag
 
 /*!
-    SIMD flags.
+    \brief SIMD flags.
+    \ingroup math_object_types
 
-    Specified SIMD optimization, which is
-    utilized as a template parameter.
+    Specified SIMD optimization.
+    The flag is passed as a template parameter for the basic math types.
+      - `None`: No optimization
+      - `SSE`: Enables SSE. Requires support of SSE, SSE2, SSE3, SSE4.x
+      - `AVX`: Enables AVX. Requires support of AVX, AVX2
+      - `Default`: Default optimization flag
+          - `SSE` if `LM_USE_SSE` and `LM_USE_SINGLE_PRECISION` are defined
+          - `AVX` if `LM_AVX_SSE` and `LM_USE_DOUBLE_PRECISION` are defined
+          - `None` otherwise
+        
 */
 enum class SIMD
 {
     None,
-    SSE,    // Requires support of SSE, SSE2, SSE3, SSE4.x
-    AVX,    // Requires support of AVX, AVX2
+    SSE,
+    AVX,
 
+    //! \cond
     // Default SIMD type
     #if LM_SINGLE_PRECISION && LM_SSE
     Default = SSE,
     #elif LM_DOUBLE_PRECISION && LM_AVX
     Default = AVX,
     #endif
+    //! \endcond
 };
 
 #pragma endregion
@@ -143,8 +191,12 @@ enum class SIMD
 // --------------------------------------------------------------------------------
 
 #pragma region Math object types
+//! \defgroup math_object_types Math object types
+//! \brief Basic math objects
+//! \{
 
 #pragma region Math object type flag
+//! \cond
 
 enum class MathObjectType
 {
@@ -152,11 +204,13 @@ enum class MathObjectType
     Mat,
 };
 
+//! \endcond
 #pragma endregion
 
 // --------------------------------------------------------------------------------
 
 #pragma region Base vector type
+//! \cond
 
 /*!
     Base of all vector types.
@@ -194,39 +248,25 @@ struct SIMDTVecBase : public TVecBase<T, Opt, VecT_, NC_>
     using SIMDT = std::conditional_t<Opt == SIMD::AVX, __m256d, __m128>;
 };
 
+//! \endcond
 #pragma endregion
-
-// --------------------------------------------------------------------------------
-
-//#pragma region Forward declaration
-//
-//template <typename T, SIMD Opt> struct TVec2;
-////template <typename T> struct TVec2<T, SIMD::None>;
-//
-//template <typename T, SIMD Opt> struct TVec3;
-////template <typename T> struct TVec3<T, SIMD::None>;
-////template <> struct TVec3<float, SIMD::SSE>;
-////template <> struct TVec3<double, SIMD::AVX>;
-//
-//template <typename T, SIMD Opt> struct TVec4;
-////template <typename T> struct TVec4<T, SIMD::None>;
-////template <> struct TVec4<float, SIMD::SSE>;
-////template <> struct TVec4<double, SIMD::AVX>;
-//
-//#pragma endregion
 
 // --------------------------------------------------------------------------------
 
 #pragma region Vec4
 
 /*!
-    4D vector.
+    \brief 4D vector.
     
     Generic 4-dimensional vector.
+
+	\tparam T Internal value type.
+    \tparam Opt Optimizatoin flag.
 */
 template <typename T, SIMD Opt = SIMD::None>
 struct TVec4;
 
+//! Default specialization for 4D vector type
 template <typename T>
 struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
 {
@@ -253,6 +293,7 @@ struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
 
 };
 
+//! Specialization for SIMD optimized 4D vector
 template <>
 struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SSE, TVec4, 4>
 {
@@ -280,6 +321,7 @@ struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
 
 };
 
+//! Specialization for AVX optimized 4D vector
 template <>
 struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::AVX, TVec4, 4>
 {
@@ -314,13 +356,17 @@ struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
 #pragma region Vec3
 
 /*!
-    3D vector.
+    \brief 3D vector.
     
     Generic 3-dimensional vector.
+
+	\tparam T Internal value type.
+    \tparam Opt Optimizatoin flag.
 */
 template <typename T, SIMD Opt = SIMD::None>
 struct TVec3;
 
+//! Default specialization for 3D vector type
 template <typename T>
 struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
 {
@@ -347,6 +393,7 @@ struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
 
 };
 
+//! Specialization for SSE optimized 3D vector
 template <>
 struct LM_ALIGN_16 TVec3<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SSE, TVec3, 3>
 {
@@ -374,6 +421,7 @@ struct LM_ALIGN_16 TVec3<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
 
 };
 
+//! Specialization for AVX optimized 3D vector
 template <>
 struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::AVX, TVec3, 3>
 {
@@ -409,13 +457,17 @@ struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
 #pragma region Vec2
 
 /*!
-    2D vector.
+    \brief 2D vector.
     
     Generic 2-dimensional vector.
+
+	\tparam T Internal value type.
+    \tparam Opt Optimizatoin flag.
 */
 template <typename T, SIMD Opt = SIMD::None>
 struct TVec2;
 
+//! Default specialization for 2D vector type
 template <typename T>
 struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
 {
@@ -446,6 +498,7 @@ struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
 // --------------------------------------------------------------------------------
 
 #pragma region Base matrix type
+//! \cond
 
 template <typename T, SIMD Opt, template <typename, SIMD> class MatT_, template <typename, SIMD> class VecT_, int NC_>
 struct TMatBase
@@ -474,6 +527,7 @@ struct TMatBase
 
 };
 
+//! \endcond
 #pragma endregion
 
 // --------------------------------------------------------------------------------
@@ -481,7 +535,7 @@ struct TMatBase
 #pragma region Mat4
 
 /*!
-	4x4 matrix.
+	\brief 4x4 matrix.
 
 	Generic column major 4x4 matrix. 
 	A matrix
@@ -490,6 +544,9 @@ struct TMatBase
 		v20 v21 v22 v23
 		v30 v31 v32 v33
 	is stored sequentially as v00, v10, ..., v33
+
+    \tparam T Internal value type.
+    \tparam Opt Optimizatoin flag.
 */
 template <typename T, SIMD Opt = SIMD::None>
 struct TMat4 : public TMatBase<T, Opt, TMat4, TVec4, 4>
@@ -533,7 +590,7 @@ struct TMat4 : public TMatBase<T, Opt, TMat4, TVec4, 4>
 #pragma region Mat3
 
 /*!
-	3x3 matrix.
+	\brief 3x3 matrix.
 
     Generic column major 3x3 matrix.
     A matrix
@@ -541,6 +598,9 @@ struct TMat4 : public TMatBase<T, Opt, TMat4, TVec4, 4>
         v10 v11 v12
         v20 v21 v22
     is stored sequentially as v00, v10, ..., v22.
+
+    \tparam T Internal value type.
+    \tparam Opt Optimizatoin flag.
 */
 template <typename T, SIMD Opt = SIMD::None>
 struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
@@ -596,11 +656,17 @@ using EnableIfAVXType = std::enable_if_t<std::is_same<T, double>::value && Opt =
 
 #pragma endregion
 
+//! \}
 #pragma endregion
 
 // --------------------------------------------------------------------------------
 
 #pragma region Math operations
+/*!
+    \defgroup math_operations Math operations
+    \brief Math operations for basic types
+    \{
+*/
 
 #pragma region operator+
 
@@ -983,11 +1049,17 @@ LM_INLINE auto operator-(const VecT<double, SIMD::AVX>& v) -> VecT<double, SIMD:
 
 #pragma endregion
 
+/*!
+    \}
+*/
 #pragma endregion
 
 // --------------------------------------------------------------------------------
 
 #pragma region Default types
+//! \defgroup default_types Default types
+//! \brief Default math object types.
+//! \{
 
 using Vec2 = TVec2<Float, SIMD::None>;
 using Vec3 = TVec3<Float, SIMD::Default>;
@@ -995,15 +1067,27 @@ using Vec4 = TVec4<Float, SIMD::Default>;
 using Mat3 = TMat3<Float, SIMD::Default>;
 using Mat4 = TMat4<Float, SIMD::Default>;
 
+//! \}
 #pragma endregion
 
 // --------------------------------------------------------------------------------
 
 #pragma region Math utility
+/*!
+    \defgroup math_utils Math utility
+    \brief Math functions for various basic types.
 
+    Defines various math functions for vector and matrix types.
+    \{
+*/
+
+//! Utility functions for vector and matrix types
 namespace Math
 {
     #pragma region Constants
+    //! \defgroup constants Constants
+    //! \ingroup math_utils
+    //! \{
 
     template <typename T = Float> constexpr auto Pi()              -> T     { return T(3.141592653589793238462643383279502884e+00); }
     template <typename T = Float> constexpr auto InvPi()           -> T     { return T(1.0 / 3.141592653589793238462643383279502884e+00); }
@@ -1014,11 +1098,15 @@ namespace Math
     template <>                   constexpr auto Eps<float>()      -> float { return 1e-4f; }
     template <typename T = Float> constexpr auto EpsIsect()        -> T     { return T(1e-4); }
 
+    //! \}
     #pragma endregion
 
     // --------------------------------------------------------------------------------
 
     #pragma region Basic functions
+    //! \defgroup basic_functions Basic functions
+    //! \ingroup math_utils
+    //! \{
 
     template <typename T> constexpr auto Radians(const T& v) -> T { return v * Pi<T>() / T(180); }
     template <typename T> constexpr auto Degrees(const T& v) -> T { return v * T(180) / Pi<T>(); }
@@ -1033,11 +1121,15 @@ namespace Math
     template <typename T> LM_INLINE auto Max(const T& v1, const T& v2)    -> T { return std::max(v1, v2); }
     template <typename T> LM_INLINE auto Clamp(const T& v, const T& min, const T& max) -> T { return std::min(std::max(v, min), max); }
 
+    //! \}
     #pragma endregion
 
     // --------------------------------------------------------------------------------
 
     #pragma region Vector functions
+    //! \defgroup vector_functions Vector functions
+    //! \ingroup math_utils
+    //! \{
 
     #pragma region Dot
 
@@ -1219,11 +1311,15 @@ namespace Math
 
     #pragma endregion
 
+    //! \}
     #pragma endregion
 
     // --------------------------------------------------------------------------------
 
     #pragma region Matrix functions
+    //! \defgroup matrix_functions Matrix functions
+    //! \ingroup math_utils
+    //! \{
 
     #pragma region Transpose
 
@@ -1261,6 +1357,8 @@ namespace Math
     }
 
     #pragma endregion
+
+    // --------------------------------------------------------------------------------
 
     #pragma region Inverse
 
@@ -1495,11 +1593,15 @@ namespace Math
 
     #pragma endregion
 
+    //! \}
     #pragma endregion
 
     // --------------------------------------------------------------------------------
 
     #pragma region Transform
+    //! \defgroup transform Transform
+    //! \ingroup math_utils
+    //! \{
 
     #pragma region Translate
 
@@ -1578,11 +1680,15 @@ namespace Math
 
     #pragma endregion
 
+    //! \}
     #pragma endregion   
 
     // --------------------------------------------------------------------------------
 
     #pragma region Linear algebra
+    //! \defgroup linear_algebra Linear algebra
+    //! \ingroup math_utils
+    //! \{
 
     template <typename T, SIMD Opt>
     auto OrthonormalBasis(const TVec3<T, Opt>& a, TVec3<T, Opt>& b, TVec3<T, Opt>& c) -> void
@@ -1591,9 +1697,13 @@ namespace Math
         b = Normalize(Cross(c, a));
     }
 
+    //! \}
     #pragma endregion
 }
 
+//! \}
 #pragma endregion
 
 LM_NAMESPACE_END
+//! \}
+

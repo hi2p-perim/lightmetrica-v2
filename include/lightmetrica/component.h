@@ -40,25 +40,125 @@
 #include <memory>
 #include <string>
 
+/*!
+    \defgroup component Component
+    \brief Portable component framework.
+
+
+    One of the major objective of this project is to create highly extensive framework
+    for the renderer development. In order to achieve this goal, the user of the framework
+    wants to have flexibility to extend the framework with low cost.
+
+    The overall design of the Lightmetrica follows the design pattern known as
+    the dependency injection (DI), which make is possible to decouple the dependencies between classes.
+    In particular, the all extensibule classes and its functions are accessed via interfaces.
+    In C++, the class with all member functions are pure virtual member functions with `=0`.
+    All instantiation of interfaces are controlled via ComponentFactory factory class.
+
+    The distinguishable feature of our system is to retain binary portability.
+    That is, we can combine various plugins compiled with different compilers.
+    This is benefitical because it does not restrict the users build environment.
+    The users try to extend the framework can choose any compilers irrespective to the 
+    compiler utilized for builing the core library and the application.
+    For instance, we can even combine the core library compiled with MSVC and plugins
+    compiled with Mingw.
+    
+    The basic idea is to implement [vtable](https://en.wikipedia.org/wiki/Virtual_method_table)
+    without relying on the language features (see chapter 8 in Imperfect C++ for details).
+    We offer the wrapper macros for implementing interfaces and implementations
+    similar to the way we usually create virtual functions.
+    Similar idea is observed in [cppcomponent](https://github.com/jbandela/cppcomponents),
+    but our implementation is simpler than the existing implementation.
+
+
+    ### Interface
+
+    The interface class for our comopnent classes is the class (or struct) that
+    is defined by some combination of macros.
+
+        struct A : public Component
+        {
+            LM_INTERFACE_CLASS(A, Component);
+            LM_INTERFACE_F(Func, void());
+            LM_INTERFACE_CLASS_END(A);
+        };
+
+    The interface class must begin with `LM_INTERFACE_CLASS` macro
+    supplying the class type (e.g., `A`) and the base class type (e.g., `Component`).
+    Also the class must be finished with `LM_INTERFACE_CLASS_END` macro.
+
+    The member functions are defined by `LM_INTERFACE_F` macro
+    with the name of the function and the function signature.
+    We can use some non-portable types (e.g., `std::string`, `std::vector`)
+    as an argument of the function signature.
+    Currently we don't support overloading and const member functions.
+
+    Also we can create the interface with inheritances.
+
+        struct B : public A
+        {
+            LM_INTERFACE_CLASS(B, A);
+            LM_INTERFACE_F(Func2, void());
+            LM_INTERFACE_CLASS_END(B);
+        };
+
+
+    ### Implementation
+
+    The implementation of the interface must also be defined by the combination
+    of predefined macros:
+    
+        struct A_Impl : public A
+        {
+            LM_IMPL_CLASS(A_Impl, A);
+            LM_IMPL_F(Func) = [this]() -> void { ... }
+        };
+
+        LM_COMPONENT_REGISTER_IMPL(A_Impl, "a::impl");
+
+    The class must begin with `LM_IMPL_CLASS` macro.
+    The implementation of the interface functions must be defined `LM_IMPL_F` macro
+    assigning the actual implemetation as a lambda function.
+
+    Finally we need to register the implementation to the factory class
+    with `LM_COMPONENT_REGISTER_IMPL` macro with a key string (in this example, `a::impl`).
+    The key is later utilized as a key to create an instance of the implementation.
+
+
+    ### Creating instances
+
+    Once we create the interface class and its implementation and assumes the interface `A` is defined
+    in the header `a.h`. Then we can create an instance of `A_Impl` with the factory function `ComponentFactory::Create`:
+
+        #include "a.h"
+        ...
+        const auto a = ComponentFactory::Create<A>("a::impl");
+        ...
+
+    The factory function returns `unique_ptr` of the interface type.
+    Note that we need careful handling of memory allocation/deallocation between boundaries
+    of dynamic libraries. The function automatically registers proper deleter function
+    for the instance created in the different libraries.
+
+    \{
+*/
+
 LM_NAMESPACE_BEGIN
 
 #pragma region Component
 
 class Component;
+
+//! \cond
 using CreateFuncPointerType = Component* (*)();
 using ReleaseFuncPointerType = void(*)(Component*);
+//! \endcond
 
-/*!
-    Component.
-
-    The base class for all component classes.
-    The component system of lightmetrica is main feature for
-    retaining portability of the framework.
-    For technical details, see <TODO>.
-*/
+//! Base class for all component classes
 class Component : public SIMDAlignedType
 {
 public:
+    //! \cond detail
 
     // VTable entries and user-defined data
     // User-defined data is required to hold non-portable version
@@ -79,6 +179,7 @@ public:
     // Number of interface functions
     static constexpr int NumInterfaces = 0;
 
+    //! \endcond
 };
 
 #pragma endregion
@@ -87,6 +188,7 @@ public:
 
 #pragma region Interface definition
 
+//! \cond detail
 template <int ID, typename Iface, typename Signature>
 struct VirtualFunction;
 
@@ -156,9 +258,11 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
         return VirtualFunctionType(o, name);
     }
 };
+//! \endcond
 
 /*
-    Define interface class.
+    \def LM_INTERFACE_CLASS(Current, Base)
+    \brief Defines interface class.
 
     The `Base` class must be one that the `Current` class directly inherits.
     Specifying indirectly inherited classes might invoke the unexpected behavior.
@@ -202,6 +306,7 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
 
 #pragma region Implementation definition
 
+//! \cond detail
 template <typename Signature>
 struct ImplFunctionGenerator;
 
@@ -239,6 +344,7 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
         });
     }
 };
+//!< \endcond
 
 #define LM_IMPL_CLASS(Impl, Base) \
     LM_DEFINE_CLASS_TYPE(Impl, Base); \
@@ -269,6 +375,7 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
 
 #pragma region Clonable component
 
+//! Clonable component
 class Clonable : public Component
 {
 public:
@@ -282,6 +389,11 @@ public:
 
 public:
 
+    /*!
+        \brief Clone the instalce.
+        Clones the content of the instance to the given argument.
+        This function is called from `Component::Clone` function.
+    */
     LM_INTERFACE_F(Clone, void(Clonable* o));
 
 public:
@@ -303,12 +415,14 @@ public:
     All components are instantiated with this class.
 */
 
+//! \cond detail
 extern "C"
 {
     LM_PUBLIC_API auto ComponentFactory_Register(const char* key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void;
     LM_PUBLIC_API auto ComponentFactory_Create(const char* key) -> Component*;
     LM_PUBLIC_API auto ComponentFactory_ReleaseFunc(const char* key) -> ReleaseFuncPointerType;
 }
+//! \endcond
 
 class ComponentFactory
 {
@@ -318,12 +432,33 @@ public:
 
 public:
 
+    //! \cond detail
     static auto Register(const std::string& key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { LM_EXPORTED_F(ComponentFactory_Register, key.c_str(), createFunc, releaseFunc); }
     static auto Create(const std::string& key) -> Component* { return LM_EXPORTED_F(ComponentFactory_Create, key.c_str()); }
     static auto ReleaseFunc(const std::string& key) -> ReleaseFuncPointerType { return LM_EXPORTED_F(ComponentFactory_ReleaseFunc, key.c_str()); }
+    //! \endcond
 
 public:
+    
+    /*!
+        \brief Create an instance by the key.
 
+        Creates an instance of the implementation given a key of 
+        the implementation type specified by `LM_COMPONENT_REGISTER_IMPL` macro.
+        Example:
+
+            #include <lightmetrica/film.h>
+            ...
+            # Create an instance of Film_HDR
+            const auto film = ComponentFactory::Create<Film>("film::hdr");
+            ...
+            # Now we can use the instance
+            film->Splat(...);
+            ...
+
+        \tparam InterfaceType Interface type of the instance (e.g., `Film`).
+        \param key Key of the implementation (e.g., `film::hdr`).
+    */
     template <typename InterfaceType>
     static auto Create(const std::string& key) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
@@ -451,3 +586,4 @@ private:
 #pragma endregion
 
 LM_NAMESPACE_END
+//! \}
