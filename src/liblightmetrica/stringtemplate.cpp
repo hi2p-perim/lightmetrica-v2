@@ -30,10 +30,21 @@
 #pragma warning(push)
 #pragma warning(disable:4267)
 #endif
+
+// #if LM_COMPILER_CLANG
+// #pragma clang diagnostic push
+// #pragma clang diagnostic ignored "-Wreserved-user-defined-literal"
+// #endif
+
 #include <ctemplate/template.h>
+
 #if LM_PLATFORM_WINDOWS
 #pragma warning(pop)
 #endif
+
+// #if LM_COMPILER_CLANG
+// #pragma clang diagnostic pop
+// #endif
 
 LM_NAMESPACE_BEGIN
 

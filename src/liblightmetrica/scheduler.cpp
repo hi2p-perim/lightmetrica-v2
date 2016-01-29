@@ -164,7 +164,7 @@ public:
             #pragma region Parallel loop
 
             std::atomic<bool> done(false);
-            tbb::parallel_for(tbb::blocked_range<long long>(0, numSamples_, grainSize_), [&](const tbb::blocked_range<long long>& range) -> void
+            tbb::parallel_for(tbb::blocked_range<long long>(0, NumSamples, grainSize_), [&](const tbb::blocked_range<long long>& range) -> void
             {
                 if (done)
                 {

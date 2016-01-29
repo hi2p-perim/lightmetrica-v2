@@ -27,22 +27,22 @@
 #include <lightmetrica/fp.h>
 #include <lightmetrica-test/utils.h>
 
-#if LM_PLATFORM_WINDOWS
+#if LM_COMPIER_MSVC
 #pragma warning(push)
 #pragma warning(disable:4723)   // C4723: potential divide by 0
 #endif
 
+#if LM_COMPILER_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wliteral-range"
+#endif
+
 LM_TEST_NAMESPACE_BEGIN
+
+#if LM_COMPIER_MSVC
 
 TEST(FPTest, SupportedExceptions)
 {
-    const auto GetDescription = [](const std::string& out) -> std::string
-    {
-        std::regex re(R"x(Description +: ([\w_]+))x");
-        std::smatch m;
-        return std::regex_search(out, m, re) ? m[1] : std::string("");
-    };
-
     const auto Trial = [&](const std::string& desc, const std::function<void()>& func) -> void
     {
         SEHUtils::EnableStructuralException();
@@ -195,8 +195,14 @@ TEST(FPTest, DisabledBehavior)
     });
 }
 
+#endif
+
 LM_TEST_NAMESPACE_END
 
-#if LM_PLATFORM_WINDOWS
+#if LM_COMPIER_MSVC
 #pragma warning(pop)
+#endif
+
+#if LM_COMPILER_CLANG
+#pragma clang diagnostic pop
 #endif

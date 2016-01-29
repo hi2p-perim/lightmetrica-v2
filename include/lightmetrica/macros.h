@@ -110,7 +110,7 @@
 	#else
 		#define LM_ARCH_X64 0
 	#endif
-#elif LM_COMPILER_GCC
+#elif LM_COMPILER_GCC || LM_COMPILER_CLANG
 	#ifdef __i386__
 		#define LM_ARCH_X86 1
 	#else
@@ -160,7 +160,7 @@
 		#define LM_PUBLIC_API __declspec(dllimport)
 	#endif
 	#define LM_HIDDEN_API
-#elif LM_COMPILER_GCC
+#elif LM_COMPILER_GCC || LM_COMPILER_CLANG
 	#ifdef LM_EXPORTS
 		#define LM_PUBLIC_API __attribute__ ((visibility("default")))
 		#define LM_HIDDEN_API __attribute__ ((visibility("hidden")))
@@ -181,7 +181,7 @@
 
 #if LM_COMPILER_MSVC
 	#define LM_INLINE __forceinline
-#elif LM_COMPILER_GCC
+#elif LM_COMPILER_GCC || LM_COMPILER_CLANG
 	#define LM_INLINE inline __attribute__((always_inline))
 #endif
 
@@ -193,7 +193,7 @@
 
 #if LM_COMPILER_MSVC
 	#define LM_ALIGN(x) __declspec(align(x))
-#elif LM_COMPILER_GCC
+#elif LM_COMPILER_GCC || LM_COMPILER_CLANG
 	#define LM_ALIGN(x) __attribute__((aligned(x)))
 #endif
 #define LM_ALIGN_16 LM_ALIGN(16)

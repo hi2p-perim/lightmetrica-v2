@@ -51,19 +51,27 @@ public:
     auto Load(const std::string& path) -> bool
     {
         #if LM_PLATFORM_WINDOWS
-        handle = LoadLibraryA(path.c_str());
+        const auto p = path + ".dll";
+        #elif LM_PLATFORM_LINUX
+        const auto p = path + ".so";
+        #elif LM_PLATFORM_APPLE
+        const auto p = path + ".dylib";
+        #endif
+
+        #if LM_PLATFORM_WINDOWS
+        handle = LoadLibraryA(p.c_str());
         if (!handle)
         {
-            std::cerr << "Failed to load library : " << path << std::endl;
+            std::cerr << "Failed to load library : " << p << std::endl;
             std::cerr << GetLastErrorAsString() << std::endl;
             return false;
         }
         #elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
-        handle = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+        handle = dlopen(p.c_str(), RTLD_LAZY | RTLD_LOCAL);
         if (!handle)
         {
-            std::cerr << "Failed to load library : " << path << std::endl;
-            std::cerr << GetLastErrorAsString() << std::endl;
+            std::cerr << "Failed to load library : " << p << std::endl;
+            std::cerr << dlerror() << std::endl;
             return false;
         }
         #endif
@@ -182,7 +190,7 @@ public:
         // Load DLL
         // Assume in the dynamic library is in the same directory as executable
         // TODO: search from search paths.
-        if (!lib->Load("liblightmetrica.dll"))
+        if (!lib->Load("liblightmetrica"))
         {
             // This is fatal error, the application should exit immediately
             std::exit(EXIT_FAILURE);
@@ -222,7 +230,7 @@ namespace
             using FuncPtrType = decltype(&Func); \
             static auto func = []() -> FuncPtrType { \
                 const auto* lib = StaticInit<ExternalPolicy>::Instance().Library(); \
-                const auto* f = static_cast<FuncPtrType>(lib->GetFuncPointer(#Func)); \
+                const auto* f = reinterpret_cast<FuncPtrType>(lib->GetFuncPointer(#Func)); \
                 if (!f) std::exit(EXIT_FAILURE); \
                 return f; \
             }(); \

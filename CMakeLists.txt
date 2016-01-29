@@ -77,10 +77,12 @@ endif()
 #
 
 # Boost
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-add_definitions(-DBOOST_ALL_NO_LIB)
+if (MSVC)
+    set(Boost_USE_STATIC_LIBS ON)
+    set(Boost_USE_MULTITHREADED ON)
+    set(Boost_USE_STATIC_RUNTIME OFF)
+    add_definitions(-DBOOST_ALL_NO_LIB)
+endif()
 find_package(Boost 1.59 REQUIRED COMPONENTS program_options filesystem system regex coroutine context)
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -185,7 +187,7 @@ endif()
 # GCC
 if (CMAKE_COMPILER_IS_GNUCXX)
     # Enabling C++11 for gcc
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
 
     # If the build type is Debug, define macro
     if (CMAKE_BUILD_TYPE STREQUAL Debug)
@@ -197,13 +199,16 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 
     # Ignore unknown pragma
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
 
 # Clang
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -stdlib=libc++")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-function")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
 
 # --------------------------------------------------------------------------------

@@ -50,6 +50,8 @@ auto Version::Platform() -> std::string
 	return "Windows";
 #elif LM_PLATFORM_LINUX
 	return "Linux";
+#elif LM_PLATFORM_APPLE
+    return "Apple";
 #endif
 }
 

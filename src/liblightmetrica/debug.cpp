@@ -43,7 +43,7 @@ auto DebugUtils_StackTrace() -> bool
 {
     #if !LM_PLATFORM_WINDOWS
 
-    LM_LOG_WARN("Stack trace is unsupported")
+    LM_LOG_WARN("Stack trace is unsupported");
     return false;
 
     #else

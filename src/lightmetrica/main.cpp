@@ -341,7 +341,7 @@ private:
                 struct tm timeinfo;
                 localtime_s(&timeinfo, &time);
                 ss << std::put_time(&timeinfo, "%Y.%m.%d.%H.%M.%S");
-                #elif LM_PLATFORM_LINUX
+                #elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
                 char timeStr[256];
                 std::strftime(timeStr, sizeof(timeStr), "%Y.%m.%d.%H.%M.%S", std::localtime(&time));
                 ss << timeStr;
@@ -600,7 +600,7 @@ private:
 
     // Function to initialize configurable component
     template <typename AssetT>
-    auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::string& default = "") -> boost::optional<typename AssetT::UniquePtr>
+    auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::string& def = "") -> boost::optional<typename AssetT::UniquePtr>
     {
         static_assert(std::is_base_of<Configurable, AssetT>::value, "AssetT must inherits Configurable");
 
@@ -610,12 +610,12 @@ private:
         const auto* n = root->Child(name);
         if (!n)
         {
-            if (!default.empty())
+            if (!def.empty())
             {
                 LM_LOG_WARN("Missing '" + name + "' node");
                 LM_LOG_INDENTER();
-                LM_LOG_WARN("Using default type: '" + default + "'");
-                return ComponentFactory::Create<AssetT>(name + "::" + default);
+                LM_LOG_WARN("Using default type: '" + def + "'");
+                return ComponentFactory::Create<AssetT>(name + "::" + def);
             }
             else
             {
@@ -656,7 +656,7 @@ private:
             return boost::none;
         }
 
-        return p;
+        return std::move(p);
     }
 
 };

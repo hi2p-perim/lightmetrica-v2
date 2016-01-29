@@ -26,11 +26,18 @@
 #include <lightmetrica/logger.h>
 
 #include <boost/bind.hpp>
+#if LM_COMPILER_MSVC
 #pragma warning(push)
 #pragma warning(disable:4267)
 #pragma warning(disable:4005)
 #include <boost/asio.hpp>
 #pragma warning(pop)
+#elif LM_COMPILER_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#include <boost/asio.hpp>
+#pragma clang diagnostic pop
+#endif
 
 #include <tbb/tbb.h>
 
@@ -153,7 +160,7 @@ public:
 						    consoleWidth = screenBufferInfo.dwSize.X - 1;
 					    }
 				    }
-				    #elif LM_PLATFORM_LINUX
+				    #elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
 				    {
 					    struct winsize w;
 					    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) < 0)
@@ -245,7 +252,7 @@ private:
 			case LogType::Debug: { colorFlag = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY; break; }
 		}
 		SetConsoleTextAttribute(consoleHandle, colorFlag);
-		#elif LM_PLATFORM_LINUX
+		#elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
 		switch (type)
 		{
 			case LogType::Error: { std::cout << "\033[31m"; break; }
@@ -261,7 +268,7 @@ private:
 		#if LM_PLATFORM_WINDOWS
 		HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		SetConsoleTextAttribute(consoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-		#elif LM_PLATFORM_LINUX
+		#elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
 		std::cout << "\033[0m";
 		#endif
 	}
@@ -285,7 +292,7 @@ private:
 	bool prevMessageIsInplace_ = false;
 	tbb::concurrent_hash_map<std::string, int> threadIdMap_;
     int verboseLevel_ = 0;
-    std::atomic<int> unprocessedMessages_ = 0;
+    std::atomic<int> unprocessedMessages_{0};
 
 };
 

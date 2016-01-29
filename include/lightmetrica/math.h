@@ -25,6 +25,7 @@
 #pragma once
 
 #include <lightmetrica/macros.h>
+#include <cmath>
 #include <string>
 #include <initializer_list>
 
@@ -61,10 +62,10 @@
 
 //! \cond
 // TODO. Make configurable from cmake file 
-//#define LM_USE_SINGLE_PRECISION
-#define LM_USE_DOUBLE_PRECISION
+#define LM_USE_SINGLE_PRECISION
+//#define LM_USE_DOUBLE_PRECISION
 #define LM_USE_SSE
-#define LM_USE_AVX
+//#define LM_USE_AVX
 //! \endcond
 
 // --------------------------------------------------------------------------------
@@ -209,50 +210,6 @@ enum class MathObjectType
 
 // --------------------------------------------------------------------------------
 
-#pragma region Base vector type
-//! \cond
-
-/*!
-    Base of all vector types.
-
-    Defines required types as vector types.
-*/
-template <typename T, SIMD Opt, template <typename, SIMD> class VecT_, int NC_>
-struct TVecBase
-{
-
-    // Math object type
-    static constexpr MathObjectType ObjT = MathObjectType::Vec;
-
-    // Value type
-    using VT = T;
-
-    // Vector type
-    using VecT = VecT_<T, Opt>;
-
-    // Number of components
-    static constexpr int NC = NC_;
-
-    // Parameter types
-    template <typename U>
-    using TParam = std::conditional_t<std::is_arithmetic<U>::value, U, const U&>;
-    using ParamT = TParam<T>;
-    using RetT   = ParamT;
-
-};
-
-template <typename T, SIMD Opt, template <typename, SIMD> class VecT_, int NC_>
-struct SIMDTVecBase : public TVecBase<T, Opt, VecT_, NC_>
-{
-    // SIMD vector type
-    using SIMDT = std::conditional_t<Opt == SIMD::AVX, __m256d, __m128>;
-};
-
-//! \endcond
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
 #pragma region Vec4
 
 /*!
@@ -268,8 +225,25 @@ struct TVec4;
 
 //! Default specialization for 4D vector type
 template <typename T>
-struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
+struct TVec4<T, SIMD::None> 
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Vec;
+
+    // Value type
+    using VT = T;
+
+    // Vector type
+    using VecT = TVec4<T, SIMD::None>;
+
+    // Number of components
+    static constexpr int NC = 4;
+
+    // Parameter types
+    template <typename U>
+    using TParam = std::conditional_t<std::is_arithmetic<T>::value, U, const U&>;
+    using ParamT = TParam<T>;
+    using RetT   = ParamT;
 
     union
     {
@@ -293,10 +267,28 @@ struct TVec4<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec4, 4>
 
 };
 
+#if LM_SSE
 //! Specialization for SIMD optimized 4D vector
 template <>
-struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SSE, TVec4, 4>
+struct LM_ALIGN_16 TVec4<float, SIMD::SSE> 
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Vec;
+
+    // Value type
+    using VT = float;
+
+    // Vector type
+    using VecT = TVec4<float, SIMD::SSE>;
+
+    // Number of components
+    static constexpr int NC = 4;
+
+    // Parameter types
+    using ParamT = float;
+    using RetT   = float;
+
+    using SIMDT = __m128;
 
     union
     {
@@ -320,11 +312,30 @@ struct LM_ALIGN_16 TVec4<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE auto operator/=(const VecT& v) -> VecT&       { v_ = _mm_div_ps(v_, v.v_); return *this; }
 
 };
+#endif
 
+#if LM_AVX
 //! Specialization for AVX optimized 4D vector
 template <>
-struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::AVX, TVec4, 4>
+struct LM_ALIGN_32 TVec4<double, SIMD::AVX> 
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Vec;
+
+    // Value type
+    using VT = double;
+
+    // Vector type
+    using VecT = TVec4<double, SIMD::AVX>;
+
+    // Number of components
+    static constexpr int NC = 4;
+
+    // Parameter types
+    using ParamT = double;
+    using RetT   = double;
+
+    using SIMDT = __m256d;
 
     union
     {
@@ -348,6 +359,7 @@ struct LM_ALIGN_32 TVec4<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE auto operator/=(const VecT& v) -> VecT&       { v_ = _mm256_div_pd(v_, v.v_); return *this; }
 
 };
+#endif
 
 #pragma endregion
 
@@ -368,8 +380,26 @@ struct TVec3;
 
 //! Default specialization for 3D vector type
 template <typename T>
-struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
+struct TVec3<T, SIMD::None> 
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Vec;
+
+    // Value type
+    using VT = T;
+
+    // Vector type
+    using VecT = TVec3<T, SIMD::None>;
+
+    // Number of components
+    static constexpr int NC = 3;
+
+    // Parameter types
+    template <typename U>
+    using TParam = std::conditional_t<std::is_arithmetic<T>::value, U, const U&>;
+    using ParamT = TParam<T>;
+    using RetT   = ParamT;
+
     union
     {
         VT v_[NC];
@@ -393,10 +423,29 @@ struct TVec3<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec3, 3>
 
 };
 
+#if LM_SSE
 //! Specialization for SSE optimized 3D vector
 template <>
-struct LM_ALIGN_16 TVec3<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SSE, TVec3, 3>
+struct LM_ALIGN_16 TVec3<float, SIMD::SSE>
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Vec;
+
+    // Value type
+    using VT = float;
+
+    // Vector type
+    using VecT = TVec3<float, SIMD::SSE>;
+
+    // Number of components
+    static constexpr int NC = 3;
+
+    // Parameter types
+    using ParamT = float;
+    using RetT   = float;
+
+    using SIMDT = __m128;
+
     union
     {
         SIMDT v_;
@@ -420,11 +469,30 @@ struct LM_ALIGN_16 TVec3<float, SIMD::SSE> : public SIMDTVecBase<float, SIMD::SS
     LM_INLINE auto operator/=(const VecT& v) -> VecT&   { v_ = _mm_div_ps(v_, v.v_); return *this; }
 
 };
+#endif
 
+#if LM_AVX
 //! Specialization for AVX optimized 3D vector
 template <>
-struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::AVX, TVec3, 3>
+struct LM_ALIGN_32 TVec3<double, SIMD::AVX>
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Vec;
+
+    // Value type
+    using VT = double;
+
+    // Vector type
+    using VecT = TVec3<double, SIMD::AVX>;
+
+    // Number of components
+    static constexpr int NC = 3;
+
+    // Parameter types
+    using ParamT = double;
+    using RetT   = double;
+
+    using SIMDT = __m256d;
 
     union
     {
@@ -449,6 +517,7 @@ struct LM_ALIGN_32 TVec3<double, SIMD::AVX> : public SIMDTVecBase<double, SIMD::
     LM_INLINE auto operator/=(const VecT& v) -> VecT&   { v_ = _mm256_div_pd(v_, v.v_); return *this; }
 
 };
+#endif
 
 #pragma endregion
 
@@ -469,8 +538,26 @@ struct TVec2;
 
 //! Default specialization for 2D vector type
 template <typename T>
-struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
+struct TVec2<T, SIMD::None>
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Vec;
+
+    // Value type
+    using VT = T;
+
+    // Vector type
+    using VecT = TVec3<T, SIMD::None>;
+
+    // Number of components
+    static constexpr int NC = 2;
+
+    // Parameter types
+    template <typename U>
+    using TParam = std::conditional_t<std::is_arithmetic<T>::value, U, const U&>;
+    using ParamT = TParam<T>;
+    using RetT   = ParamT;
+
     union
     {
         VT v_[NC];
@@ -497,41 +584,6 @@ struct TVec2<T, SIMD::None> : public TVecBase<T, SIMD::None, TVec2, 2>
 
 // --------------------------------------------------------------------------------
 
-#pragma region Base matrix type
-//! \cond
-
-template <typename T, SIMD Opt, template <typename, SIMD> class MatT_, template <typename, SIMD> class VecT_, int NC_>
-struct TMatBase
-{
-
-    // Math object type
-    static constexpr MathObjectType ObjT = MathObjectType::Mat;
-
-    // Value type
-    using VT = T;
-
-    // Matrix type
-    using MatT = MatT_<T, Opt>;
-
-    // Column vector type
-    template <typename T__, SIMD Opt__>
-    using TVec = VecT_<T__, Opt__>;
-    using VecT = VecT_<T, Opt>;
-
-    // Number of components
-    static constexpr int NC = NC_;
-
-    // Parameter types
-    using ParamT = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
-    using RetT = ParamT;
-
-};
-
-//! \endcond
-#pragma endregion
-
-// --------------------------------------------------------------------------------
-
 #pragma region Mat4
 
 /*!
@@ -549,8 +601,28 @@ struct TMatBase
     \tparam Opt Optimizatoin flag.
 */
 template <typename T, SIMD Opt = SIMD::None>
-struct TMat4 : public TMatBase<T, Opt, TMat4, TVec4, 4>
+struct TMat4
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Mat;
+
+    // Value type
+    using VT = T;
+
+    // Matrix type
+    using MatT = TMat4<T, Opt>;
+
+    // Column vector type
+    template <typename T_, SIMD Opt_>
+    using TVec = TVec4<T_, Opt_>;
+    using VecT = TVec4<T, Opt>;
+
+    // Number of components
+    static constexpr int NC = 4;
+
+    // Parameter types
+    using ParamT = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
+    using RetT = ParamT;
 
     VecT v_[NC];
 
@@ -603,8 +675,28 @@ struct TMat4 : public TMatBase<T, Opt, TMat4, TVec4, 4>
     \tparam Opt Optimizatoin flag.
 */
 template <typename T, SIMD Opt = SIMD::None>
-struct TMat3 : public TMatBase<T, Opt, TMat3, TVec3, 3>
+struct TMat3
 {
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Mat;
+
+    // Value type
+    using VT = T;
+
+    // Matrix type
+    using MatT = TMat3<T, Opt>;
+
+    // Column vector type
+    template <typename T_, SIMD Opt_>
+    using TVec = TVec3<T_, Opt_>;
+    using VecT = TVec3<T, Opt>;
+
+    // Number of components
+    static constexpr int NC = 3;
+
+    // Parameter types
+    using ParamT = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
+    using RetT = ParamT;
 
     VecT v_[NC];
 
@@ -740,6 +832,7 @@ LM_INLINE auto operator*(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> VecT
     return result;
 }
 
+#if LM_SSE
 template <>
 LM_INLINE auto operator*<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v1, const TVec3<float, SIMD::SSE>& v2) -> TVec3<float, SIMD::SSE>
 {
@@ -751,7 +844,9 @@ LM_INLINE auto operator*<float, SIMD::SSE, TVec4>(const TVec4<float, SIMD::SSE>&
 {
     return TVec4<float, SIMD::SSE>(_mm_mul_ps(v1.v_, v2.v_));
 }
+#endif
 
+#if LM_AVX
 template <>
 LM_INLINE auto operator*<double, SIMD::AVX, TVec3>(const TVec3<double, SIMD::AVX>& v1, const TVec3<double, SIMD::AVX>& v2) -> TVec3<double, SIMD::AVX>
 {
@@ -763,6 +858,7 @@ LM_INLINE auto operator*<double, SIMD::AVX, TVec4>(const TVec4<double, SIMD::AVX
 {
     return TVec4<double, SIMD::AVX>(_mm256_mul_pd(v1.v_, v2.v_));
 }
+#endif
 
 #pragma endregion
 
@@ -784,6 +880,7 @@ LM_INLINE auto operator*(const VecT<T, Opt>& v, const T& s) -> VecT<T, Opt>
     return result;
 }
 
+#if LM_SSE
 template <>
 LM_INLINE auto operator*<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v, const float& s) -> TVec3<float, SIMD::SSE>
 {
@@ -795,7 +892,9 @@ LM_INLINE auto operator*<float, SIMD::SSE, TVec4>(const TVec4<float, SIMD::SSE>&
 {
     return TVec4<float, SIMD::SSE>(_mm_mul_ps(v.v_, _mm_set1_ps(s)));
 }
+#endif
 
+#if LM_AVX
 template <>
 LM_INLINE auto operator*<double, SIMD::AVX, TVec3>(const TVec3<double, SIMD::AVX>& v, const double& s) -> TVec3<double, SIMD::AVX>
 {
@@ -807,6 +906,7 @@ LM_INLINE auto operator*<double, SIMD::AVX, TVec4>(const TVec4<double, SIMD::AVX
 {
     return TVec4<double, SIMD::AVX>(_mm256_mul_pd(v.v_, _mm256_set1_pd(s)));
 }
+#endif
 
 #pragma endregion
 
@@ -853,6 +953,7 @@ LM_INLINE auto operator*(const TMat3<T, Opt>& m, const TVec3<T, Opt>& v) -> TVec
         m[0][2] * v.x + m[1][2] * v.y + m[2][2] * v.z);
 }
 
+#if LM_SSE
 template <>
 LM_INLINE auto operator*<float, SIMD::SSE>(const TMat3<float, SIMD::SSE>& m, const TVec3<float, SIMD::SSE>& v) -> TVec3<float, SIMD::SSE>
 {
@@ -863,7 +964,9 @@ LM_INLINE auto operator*<float, SIMD::SSE>(const TMat3<float, SIMD::SSE>& m, con
                 _mm_mul_ps(m[1].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(1, 1, 1, 1)))),
                 _mm_mul_ps(m[2].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(2, 2, 2, 2)))));
 }
+#endif
 
+#if LM_AVX
 template <>
 LM_INLINE auto operator*<double, SIMD::AVX>(const TMat3<double, SIMD::AVX>& m, const TVec3<double, SIMD::AVX>& v) -> TVec3<double, SIMD::AVX>
 {
@@ -874,6 +977,7 @@ LM_INLINE auto operator*<double, SIMD::AVX>(const TMat3<double, SIMD::AVX>& m, c
                 _mm256_mul_pd(m[1].v_, _mm256_broadcast_sd(&(v.x) + 1))),
                 _mm256_mul_pd(m[2].v_, _mm256_broadcast_sd(&(v.x) + 2))));
 }
+#endif
 
 template <typename T, SIMD Opt>
 LM_INLINE auto operator*(const TMat4<T, Opt>& m, const TVec4<T, Opt>& v) -> TVec4<T, Opt>
@@ -885,6 +989,7 @@ LM_INLINE auto operator*(const TMat4<T, Opt>& m, const TVec4<T, Opt>& v) -> TVec
         m[0][3] * v.x + m[1][3] * v.y + m[2][3] * v.z + m[3][3] * v.w);
 }
 
+#if LM_SSE
 template <>
 LM_INLINE auto operator*<float, SIMD::SSE>(const TMat4<float, SIMD::SSE>& m, const TVec4<float, SIMD::SSE>& v) -> TVec4<float, SIMD::SSE>
 {
@@ -897,7 +1002,9 @@ LM_INLINE auto operator*<float, SIMD::SSE>(const TMat4<float, SIMD::SSE>& m, con
                 _mm_mul_ps(m[2].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(2, 2, 2, 2))),
                 _mm_mul_ps(m[3].v_, _mm_shuffle_ps(v.v_, v.v_, _MM_SHUFFLE(3, 3, 3, 3))))));
 }
+#endif
 
+#if LM_AVX
 template <>
 LM_INLINE auto operator*<double, SIMD::AVX>(const TMat4<double, SIMD::AVX>& m, const TVec4<double, SIMD::AVX>& v) -> TVec4<double, SIMD::AVX>
 {
@@ -910,6 +1017,7 @@ LM_INLINE auto operator*<double, SIMD::AVX>(const TMat4<double, SIMD::AVX>& m, c
                 _mm256_mul_pd(m[2].v_, _mm256_broadcast_sd(&(v.x) + 2)),
                 _mm256_mul_pd(m[3].v_, _mm256_broadcast_sd(&(v.x) + 3)))));
 }
+#endif
 
 #pragma endregion
 
@@ -952,6 +1060,7 @@ LM_INLINE auto operator/(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> VecT
     return result;
 }
 
+#if LM_SSE
 template <>
 LM_INLINE auto operator/<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v1, const TVec3<float, SIMD::SSE>& v2) -> TVec3<float, SIMD::SSE>
 {
@@ -963,7 +1072,9 @@ LM_INLINE auto operator/<float, SIMD::SSE, TVec4>(const TVec4<float, SIMD::SSE>&
 {
     return TVec4<float, SIMD::SSE>(_mm_div_ps(v1.v_, v2.v_));
 }
+#endif
 
+#if LM_AVX
 template <>
 LM_INLINE auto operator/<double, SIMD::AVX>(const TVec3<double, SIMD::AVX>& v1, const TVec3<double, SIMD::AVX>& v2) -> TVec3<double, SIMD::AVX>
 {
@@ -975,6 +1086,7 @@ LM_INLINE auto operator/<double, SIMD::AVX>(const TVec4<double, SIMD::AVX>& v1, 
 {
     return TVec4<double, SIMD::AVX>(_mm256_div_pd(v1.v_, v2.v_));
 }
+#endif
 
 #pragma endregion
 
@@ -994,6 +1106,7 @@ LM_INLINE auto operator/(const VecT<T, Opt>& v, const T& s) -> VecT<T, Opt>
     return result;
 }
 
+#if LM_SSE
 template <>
 LM_INLINE auto operator/<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v, const float& s) -> TVec3<float, SIMD::SSE>
 {
@@ -1005,7 +1118,9 @@ LM_INLINE auto operator/<float, SIMD::SSE, TVec4>(const TVec4<float, SIMD::SSE>&
 {
     return TVec4<float, SIMD::SSE>(_mm_div_ps(v.v_, _mm_set1_ps(s)));
 }
+#endif
 
+#if LM_AVX
 template <>
 LM_INLINE auto operator/<double, SIMD::AVX, TVec3>(const TVec3<double, SIMD::AVX>& v, const double& s) -> TVec3<double, SIMD::AVX>
 {
@@ -1017,6 +1132,7 @@ LM_INLINE auto operator/<double, SIMD::AVX, TVec4>(const TVec4<double, SIMD::AVX
 {
     return TVec4<double, SIMD::AVX>(_mm256_div_pd(v.v_, _mm256_set1_pd(s)));
 }
+#endif
 
 #pragma endregion
 
@@ -1035,17 +1151,21 @@ LM_INLINE auto operator-(const VecT<T, SIMD::None>& v) -> VecT<T, SIMD::None>
     return result;
 }
 
+#if LM_SSE
 template <template <typename, SIMD> class VecT>
 LM_INLINE auto operator-(const VecT<float, SIMD::SSE>& v) -> VecT<float, SIMD::SSE>
 {
     return VecT<float, SIMD::SSE>(_mm_sub_ps(_mm_setzero_ps(), v.v_));
 }
+#endif
 
+#if LM_AVX
 template <template <typename, SIMD> class VecT>
 LM_INLINE auto operator-(const VecT<double, SIMD::AVX>& v) -> VecT<double, SIMD::AVX>
 {
     return VecT<double, SIMD::AVX>(_mm256_sub_pd(_mm256_setzero_pd(), v.v_));
 }
+#endif
 
 #pragma endregion
 
@@ -1139,12 +1259,15 @@ namespace Math
         return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
     }
 
+    #if LM_SSE
     template <>
     LM_INLINE auto Dot<float, SIMD::SSE>(const TVec3<float, SIMD::SSE>& v1, const TVec3<float, SIMD::SSE>& v2) -> float
     {
         return _mm_cvtss_f32(_mm_dp_ps(v1.v_, v2.v_, 0x71));
     }
+    #endif
 
+    #if LM_AVX
     template <>
     LM_INLINE auto Dot<double, SIMD::AVX>(const TVec3<double, SIMD::AVX>& v1, const TVec3<double, SIMD::AVX>& v2) -> double
     {
@@ -1158,6 +1281,7 @@ namespace Math
         __m128d result = _mm_add_pd(t3, t4);			// = ( x1 * x2 + y1 * y2 + z1 * z2, x1 * x2 + y1 * y2 + z1 * z2 )
         return _mm_cvtsd_f64(result);
     }
+    #endif
 
     template <typename T, SIMD Opt>
     LM_INLINE auto Dot(const TVec4<T, Opt>& v1, const TVec4<T, Opt>& v2) -> T
@@ -1165,12 +1289,15 @@ namespace Math
         return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
     }
 
+    #if LM_SSE
     template <>
     LM_INLINE auto Dot<float, SIMD::SSE>(const TVec4<float, SIMD::SSE>& v1, const TVec4<float, SIMD::SSE>& v2) -> float
     {
         return _mm_cvtss_f32(_mm_dp_ps(v1.v_, v2.v_, 0xf1));
     }
+    #endif
 
+    #if LM_AVX
     template <>
     LM_INLINE auto Dot<double, SIMD::AVX>(const TVec4<double, SIMD::AVX>& v1, const TVec4<double, SIMD::AVX>& v2) -> double
     {
@@ -1181,6 +1308,7 @@ namespace Math
         __m128d result = _mm_add_pd(t3, t4);		// = ( _, v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w )
         return _mm_cvtsd_f64(result);
     }
+    #endif
 
     #pragma endregion
 
@@ -1194,6 +1322,7 @@ namespace Math
         return TVec3<T, Opt>(v1.y * v2.z - v2.y * v1.z, v1.z * v2.x - v2.z * v1.x, v1.x * v2.y - v2.x * v1.y);
     }
 
+    #if LM_SSE
     template <>
     LM_INLINE auto Cross<float, SIMD::SSE>(const TVec3<float, SIMD::SSE>& v1, const TVec3<float, SIMD::SSE>& v2) -> TVec3<float, SIMD::SSE>
     {
@@ -1206,30 +1335,7 @@ namespace Math
                     _mm_shuffle_ps(v1.v_, v1.v_, _MM_SHUFFLE(3, 1, 0, 2)),
                     _mm_shuffle_ps(v2.v_, v2.v_, _MM_SHUFFLE(3, 0, 2, 1)))));
     }
-
-    #pragma endregion
-
-    // --------------------------------------------------------------------------------
-
-    #pragma region Length
-
-    template <typename T, SIMD Opt, template <typename, SIMD> class VecT>
-    LM_INLINE auto Length(const VecT<T, Opt>& v) -> T
-    {
-        return Math::Sqrt(Math::Length2(v));
-    }
-
-    template <>
-    LM_INLINE auto Length<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v) -> float
-    {
-        return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.v_, v.v_, 0x71)));
-    }
-
-    template <>
-    LM_INLINE auto Length<float, SIMD::SSE, TVec4>(const TVec4<float, SIMD::SSE>& v) -> float
-    {
-        return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.v_, v.v_, 0xf1)));
-    }
+    #endif
 
     #pragma endregion
 
@@ -1243,6 +1349,7 @@ namespace Math
         return Dot(v, v);
     }
 
+    #if LM_SSE
     template <>
     LM_INLINE auto Length2<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v) -> float
     {
@@ -1254,7 +1361,36 @@ namespace Math
     {
         return _mm_cvtss_f32(_mm_dp_ps(v.v_, v.v_, 0xf1));
     }
+    #endif
  
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Length
+
+    template <typename T, SIMD Opt, template <typename, SIMD> class VecT>
+    LM_INLINE auto Length(const VecT<T, Opt>& v) -> T
+    {
+        return Math::Sqrt(Math::Length2(v));
+    }
+
+    #if LM_SSE
+    template <>
+    LM_INLINE auto Length<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v) -> float
+    {
+        return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.v_, v.v_, 0x71)));
+    }
+    #endif
+
+    #if LM_AVX
+    template <>
+    LM_INLINE auto Length<float, SIMD::SSE, TVec4>(const TVec4<float, SIMD::SSE>& v) -> float
+    {
+        return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.v_, v.v_, 0xf1)));
+    }
+    #endif
+
     #pragma endregion
 
     // --------------------------------------------------------------------------------
@@ -1267,6 +1403,7 @@ namespace Math
         return v / Length(v);
     }
 
+    #if LM_SSE
     template <>
     LM_INLINE auto Normalize<float, SIMD::SSE, TVec3>(const TVec3<float, SIMD::SSE>& v) -> TVec3<float, SIMD::SSE>
     {
@@ -1278,6 +1415,7 @@ namespace Math
     {
         return TVec4<float, SIMD::SSE>(_mm_mul_ps(v.v_, _mm_rsqrt_ps(_mm_dp_ps(v.v_, v.v_, 0xff))));
     }
+    #endif
 
     #pragma endregion
 
@@ -1303,11 +1441,13 @@ namespace Math
         return v.x == 0_f && v.y == 0_f && v.z == 0_f;
     }
 
+    #if LM_SSE
     template <>
     LM_INLINE auto IsZero<float, SIMD::SSE>(const TVec3<float, SIMD::SSE>& v) -> bool
     {
         return (_mm_movemask_ps(_mm_cmpeq_ps(v.v_, _mm_setzero_ps())) & 0x7) == 7;
     }
+    #endif
 
     #pragma endregion
 
@@ -1342,6 +1482,7 @@ namespace Math
             m[0][3], m[1][3], m[2][3], m[3][3]);
     }
 
+    #if LM_SSE
     template <>
     LM_INLINE auto Transpose<float, SIMD::SSE>(const TMat4<float, SIMD::SSE>& m) -> TMat4<float, SIMD::SSE>
     {
@@ -1355,6 +1496,7 @@ namespace Math
             _mm_movelh_ps(t1, t3),
             _mm_movehl_ps(t3, t1));
     }
+    #endif
 
     #pragma endregion
 
@@ -1431,6 +1573,7 @@ namespace Math
         return inv * invDet;
     }
 
+    #if LM_SSE
     // cf.
     // http://download.intel.com/design/PentiumIII/sml/24504301.pdf
     // http://devmaster.net/posts/16799/sse-mat4-inverse
@@ -1590,6 +1733,7 @@ namespace Math
             TVec4<float, SIMD::SSE>(_mm_mul_ps(Inv2, Rcp0)),
             TVec4<float, SIMD::SSE>(_mm_mul_ps(Inv3, Rcp0)));
     }
+    #endif
 
     #pragma endregion
 

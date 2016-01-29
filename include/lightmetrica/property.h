@@ -103,13 +103,13 @@ public:
 public:
 
     template <typename T>
-    auto ChildAs(const std::string& name, const T& default) const -> T
+    auto ChildAs(const std::string& name, const T& def) const -> T
     {
         const auto* child = Child(name);
         if (!child)
         {
             LM_LOG_WARN("Missing '" + name + "' element. Using default value.");
-            return default;
+            return def;
         }
 
         return child->As<T>();
@@ -120,76 +120,6 @@ public:
     #pragma region Type conversion functions
 
     template <typename T> auto As() const -> T;
-    template <> auto As<const char*>() const -> const char* { return RawScalar(); }
-    template <> auto As<std::string>() const -> std::string { return Scalar(); }
-    template <> auto As<int>() const -> int { return std::stoi(Scalar()); }
-    template <> auto As<long long>() const -> long long { return std::stoll(Scalar()); }
-    template <> auto As<double>() const -> double { return std::stod(Scalar()); }
-    template <> auto As<float>() const -> float { return std::stof(Scalar()); }
-
-    template <>
-    auto As<Vec3>() const -> Vec3
-    {
-        Vec3 v;
-        std::stringstream ss(Scalar());
-        double t;
-        int i = 0;
-        while (ss >> t) { v[i++] = Float(t); }
-        return v;
-    }
-
-    template <>
-    auto As<Vec4>() const -> Vec4
-    {
-        Vec4 v;
-        std::stringstream ss(Scalar());
-        double t;
-        int i = 0;
-        while (ss >> t) { v[i++] = Float(t); }
-        return v;
-    }
-
-    template <>
-    auto As<Mat3>() const -> Mat3
-    {
-        Mat3 m;
-        std::stringstream ss(Scalar());
-        double t;
-        int i = 0;
-        while (ss >> t) { m[i/3][i%3] = Float(t); i++; }
-        return m;
-    }
-
-    template <>
-    auto As<Mat4>() const -> Mat4
-    {
-        Mat4 m;
-        std::stringstream ss(Scalar());
-        double t;
-        int i = 0;
-        while (ss >> t) { m[i/4][i%4] = Float(t); i++; }
-        return m;
-    }
-
-    template <>
-    auto As<std::vector<Float>>() const -> std::vector<Float>
-    {
-        std::vector<Float> v;
-        std::stringstream ss(Scalar());
-        double t;
-        while (ss >> t) { v.push_back(Float(t)); }
-        return v;
-    }
-
-    template <>
-    auto As<std::vector<unsigned int>>() const -> std::vector<unsigned int>
-    {
-        std::vector<unsigned int> v;
-        std::stringstream ss(Scalar());
-        unsigned int t;
-        while (ss >> t) { v.push_back(t); }
-        return v;
-    }
 
     #pragma endregion
 
@@ -198,6 +128,77 @@ public:
     LM_INTERFACE_CLASS_END(PropertyNode);
 
 };
+
+template <> LM_INLINE auto PropertyNode::As<const char*>() const -> const char* { return RawScalar(); }
+template <> LM_INLINE auto PropertyNode::As<std::string>() const -> std::string { return Scalar(); }
+template <> LM_INLINE auto PropertyNode::As<int>() const -> int { return std::stoi(Scalar()); }
+template <> LM_INLINE auto PropertyNode::As<long long>() const -> long long { return std::stoll(Scalar()); }
+template <> LM_INLINE auto PropertyNode::As<double>() const -> double { return std::stod(Scalar()); }
+template <> LM_INLINE auto PropertyNode::As<float>() const -> float { return std::stof(Scalar()); }
+
+template <>
+LM_INLINE auto PropertyNode::As<Vec3>() const -> Vec3
+{
+    Vec3 v;
+    std::stringstream ss(Scalar());
+    double t;
+    int i = 0;
+    while (ss >> t) { v[i++] = Float(t); }
+    return v;
+}
+
+template <>
+LM_INLINE auto PropertyNode::As<Vec4>() const -> Vec4
+{
+    Vec4 v;
+    std::stringstream ss(Scalar());
+    double t;
+    int i = 0;
+    while (ss >> t) { v[i++] = Float(t); }
+    return v;
+}
+
+template <>
+LM_INLINE auto PropertyNode::As<Mat3>() const -> Mat3
+{
+    Mat3 m;
+    std::stringstream ss(Scalar());
+    double t;
+    int i = 0;
+    while (ss >> t) { m[i/3][i%3] = Float(t); i++; }
+    return m;
+}
+
+template <>
+LM_INLINE auto PropertyNode::As<Mat4>() const -> Mat4
+{
+    Mat4 m;
+    std::stringstream ss(Scalar());
+    double t;
+    int i = 0;
+    while (ss >> t) { m[i/4][i%4] = Float(t); i++; }
+    return m;
+}
+
+template <>
+LM_INLINE auto PropertyNode::As<std::vector<Float>>() const -> std::vector<Float>
+{
+    std::vector<Float> v;
+    std::stringstream ss(Scalar());
+    double t;
+    while (ss >> t) { v.push_back(Float(t)); }
+    return v;
+}
+
+template <>
+LM_INLINE auto PropertyNode::As<std::vector<unsigned int>>() const -> std::vector<unsigned int>
+{
+    std::vector<unsigned int> v;
+    std::stringstream ss(Scalar());
+    unsigned int t;
+    while (ss >> t) { v.push_back(t); }
+    return v;
+}
 
 /*!
     Property tree.

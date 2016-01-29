@@ -34,23 +34,27 @@ LM_TEST_NAMESPACE_BEGIN
 template <typename T_, SIMD Opt_>
 struct TParam
 {
-    using T = typename T_;
+    using T = T_;
     static constexpr SIMD Opt = Opt_;
 };
 
 using TestTypes = ::testing::Types<
     TParam<float, SIMD::None>,
+    #if LM_SSE
     TParam<float, SIMD::SSE>,
+    #endif
+    #if LM_AVX
     TParam<double, SIMD::AVX>,
-    TParam<double, SIMD::None>,
-    TParam<BigFloat50, SIMD::None>,
-    TParam<BigFloat100, SIMD::None>
+    #endif
+    TParam<double, SIMD::None>
+    // TParam<BigFloat50, SIMD::None>,
+    // TParam<BigFloat100, SIMD::None>
 >;
 
 template <typename T_, SIMD Opt_, template <typename, SIMD> class VecT_>
 struct OpVecTParam
 {
-    using T = typename T_;
+    using T = T_;
     static constexpr SIMD Opt = Opt_;
     
     template <typename T__, SIMD Opt__>
@@ -60,23 +64,31 @@ struct OpVecTParam
 
 using VecOpTestTypes = ::testing::Types<
     OpVecTParam<float, SIMD::None, TVec3>,
+    #if LM_SSE
     OpVecTParam<float, SIMD::SSE, TVec3>,
+    #endif
+    #if LM_AVX
     OpVecTParam<double, SIMD::AVX, TVec3>,
+    #endif
     OpVecTParam<double, SIMD::None, TVec3>,
-    OpVecTParam<BigFloat50, SIMD::None, TVec3>,
-    OpVecTParam<BigFloat100, SIMD::None, TVec3>,
+    // OpVecTParam<BigFloat50, SIMD::None, TVec3>,
+    // OpVecTParam<BigFloat100, SIMD::None, TVec3>,
     OpVecTParam<float, SIMD::None, TVec4>,
+    #if LM_SSE
     OpVecTParam<float, SIMD::SSE, TVec4>,
+    #endif
+    #if LM_AVX
     OpVecTParam<double, SIMD::AVX, TVec4>,
-    OpVecTParam<double, SIMD::None, TVec4>,
-    OpVecTParam<BigFloat50, SIMD::None, TVec4>,
-    OpVecTParam<BigFloat100, SIMD::None, TVec4>
+    #endif
+    OpVecTParam<double, SIMD::None, TVec4>
+    // OpVecTParam<BigFloat50, SIMD::None, TVec4>,
+    // OpVecTParam<BigFloat100, SIMD::None, TVec4>
 >;
 
 template <typename T_, SIMD Opt_, template <typename, SIMD> class MatT_>
 struct OpMatTParam
 {
-    using T = typename T_;
+    using T = T_;
     static constexpr SIMD Opt = Opt_;
 
     template <typename T__, SIMD Opt__>
@@ -88,17 +100,25 @@ struct OpMatTParam
 
 using MatOpTestTypes = ::testing::Types<
     OpMatTParam<float, SIMD::None, TMat3>,
+    #if LM_SSE
     OpMatTParam<float, SIMD::SSE, TMat3>,
+    #endif
+    #if LM_AVX
     OpMatTParam<double, SIMD::AVX, TMat3>,
+    #endif
     OpMatTParam<double, SIMD::None, TMat3>,
-    OpMatTParam<BigFloat50, SIMD::None, TMat3>,
-    OpMatTParam<BigFloat100, SIMD::None, TMat3>,
+    // OpMatTParam<BigFloat50, SIMD::None, TMat3>,
+    // OpMatTParam<BigFloat100, SIMD::None, TMat3>,
     OpMatTParam<float, SIMD::None, TMat4>,
+    #if LM_SSE
     OpMatTParam<float, SIMD::SSE, TMat4>,
+    #endif
+    #if LM_AVX
     OpMatTParam<double, SIMD::AVX, TMat4>,
-    OpMatTParam<double, SIMD::None, TMat4>,
-    OpMatTParam<BigFloat50, SIMD::None, TMat4>,
-    OpMatTParam<BigFloat100, SIMD::None, TMat4>
+    #endif
+    OpMatTParam<double, SIMD::None, TMat4>
+    // OpMatTParam<BigFloat50, SIMD::None, TMat4>,
+    // OpMatTParam<BigFloat100, SIMD::None, TMat4>
 >;
 
 #pragma endregion
@@ -116,7 +136,7 @@ TYPED_TEST_CASE(Vec3Test, TestTypes);
 
 TYPED_TEST(Vec3Test, DefaultConstructor)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using VecT = TVec3<T, TypeParam::Opt>;
     VecT v;
     EXPECT_EQ(0, v.x);
@@ -126,7 +146,7 @@ TYPED_TEST(Vec3Test, DefaultConstructor)
 
 TYPED_TEST(Vec3Test, Constructor1)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using VecT = TVec3<T, TypeParam::Opt>;
     VecT v(T(1), T(2), T(3));
     EXPECT_TRUE(ExpectNear(T(1), v.x));
@@ -136,7 +156,7 @@ TYPED_TEST(Vec3Test, Constructor1)
 
 TYPED_TEST(Vec3Test, Constructor2)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using VecT = TVec4<T, TypeParam::Opt>;
     VecT v{1,2,3};
     EXPECT_TRUE(ExpectNear(T(1), v.x));
@@ -157,7 +177,7 @@ TYPED_TEST_CASE(Vec4Test, TestTypes);
 
 TYPED_TEST(Vec4Test, DefaultConstructor)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using VecT = TVec4<T, TypeParam::Opt>;
     VecT v;
     EXPECT_EQ(0, v.x);
@@ -168,7 +188,7 @@ TYPED_TEST(Vec4Test, DefaultConstructor)
 
 TYPED_TEST(Vec4Test, Constructor1)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using VecT = TVec4<T, TypeParam::Opt>;
     VecT v(T(1), T(2), T(3), T(4));
     EXPECT_TRUE(ExpectNear(T(1), v.x));
@@ -179,7 +199,7 @@ TYPED_TEST(Vec4Test, Constructor1)
 
 TYPED_TEST(Vec4Test, Constructor2)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using VecT = TVec4<T, TypeParam::Opt>;
     VecT v{1,2,3,4};
     EXPECT_TRUE(ExpectNear(T(1), v.x));
@@ -203,8 +223,8 @@ TYPED_TEST_CASE(VecOpTest, VecOpTestTypes);
 
 TYPED_TEST(VecOpTest, Accessor1)
 {
-    using T = TypeParam::T;
-    TypeParam::VecT v1{1,2,3,4};
+    using T = typename TypeParam::T;
+    typename TypeParam::VecT v1{1,2,3,4};
     const T v2[] = {1,2,3,4};
     for (int i = 0; i < TypeParam::VecT::NC; i++)
     {
@@ -214,8 +234,8 @@ TYPED_TEST(VecOpTest, Accessor1)
 
 TYPED_TEST(VecOpTest, Accessor2)
 {
-    using T = TypeParam::T;
-    TypeParam::VecT v1{ 1,2,3,4 };
+    using T = typename TypeParam::T;
+    typename TypeParam::VecT v1{ 1,2,3,4 };
     const T v2[] = { 1,2,3,4 };
     for (int i = 0; i < TypeParam::VecT::NC; i++)
     {
@@ -226,45 +246,45 @@ TYPED_TEST(VecOpTest, Accessor2)
 
 TYPED_TEST(VecOpTest, Add)
 {
-    TypeParam::VecT v1{1,2,3,4};
-    TypeParam::VecT v2{4,3,2,1};
-    TypeParam::VecT v3{5,5,5,5};
+    typename TypeParam::VecT v1{1,2,3,4};
+    typename TypeParam::VecT v2{4,3,2,1};
+    typename TypeParam::VecT v3{5,5,5,5};
     const auto r = ExpectVecNear(v3, v1 + v2);
     EXPECT_TRUE(r);
 }
 
 TYPED_TEST(VecOpTest, Subtract)
 {
-    TypeParam::VecT v1{1,2,3,4};
-    TypeParam::VecT v2{4,3,2,1};
-    TypeParam::VecT v3{-3,-1,1,3};
+    typename TypeParam::VecT v1{1,2,3,4};
+    typename TypeParam::VecT v2{4,3,2,1};
+    typename TypeParam::VecT v3{-3,-1,1,3};
     const auto r = ExpectVecNear(v3, v1 - v2);
     EXPECT_TRUE(r);
 }
 
 TYPED_TEST(VecOpTest, Multiply)
 {
-    TypeParam::VecT v1{1,2,3,4};
-    TypeParam::VecT v2{4,3,2,1};
-    TypeParam::VecT v3{4,6,6,4};
+    typename TypeParam::VecT v1{1,2,3,4};
+    typename TypeParam::VecT v2{4,3,2,1};
+    typename TypeParam::VecT v3{4,6,6,4};
     const auto r = ExpectVecNear(v3, v1 * v2);
     EXPECT_TRUE(r);
 }
 
 TYPED_TEST(VecOpTest, Divide)
 {
-    TypeParam::VecT v1{12,12,12,12};
-    TypeParam::VecT v2{2,3,4,6};
-    TypeParam::VecT v3{6,4,3,2};
+    typename TypeParam::VecT v1{12,12,12,12};
+    typename TypeParam::VecT v2{2,3,4,6};
+    typename TypeParam::VecT v3{6,4,3,2};
     const auto r = ExpectVecNear(v3, v1 / v2);
     EXPECT_TRUE(r);
 }
 
 TYPED_TEST(VecOpTest, AddAssign)
 {
-    TypeParam::VecT v1{1,2,3,4};
-    TypeParam::VecT v2{4,3,2,1};
-    TypeParam::VecT v3{5,5,5,5};
+    typename TypeParam::VecT v1{1,2,3,4};
+    typename TypeParam::VecT v2{4,3,2,1};
+    typename TypeParam::VecT v3{5,5,5,5};
     v1 += v2;
     const auto r = ExpectVecNear(v3, v1);
     EXPECT_TRUE(r);
@@ -272,9 +292,9 @@ TYPED_TEST(VecOpTest, AddAssign)
 
 TYPED_TEST(VecOpTest, SubtractAssign)
 {
-    TypeParam::VecT v1{1,2,3,4};
-    TypeParam::VecT v2{4,3,2,1};
-    TypeParam::VecT v3{-3,-1,1,3};
+    typename TypeParam::VecT v1{1,2,3,4};
+    typename TypeParam::VecT v2{4,3,2,1};
+    typename TypeParam::VecT v3{-3,-1,1,3};
     v1 -= v2;
     const auto r = ExpectVecNear(v3, v1);
     EXPECT_TRUE(r);
@@ -282,9 +302,9 @@ TYPED_TEST(VecOpTest, SubtractAssign)
 
 TYPED_TEST(VecOpTest, MultiplyAssign)
 {
-    TypeParam::VecT v1{1,2,3,4};
-    TypeParam::VecT v2{4,3,2,1};
-    TypeParam::VecT v3{4,6,6,4};
+    typename TypeParam::VecT v1{1,2,3,4};
+    typename TypeParam::VecT v2{4,3,2,1};
+    typename TypeParam::VecT v3{4,6,6,4};
     v1 *= v2;
     const auto r = ExpectVecNear(v3, v1);
     EXPECT_TRUE(r);
@@ -292,9 +312,9 @@ TYPED_TEST(VecOpTest, MultiplyAssign)
 
 TYPED_TEST(VecOpTest, DivideAssign)
 {
-    TypeParam::VecT v1{12,12,12,12};
-    TypeParam::VecT v2{2,3,4,6};
-    TypeParam::VecT v3{6,4,3,2};
+    typename TypeParam::VecT v1{12,12,12,12};
+    typename TypeParam::VecT v2{2,3,4,6};
+    typename TypeParam::VecT v3{6,4,3,2};
     v1 /= v2;
     const auto r = ExpectVecNear(v3, v1);
     EXPECT_TRUE(r);
@@ -315,7 +335,7 @@ TYPED_TEST_CASE(Mat3Test, TestTypes);
 
 TYPED_TEST(Mat3Test, DefaultConstructor)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using MatT = TMat3<T, TypeParam::Opt>;
     MatT v;
     for (int i = 0; i < 3; i++)
@@ -329,7 +349,7 @@ TYPED_TEST(Mat3Test, DefaultConstructor)
 
 TYPED_TEST(Mat3Test, Constructor1)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using MatT = TMat3<T, TypeParam::Opt>;
 
     MatT m(T(1), T(2), T(3),
@@ -348,7 +368,7 @@ TYPED_TEST(Mat3Test, Constructor1)
 
 TYPED_TEST(Mat3Test, Constructor2)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using MatT = TMat3<T, TypeParam::Opt>;
 
     MatT m{1,2,3,4,5,6,7,8,9};
@@ -376,7 +396,7 @@ TYPED_TEST_CASE(Mat4Test, TestTypes);
 
 TYPED_TEST(Mat4Test, DefaultConstructor)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using MatT = TMat4<T, TypeParam::Opt>;
     MatT v;
     for (int i = 0; i < 4; i++)
@@ -390,7 +410,7 @@ TYPED_TEST(Mat4Test, DefaultConstructor)
 
 TYPED_TEST(Mat4Test, Constructor1)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using MatT = TMat4<T, TypeParam::Opt>;
 
     MatT m(T(1), T(2), T(3), T(4),
@@ -410,7 +430,7 @@ TYPED_TEST(Mat4Test, Constructor1)
 
 TYPED_TEST(Mat4Test, Constructor2)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     using MatT = TMat4<T, TypeParam::Opt>;
 
     MatT m{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
@@ -440,9 +460,9 @@ TYPED_TEST_CASE(MatOpTest, MatOpTestTypes);
 
 TYPED_TEST(MatOpTest, Accessor1)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     constexpr int N = TypeParam::MatT::NC;
-    TypeParam::MatT m1{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+    typename TypeParam::MatT m1{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
     const T m2[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
     for (int i = 0; i < N; i++)
     {
@@ -455,9 +475,9 @@ TYPED_TEST(MatOpTest, Accessor1)
 
 TYPED_TEST(MatOpTest, Accessor2)
 {
-    using T = TypeParam::T;
+    using T = typename TypeParam::T;
     constexpr int N = TypeParam::MatT::NC;
-    TypeParam::MatT m1{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+    typename TypeParam::MatT m1{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
     const T m2[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
     for (int i = 0; i < N; i++)
     {
@@ -471,18 +491,18 @@ TYPED_TEST(MatOpTest, Accessor2)
 
 TYPED_TEST(MatOpTest, Multiply)
 {
-    TypeParam::MatT m1{
+    typename TypeParam::MatT m1{
         1,1,1,1,
         1,1,1,1,
         1,1,1,1,
         1,1,1,1};
-    TypeParam::MatT m2{
+    typename TypeParam::MatT m2{
         1,1,1,1,
         1,1,1,1,
         1,1,1,1,
         1,1,1,1};
-    const TypeParam::T t(TypeParam::MatT::NC);
-    TypeParam::MatT m3{
+    const typename TypeParam::T t(TypeParam::MatT::NC);
+    typename TypeParam::MatT m3{
         t,t,t,t,
         t,t,t,t,
         t,t,t,t,
@@ -493,14 +513,14 @@ TYPED_TEST(MatOpTest, Multiply)
 
 TYPED_TEST(MatOpTest, MultiplyVector)
 {
-    TypeParam::MatT m{
+    typename TypeParam::MatT m{
         1,1,1,1,
         1,1,1,1,
         1,1,1,1,
         1,1,1,1 };
-    TypeParam::VecT v1{1,1,1,1};
-    const TypeParam::T t(TypeParam::MatT::NC);
-    TypeParam::VecT v2{t,t,t,t};
+    typename TypeParam::VecT v1{1,1,1,1};
+    const typename TypeParam::T t(TypeParam::MatT::NC);
+    typename TypeParam::VecT v2{t,t,t,t};
     const auto r = ExpectVecNear(v2, m * v1);
     EXPECT_TRUE(r);
 }

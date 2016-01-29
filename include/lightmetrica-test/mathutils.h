@@ -111,11 +111,14 @@ namespace
         constexpr int N = MatT<T, Opt>::NC;
         for (int i = 0; i < N; i++)
         {
-            auto result = ExpectVecNear<T, Opt, MatT<T, Opt>::TVec>(expected[i], actual[i], epsilon);
-            if (!result)
+            for (int j = 0; j < N; j++)
             {
-                result << ", row " << i;
-                return result;
+                auto result = ExpectNear(expected[i][j], actual[i][j], epsilon);
+                if (!result)
+                {
+                    result << ", row " << i << ", column " << j;
+                    return result;
+                }
             }
         }
 

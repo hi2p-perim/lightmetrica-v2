@@ -32,6 +32,7 @@
 
 LM_NAMESPACE_BEGIN
 
+#if LM_PLATFORM_WINDOWS
 namespace
 {
     auto SetFPException(unsigned int newFPState) -> bool
@@ -56,15 +57,24 @@ namespace
         return true;
     }
 }
+#endif
   
 auto FPUtils_EnableFPControl() -> bool
 {
+    #if LM_PLATFORM_WINDOWS
     return SetFPException((unsigned int)(~(_EM_INVALID | _EM_ZERODIVIDE)));
+    #else
+    return false;
+    #endif
 }
 
 auto FPUtils_DisableFPControl() -> bool
 {
+    #if LM_PLATFORM_WINDOWS
     return SetFPException((unsigned int)(_EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT));
+    #else
+    return false;
+    #endif
 }
 
 LM_NAMESPACE_END
