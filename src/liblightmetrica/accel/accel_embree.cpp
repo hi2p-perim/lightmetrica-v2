@@ -66,14 +66,14 @@ public:
 
     Accel_Embree()
     {
-        rtcInit(nullptr);
-        rtcSetErrorFunction(EmbreeErrorHandler);
+        device = rtcNewDevice(nullptr);
+        rtcDeviceSetErrorFunction(device, EmbreeErrorHandler);
     }
 
     ~Accel_Embree()
     {
         if (RtcScene) rtcDeleteScene(RtcScene);
-        rtcExit();
+        rtcDeleteDevice(device);
     }
 
 public:
@@ -87,7 +87,7 @@ public:
     LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
     {
         // Create scene
-        RtcScene = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
+        RtcScene = rtcDeviceNewScene(device, RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
 
         // Add meshes to the scene
         int np = scene->NumPrimitives();
@@ -188,6 +188,7 @@ public:
 
 private:
 
+    RTCDevice device = nullptr;
     RTCScene RtcScene = nullptr;
     std::unordered_map<unsigned int, size_t> RtcGeomIDToPrimitiveIndexMap;
 
