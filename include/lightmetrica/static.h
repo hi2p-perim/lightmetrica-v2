@@ -31,6 +31,8 @@
 #include <memory>
 #if LM_PLATFORM_WINDOWS
 #include <Windows.h>
+#elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
+#include <dlfcn.h>
 #endif
 
 LM_NAMESPACE_BEGIN
@@ -48,6 +50,7 @@ public:
 
     auto Load(const std::string& path) -> bool
     {
+        #if LM_PLATFORM_WINDOWS
         handle = LoadLibraryA(path.c_str());
         if (!handle)
         {
@@ -55,11 +58,22 @@ public:
             std::cerr << GetLastErrorAsString() << std::endl;
             return false;
         }
+        #elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
+        handle = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+        if (!handle)
+        {
+            std::cerr << "Failed to load library : " << path << std::endl;
+            std::cerr << GetLastErrorAsString() << std::endl;
+            return false;
+        }
+        #endif
+
         return true;
     }
 
     auto GetFuncPointer(const std::string& symbol) const -> void*
     {
+        #if LM_PLATFORM_WINDOWS
         void* address = GetProcAddress(handle, symbol.c_str());
         if (address == nullptr)
         {
@@ -67,12 +81,22 @@ public:
             std::cerr << GetLastErrorAsString() << std::endl;
             return nullptr;
         }
+        #elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
+        void* address = dlsym(handle, symbol.c_str());
+        if (address == nullptr)
+        {
+            std::cerr << "Failed to get address of '" << symbol << "'" << std::endl;
+            std::cerr << dlerror() << std::endl;
+            return nullptr;
+        }
+        #endif
 
         return address;
     }
 
 private:
 
+    #if LM_PLATFORM_WINDOWS
     auto GetLastErrorAsString() const -> std::string
     {
         DWORD error = GetLastError();
@@ -88,10 +112,15 @@ private:
 
         return message;
     }
+    #endif
 
 public:
 
-    HMODULE handle;
+    #if LM_PLATFORM_WINDOWS
+	HMODULE handle;
+    #elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
+    void* handle;
+    #endif
 
 };
 

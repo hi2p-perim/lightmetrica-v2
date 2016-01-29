@@ -41,7 +41,7 @@
 #include <string>
 
 /*!
-    \defgroup component Component
+    \defgroup component Component framework.
     \brief Portable component framework.
 
 

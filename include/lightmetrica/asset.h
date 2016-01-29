@@ -36,14 +36,14 @@ struct SurfaceGeometry;
 struct Primitive;
 
 /*!
-    Asset.
+    \brief Asset.
 
     The base class of the asset classes.
     The `asset` is an important concept in the framework.
     All user-defined resources such as triangle meshes or BSDFs must inherits this class.
     The construction of assets are fully automated with asset management class (`Assets` class),
     which make it possible to extend your own assets consistently.
-    For the design of the asset management in Lightmetrica,ra see <TODO>.
+    For the design of the asset management in Lightmetrica, see <TODO>.
 */
 class Asset : public Clonable
 {

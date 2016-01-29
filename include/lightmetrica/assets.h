@@ -26,6 +26,11 @@
 
 #include <lightmetrica/component.h>
 
+/*!
+    \defgroup asset Asset system.
+    \brief Asset system of the framework.
+*/
+
 LM_NAMESPACE_BEGIN
 
 class Asset;
@@ -60,3 +65,4 @@ public:
 };
 
 LM_NAMESPACE_END
+//! \}
