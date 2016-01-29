@@ -22,8 +22,6 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
 #include "pch.h"
 #include <gtest/gtest.h>
 #include <glm/glm.hpp>
