@@ -71,7 +71,7 @@ private:
 
 public:
 
-    LM_INTERFACE_CLASS_END(Asset);
+    LM_INTERFACE_CLASS_END();
 
 };
 

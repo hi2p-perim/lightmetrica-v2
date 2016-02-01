@@ -41,8 +41,6 @@ LM_NAMESPACE_BEGIN
 
 /*
     Dynamic library.
-
-    TODO: Multiplatform.
 */
 class DynamicLibrary
 {
@@ -71,6 +69,27 @@ public:
         if (!handle)
         {
             std::cerr << "Failed to load library : " << p << std::endl;
+            std::cerr << dlerror() << std::endl;
+            return false;
+        }
+        #endif
+
+        return true;
+    }
+
+    auto Unload() -> bool
+    {
+        #if LM_PLATFORM_WINDOWS
+        if (!FreeLibrary(handle))
+        {
+            std::cerr << "Failed to free library" << std::endl;
+            std::cerr << GetLastErrorAsString() << std::endl;
+            return false;
+        }
+        #elif LM_PLATFORM_LINUX || LM_PLATFORM_APPLE
+        if (dlclose(handle) != 0)
+        {
+            std::cerr << "Failed to free library" << std::endl;
             std::cerr << dlerror() << std::endl;
             return false;
         }

@@ -58,7 +58,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(Scheduler);
+    LM_INTERFACE_CLASS_END();
 
 };
 

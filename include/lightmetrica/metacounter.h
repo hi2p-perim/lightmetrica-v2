@@ -36,12 +36,12 @@ LM_NAMESPACE_BEGIN
 namespace
 {
 
-    #if LM_COMPIER_MSVC
+    #if LM_COMPILER_MSVC
 
     /*
         Compile-time counter.
 
-        Based on meta_counter.hpp by Filip Roséen
+        Based on meta_counter.hpp by Filip Ros?en
         http://b.atch.se/posts/constexpr-meta-container
     */
     template<class Tag>
@@ -100,48 +100,57 @@ namespace
     #else
 
     template<class Tag>
-    struct MetaCounter {
-    using size_type = std::size_t;
+    struct MetaCounter
+    {
+        using size_type = std::size_t;
 
-    template<size_type N>
-    struct ident {
-        friend constexpr size_type adl_lookup (ident<N>);
-        static constexpr size_type value = N;
+        template<size_type N>
+        struct ident
+        {
+            friend constexpr size_type adl_lookup (ident<N>);
+            static constexpr size_type value = N;
+        };
+
+        template<class Ident>
+        struct writer
+        {
+            friend constexpr size_type adl_lookup(Ident)
+            {
+                return Ident::value;
+            }
+
+            static constexpr size_type value = Ident::value;
+        };
+
+        template<size_type N, int = adl_lookup(ident<N> {})>
+        static constexpr size_type value_reader(int, ident<N>)
+        {
+            return N;
+        }
+
+        template<size_type N>
+        static constexpr size_type value_reader(float, ident<N>, size_type R = value_reader(0, ident<N-1> ()))
+        {
+            return R;
+        }
+
+        static constexpr size_type value_reader(float, ident<0>)
+        {
+            return 0;
+        }
+
+        template<size_type Max = 64>
+        static constexpr size_type Value(size_type R = value_reader (0, ident<Max> {}))
+        {
+            return R;
+        }
+
+        template<size_type N = 1, class H = MetaCounter>
+        static constexpr size_type Next (size_type R = writer<ident<N + H::Value ()>>::value)
+        {
+            return R;
+        }
     };
-
-    template<class Ident>
-    struct writer {
-      friend constexpr size_type adl_lookup (Ident) {
-        return Ident::value;
-      }
-
-      static constexpr size_type value = Ident::value;
-    };
-
-    template<size_type N, int = adl_lookup (ident<N> {})>
-    static constexpr size_type value_reader (int, ident<N>) {
-      return N;
-    }
-
-    template<size_type N>
-    static constexpr size_type value_reader (float, ident<N>, size_type R = value_reader (0, ident<N-1> ())) {
-      return R;
-    }
-
-    static constexpr size_type value_reader (float, ident<0>) {
-      return 0;
-    }
-
-    template<size_type Max = 64>
-    static constexpr size_type Value (size_type R = value_reader (0, ident<Max> {})) {
-      return R;
-    }
-
-    template<size_type N = 1, class H = MetaCounter>
-    static constexpr size_type Next (size_type R = writer<ident<N + H::Value ()>>::value) {
-      return R;
-    }
-  };
 
     #endif
 

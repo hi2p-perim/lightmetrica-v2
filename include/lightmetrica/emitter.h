@@ -52,7 +52,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(Emitter);
+    LM_INTERFACE_CLASS_END();
 
 };
 

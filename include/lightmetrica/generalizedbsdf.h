@@ -56,7 +56,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(GeneralizedBSDF);
+    LM_INTERFACE_CLASS_END();
 
 };
 

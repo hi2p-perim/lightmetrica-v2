@@ -60,7 +60,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(Assets);
+    LM_INTERFACE_CLASS_END();
 
 };
 

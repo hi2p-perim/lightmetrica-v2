@@ -80,7 +80,7 @@
         {
             LM_INTERFACE_CLASS(A, Component);
             LM_INTERFACE_F(Func, void());
-            LM_INTERFACE_CLASS_END(A);
+            LM_INTERFACE_CLASS_END();
         };
 
     The interface class must begin with `LM_INTERFACE_CLASS` macro
@@ -99,7 +99,7 @@
         {
             LM_INTERFACE_CLASS(B, A);
             LM_INTERFACE_F(Func2, void());
-            LM_INTERFACE_CLASS_END(B);
+            LM_INTERFACE_CLASS_END();
         };
 
 
@@ -286,8 +286,12 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
     using InterfaceType = Current; \
     using UniquePtr = std::unique_ptr<InterfaceType, void(*)(Component*)>
 
-#define LM_INTERFACE_CLASS_END(Current) \
-    static constexpr int NumInterfaces = BaseType::NumInterfaces + MetaCounter<InterfaceType>::Value()
+#define LM_INTERFACE_CLASS_END() \
+    static constexpr int NumInterfaces = BaseType::NumInterfaces + MetaCounter<InterfaceType>::Value(); \
+    static auto Stat_() -> void { \
+        LM_LOG_INFO("IFs: " + std::to_string(MetaCounter<InterfaceType>::Value())); \
+        LM_LOG_INFO("Sum IFs: " + std::to_string(NumInterfaces)); \
+    }
 
 // Define interface member function
 #if LM_INTELLISENSE
@@ -398,7 +402,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(Component);
+    LM_INTERFACE_CLASS_END();
 
 };
 
@@ -421,6 +425,9 @@ extern "C"
     LM_PUBLIC_API auto ComponentFactory_Register(const char* key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void;
     LM_PUBLIC_API auto ComponentFactory_Create(const char* key) -> Component*;
     LM_PUBLIC_API auto ComponentFactory_ReleaseFunc(const char* key) -> ReleaseFuncPointerType;
+    LM_PUBLIC_API auto ComponentFactory_LoadPlugin(const char* path) -> bool;
+    LM_PUBLIC_API auto ComponentFactory_LoadPlugins(const char* directory) -> void;
+    LM_PUBLIC_API auto ComponentFactory_UnloadPlugins() -> void;
 }
 //! \endcond
 
@@ -437,6 +444,12 @@ public:
     static auto Create(const std::string& key) -> Component* { return LM_EXPORTED_F(ComponentFactory_Create, key.c_str()); }
     static auto ReleaseFunc(const std::string& key) -> ReleaseFuncPointerType { return LM_EXPORTED_F(ComponentFactory_ReleaseFunc, key.c_str()); }
     //! \endcond
+
+public:
+
+    static auto LoadPlugin(const std::string& path) -> bool { return LM_EXPORTED_F(ComponentFactory_LoadPlugin, path.c_str()); }
+    static auto LoadPlugins(const std::string& directory) -> void { LM_EXPORTED_F(ComponentFactory_LoadPlugins, directory.c_str()); }
+    static auto UnloadPlugins() -> void { LM_EXPORTED_F(ComponentFactory_UnloadPlugins); }
 
 public:
     

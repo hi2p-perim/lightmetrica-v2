@@ -51,7 +51,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(TriangleMesh);
+    LM_INTERFACE_CLASS_END();
 
 };
 

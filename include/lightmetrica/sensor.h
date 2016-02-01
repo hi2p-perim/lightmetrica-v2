@@ -49,7 +49,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(Sensor);
+    LM_INTERFACE_CLASS_END();
 
 };
 

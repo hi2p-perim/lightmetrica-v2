@@ -22,46 +22,32 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
-#include <lightmetrica/component.h>
+#include <lightmetrica/texture.h>
 
 LM_NAMESPACE_BEGIN
 
-class PropertyNode;
-
-/*!
-    \brief Configurable components.
-
-    Component with initialized with user defined types and properties.
-    The configurable component has same format in the scene configuration file:
-    
-      component_name:
-        type: component_type
-        params:
-          param_1: ...
-          param_2: ...
-          ...
-*/
-class Configurable : public Component
+class Texture_Checker final : public Texture
 {
 public:
 
-    LM_INTERFACE_CLASS(Configurable, Component);
-    
-public:
-
-    Configurable() = default;
-    LM_DISABLE_COPY_AND_MOVE(Configurable);
+    LM_IMPL_CLASS(Texture_Checker, Texture);
 
 public:
 
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
+    {
+        return true;
+    };
 
-public:
-
-    LM_INTERFACE_CLASS_END();
-
+    LM_IMPL_F(Evaluate) = [this](const Vec2& uv) -> Vec3
+    {
+        const Float Scale = 100_f;
+        const int u = (int)(uv.x * Scale);
+        const int v = (int)(uv.y * Scale);
+        return (u + v) % 2 == 0 ? Vec3(1, 0, 0) : Vec3(1);
+    };
 };
+
+LM_COMPONENT_REGISTER_IMPL(Texture_Checker, "texture::checker")
 
 LM_NAMESPACE_END

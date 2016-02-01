@@ -46,7 +46,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(Texture);
+    LM_INTERFACE_CLASS_END();
 
 };
 

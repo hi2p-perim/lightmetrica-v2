@@ -53,7 +53,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(Film);
+    LM_INTERFACE_CLASS_END();
 
 };
 

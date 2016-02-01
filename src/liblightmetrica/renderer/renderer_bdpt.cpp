@@ -364,7 +364,7 @@ public:
         }
 
         assert(nonzero != 0);
-        return 1.0 / nonzero;
+        return 1_f / nonzero;
     }
 
     auto EvaluatePowerHeuristicsMISWeightOpt(const Scene* scene, int s) const -> Float
@@ -384,7 +384,7 @@ public:
             }
         }
 
-        return 1.0 / invWeight;
+        return 1_f / invWeight;
     }
 
     auto EvaluateMISWeight(const Scene* scene, int s) const -> Float
@@ -419,7 +419,7 @@ public:
                 {
                     break;
                 }
-                piDivps *= 1.0 / ratio;
+                piDivps *= 1_f / ratio;
             }
 
             invWeight += piDivps * piDivps;
@@ -453,7 +453,7 @@ public:
             invWeight += piDivps * piDivps;
         }
 
-        return 1.0 / invWeight;
+        return 1_f / invWeight;
     }
 
     auto EvaluatePDFRatio(const Scene* scene, int i) const -> Float

@@ -38,14 +38,14 @@ struct A : public Component
     LM_INTERFACE_F(Func1, void(int));
     LM_INTERFACE_F(Func2, int(int, int));
     LM_INTERFACE_F(Func3, void());
-    LM_INTERFACE_CLASS_END(A);
+    LM_INTERFACE_CLASS_END();
 };
 
 struct B : public A
 {
     LM_INTERFACE_CLASS(B, A);
     LM_INTERFACE_F(Func4, void());
-    LM_INTERFACE_CLASS_END(B);
+    LM_INTERFACE_CLASS_END();
 };
 
 struct A1 final : public A
@@ -159,7 +159,7 @@ struct C : public Component
     LM_INTERFACE_F(Func3, void(int&));
     LM_INTERFACE_F(Func4, void(const int&));
     LM_INTERFACE_F(Func5, void(const std::string&));
-    LM_INTERFACE_CLASS_END(C);
+    LM_INTERFACE_CLASS_END();
 };
 
 struct C1 final : public C
@@ -248,7 +248,7 @@ struct D : public Component
 {
     LM_INTERFACE_CLASS(D, Component);
     LM_INTERFACE_F(Func_Public, void());
-    LM_INTERFACE_CLASS_END(D);
+    LM_INTERFACE_CLASS_END();
 };
 
 struct D_Internal
@@ -296,7 +296,7 @@ struct E : public Component
 {
     LM_INTERFACE_CLASS(E, Component);
     LM_INTERFACE_F(Func_Public, void());
-    LM_INTERFACE_CLASS_END(E);
+    LM_INTERFACE_CLASS_END();
 };
 
 struct E_Internal : public E
@@ -351,7 +351,7 @@ struct F : public Component
     LM_INTERFACE_CLASS(F, Component);
     LM_INTERFACE_F(Func, int());
     auto ID() const -> std::string { return id.Get(); }
-    LM_INTERFACE_CLASS_END(F);
+    LM_INTERFACE_CLASS_END();
 };
 
 struct F_ : public F
@@ -381,7 +381,7 @@ struct G : public Component
 {
     LM_INTERFACE_CLASS(G, Component);
     LM_INTERFACE_F(Func, void());
-    LM_INTERFACE_CLASS_END(G);
+    LM_INTERFACE_CLASS_END();
 };
 
 struct G_ final : public G
@@ -426,7 +426,7 @@ struct H : public Clonable
     LM_INTERFACE_CLASS(H, Clonable);
     LM_INTERFACE_F(Load, void(int v));
     LM_INTERFACE_F(V, int());
-    LM_INTERFACE_CLASS_END(H);
+    LM_INTERFACE_CLASS_END();
 };
 
 struct H_ final : public H

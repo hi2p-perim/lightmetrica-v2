@@ -43,7 +43,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(BSDF);
+    LM_INTERFACE_CLASS_END();
 
 };
 

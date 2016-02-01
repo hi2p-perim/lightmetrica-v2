@@ -22,46 +22,48 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
+#include <pch_test.h>
 #include <lightmetrica/component.h>
+#include <lightmetrica/texture.h>
+#include <lightmetrica/logger.h>
+#include <lightmetrica-test/mathutils.h>
 
-LM_NAMESPACE_BEGIN
+LM_TEST_NAMESPACE_BEGIN
 
-class PropertyNode;
-
-/*!
-    \brief Configurable components.
-
-    Component with initialized with user defined types and properties.
-    The configurable component has same format in the scene configuration file:
-    
-      component_name:
-        type: component_type
-        params:
-          param_1: ...
-          param_2: ...
-          ...
-*/
-class Configurable : public Component
+struct PluginTest : public ::testing::Test
 {
-public:
-
-    LM_INTERFACE_CLASS(Configurable, Component);
-    
-public:
-
-    Configurable() = default;
-    LM_DISABLE_COPY_AND_MOVE(Configurable);
-
-public:
-
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
-
-public:
-
-    LM_INTERFACE_CLASS_END();
-
+    virtual auto SetUp() -> void override { Logger::SetVerboseLevel(2); Logger::Run(); }
+    virtual auto TearDown() -> void override { Logger::Stop(); }
 };
 
-LM_NAMESPACE_END
+TEST_F(PluginTest, LoadPlugin)
+{
+    // Load plugins
+    ASSERT_TRUE(ComponentFactory::LoadPlugin("./plugin/texture_white"));
+
+    {
+        // Create instance from plugin
+        const auto p = ComponentFactory::Create<Texture>("texture::white");
+        EXPECT_TRUE(ExpectVecNear(Vec3(1_f), p->Evaluate(Vec2())));
+    }
+
+    // Unload
+    ComponentFactory::UnloadPlugins();
+}
+
+TEST_F(PluginTest, LoadPlugins)
+{
+    // Load plugins
+    ComponentFactory::LoadPlugins("./plugin");
+
+    {
+        // Create instance from plugin
+        const auto p = ComponentFactory::Create<Texture>("texture::white");
+        EXPECT_TRUE(ExpectVecNear(Vec3(1_f), p->Evaluate(Vec2())));
+    }
+
+    // Unload
+    ComponentFactory::UnloadPlugins();
+}
+
+LM_TEST_NAMESPACE_END

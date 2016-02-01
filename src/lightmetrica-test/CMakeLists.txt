@@ -80,6 +80,7 @@ set(
 	"test_property.cpp"
 	"test_assets.cpp"
 	"test_metacounter.cpp"
+	"test_plugin.cpp"
 
 	# Internal
 	"test_stringtemplate.cpp"

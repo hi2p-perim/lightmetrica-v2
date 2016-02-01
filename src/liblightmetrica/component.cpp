@@ -24,6 +24,7 @@
 
 #include <pch.h>
 #include <lightmetrica/component.h>
+#include <lightmetrica/logger.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -64,6 +65,8 @@ public:
             std::cerr << "Failed to register [ " << key << " ]. Already registered." << std::endl;
         }
 
+        std::cout << "Registering: " << key << std::endl;
+
         funcMap[key] = CreateAndReleaseFuncs{createFunc, releaseFunc};
     }
 
@@ -87,15 +90,83 @@ public:
         return it == funcMap.end() ? nullptr : it->second.releaseFunc;
     }
 
+    auto LoadPlugin(const std::string& path) -> bool
+    {
+        LM_LOG_INFO("Loading '" + path + "'");
+        LM_LOG_INDENTER();
+
+        // Load plugin
+        std::unique_ptr<DynamicLibrary> plugin(new DynamicLibrary);
+        if (!plugin->Load(path))
+        {
+            LM_LOG_WARN("Failed to load library: " + path);
+            return false;
+        }
+
+        plugins.push_back(std::move(plugin));
+
+        LM_LOG_INFO("Successfully loaded");
+        return true;
+    }
+
+    auto LoadPlugins(const std::string& directory) -> void
+    {
+        namespace fs = boost::filesystem;
+
+        // File format
+        #if LM_PLATFORM_WINDOWS
+        const std::regex pluginNameExp("([a-z_]+)\\.dll$");
+        #elif LM_PLATFORM_LINUX
+        const std::regex pluginNameExp("^([a-z_]+)\\.so$");
+        #elif LM_PLATFORM_APPLE
+        const std::regex pluginNameExp("^([a-z_]+)\\.dylib$");
+        #endif
+
+        // Enumerate dynamic libraries in #pluginDir
+        fs::directory_iterator endIter;
+        for (fs::directory_iterator it(directory); it != endIter; ++it)
+        {
+            if (fs::is_regular_file(it->status()))
+            {
+                std::cmatch match;
+                auto filename = it->path().filename().string();
+                if (std::regex_match(filename.c_str(), match, pluginNameExp))
+                {
+                    if (!LoadPlugin(fs::change_extension(it->path(), "").string()))
+                    {
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+
+    auto UnloadPlugins() -> void
+    {
+        for (auto& plugin : plugins)
+        {
+            plugin->Unload();
+        }
+
+        plugins.clear();
+    }
+
 private:
 
+    // Registered implementations
     using FuncMap = std::unordered_map<std::string, CreateAndReleaseFuncs>;
     FuncMap funcMap;
+
+    // Loaded plugins
+    std::vector<std::unique_ptr<DynamicLibrary>> plugins;
 
 };
 
 auto ComponentFactory_Register(const char* key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactoryImpl::Instance().Register(key, createFunc, releaseFunc); }
 auto ComponentFactory_Create(const char* key) -> Component* { return ComponentFactoryImpl::Instance().Create(key); }
 auto ComponentFactory_ReleaseFunc(const char* key) -> ReleaseFuncPointerType { return ComponentFactoryImpl::Instance().ReleaseFunc(key); }
+auto ComponentFactory_LoadPlugin(const char* path) -> bool { return ComponentFactoryImpl::Instance().LoadPlugin(path); }
+auto ComponentFactory_LoadPlugins(const char* directory) -> void { ComponentFactoryImpl::Instance().LoadPlugins(directory); }
+auto ComponentFactory_UnloadPlugins() -> void { ComponentFactoryImpl::Instance().UnloadPlugins(); }
 
 LM_NAMESPACE_END

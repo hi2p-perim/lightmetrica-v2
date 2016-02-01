@@ -405,6 +405,19 @@ private:
         
         // --------------------------------------------------------------------------------
 
+        #pragma region Load plugins
+
+        // TODO: Make configurable plugin directory
+        {
+            LM_LOG_INFO("Loading plugins");
+            LM_LOG_INDENTER();
+            ComponentFactory::LoadPlugins("plugin");
+        }
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Load configuration files
 
         // Scene configuration
@@ -512,7 +525,7 @@ private:
 
         #pragma region Initialize accel
         
-        const auto accel = InitializeConfigurable<Accel>(root, "accel", "naive");
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", "embree");
         if (!accel)
         {
             return false;

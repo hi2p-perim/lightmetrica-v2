@@ -125,19 +125,19 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(PropertyNode);
+    LM_INTERFACE_CLASS_END();
 
 };
 
-template <> LM_INLINE auto PropertyNode::As<const char*>() const -> const char* { return RawScalar(); }
-template <> LM_INLINE auto PropertyNode::As<std::string>() const -> std::string { return Scalar(); }
-template <> LM_INLINE auto PropertyNode::As<int>() const -> int { return std::stoi(Scalar()); }
-template <> LM_INLINE auto PropertyNode::As<long long>() const -> long long { return std::stoll(Scalar()); }
-template <> LM_INLINE auto PropertyNode::As<double>() const -> double { return std::stod(Scalar()); }
-template <> LM_INLINE auto PropertyNode::As<float>() const -> float { return std::stof(Scalar()); }
+template <> inline auto PropertyNode::As<const char*>() const -> const char* { return RawScalar(); }
+template <> inline auto PropertyNode::As<std::string>() const -> std::string { return Scalar(); }
+template <> inline auto PropertyNode::As<int>() const -> int { return std::stoi(Scalar()); }
+template <> inline auto PropertyNode::As<long long>() const -> long long { return std::stoll(Scalar()); }
+template <> inline auto PropertyNode::As<double>() const -> double { return std::stod(Scalar()); }
+template <> inline auto PropertyNode::As<float>() const -> float { return std::stof(Scalar()); }
 
 template <>
-LM_INLINE auto PropertyNode::As<Vec3>() const -> Vec3
+inline auto PropertyNode::As<Vec3>() const -> Vec3
 {
     Vec3 v;
     std::stringstream ss(Scalar());
@@ -148,7 +148,7 @@ LM_INLINE auto PropertyNode::As<Vec3>() const -> Vec3
 }
 
 template <>
-LM_INLINE auto PropertyNode::As<Vec4>() const -> Vec4
+inline auto PropertyNode::As<Vec4>() const -> Vec4
 {
     Vec4 v;
     std::stringstream ss(Scalar());
@@ -159,7 +159,7 @@ LM_INLINE auto PropertyNode::As<Vec4>() const -> Vec4
 }
 
 template <>
-LM_INLINE auto PropertyNode::As<Mat3>() const -> Mat3
+inline auto PropertyNode::As<Mat3>() const -> Mat3
 {
     Mat3 m;
     std::stringstream ss(Scalar());
@@ -170,7 +170,7 @@ LM_INLINE auto PropertyNode::As<Mat3>() const -> Mat3
 }
 
 template <>
-LM_INLINE auto PropertyNode::As<Mat4>() const -> Mat4
+inline auto PropertyNode::As<Mat4>() const -> Mat4
 {
     Mat4 m;
     std::stringstream ss(Scalar());
@@ -181,7 +181,7 @@ LM_INLINE auto PropertyNode::As<Mat4>() const -> Mat4
 }
 
 template <>
-LM_INLINE auto PropertyNode::As<std::vector<Float>>() const -> std::vector<Float>
+inline auto PropertyNode::As<std::vector<Float>>() const -> std::vector<Float>
 {
     std::vector<Float> v;
     std::stringstream ss(Scalar());
@@ -191,7 +191,7 @@ LM_INLINE auto PropertyNode::As<std::vector<Float>>() const -> std::vector<Float
 }
 
 template <>
-LM_INLINE auto PropertyNode::As<std::vector<unsigned int>>() const -> std::vector<unsigned int>
+inline auto PropertyNode::As<std::vector<unsigned int>>() const -> std::vector<unsigned int>
 {
     std::vector<unsigned int> v;
     std::stringstream ss(Scalar());
@@ -236,7 +236,7 @@ public:
 
 public:
 
-    LM_INTERFACE_CLASS_END(PropertyTree);
+    LM_INTERFACE_CLASS_END();
 
 };
 

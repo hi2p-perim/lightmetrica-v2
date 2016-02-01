@@ -22,46 +22,30 @@
     THE SOFTWARE.
 */
 
-#pragma once
-
-#include <lightmetrica/component.h>
+#include <lightmetrica/texture.h>
 
 LM_NAMESPACE_BEGIN
 
-class PropertyNode;
-
-/*!
-    \brief Configurable components.
-
-    Component with initialized with user defined types and properties.
-    The configurable component has same format in the scene configuration file:
-    
-      component_name:
-        type: component_type
-        params:
-          param_1: ...
-          param_2: ...
-          ...
-*/
-class Configurable : public Component
+class Texture_White final : public Texture
 {
 public:
 
-    LM_INTERFACE_CLASS(Configurable, Component);
-    
-public:
-
-    Configurable() = default;
-    LM_DISABLE_COPY_AND_MOVE(Configurable);
+    LM_IMPL_CLASS(Texture_White, Texture);
 
 public:
 
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
+    {
+        return true;
+    };
 
-public:
-
-    LM_INTERFACE_CLASS_END();
-
+    LM_IMPL_F(Evaluate) = [this](const Vec2& uv) -> Vec3
+    {
+        // Always returns (1,1,1)
+        return Vec3(1_f);
+    };
 };
+
+LM_COMPONENT_REGISTER_IMPL(Texture_White, "texture::white")
 
 LM_NAMESPACE_END
