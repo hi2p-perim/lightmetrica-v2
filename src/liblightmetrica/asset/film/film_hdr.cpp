@@ -170,8 +170,8 @@ enum class HDRImageType
 
 const std::string HDRImageType_String[] =
 {
-    "hdr",
-    "exr",
+    "radiancehdr",
+    "openexr",
 };
 
 LM_ENUM_TYPE_MAP(HDRImageType);
