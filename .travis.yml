@@ -1,0 +1,8 @@
+sudo: requried
+
+services:
+  - docker
+
+script:
+  - docker build -t lightmetrica .
+  - docker run lightmetrica
