@@ -252,6 +252,10 @@ set(
 	_ASSET_BSDF_SOURCE_FILES
 	"asset/bsdf/bsdf_null.cpp"
 	"asset/bsdf/bsdf_diffuse.cpp"
+	"asset/bsdf/bsdf_cooktorrance.cpp"
+	"asset/bsdf/bsdf_flesnel.cpp"
+	"asset/bsdf/bsdf_reflectall.cpp"
+	"asset/bsdf/bsdf_refractall.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\bsdf" FILES ${_ASSET_BSDF_SOURCE_FILES})

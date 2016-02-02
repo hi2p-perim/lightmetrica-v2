@@ -1429,6 +1429,13 @@ namespace Math
         return v.z;
     }
 
+    template <typename T, SIMD Opt>
+    LM_INLINE auto LocalTan(const TVec3<T, Opt>& v) -> T
+    {
+        const T t = T(1) - v.z * v.z;
+        return t <= T(0) ? T(0) : Math::Sqrt<T>(t) / v.z;
+    }
+
     #pragma endregion
 
     // --------------------------------------------------------------------------------

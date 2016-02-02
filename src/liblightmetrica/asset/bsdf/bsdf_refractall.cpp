@@ -34,78 +34,99 @@
 
 LM_NAMESPACE_BEGIN
 
-class BSDF_Diffuse final : public BSDF
+class BSDF_RefractAll final : public BSDF
 {
 public:
 
-    LM_IMPL_CLASS(BSDF_Diffuse, BSDF);
+    LM_IMPL_CLASS(BSDF_RefractAll, BSDF);
 
 public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        if (prop->Child("TexR"))
-        {
-            const auto id = prop->Child("TexR")->As<std::string>();
-            texR_  = static_cast<const Texture*>(assets->AssetByIDAndType(id, "texture", primitive));
-        }
-        else
-        {
-            R_ = SPD::FromRGB(prop->ChildAs<Vec3>("R", Vec3()));
-        }
-
+        R_ = SPD::FromRGB(prop->ChildAs<Vec3>("R", Vec3()));
+        eta1_ = prop->ChildAs<Float>("eta1", 1_f);
+        eta2_ = prop->ChildAs<Float>("eta2", 2_f);
         return true;
     };
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::D;
+        return SurfaceInteraction::S;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
     {
         const auto localWi = geom.ToLocal * wi;
-        if (Math::LocalCos(localWi) <= 0_f)
+
+        // IORs
+        Float etaI = eta1_;
+        Float etaT = eta2_;
+        if (Math::LocalCos(localWi) < 0_f)
         {
-            return;
+            std::swap(etaI, etaT);
         }
 
-        const auto localWo = Sampler::CosineSampleHemisphere(u);
-        wo = geom.ToWorld * localWo;
+        // Compute wo & pdf
+        const Float wiDotN = Math::LocalCos(localWi);
+        const Float eta = etaI / etaT;
+        const Float cosThetaTSq = 1_f - eta * eta * (1_f - wiDotN * wiDotN);
+        if (cosThetaTSq <= 0_f)
+        {
+            // Total internal reflection
+            const auto localWo = BSDFUtils::LocalReflect(localWi);
+            wo = geom.ToWorld * localWo;
+            return;
+        }
+        else
+        {
+            // Refraction
+            const Float cosThetaT = Math::Sqrt(cosThetaTSq) * (wiDotN > 0_f ? -1_f : 1_f);
+            const auto localWo = BSDFUtils::LocalRefract(localWi, eta, cosThetaT);
+            wo = geom.ToWorld * localWo;
+            return;
+        }
     };
 
     LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
     {
-        const auto localWi = geom.ToLocal * wi;
-        const auto localWo = geom.ToLocal * wo;
-        if (Math::LocalCos(localWi) <= 0_f || Math::LocalCos(localWo) <= 0_f)
+        if (evalDelta)
         {
             return 0_f;
         }
 
-        return Sampler::CosineSampleHemispherePDFProjSA(localWo);
+        return 1_f;
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
-        const auto localWi = geom.ToLocal * wi;
-        const auto localWo = geom.ToLocal * wo;
-        if (Math::LocalCos(localWi) <= 0_f || Math::LocalCos(localWo) <= 0_f)
+        if (evalDelta)
         {
             return SPD();
         }
 
-        const auto R = texR_ ? SPD::FromRGB(texR_->Evaluate(geom.uv)) : R_;
-        return R * Math::InvPi() * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
+        const auto localWi = geom.ToLocal * wi;
+
+        Float etaI = eta1_;
+        Float etaT = eta2_;
+        if (Math::LocalCos(localWi) < 0_f)
+        {
+            std::swap(etaI, etaT);
+        }
+
+        const Float eta = etaI / etaT;
+        const auto refrCorrection = transDir == TransportDirection::EL ? eta : 1_f;
+        return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir) * refrCorrection * refrCorrection;
     };
 
 public:
 
     SPD R_;
-    const Texture* texR_ = nullptr;
+    Float eta1_;
+    Float eta2_;
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(BSDF_Diffuse, "bsdf::diffuse");
+LM_COMPONENT_REGISTER_IMPL(BSDF_RefractAll, "bsdf::refract_all");
 
 LM_NAMESPACE_END

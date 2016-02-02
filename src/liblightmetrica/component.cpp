@@ -65,7 +65,9 @@ public:
             std::cerr << "Failed to register [ " << key << " ]. Already registered." << std::endl;
         }
 
+        #if 0
         std::cout << "Registering: " << key << std::endl;
+        #endif
 
         funcMap[key] = CreateAndReleaseFuncs{createFunc, releaseFunc};
     }

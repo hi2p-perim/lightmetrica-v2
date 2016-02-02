@@ -52,6 +52,16 @@ public:
         return 1_f;
     }
 
+    static auto LocalReflect(const Vec3& wi) -> Vec3
+    {
+        return Vec3(-wi.x, -wi.y, wi.z);
+    }
+
+    static auto LocalRefract(const Vec3& wi, Float eta, Float cosThetaT) -> Vec3
+    {
+        return Vec3(-eta * wi.x, -eta * wi.y, cosThetaT);
+    }
+
 };
 
 LM_NAMESPACE_END

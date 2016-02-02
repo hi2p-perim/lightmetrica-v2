@@ -34,32 +34,23 @@
 
 LM_NAMESPACE_BEGIN
 
-class BSDF_Diffuse final : public BSDF
+class BSDF_ReflectAll final : public BSDF
 {
 public:
 
-    LM_IMPL_CLASS(BSDF_Diffuse, BSDF);
+    LM_IMPL_CLASS(BSDF_ReflectAll, BSDF);
 
 public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        if (prop->Child("TexR"))
-        {
-            const auto id = prop->Child("TexR")->As<std::string>();
-            texR_  = static_cast<const Texture*>(assets->AssetByIDAndType(id, "texture", primitive));
-        }
-        else
-        {
-            R_ = SPD::FromRGB(prop->ChildAs<Vec3>("R", Vec3()));
-        }
-
+        R_ = SPD::FromRGB(prop->ChildAs<Vec3>("R", Vec3()));
         return true;
     };
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::D;
+        return SurfaceInteraction::S;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
@@ -70,12 +61,17 @@ public:
             return;
         }
 
-        const auto localWo = Sampler::CosineSampleHemisphere(u);
+        const auto localWo = BSDFUtils::LocalReflect(localWi);
         wo = geom.ToWorld * localWo;
     };
 
     LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
     {
+        if (evalDelta)
+        {
+            return 0_f;
+        }
+
         const auto localWi = geom.ToLocal * wi;
         const auto localWo = geom.ToLocal * wo;
         if (Math::LocalCos(localWi) <= 0_f || Math::LocalCos(localWo) <= 0_f)
@@ -83,11 +79,16 @@ public:
             return 0_f;
         }
 
-        return Sampler::CosineSampleHemispherePDFProjSA(localWo);
+        return 1_f;
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
+        if (evalDelta)
+        {
+            return SPD();
+        }
+
         const auto localWi = geom.ToLocal * wi;
         const auto localWo = geom.ToLocal * wo;
         if (Math::LocalCos(localWi) <= 0_f || Math::LocalCos(localWo) <= 0_f)
@@ -95,17 +96,15 @@ public:
             return SPD();
         }
 
-        const auto R = texR_ ? SPD::FromRGB(texR_->Evaluate(geom.uv)) : R_;
-        return R * Math::InvPi() * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
+        return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
     };
 
 public:
 
     SPD R_;
-    const Texture* texR_ = nullptr;
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(BSDF_Diffuse, "bsdf::diffuse");
+LM_COMPONENT_REGISTER_IMPL(BSDF_ReflectAll, "bsdf::reflect_all");
 
 LM_NAMESPACE_END

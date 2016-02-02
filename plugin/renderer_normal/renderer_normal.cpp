@@ -78,7 +78,6 @@ public:
                 }
 
                 // Set color to the pixel
-                //const auto c = Math::Abs(Math::Dot(isect.geom.sn, -ray.d));
                 film->SetPixel(x, y, SPD::FromRGB(Vec3(
                     Math::Abs(isect.geom.sn.x),
                     Math::Abs(isect.geom.sn.y),

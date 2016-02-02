@@ -87,9 +87,24 @@ struct DiscreteSPD<3>
     LM_INLINE auto operator/=(Float s) -> T& { v /= s; return *this; }
 };
 
+LM_INLINE auto operator+(const DiscreteSPD<3>& spd1, const DiscreteSPD<3>& spd2) -> DiscreteSPD<3>
+{
+    return DiscreteSPD<3>(spd1.v + spd2.v);
+}
+
+LM_INLINE auto operator-(const DiscreteSPD<3>& spd1, const DiscreteSPD<3>& spd2) -> DiscreteSPD<3>
+{
+    return DiscreteSPD<3>(spd1.v - spd2.v);
+}
+
 LM_INLINE auto operator*(const DiscreteSPD<3>& spd1, const DiscreteSPD<3>& spd2) -> DiscreteSPD<3>
 {
     return DiscreteSPD<3>(spd1.v * spd2.v);
+}
+
+LM_INLINE auto operator/(const DiscreteSPD<3>& spd1, const DiscreteSPD<3>& spd2) -> DiscreteSPD<3>
+{
+    return DiscreteSPD<3>(spd1.v / spd2.v);
 }
 
 LM_INLINE auto operator/(const DiscreteSPD<3>& spd, Float s) -> DiscreteSPD<3>
