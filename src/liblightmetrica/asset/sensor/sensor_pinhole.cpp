@@ -46,14 +46,11 @@ public:
         We_  = prop->Child("We")->As<Vec3>();
         fov_ = Math::Radians(prop->Child("fov")->As<Float>());
 
-        // Camera vectors
-        const auto eye    = prop->Child("eye")->As<Vec3>();
-        const auto center = prop->Child("center")->As<Vec3>();
-        const auto up     = prop->Child("up")->As<Vec3>();
-        position_ = eye;
-        vz_ = Math::Normalize(eye - center);
-        vx_ = Math::Normalize(Math::Cross(up, vz_));
-        vy_ = Math::Cross(vz_, vx_);
+        // Position & eye coordianates
+        position_ = Vec3(primitive->transform * Vec4(0_f, 0_f, 0_f, 1_f));
+        vx_ = Vec3(primitive->transform[0]);
+        vy_ = Vec3(primitive->transform[1]);
+        vz_ = Vec3(primitive->transform[2]);
 
         // Film & aspect ratio
         const auto filmID = prop->Child("film")->As<std::string>();

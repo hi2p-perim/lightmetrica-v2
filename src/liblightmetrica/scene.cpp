@@ -114,6 +114,27 @@ public:
                                 return true;
                             }
 
+                            // `lookat` node
+                            const auto* lookatNode = transformNode->Child("lookat");
+                            if (lookatNode)
+                            {
+                                const auto eye    = lookatNode->Child("eye")->As<Vec3>();
+                                const auto center = lookatNode->Child("center")->As<Vec3>();
+                                const auto up     = lookatNode->Child("up")->As<Vec3>();
+
+                                const auto vz = Math::Normalize(eye - center);
+                                const auto vx = Math::Normalize(Math::Cross(up, vz));
+                                const auto vy = Math::Cross(vz, vx);
+
+                                transform = Mat4(
+                                    vx.x, vx.y, vx.z, 0_f,
+                                    vy.x, vy.y, vy.z, 0_f,
+                                    vz.x, vz.y, vz.z, 0_f,
+                                    eye.x, eye.y, eye.z, 1_f);
+
+                                return true;
+                            }
+
                             // `translate`, `rotate`, or `scale` node
                             const auto* translateNode = transformNode->Child("translate");
                             const auto* rotateNode    = transformNode->Child("rotate");
