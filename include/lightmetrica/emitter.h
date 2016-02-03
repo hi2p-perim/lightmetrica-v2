@@ -36,7 +36,7 @@ class Emitter : public GeneralizedBSDF
 {
 public:
 
-    LM_INTERFACE_CLASS(Emitter, GeneralizedBSDF);
+    LM_INTERFACE_CLASS(Emitter, GeneralizedBSDF, 4);
 
 public:
 
@@ -45,14 +45,10 @@ public:
 
 public:
 
-    LM_INTERFACE_F(SamplePosition, void(const Vec2& u, SurfaceGeometry& geom));
-    LM_INTERFACE_F(EvaluatePositionPDF, Float(const SurfaceGeometry& geom, bool evalDelta));
-    LM_INTERFACE_F(EvaluatePosition, SPD(const SurfaceGeometry& geom, bool evalDelta));
-    LM_INTERFACE_F(RasterPosition, bool(const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos));
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, SamplePosition, void(const Vec2& u, SurfaceGeometry& geom));
+    LM_INTERFACE_F(1, EvaluatePositionPDF, Float(const SurfaceGeometry& geom, bool evalDelta));
+    LM_INTERFACE_F(2, EvaluatePosition, SPD(const SurfaceGeometry& geom, bool evalDelta));
+    LM_INTERFACE_F(3, RasterPosition, bool(const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos));
 
 };
 

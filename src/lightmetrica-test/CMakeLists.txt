@@ -79,7 +79,7 @@ set(
 	"test_static.cpp"
 	"test_property.cpp"
 	"test_assets.cpp"
-	"test_metacounter.cpp"
+	#"test_metacounter.cpp"
 	"test_plugin.cpp"
 
 	# Internal

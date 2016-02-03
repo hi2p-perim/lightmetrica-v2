@@ -34,18 +34,16 @@ LM_TEST_NAMESPACE_BEGIN
 
 struct A : public Component
 {
-    LM_INTERFACE_CLASS(A, Component);
-    LM_INTERFACE_F(Func1, void(int));
-    LM_INTERFACE_F(Func2, int(int, int));
-    LM_INTERFACE_F(Func3, void());
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_CLASS(A, Component, 3);
+    LM_INTERFACE_F(0, Func1, void(int));
+    LM_INTERFACE_F(1, Func2, int(int, int));
+    LM_INTERFACE_F(2, Func3, void());
 };
 
 struct B : public A
 {
-    LM_INTERFACE_CLASS(B, A);
-    LM_INTERFACE_F(Func4, void());
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_CLASS(B, A, 1);
+    LM_INTERFACE_F(0, Func4, void());
 };
 
 struct A1 final : public A
@@ -153,13 +151,12 @@ TEST(ComponentTest, InheritedInterface)
 
 struct C : public Component
 {
-    LM_INTERFACE_CLASS(C, Component);
-    LM_INTERFACE_F(Func1, void(const int*, int n));
-    LM_INTERFACE_F(Func2, void(std::vector<int>));
-    LM_INTERFACE_F(Func3, void(int&));
-    LM_INTERFACE_F(Func4, void(const int&));
-    LM_INTERFACE_F(Func5, void(const std::string&));
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_CLASS(C, Component, 5);
+    LM_INTERFACE_F(0, Func1, void(const int*, int n));
+    LM_INTERFACE_F(1, Func2, void(std::vector<int>));
+    LM_INTERFACE_F(2, Func3, void(int&));
+    LM_INTERFACE_F(3, Func4, void(const int&));
+    LM_INTERFACE_F(4, Func5, void(const std::string&));
 };
 
 struct C1 final : public C
@@ -246,9 +243,8 @@ TEST(ComponentTest, PortableArguments)
 
 struct D : public Component
 {
-    LM_INTERFACE_CLASS(D, Component);
-    LM_INTERFACE_F(Func_Public, void());
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_CLASS(D, Component, 1);
+    LM_INTERFACE_F(0, Func_Public, void());
 };
 
 struct D_Internal
@@ -294,9 +290,8 @@ TEST(ComponentTest, InternalInterfaceMultiple)
 
 struct E : public Component
 {
-    LM_INTERFACE_CLASS(E, Component);
-    LM_INTERFACE_F(Func_Public, void());
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_CLASS(E, Component, 1);
+    LM_INTERFACE_F(0, Func_Public, void());
 };
 
 struct E_Internal : public E
@@ -348,10 +343,9 @@ TEST(ComponentTest, InternalInterface)
 struct F : public Component
 {
     Portable<std::string> id;
-    LM_INTERFACE_CLASS(F, Component);
-    LM_INTERFACE_F(Func, int());
+    LM_INTERFACE_CLASS(F, Component, 1);
+    LM_INTERFACE_F(0, Func, int());
     auto ID() const -> std::string { return id.Get(); }
-    LM_INTERFACE_CLASS_END();
 };
 
 struct F_ : public F
@@ -379,9 +373,8 @@ TEST(ComponentTest, PortableMemberVariable)
 
 struct G : public Component
 {
-    LM_INTERFACE_CLASS(G, Component);
-    LM_INTERFACE_F(Func, void());
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_CLASS(G, Component, 1);
+    LM_INTERFACE_F(0, Func, void());
 };
 
 struct G_ final : public G
@@ -423,10 +416,9 @@ TEST(ComponentTest, ContructorAndDescturctor)
 
 struct H : public Clonable
 {
-    LM_INTERFACE_CLASS(H, Clonable);
-    LM_INTERFACE_F(Load, void(int v));
-    LM_INTERFACE_F(V, int());
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_CLASS(H, Clonable, 2);
+    LM_INTERFACE_F(0, Load, void(int v));
+    LM_INTERFACE_F(1, V, int());
 };
 
 struct H_ final : public H

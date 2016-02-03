@@ -36,7 +36,7 @@ class Sensor : public Emitter
 {
 public:
 
-    LM_INTERFACE_CLASS(Sensor, Emitter);
+    LM_INTERFACE_CLASS(Sensor, Emitter, 1);
 
 public:
 
@@ -45,11 +45,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(GetFilm, Film*());
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, GetFilm, Film*());
 
 };
 

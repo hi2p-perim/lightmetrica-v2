@@ -34,7 +34,7 @@ class TriangleMesh : public Asset
 {
 public:
 
-    LM_INTERFACE_CLASS(TriangleMesh, Asset);
+    LM_INTERFACE_CLASS(TriangleMesh, Asset, 6);
 
 public:
 
@@ -43,16 +43,12 @@ public:
 
 public:
 
-    LM_INTERFACE_F(NumVertices, int());
-    LM_INTERFACE_F(NumFaces, int());
-    LM_INTERFACE_F(Positions, const Float*());
-    LM_INTERFACE_F(Normals, const Float*());
-    LM_INTERFACE_F(Texcoords, const Float*());
-    LM_INTERFACE_F(Faces, const unsigned int*());
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, NumVertices, int());
+    LM_INTERFACE_F(1, NumFaces, int());
+    LM_INTERFACE_F(2, Positions, const Float*());
+    LM_INTERFACE_F(3, Normals, const Float*());
+    LM_INTERFACE_F(4, Texcoords, const Float*());
+    LM_INTERFACE_F(5, Faces, const unsigned int*());
 
 };
 

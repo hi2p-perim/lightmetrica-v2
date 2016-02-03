@@ -51,7 +51,7 @@ class PropertyNode : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(PropertyNode, Component);
+    LM_INTERFACE_CLASS(PropertyNode, Component, 10);
 
 public:
 
@@ -60,45 +60,45 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Tree, const PropertyTree*());
-    LM_INTERFACE_F(Type, PropertyNodeType());
-    LM_INTERFACE_F(Line, int());
+    LM_INTERFACE_F(0, Tree, const PropertyTree*());
+    LM_INTERFACE_F(1, Type, PropertyNodeType());
+    LM_INTERFACE_F(2, Line, int());
 
     /*!
         Key of the node.
         Only available for `Map` type.
     */
-    LM_INTERFACE_F(Key, std::string());
+    LM_INTERFACE_F(3, Key, std::string());
 
     /*!
         Scalar value of the node.
         Only available for `Scalar` type.
     */
-    LM_INTERFACE_F(Scalar, std::string());
-    LM_INTERFACE_F(RawScalar, const char*());
+    LM_INTERFACE_F(4, Scalar, std::string());
+    LM_INTERFACE_F(5, RawScalar, const char*());
 
     /*!
         Get a number of child elements.
         Only available for `Sequence` type.
     */
-    LM_INTERFACE_F(Size, int());
+    LM_INTERFACE_F(6, Size, int());
 
     /*!
         Find a child by name.
         Only available for `Map` type.
     */
-    LM_INTERFACE_F(Child, const PropertyNode*(const std::string&));
+    LM_INTERFACE_F(7, Child, const PropertyNode*(const std::string&));
 
     /*!
         Get a child by index.
         Only available for `Sequence` type.
     */
-    LM_INTERFACE_F(At, const PropertyNode*(int));
+    LM_INTERFACE_F(8, At, const PropertyNode*(int));
 
     /*!
         Parent node (nullptr for root node).
     */
-    LM_INTERFACE_F(Parent, const PropertyNode*());
+    LM_INTERFACE_F(9, Parent, const PropertyNode*());
 
 public:
 
@@ -122,10 +122,6 @@ public:
     template <typename T> auto As() const -> T;
 
     #pragma endregion
-
-public:
-
-    LM_INTERFACE_CLASS_END();
 
 };
 
@@ -211,7 +207,7 @@ class PropertyTree : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(PropertyTree, Component);
+    LM_INTERFACE_CLASS(PropertyTree, Component, 4);
 
 public:
 
@@ -220,23 +216,19 @@ public:
 
 public:
     
-    LM_INTERFACE_F(LoadFromFile, bool(const std::string&));
+    LM_INTERFACE_F(0, LoadFromFile, bool(const std::string&));
 
     /*!
         Load property from YAML sequences.
     */
-    LM_INTERFACE_F(LoadFromString, bool(const std::string&));
+    LM_INTERFACE_F(1, LoadFromString, bool(const std::string&));
 
-    LM_INTERFACE_F(Path, std::string());
+    LM_INTERFACE_F(2, Path, std::string());
 
     /*!
         Get root node.
     */
-    LM_INTERFACE_F(Root, const PropertyNode*());
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(3, Root, const PropertyNode*());
 
 };
 

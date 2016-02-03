@@ -34,16 +34,12 @@ class BSDF : public GeneralizedBSDF
 {
 public:
 
-    LM_INTERFACE_CLASS(BSDF, GeneralizedBSDF);
+    LM_INTERFACE_CLASS(BSDF, GeneralizedBSDF, 0);
 
 public:
 
     BSDF() = default;
     LM_DISABLE_COPY_AND_MOVE(BSDF);
-
-public:
-
-    LM_INTERFACE_CLASS_END();
 
 };
 

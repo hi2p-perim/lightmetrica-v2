@@ -44,7 +44,7 @@ class Scheduler : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Scheduler, Component);
+    LM_INTERFACE_CLASS(Scheduler, Component, 2);
 
 public:
 
@@ -53,12 +53,8 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Load, void(const PropertyNode* prop));
-    LM_INTERFACE_F(Process, void(const Scene* scene, Film* film, Random* initRng, const std::function<void(const Scene*, Film*, Random*)>& processSampleFunc));
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, Load, void(const PropertyNode* prop));
+    LM_INTERFACE_F(1, Process, void(const Scene* scene, Film* film, Random* initRng, const std::function<void(const Scene*, Film*, Random*)>& processSampleFunc));
 
 };
 

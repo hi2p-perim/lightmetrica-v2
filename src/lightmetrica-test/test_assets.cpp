@@ -32,8 +32,8 @@ LM_TEST_NAMESPACE_BEGIN
 
 struct TestAsset : public Asset
 {
-    LM_INTERFACE_CLASS(TestAsset, Asset);
-    LM_INTERFACE_F(Func, int());
+    LM_INTERFACE_CLASS(TestAsset, Asset, 1);
+    LM_INTERFACE_F(0, Func, int());
 };
 
 struct TestAsset1 : public TestAsset

@@ -34,16 +34,12 @@ class Light : public Emitter
 {
 public:
 
-    LM_INTERFACE_CLASS(Light, Emitter);
+    LM_INTERFACE_CLASS(Light, Emitter, 0);
 
 public:
 
     Light() = default;
     LM_DISABLE_COPY_AND_MOVE(Light);
-
-public:
-
-    LM_INTERFACE_CLASS_END();
 
 };
 

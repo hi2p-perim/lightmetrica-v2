@@ -50,7 +50,7 @@ class Asset : public Clonable
 {
 public:
 
-    LM_INTERFACE_CLASS(Asset, Clonable);
+    LM_INTERFACE_CLASS(Asset, Clonable, 2);
 
 public:
 
@@ -59,8 +59,8 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Load, bool(const PropertyNode* prop, Assets* assets, const Primitive* primitive));
-    LM_INTERFACE_F(PostLoad, bool(const Scene* scene));
+    LM_INTERFACE_F(0, Load, bool(const PropertyNode* prop, Assets* assets, const Primitive* primitive));
+    LM_INTERFACE_F(1, PostLoad, bool(const Scene* scene));
 
 public:
 
@@ -70,10 +70,6 @@ public:
 private:
 
     Portable<std::string> id_;
-
-public:
-
-    LM_INTERFACE_CLASS_END();
 
 };
 

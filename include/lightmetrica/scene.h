@@ -48,7 +48,7 @@ class Scene : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene, Component);
+    LM_INTERFACE_CLASS(Scene, Component, 10);
 
 public:
 
@@ -63,7 +63,7 @@ public:
         Initializes the scene from the given property of
         the scene configuration file.
     */
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*, Assets*, Accel*));
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*, Assets*, Accel*));
 
     /*!
         \brief Intersection query.
@@ -77,8 +77,8 @@ public:
         \retval true Intersected with the scene.
         \retval false Not intersected with the scene.
     */
-    LM_INTERFACE_F(Intersect, bool(const Ray& ray, Intersection&));
-    LM_INTERFACE_F(IntersectWithRange, bool(const Ray& ray, Intersection& isect, Float minT, Float maxT));
+    LM_INTERFACE_F(1, Intersect, bool(const Ray& ray, Intersection&));
+    LM_INTERFACE_F(2, IntersectWithRange, bool(const Ray& ray, Intersection& isect, Float minT, Float maxT));
 
     /*!
         \brief Get a primitive by ID.
@@ -86,29 +86,29 @@ public:
         \param id ID of a primitive.
         \return Primitive.
     */
-    LM_INTERFACE_F(PrimitiveByID, const Primitive*(const std::string&));
+    LM_INTERFACE_F(3, PrimitiveByID, const Primitive*(const std::string&));
 
     /*!
         \brief Get the number of primitives.
     */
-    LM_INTERFACE_F(NumPrimitives, int());
+    LM_INTERFACE_F(4, NumPrimitives, int());
 
     /*!
         \brief Get a primitive by index.
         \param index Index of a primitive.
     */
-    LM_INTERFACE_F(PrimitiveAt, const Primitive*(int index));
+    LM_INTERFACE_F(5, PrimitiveAt, const Primitive*(int index));
 
     /*!
         \brief Get a sensor primitive.
     */
-    LM_INTERFACE_F(Sensor, const Primitive*());
+    LM_INTERFACE_F(6, Sensor, const Primitive*());
 
-    LM_INTERFACE_F(SampleEmitter, const Primitive*(int type, Float u));
-    LM_INTERFACE_F(EvaluateEmitterPDF, Float(const Primitive* primitive));
+    LM_INTERFACE_F(7, SampleEmitter, const Primitive*(int type, Float u));
+    LM_INTERFACE_F(8, EvaluateEmitterPDF, Float(const Primitive* primitive));
 
     //! Compute the bound of the scene
-    LM_INTERFACE_F(GetBound, Bound());
+    LM_INTERFACE_F(9, GetBound, Bound());
 
 public:
 

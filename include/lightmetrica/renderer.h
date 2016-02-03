@@ -37,7 +37,7 @@ class Renderer : public Configurable
 {
 public:
 
-    LM_INTERFACE_CLASS(Renderer, Configurable);
+    LM_INTERFACE_CLASS(Renderer, Configurable, 1);
 
 public:
 
@@ -46,7 +46,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Render, void(const Scene*, Film*));
+    LM_INTERFACE_F(0, Render, void(const Scene*, Film*));
 
 };
 

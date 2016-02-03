@@ -29,7 +29,9 @@
 #include <lightmetrica/reflection.h>
 #include <lightmetrica/static.h>
 #include <lightmetrica/logger.h>
+#if 0
 #include <lightmetrica/metacounter.h>
+#endif
 #include <lightmetrica/align.h>
 #if LM_DEBUG_MODE
 #include <lightmetrica/debug.h>
@@ -280,6 +282,25 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
         LM_INTERFACE_CLASS(C, A);
         ```
 */
+#define LM_INTERFACE_CLASS(Current, Base, N) \
+    LM_DEFINE_CLASS_TYPE(Current, Base); \
+    using BaseType = Base; \
+    using InterfaceType = Current; \
+    using UniquePtr = std::unique_ptr<InterfaceType, void(*)(Component*)>; \
+    static constexpr int NumInterfaces = BaseType::NumInterfaces + N
+
+// Define interface member function
+#if LM_INTELLISENSE
+    // Nasty workaround for intellisense
+    #define LM_INTERFACE_F(ID, Name, Signature) \
+            const std::function<Signature> Name
+#else
+    #define LM_INTERFACE_F(ID, Name, Signature) \
+            static constexpr int Name ## _ID_ = BaseType::NumInterfaces + ID; \
+            const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this, #Name)
+#endif
+
+#if 0
 #define LM_INTERFACE_CLASS(Current, Base) \
     LM_DEFINE_CLASS_TYPE(Current, Base); \
     using BaseType = Base; \
@@ -302,6 +323,7 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
     #define LM_INTERFACE_F(Name, Signature) \
             static constexpr int Name ## _ID_ = BaseType::NumInterfaces + MetaCounter<InterfaceType>::Next() - 1; \
             const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this, #Name)
+#endif
 #endif
 
 #pragma endregion
@@ -384,7 +406,7 @@ class Clonable : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Clonable, Component);
+    LM_INTERFACE_CLASS(Clonable, Component, 1);
 
 public:
 
@@ -398,11 +420,7 @@ public:
         Clones the content of the instance to the given argument.
         This function is called from `Component::Clone` function.
     */
-    LM_INTERFACE_F(Clone, void(Clonable* o));
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, Clone, void(Clonable* o));
 
 };
 

@@ -33,7 +33,7 @@ class Texture : public Asset
 {
 public:
 
-    LM_INTERFACE_CLASS(Texture, Asset);
+    LM_INTERFACE_CLASS(Texture, Asset, 1);
 
 public:
 
@@ -42,11 +42,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Evaluate, Vec3(const Vec2& uv));
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, Evaluate, Vec3(const Vec2& uv));
 
 };
 

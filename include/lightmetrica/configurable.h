@@ -47,7 +47,7 @@ class Configurable : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Configurable, Component);
+    LM_INTERFACE_CLASS(Configurable, Component, 1);
     
 public:
 
@@ -56,11 +56,7 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
 
 };
 

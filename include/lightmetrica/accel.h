@@ -38,7 +38,7 @@ class Accel : public Configurable
 {
 public:
 
-    LM_INTERFACE_CLASS(Accel, Configurable);
+    LM_INTERFACE_CLASS(Accel, Configurable, 2);
 
 public:
 
@@ -47,8 +47,8 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Build, bool(const Scene* scene));
-    LM_INTERFACE_F(Intersect, bool(const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT));
+    LM_INTERFACE_F(0, Build, bool(const Scene* scene));
+    LM_INTERFACE_F(1, Intersect, bool(const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT));
 
 };
 

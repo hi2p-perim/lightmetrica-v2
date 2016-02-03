@@ -47,7 +47,7 @@ class Assets : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Assets, Component);
+    LM_INTERFACE_CLASS(Assets, Component, 3);
 
 public:
 
@@ -56,13 +56,9 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
-    LM_INTERFACE_F(AssetByIDAndType, Asset*(const std::string& id, const std::string& type, const Primitive* primitive));
-    LM_INTERFACE_F(PostLoad, bool(const Scene* scene));
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
+    LM_INTERFACE_F(1, AssetByIDAndType, Asset*(const std::string& id, const std::string& type, const Primitive* primitive));
+    LM_INTERFACE_F(2, PostLoad, bool(const Scene* scene));
 
 };
 

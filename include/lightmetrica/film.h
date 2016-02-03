@@ -33,7 +33,7 @@ class Film : public Asset
 {
 public:
 
-    LM_INTERFACE_CLASS(Film, Asset);
+    LM_INTERFACE_CLASS(Film, Asset, 8);
 
 public:
 
@@ -42,18 +42,14 @@ public:
 
 public:
 
-    LM_INTERFACE_F(Width, int());
-    LM_INTERFACE_F(Height, int());
-    LM_INTERFACE_F(Splat, void(const Vec2& rasterPos, const SPD& v));
-    LM_INTERFACE_F(SetPixel, void(int x, int y, const SPD& v));
-    LM_INTERFACE_F(Save, bool(const std::string&));
-    LM_INTERFACE_F(Accumulate, void(const Film* film));
-    LM_INTERFACE_F(Rescale, void(Float w));
-    LM_INTERFACE_F(Clear, void());
-
-public:
-
-    LM_INTERFACE_CLASS_END();
+    LM_INTERFACE_F(0, Width, int());
+    LM_INTERFACE_F(1, Height, int());
+    LM_INTERFACE_F(2, Splat, void(const Vec2& rasterPos, const SPD& v));
+    LM_INTERFACE_F(3, SetPixel, void(int x, int y, const SPD& v));
+    LM_INTERFACE_F(4, Save, bool(const std::string&));
+    LM_INTERFACE_F(5, Accumulate, void(const Film* film));
+    LM_INTERFACE_F(6, Rescale, void(Float w));
+    LM_INTERFACE_F(7, Clear, void());
 
 };
 
