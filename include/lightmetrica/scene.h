@@ -28,6 +28,7 @@
 #include <lightmetrica/math.h>
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>
+#include <lightmetrica/bound.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -105,6 +106,9 @@ public:
 
     LM_INTERFACE_F(SampleEmitter, const Primitive*(int type, Float u));
     LM_INTERFACE_F(EvaluateEmitterPDF, Float(const Primitive* primitive));
+
+    //! Compute the bound of the scene
+    LM_INTERFACE_F(GetBound, Bound());
 
 public:
 

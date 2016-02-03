@@ -1241,6 +1241,22 @@ namespace Math
     template <typename T> LM_INLINE auto Max(const T& v1, const T& v2)    -> T { return std::max(v1, v2); }
     template <typename T> LM_INLINE auto Clamp(const T& v, const T& min, const T& max) -> T { return std::min(std::max(v, min), max); }
 
+    template <typename T, SIMD Opt, template <typename, SIMD> class VecT>
+    LM_INLINE auto Min(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> VecT<T, Opt>
+    {
+        VecT<T, Opt> result;
+        for (int i = 0; i < VecT<T, Opt>::NC; i++) result[i] = Min<T>(v1[i], v2[i]);
+        return result;
+    }
+
+    template <typename T, SIMD Opt, template <typename, SIMD> class VecT>
+    LM_INLINE auto Max(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> VecT<T, Opt>
+    {
+        VecT<T, Opt> result;
+        for (int i = 0; i < VecT<T, Opt>::NC; i++) result[i] = Max<T>(v1[i], v2[i]);
+        return result;
+    }
+
     //! \}
     #pragma endregion
 

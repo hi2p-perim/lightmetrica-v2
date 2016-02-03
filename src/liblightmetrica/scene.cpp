@@ -327,6 +327,29 @@ public:
         #pragma endregion
 
         // --------------------------------------------------------------------------------
+
+        //#pragma region Compute scene bound
+
+        //bound_ = Bound();
+        //for (const auto& primitive : primitives_)
+        //{
+        //    if (primitive->mesh)
+        //    {
+        //        const int n = primitive->mesh->NumVertices();
+        //        const auto* ps = primitive->mesh->Positions();
+        //        for (int i = 0; i < n; i++)
+        //        {
+        //            Vec3 p(primitive->transform * Vec4(ps[3 * i], ps[3 * i + 1], ps[3 * i + 2], 1_f));
+        //            bound = Math::Union(bound, )
+        //        }
+        //    }
+        //}
+
+        ////bound_
+
+        //#pragma endregion
+
+        // --------------------------------------------------------------------------------
         
         #pragma region Build accel
 
@@ -416,6 +439,11 @@ public:
         return 0_f;
     };
 
+    LM_IMPL_F(GetBound) = [this]() -> Bound
+    {
+        return bound_;
+    };
+
 private:
 
     std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
@@ -423,6 +451,7 @@ private:
     Primitive* sensorPrimitive_;                                    // Pointer to sensor primitive
     std::vector<size_t> lightPrimitiveIndices_;                     // Pointers to light primitives
     const Accel* accel_;
+    Bound bound_;
 
 };
 

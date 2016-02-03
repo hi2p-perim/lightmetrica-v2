@@ -24,36 +24,33 @@
 
 #pragma once
 
-#include <lightmetrica/asset.h>
 #include <lightmetrica/math.h>
-#include <lightmetrica/bound.h>
 
 LM_NAMESPACE_BEGIN
 
-class TriangleMesh : public Asset
+struct Bound
 {
-public:
-
-    LM_INTERFACE_CLASS(TriangleMesh, Asset);
-
-public:
-
-    TriangleMesh() = default;
-    LM_DISABLE_COPY_AND_MOVE(TriangleMesh);
-
-public:
-
-    LM_INTERFACE_F(NumVertices, int());
-    LM_INTERFACE_F(NumFaces, int());
-    LM_INTERFACE_F(Positions, const Float*());
-    LM_INTERFACE_F(Normals, const Float*());
-    LM_INTERFACE_F(Texcoords, const Float*());
-    LM_INTERFACE_F(Faces, const unsigned int*());
-
-public:
-
-    LM_INTERFACE_CLASS_END();
-
+    Vec3 min{  Math::Inf() };
+    Vec3 max{ -Math::Inf() };
 };
+
+namespace Math
+{
+    LM_INLINE auto Union(const Bound& a, const Bound& b) -> Bound
+    {
+        Bound r;
+        r.min = Math::Min(a.min, b.min);
+        r.max = Math::Max(a.max, b.max);
+        return r;
+    }
+
+    LM_INLINE auto Union(const Bound& a, const Vec3& p) -> Bound
+    {
+        Bound r;
+        r.min = Math::Min(a.min, p);
+        r.max = Math::Max(a.max, p);
+        return r;
+    }
+}
 
 LM_NAMESPACE_END

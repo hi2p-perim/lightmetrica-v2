@@ -24,6 +24,13 @@
 
 #include <pch.h>
 #include <lightmetrica/light.h>
+#include <lightmetrica/property.h>
+#include <lightmetrica/trianglemesh.h>
+#include <lightmetrica/dist.h>
+#include <lightmetrica/primitive.h>
+#include <lightmetrica/sampler.h>
+#include <lightmetrica/surfacegeometry.h>
+#include <lightmetrica/triangleutils.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -37,8 +44,61 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
+        Le_ = SPD::FromRGB(prop->ChildAs<Vec3>("Le", Vec3()));
+        const auto p = prop->ChildAs<Vec3>("position", Vec3());
+        position_ = Vec3(primitive->transform * Vec4(p.x, p.y, p.z, 1_f));
         return true;
     };
+
+public:
+
+    LM_IMPL_F(Type) = [this]() -> int
+    {
+        return SurfaceInteraction::L;
+    };
+
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    {
+        wo = Sampler::UniformSampleSphere(u);
+    };
+
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    {
+        return Sampler::UniformSampleSpherePDFSA(wo);
+    };
+
+    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
+    {
+        return Le_;
+    };
+
+public:
+
+    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, SurfaceGeometry& geom) -> void
+    {
+        geom.degenerated = true;
+        geom.p = position_;
+    };
+
+    LM_IMPL_F(EvaluatePositionPDF) = [this](const SurfaceGeometry& geom, bool evalDelta) -> Float
+    {
+        return evalDelta ? 0_f : 1_f;
+    };
+
+    LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
+    {
+        return evalDelta ? SPD() : SPD(1_f);
+    };
+
+    LM_IMPL_F(RasterPosition) = [this](const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) -> bool
+    {
+        return false;
+    };
+
+public:
+
+    SPD Le_;
+    Vec3 position_;
 
 };
 

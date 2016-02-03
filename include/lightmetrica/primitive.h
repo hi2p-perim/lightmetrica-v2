@@ -29,6 +29,7 @@
 #include <lightmetrica/bsdf.h>
 #include <lightmetrica/emitter.h>
 #include <lightmetrica/align.h>
+#include <lightmetrica/bound.h>
 #include <string>
 #include <cassert>
 
@@ -73,6 +74,11 @@ public:
 
         return type;
     }
+
+    //auto GetBound() -> Bound
+    //{
+    //    return mesh ? mesh->GetBound() : Bound();
+    //}
 
     auto SampleDirection(const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) const -> void
     {

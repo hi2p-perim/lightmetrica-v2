@@ -132,6 +132,7 @@ set(
     "${_INCLUDE_DIR}/random.h"
     "${_INCLUDE_DIR}/sampler.h"
     "${_INCLUDE_DIR}/dist.h"
+    "${_INCLUDE_DIR}/bound.h"
 )
 
 set(_DSFMT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/src/dSFMT-src-2.2.3")
@@ -205,8 +206,10 @@ list(APPEND _SOURCE_FILES ${_ASSET_SENSOR_SOURCE_FILES})
 
 set(
     _ASSET_LIGHT_SOURCE_FILES
-	"asset/light/light_point.cpp"
 	"asset/light/light_area.cpp"
+	"asset/light/light_point.cpp"
+	"asset/light/light_directional.cpp"
+	"asset/light/light_env.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\light" FILES ${_ASSET_LIGHT_SOURCE_FILES})
