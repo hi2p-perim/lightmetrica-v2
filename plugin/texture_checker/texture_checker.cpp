@@ -39,6 +39,11 @@ public:
         return true;
     };
 
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
+    {
+        return true;
+    };
+
     LM_IMPL_F(Evaluate) = [this](const Vec2& uv) -> Vec3
     {
         const Float Scale = 100_f;
