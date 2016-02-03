@@ -40,6 +40,11 @@ public:
         return true;
     };
 
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
+    {
+        return true;
+    };
+
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
     {
 

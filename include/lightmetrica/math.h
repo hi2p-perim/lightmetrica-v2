@@ -28,6 +28,7 @@
 #include <cmath>
 #include <string>
 #include <initializer_list>
+#include <algorithm>
 
 /*!
     \defgroup math Math library

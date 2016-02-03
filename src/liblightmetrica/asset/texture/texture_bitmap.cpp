@@ -149,6 +149,11 @@ public:
         return true;
     };
 
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
+    {
+        return true;
+    };
+
     LM_IMPL_F(Evaluate) = [this](const Vec2& uv) -> Vec3
     {
         const int x = Math::Clamp<int>((int)(Math::Fract(uv.x) * width_), 0, width_ - 1);

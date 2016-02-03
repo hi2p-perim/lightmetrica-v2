@@ -22,7 +22,6 @@
     THE SOFTWARE.
 */
 
-#if 0
 #include <pch.h>
 #include <lightmetrica/light.h>
 #include <lightmetrica/property.h>
@@ -32,6 +31,7 @@
 #include <lightmetrica/sampler.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/triangleutils.h>
+#include <lightmetrica/scene.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -45,17 +45,18 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        // Parameters
         Le_ = SPD::FromRGB(prop->ChildAs<Vec3>("Le", Vec3()));
         const auto d = prop->ChildAs<Vec3>("direction", Vec3());
         direction_ = Mat3(primitive->transform) * d;
+        return true;
+    };
 
-        // Some precomputation
-		auto& P = primitive->Params.L.Directional;
-        P.Center = (SceneBound.max + SceneBound.min) * 0.5;
-        P.Radius = glm::length(primitive->Params.L.Directional.Center - SceneBound.max) * 1.01;
-        P.InvArea = 1.0 / (2.0 * Pi * P.Radius * P.Radius);
-        
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
+    {
+        const auto bound = scene->GetBound();
+        center_  = (bound.max + bound.min) * .5_f;
+        radius_  = Math::Length(center_ - bound.max) * 1.01_f;  // Grow slightly
+        invArea_ = 1_f / (2_f * Math::Pi() * radius_ * radius_);
         return true;
     };
 
@@ -109,7 +110,7 @@ public:
 
     LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
     {
-        return Vec3(1);
+        return SPD(1);
     };
 
     LM_IMPL_F(RasterPosition) = [this](const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) -> bool
@@ -130,4 +131,3 @@ public:
 LM_COMPONENT_REGISTER_IMPL(Light_Directional, "light::directional");
 
 LM_NAMESPACE_END
-#endif

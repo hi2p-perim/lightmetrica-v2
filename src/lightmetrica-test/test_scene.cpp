@@ -49,6 +49,7 @@ struct Stub_Assets : public Assets
 {
     LM_IMPL_CLASS(Stub_Assets, Assets);
     LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& type, const Primitive* primitive) -> Asset* { return nullptr; };
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool { return true; };
 };
 
 struct Stub_Accel : public Accel
@@ -104,30 +105,39 @@ struct Stub_Sensor : public Sensor
 {
     LM_IMPL_CLASS(Stub_Sensor, Sensor);
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool { return true; };
 };
 
 struct Stub_Light : public Light
 {
     LM_IMPL_CLASS(Stub_Light, Light);
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool { return true; };
 };
 
 struct Stub_BSDF : public BSDF
 {
     LM_IMPL_CLASS(Stub_BSDF, BSDF);
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool { return true; };
 };
 
 struct Stub_TriangleMesh_1 : public TriangleMesh
 {
     LM_IMPL_CLASS(Stub_TriangleMesh_1, TriangleMesh);
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool { return true; };
+    LM_IMPL_F(NumVertices) = [this]() -> int { return 0; };
+    LM_IMPL_F(Positions) = [this]() -> const Float*{ return nullptr; };
 };
 
 struct Stub_TriangleMesh_2 : public TriangleMesh
 {
     LM_IMPL_CLASS(Stub_TriangleMesh_2, TriangleMesh);
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool { return true; };
+    LM_IMPL_F(NumVertices) = [this]() -> int { return 0; };
+    LM_IMPL_F(Positions) = [this]() -> const Float*{ return nullptr; };
 };
 
 LM_COMPONENT_REGISTER_IMPL(Stub_Sensor, "sensor::stub_sensor");

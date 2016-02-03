@@ -34,6 +34,7 @@ class Assets;
 class PropertyNode;
 struct SurfaceGeometry;
 struct Primitive;
+class Scene;
 
 /*!
     \brief Asset.
@@ -59,6 +60,7 @@ public:
 public:
 
     LM_INTERFACE_F(Load, bool(const PropertyNode* prop, Assets* assets, const Primitive* primitive));
+    LM_INTERFACE_F(PostLoad, bool(const Scene* scene));
 
 public:
 

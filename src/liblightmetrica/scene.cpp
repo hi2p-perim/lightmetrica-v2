@@ -328,26 +328,35 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        //#pragma region Compute scene bound
+        #pragma region Compute scene bound
 
-        //bound_ = Bound();
-        //for (const auto& primitive : primitives_)
-        //{
-        //    if (primitive->mesh)
-        //    {
-        //        const int n = primitive->mesh->NumVertices();
-        //        const auto* ps = primitive->mesh->Positions();
-        //        for (int i = 0; i < n; i++)
-        //        {
-        //            Vec3 p(primitive->transform * Vec4(ps[3 * i], ps[3 * i + 1], ps[3 * i + 2], 1_f));
-        //            bound = Math::Union(bound, )
-        //        }
-        //    }
-        //}
+        bound_ = Bound();
+        for (const auto& primitive : primitives_)
+        {
+            if (primitive->mesh)
+            {
+                const int n = primitive->mesh->NumVertices();
+                const auto* ps = primitive->mesh->Positions();
+                for (int i = 0; i < n; i++)
+                {
+                    Vec3 p(primitive->transform * Vec4(ps[3 * i], ps[3 * i + 1], ps[3 * i + 2], 1_f));
+                    bound_ = Math::Union(bound_, p);
+                }
+            }
+        }
 
-        ////bound_
+        #pragma endregion
 
-        //#pragma endregion
+        // --------------------------------------------------------------------------------
+
+        #pragma region Post load
+
+        if (!assets->PostLoad(this))
+        {
+            return false;
+        }
+
+        #pragma endregion
 
         // --------------------------------------------------------------------------------
         

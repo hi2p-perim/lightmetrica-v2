@@ -36,6 +36,7 @@ LM_NAMESPACE_BEGIN
 class Asset;
 class PropertyNode;
 struct Primitive;
+class Scene;
 
 /*!
     Asset library.
@@ -57,6 +58,7 @@ public:
 
     LM_INTERFACE_F(Initialize, bool(const PropertyNode*));
     LM_INTERFACE_F(AssetByIDAndType, Asset*(const std::string& id, const std::string& type, const Primitive* primitive));
+    LM_INTERFACE_F(PostLoad, bool(const Scene* scene));
 
 public:
 

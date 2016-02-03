@@ -54,6 +54,11 @@ public:
         return true;
     };
 
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
+    {
+        return true;
+    };
+
 public:
 
     LM_IMPL_F(Type) = [this]() -> int

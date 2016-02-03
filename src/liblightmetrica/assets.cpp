@@ -135,6 +135,18 @@ public:
         return assets_.back().get();
     };
 
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
+    {
+        for (const auto& asset : assets_)
+        {
+            if (!asset->PostLoad(scene))
+            {
+                return false;
+            }
+        }
+        return true;
+    };
+
 private:
 
     const PropertyNode* prop_;
