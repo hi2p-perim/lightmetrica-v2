@@ -257,8 +257,8 @@ private:
 		{
 			case LogType::Error: { std::cout << "\033[31m"; break; }
 			case LogType::Warn:  { std::cout << "\033[33m"; break; }
-			case LogType::Info:  { std::cout << "\033[37m"; break; }
-			case LogType::Debug: { std::cout << "\033[137m"; break; }
+			case LogType::Info:  { std::cout << "\033[00m"; break; }
+			case LogType::Debug: { std::cout << "\033[37m"; break; }
 		}
 		#endif
 	}

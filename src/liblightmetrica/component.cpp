@@ -115,6 +115,12 @@ public:
     {
         namespace fs = boost::filesystem;
 
+        // Skip if directory does not exist
+        if (!fs::exists(fs::path(directory)))
+        {
+            return;
+        }
+
         // File format
         #if LM_PLATFORM_WINDOWS
         const std::regex pluginNameExp("([a-z_]+)\\.dll$");
