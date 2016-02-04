@@ -357,20 +357,15 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
         Impl ## _Init_(ImplType* p) { p->implName = ImplType::Type_().name; } \
     } Impl ## _Init_Inst_{this}
 
-#if LM_INTELLISENSE
-    #define LM_IMPL_F(Name) \
-        const decltype(BaseType::Name) Name ## _Impl_ 
-#else
-    #define LM_IMPL_F(Name) \
-        struct Name ## _Init_ { \
-            Name ## _Init_(ImplType* p) { \
-                p->vt_[Name ## _ID_].f     = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
-                p->vt_[Name ## _ID_].implf = (void*)(&p->Name ## _Impl_); \
-            } \
-        } Name ## _Init_Inst_{this}; \
-        friend struct Name ## _Init_; \
-        const std::function<decltype(BaseType::Name)::Type> Name ## _Impl_ 
-#endif
+#define LM_IMPL_F(Name) \
+    struct Name ## _Init_ { \
+        Name ## _Init_(ImplType* p) { \
+            p->vt_[Name ## _ID_].f     = (void*)(ImplFunctionGenerator<decltype(BaseType::Name)::Type>::Get()); \
+            p->vt_[Name ## _ID_].implf = (void*)(&p->Name ## _Impl_); \
+        } \
+    } Name ## _Init_Inst_{this}; \
+    friend struct Name ## _Init_; \
+    const std::function<decltype(BaseType::Name)::Type> Name ## _Impl_ 
 
 #pragma endregion
 
