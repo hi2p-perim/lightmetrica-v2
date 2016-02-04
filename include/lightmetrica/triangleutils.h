@@ -31,6 +31,10 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \brief Utility function for triangle meshes.
+    \ingroup core
+*/
 class TriangleUtils
 {
 public:
@@ -39,7 +43,7 @@ public:
 
 public:
 
-    // Function to create discrete distribution for sampling area light or raw sensor
+    //! Create discrete distribution for sampling area light or raw sensor
     static auto CreateTriangleAreaDist(const Primitive* primitive, Distribution1D& dist, Float& invArea) -> void
     {
         assert(primitive->mesh);
@@ -63,7 +67,7 @@ public:
         invArea = 1_f / sumArea;
     }
 
-    // Function to sample a position on the triangle mesh
+    //! Sample a position on the triangle mesh
     static auto SampleTriangleMesh(const Vec2& u, const Primitive* primitive, const Distribution1D& dist, SurfaceGeometry& geom)
     {
         #pragma region Sample a triangle & a position on triangle

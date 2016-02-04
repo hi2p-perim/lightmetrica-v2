@@ -28,18 +28,22 @@
 
 LM_NAMESPACE_BEGIN
 
+//! \cond
 extern "C"
 {
     LM_PUBLIC_API auto SEHUtils_EnableStructuralException() -> void;
     LM_PUBLIC_API auto SEHUtils_DisableStructuralException() -> void;
 }
+//! \endcond
 
-/*
-    SEH utilility.
+/*!
+    \brief SEH utilility.
 
     Helps to handle structured exception handling (SEH) in the Windows environment.
     Some exceptions such as floating-point exception is handled via SEH.
     We need to register a translator function to catch SEH from user code.
+
+    \ingroup core
 */
 class SEHUtils
 {
@@ -49,7 +53,10 @@ public:
 
 public:
 
+    //! Enable SEH exception.
     static auto EnableStructuralException() -> void { LM_EXPORTED_F(SEHUtils_EnableStructuralException); }
+
+    //! Disbale SEH exception.
     static auto DisableStructuralException() -> void { LM_EXPORTED_F(SEHUtils_DisableStructuralException); }
 
 };

@@ -31,6 +31,8 @@ LM_NAMESPACE_BEGIN
 class PositionSampler;
 
 /*!
+    \brief An interface for Emitter.
+    \ingroup asset
 */
 class Emitter : public GeneralizedBSDF
 {
@@ -45,9 +47,37 @@ public:
 
 public:
 
+    /*!
+        \brief Sample a position on the light.
+        \param u Uniform random numbers in [0,1]^2.
+        \param geom Surface geometry at the sampled position.
+    */
     LM_INTERFACE_F(0, SamplePosition, void(const Vec2& u, SurfaceGeometry& geom));
+
+    /*!
+        \brief Evaluate positional PDF.
+        \param geom Surface geometry.
+        \return Evaluated PDF.
+    */
     LM_INTERFACE_F(1, EvaluatePositionPDF, Float(const SurfaceGeometry& geom, bool evalDelta));
+
+    /*!
+        \brief Evaluate the positional component of the emitted quantity.
+        \param geom Surface geometry.
+        \return Positional component of the emitted quantity.
+    */
     LM_INTERFACE_F(2, EvaluatePosition, SPD(const SurfaceGeometry& geom, bool evalDelta));
+
+    /*!
+        \brief Compute raster position from the direction and the position.
+
+        The function calculates the raster position from the outgoing ray.
+        Returns false if calculated raster position is the outside of [0, 1]^2.
+
+        \param wo           Outgoing direction from the point on the emitter.
+        \param geom         Surface geometry infromation around the point on the emitter.
+        \param rasterPos    Computed raster position.
+    */
     LM_INTERFACE_F(3, RasterPosition, bool(const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos));
 
 };

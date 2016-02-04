@@ -31,6 +31,14 @@ LM_NAMESPACE_BEGIN
 class Film;
 
 /*!
+    \defgroup sensor Sensor
+    \brief Collection of sensors.
+    \ingroup asset
+*/
+
+/*!
+    \brief An interface for Sensor
+    \ingroup sensor
 */
 class Sensor : public Emitter
 {
@@ -45,6 +53,11 @@ public:
 
 public:
 
+    /*!
+		\brief Get film.
+		Returns the film referenced from the sensor.
+		\return Film.
+	*/
     LM_INTERFACE_F(0, GetFilm, Film*());
 
 };

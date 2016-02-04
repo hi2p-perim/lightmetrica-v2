@@ -33,6 +33,8 @@ LM_NAMESPACE_BEGIN
 	\brief Ray.
 
 	A ray structure used for the intersection query.
+
+    \ingroup core
 */
 struct Ray
 {

@@ -29,6 +29,14 @@
 LM_NAMESPACE_BEGIN
 
 /*!
+    \defgroup bsdf BSDF
+    \brief Collection of BSDFs.
+    \ingroup asset
+*/
+
+/*!
+    \brief An interface for Emitter.
+    \ingroup bsdf
 */
 class BSDF : public GeneralizedBSDF
 {

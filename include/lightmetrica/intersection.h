@@ -35,14 +35,16 @@ struct Primitive;
 	\brief Intersection.
 
 	Intermediate structure for managing intersection data.
-	When intersection query is succeeded, the information on the intersected point
-	is stored in the structure.
+	When intersection query is succeeded, the information
+    on the intersected point is stored in the structure.
+
+    \ingroup core
 */
 struct Intersection
 {
 
-    SurfaceGeometry geom;
-    const Primitive* primitive;
+    SurfaceGeometry geom;       //!< Surface geometry of the intersection point.
+    const Primitive* primitive; //!< Primitive on the intersection point.
 
 };
 

@@ -37,14 +37,15 @@ struct Primitive;
 class Scene;
 
 /*!
-    \brief Asset.
+    \brief Base class of an asset.
 
     The base class of the asset classes.
     The `asset` is an important concept in the framework.
     All user-defined resources such as triangle meshes or BSDFs must inherits this class.
     The construction of assets are fully automated with asset management class (`Assets` class),
     which make it possible to extend your own assets consistently.
-    For the design of the asset management in Lightmetrica, see <TODO>.
+
+    \ingroup asset
 */
 class Asset : public Clonable
 {
@@ -59,13 +60,54 @@ public:
 
 public:
 
+    /*!
+        \brief Load an asset from a property node.
+
+        Configure and initialize the asset by a property node given by `prop`.
+        Some assets have references to the other assets, so `assets` is also required.
+        Dependent asset must be loaded beforehand.
+
+        Also, some asset requires primitive information (e.g., transformation or meshes).
+        In this case you can use information obtained from `primitive`.
+        
+        The property node contains the tree structure below the `params` node
+        in the asset definitions. For instance, the asset defined by the following 
+        configuration creates a property with two nodes 'A' and 'B'.
+        The values can be accessed from the interfaces of PropertyNode class.
+
+            some_asset:
+                interface: some_interface
+                type: some_type
+                params:
+                    A: some_value_1
+                    B: some_value_2
+
+        \param prop Property node for the asset.
+        \param assets Asset manager.
+        \retval true Succeeded to load.
+        \retval false Failed to load.
+	*/
     LM_INTERFACE_F(0, Load, bool(const PropertyNode* prop, Assets* assets, const Primitive* primitive));
+
+    /*!
+        \brief Post processing of the asset.
+
+        The function is called when the all primitives are loaded.
+        If the asset needs postprocessing that requires scene information
+        (e.g., scene bound, etc.), we can implement this function.
+
+        \param scene Scene.
+        \retval true Succeeded to load.
+        \retval false Failed to load.
+    */
     LM_INTERFACE_F(1, PostLoad, bool(const Scene* scene));
 
 public:
 
+    //! \cond detail
     auto ID() const -> std::string { return id_.Get(); }
     auto SetID(const std::string& id) -> void { id_.Reset(id); }
+    //! \endcond
 
 private:
 

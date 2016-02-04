@@ -30,6 +30,11 @@
 LM_NAMESPACE_BEGIN
 
 /*!
+    \addtogroup core
+    \{
+*/
+
+/*!
     Log message type.
 
     Defines the types of log messages.
@@ -46,7 +51,7 @@ enum class LogType
 	Debug,      //!< Debugging (used only for the debug mode).
 };
 
-
+//! \cond
 extern "C"
 {
     LM_PUBLIC_API auto Logger_Run() -> void;
@@ -56,6 +61,7 @@ extern "C"
     LM_PUBLIC_API auto Logger_UpdateIndentation(bool push) -> void;
     LM_PUBLIC_API auto Logger_Flush() -> void;
 }
+//! \endcond
 
 /*!
     \brief Logger.
@@ -86,22 +92,20 @@ extern "C"
     Example:
     
     1. Log an information message
-       ```
-       ...
-       LM_LOG_INFO("Hello, world.");
-       ...
-       ```
+
+           ...
+           LM_LOG_INFO("Hello, world.");
+           ...
     
     2. Log a message with indentation
-       ```
-       ...
-       {
-           LM_LOG_INFO("Begin some process");
-           LM_LOG_INDENTER();
+
            ...
-       }
-       ...
-       ```
+           {
+               LM_LOG_INFO("Begin some process");
+               LM_LOG_INDENTER();
+               ...
+           }
+           ...
 */
 class Logger
 {
@@ -111,16 +115,14 @@ public:
 
 public:
 
+    //! \cond detail
     static auto Run()  -> void { LM_EXPORTED_F(Logger_Run); }
     static auto Stop() -> void { LM_EXPORTED_F(Logger_Stop); }
     static auto SetVerboseLevel(int level) -> void { LM_EXPORTED_F(Logger_SetVerboseLevel, level); }
     static auto Log(LogType type, const std::string& message, const char* filename, int line, bool inplace, bool simple) -> void { LM_EXPORTED_F(Logger_Log, (int)(type), message.c_str(), filename, line, inplace, simple); }
     static auto UpdateIndentation(bool push) -> void { LM_EXPORTED_F(Logger_UpdateIndentation, push); }
-
-    /*!
-        Flush pending log messages.
-    */
     static auto Flush() -> void { LM_EXPORTED_F(Logger_Flush); }
+    //! \endcond
 
 };
 
@@ -149,5 +151,7 @@ struct LogIndenter
 #define LM_LOG_INPLACE(message)      Logger::Log(LogType::Info,  message, __FILE__, __LINE__, true, false)
 #define LM_LOG_INPLACE_END()         std::cout << std::endl
 #define LM_LOG_INDENTER()            LogIndenter LM_TOKENPASTE2(logIndenter_, __LINE__)
+
+//! \}
 
 LM_NAMESPACE_END

@@ -30,7 +30,8 @@
 LM_NAMESPACE_BEGIN
 
 /*!
-    Helper macros for enums.
+    \addtogroup core
+    \{
 */
 
 #define LM_ENUM_TYPE_MAP(EnumType)																				\
@@ -51,5 +52,7 @@ LM_NAMESPACE_BEGIN
 
 #define LM_ENUM_TO_STRING(EnumType, EnumValue)  EnumType##_String[(int)(EnumValue)]
 #define LM_STRING_TO_ENUM(EnumType, EnumString) EnumTypeMap<EnumType>::ToEnum(EnumString)
+
+//! \}
 
 LM_NAMESPACE_END

@@ -30,6 +30,10 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \brief Discrete 1D distribution.
+    \ingroup math
+*/
 class Distribution1D
 {
 public:
@@ -39,11 +43,13 @@ public:
 
 public:
 
+    //! Add an value
     auto Add(Float v) -> void
     {
         cdf.push_back(cdf.back() + v);
     }
 
+    //! Normalize the histogram
     auto Normalize() -> void
     {
         const Float sum = cdf.back();
@@ -54,12 +60,14 @@ public:
         }
     }
 
+    //! Sample from the distribution
     auto Sample(Float u) const -> int
     {
         int v = static_cast<int>(std::upper_bound(cdf.begin(), cdf.end(), u) - cdf.begin()) - 1;
         return Math::Clamp<int>(v, 0, static_cast<int>(cdf.size()) - 2);
     }
 
+    //! Sample from the distribution reusing a random variable
     auto SampleReuse(Float u, Float& u2) const -> int
     {
         int v = static_cast<int>(std::upper_bound(cdf.begin(), cdf.end(), u) - cdf.begin()) - 1;
@@ -68,17 +76,20 @@ public:
         return i;
     }
 
+    //! Evaluate distribution
     auto EvaluatePDF(int i) const -> Float
     {
         return (i < 0 || i + 1 >= static_cast<int>(cdf.size())) ? 0 : cdf[i + 1] - cdf[i];
     }
 
+    //! Clear distribution
     auto Clear() -> void
     {
         cdf.clear();
         cdf.push_back(0);
     }
 
+    //! Check if the distribution is empty
     auto Empty() const -> bool
     {
         return cdf.size() == 1;

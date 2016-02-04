@@ -34,6 +34,8 @@ LM_NAMESPACE_BEGIN
     \brief Intersection utilities.
 
     Utility functions for ray-triangle intersections.
+
+    \ingroup core
 */
 class IntersectionUtils
 {

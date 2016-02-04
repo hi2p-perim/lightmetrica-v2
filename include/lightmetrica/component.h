@@ -43,8 +43,8 @@
 #include <string>
 
 /*!
-    \defgroup component Component framework.
-    \brief Portable component framework.
+    \defgroup component Component system
+    \brief Portable component system.
 
 
     One of the major objective of this project is to create highly extensive framework
@@ -404,7 +404,13 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
 
 #pragma region Clonable component
 
-//! Clonable component
+/*!
+    \brief Clonable component
+
+    In some case, a component instance needs to be copied to another component instances.
+    From the point of the implementation, we prohibit to use copy constructors so
+    all interface possible to be copied must implement this interface.
+*/
 class Clonable : public Component
 {
 public:
@@ -420,8 +426,12 @@ public:
 
     /*!
         \brief Clone the instalce.
+
         Clones the content of the instance to the given argument.
         This function is called from `Component::Clone` function.
+        The implementation of the interface must copy its data to the instance `o`.
+
+        \param o The target instance for cloning the asset.
     */
     LM_INTERFACE_F(0, Clone, void(Clonable* o));
 

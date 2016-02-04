@@ -28,6 +28,10 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \brief Utility function for samplers.
+    \ingroup math
+*/
 class Sampler
 {
 public:
@@ -36,16 +40,7 @@ public:
 
 public:
 
-    static auto LocalReflect(const Vec3& wi) -> Vec3
-    {
-        return Vec3(-wi.x, -wi.y, wi.z);
-    }
-
-    static auto LocalRefract(const Vec3& wi, Float eta, Float cosThetaT) -> Vec3
-    {
-        return Vec3(-eta * wi.x, -eta * wi.y, cosThetaT);
-    }
-
+    //! Sample a point in the circle uniformly with concentric disk sampling
     static auto UniformConcentricDiskSample(const Vec2& u) -> Vec2
     {
         auto v = 2_f * u - Vec2(1_f);
@@ -64,17 +59,20 @@ public:
         return Vec2(r * Math::Cos(theta), r * Math::Sin(theta));
     }
 
+    //! Sample a direction in the hemisphere from the consine weighted distribution
     static auto CosineSampleHemisphere(const Vec2& u) -> Vec3
     {
         const auto s = UniformConcentricDiskSample(u);
         return Vec3(s.x, s.y, Math::Sqrt(Math::Max(0_f, 1_f - s.x*s.x - s.y*s.y)));
     }
 
+    //! Evaluate the PDF of CosineSampleHemisphere with the solid angle measure
     static auto CosineSampleHemispherePDFProjSA(const Vec3& d) -> Float
     {
         return Math::InvPi();
     }
 
+    //! Sample a direction uniformly from the unit sphere
     static auto UniformSampleSphere(const Vec2& u) -> Vec3
     {
         const Float z = 1_f - 2_f * u[0];
@@ -83,11 +81,13 @@ public:
         return Vec3(r * Math::Cos(phi), r * Math::Sin(phi), z);
     }
 
+    //! Evaluate the PDF of UniformSampleSphere with the solid angle measure
     static auto UniformSampleSpherePDFSA(const Vec3& d) -> Float
     {
         return Math::InvPi() * 0.25_f;
     }
 
+    //! Uniformly sample a triangle, returns barycentric coordinates
     static auto UniformSampleTriangle(const Vec2& u) -> Vec2
     {
         const auto s = Math::Sqrt(Math::Max(0_f, u.x));

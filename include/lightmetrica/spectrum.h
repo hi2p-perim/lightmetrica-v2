@@ -29,6 +29,11 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \addtogroup core
+    \{
+*/
+
 // TODO: Make configurable
 // #define LM_USE_SPECTRUM_SINGLE
 #define LM_USE_SPECTRUM_RGB
@@ -119,6 +124,8 @@ LM_INLINE auto operator/(const DiscreteSPD<3>& spd, Float s) -> DiscreteSPD<3>
 #elif LM_SPECTRUM_SINGLE
     using SPD = DiscreteSPD<1>;
 #endif
+
+//! \}
 
 LM_NAMESPACE_END
 

@@ -28,8 +28,10 @@
 
 LM_NAMESPACE_BEGIN
 
+//! \cond
 extern "C" LM_PUBLIC_API auto FPUtils_EnableFPControl() -> bool;
 extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
+//! \endcond
 
 /*
     \brief Floating point exception control.
@@ -64,6 +66,8 @@ extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
       - GCC support
       - Linux environment support
       - Add some explanation why some exception is not caught
+
+    \ingroup core
 */
 class FPUtils
 {
@@ -74,14 +78,14 @@ public:
 public:
 
     /*!
-        Enable floating point exceptions.
-        Returns `true` if succeed, otherwise `false`.
+        \brief Enable floating point exceptions.
+        \return `true` if succeed, otherwise `false`.
     */
     static auto EnableFPControl()  -> bool { return LM_EXPORTED_F(FPUtils_EnableFPControl); }
 
     /*!
-        Disables floating point exceptions.
-        Returns `true` if succeed, otherwise `false`.
+        \brief Disables floating point exceptions.
+        \return `true` if succeed, otherwise `false`.
     */
     static auto DisableFPControl() -> bool { return LM_EXPORTED_F(FPUtils_DisableFPControl); }
 

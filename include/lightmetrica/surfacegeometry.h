@@ -33,7 +33,9 @@ LM_NAMESPACE_BEGIN
     \brief Surface geometry information.
 
     The surface geometry information of the intersected point
-    is stored in this structure.    
+    is stored in this structure.
+
+    \ingroup core
 */
 struct SurfaceGeometry
 {

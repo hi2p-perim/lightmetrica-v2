@@ -33,6 +33,8 @@ LM_NAMESPACE_BEGIN
 	\brief Version information.
 
 	The class is used to get version information of the library.
+
+    \ingroup detail
 */
 class Version
 {
@@ -42,69 +44,31 @@ public:
 
 public:
 
-	/*!
-		\brief Get the major version of the library.
-
-		\return Major version.
-	*/
+	//! Major version
     LM_PUBLIC_API static auto Major() -> std::string;
 
-	/*!
-		\brief Get the minor version of the library.
-
-		\return Minor version.
-	*/
+	//! Minor version
     LM_PUBLIC_API static auto Minor() -> std::string;
 
-	/*!
-		\brief Get the patch version of the library.
-
-		\return Patch version.
-	*/
+	//! Patch version
     LM_PUBLIC_API static auto Patch() -> std::string;
 
-	/*!
-		\brief Get the revision number of the library.
-
-		\return Revision.
-	*/
+	//! Revision number
     LM_PUBLIC_API static auto Revision() -> std::string;
 
-	/*!
-		\brief Get the version codename of the library.
-
-		\return Codename.
-	*/
+	//! Version codename
     LM_PUBLIC_API static auto Codename() -> std::string;
 
-	/*!
-		\brief Get the build date of the library.
-
-		\return Build date.
-	*/
+	//! Build date
     LM_PUBLIC_API static auto BuildDate() -> std::string;
 	
-	/*!
-		\brief Get the formatted version of the library.
-
-		Returns the formatted version in \a major.minor.patch.revision.
-		
-        \return Formatted version.
-	*/
+	//! Formatted version
     LM_PUBLIC_API static auto Formatted() -> std::string;
 
-	/*!
-		\brief Get the platform name.
-
-		\return Platform name.
-	*/
+	//! Platform name
     LM_PUBLIC_API static auto Platform() -> std::string;
 
-	/*!
-		\brief Get the architecture name.
-
-		\return Architecture name.
-	*/
+	//! Architecture name
     LM_PUBLIC_API static auto Archtecture() -> std::string;
 
 };

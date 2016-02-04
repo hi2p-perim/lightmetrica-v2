@@ -29,17 +29,17 @@
 LM_NAMESPACE_BEGIN
 
 /*!
-    Types.
+    \addtogroup component
+    \{
 */
+
+//! Types.
 enum class Types
 {
     Class,
 };
 
-/*!
-    Type info.
-    Implements simple run-time reflection.
-*/
+//! Implements simple run-time reflection.
 struct TypeInfo
 {
     Types type;
@@ -58,5 +58,7 @@ struct TypeInfo
         t.classT.base = #BaseClassType; \
         return t; \
     }
+
+//! \}
 
 LM_NAMESPACE_END

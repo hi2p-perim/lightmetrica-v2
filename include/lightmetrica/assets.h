@@ -26,11 +26,6 @@
 
 #include <lightmetrica/component.h>
 
-/*!
-    \defgroup asset Asset system.
-    \brief Asset system of the framework.
-*/
-
 LM_NAMESPACE_BEGIN
 
 class Asset;
@@ -39,9 +34,17 @@ struct Primitive;
 class Scene;
 
 /*!
-    Asset library.
+    \defgroup asset Asset
+    \brief Asset system of the framework.
+*/
 
-    Manages all instances of the assets.
+/*!
+    \brief Asset library.
+
+    An interface for the asset management.
+    All instances of the loaded assets are managed by this interface.
+
+    \ingroup asset
 */
 class Assets : public Component
 {
@@ -56,11 +59,42 @@ public:
 
 public:
 
-    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
+    /*!
+        \brief Initialize the asset library.
+
+        Initializes the asset management.
+        Note that this function does *not* load any assets.
+        The asset loading is delayed until they are actually referenced.
+
+        \params prop The propery node pointing to `assets` node.
+        \retval true Succeeded to initialize.
+        \retval false Failed to initialize.
+    */
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode* prop));
+
+    /*!
+        \brief Get and/or load an asset by name.
+
+        The function tries to get the asset specified by `id`.
+        If the asset is not found, the asset is loaded from the property node
+        specified by the Initialize function.
+
+        This function returns `nullptr` if no asset is found,
+        or failed to load the asset.
+
+        \param name Name of the asset.
+        \return Asset instance.
+    */
     LM_INTERFACE_F(1, AssetByIDAndType, Asset*(const std::string& id, const std::string& type, const Primitive* primitive));
+
+    /*!
+        \brief Dispatches post loading functions of the loaded assets.
+        \param scene Scene.
+        \retval true Succeeded to load.
+        \retval false Failed to load.
+    */
     LM_INTERFACE_F(2, PostLoad, bool(const Scene* scene));
 
 };
 
 LM_NAMESPACE_END
-//! \}

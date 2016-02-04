@@ -41,9 +41,7 @@ LM_NAMESPACE_BEGIN
     Although we leave the detailed explanation to the documentation of the ctemplate library,
     for convenience we briefly describe the usage of the template language.
     
-    TODO.
-
-    TODO. Create `internal` group in doxygen.
+    \ingroup detail
 */
 class StringTemplate
 {
@@ -53,9 +51,7 @@ public:
 
 public:
 
-    /*!
-        Expand template.
-    */
+    //! Expand template.
     LM_PUBLIC_API static auto Expand(const std::string& input, const std::unordered_map<std::string, std::string>& dict) -> std::string;
 
 };

@@ -28,8 +28,14 @@
 
 LM_NAMESPACE_BEGIN
 
+//! \cond
 extern "C" LM_PUBLIC_API auto DebugUtils_StackTrace() -> bool;
+//! \endcond
 
+/*!
+    \brief Debug helper functions.
+    \ingroup core
+*/
 class DebugUtils
 {
 public:
@@ -38,6 +44,7 @@ public:
 
 public:
 
+    //! Print stack trace.
     static auto StackTrace() -> bool { return LM_EXPORTED_F(DebugUtils_StackTrace); }
 
 };

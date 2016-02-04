@@ -37,15 +37,28 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \addtogroup core
+    \{
+*/
+
 // --------------------------------------------------------------------------------
 
-/*
-    Dynamic library.
+/*!
+    \brief Dynamic library.
+
+    Platform independent dynamic library class.
 */
 class DynamicLibrary
 {
 public:
 
+    /*!
+        \brief Load a dynamic library.
+        \param path Path to a library file.
+        \retval true Succeeded to load.
+        \retval false Failed to load.
+    */
     auto Load(const std::string& path) -> bool
     {
         #if LM_PLATFORM_WINDOWS
@@ -77,6 +90,11 @@ public:
         return true;
     }
 
+    /*!
+        \brief Unload the dynamic library.
+        \retval true Succeeded to unload.
+        \retval false Failed to unload.
+    */
     auto Unload() -> bool
     {
         #if LM_PLATFORM_WINDOWS
@@ -98,6 +116,10 @@ public:
         return true;
     }
 
+    /*!
+        \brief Retrieve the address of an exported symbol.
+        \retval nullptr Failed to get address.
+    */
     auto GetFuncPointer(const std::string& symbol) const -> void*
     {
         #if LM_PLATFORM_WINDOWS
@@ -162,8 +184,8 @@ using InitPolicy = InternalPolicy;
 using InitPolicy = ExternalPolicy;
 #endif
 
-/*
-    Static initialization.
+/*!
+    \brief Static initialization.
     
     Performs a static initialization using
     the technique to combine static member function and singleton
@@ -256,5 +278,7 @@ namespace
             return func(__VA_ARGS__); \
         }()
 #endif
+
+//! \}
 
 LM_NAMESPACE_END

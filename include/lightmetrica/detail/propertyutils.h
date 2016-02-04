@@ -31,6 +31,8 @@ LM_NAMESPACE_BEGIN
 class PropertyNode;
 
 /*!
+    \brief Property node helpers.
+    \ingroup detail
 */
 class PropertyUtils
 {
@@ -40,9 +42,7 @@ public:
 
 public:
 
-    /*!
-        Print pretty error message for property node
-    */
+    //! Print pretty error message for property node.
     LM_PUBLIC_API static auto PrintPrettyError(const PropertyNode* node) -> void;
 
 };

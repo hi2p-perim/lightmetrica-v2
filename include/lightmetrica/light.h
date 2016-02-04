@@ -29,6 +29,14 @@
 LM_NAMESPACE_BEGIN
 
 /*!
+    \defgroup light Light
+    \brief Collection of lights.
+    \ingroup asset
+*/
+
+/*!
+    \brief An interface for Light
+    \ingroup light
 */
 class Light : public Emitter
 {

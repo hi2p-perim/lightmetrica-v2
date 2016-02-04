@@ -46,6 +46,8 @@ class Emitter;
 	A primitive corresponds to a node in the scene.
 
     TODO: Redesign sampling related functions.
+
+    \ingroup scene
 */
 struct Primitive : public SIMDAlignedType
 {
@@ -59,6 +61,7 @@ struct Primitive : public SIMDAlignedType
 
 public:
 
+    //! Surface interaction type.
     auto Type() const -> int
     {
         int type = 0;
@@ -75,11 +78,7 @@ public:
         return type;
     }
 
-    //auto GetBound() -> Bound
-    //{
-    //    return mesh ? mesh->GetBound() : Bound();
-    //}
-
+    //! Sample outgoing vector.
     auto SampleDirection(const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) const -> void
     {
         assert((queryType & SurfaceInteraction::Emitter) == 0 || (queryType & SurfaceInteraction::BSDF) == 0);
@@ -98,6 +97,7 @@ public:
         LM_UNREACHABLE();
     }
 
+    //! Evaluate PDF with the direction.
     auto EvaluateDirectionPDF(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) const -> Float
     {
         assert((queryType & SurfaceInteraction::Emitter) == 0 || (queryType & SurfaceInteraction::BSDF) == 0);
@@ -115,6 +115,7 @@ public:
         return 0_f;
     }
 
+    //! Evaluate generalized BSDF.
     auto EvaluateDirection(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) const -> SPD
     {
         assert((types & SurfaceInteraction::Emitter) == 0 || (types & SurfaceInteraction::BSDF) == 0);
@@ -132,18 +133,21 @@ public:
         return SPD();
     }
 
+    //! Sample a position on the light.
     auto SamplePosition(const Vec2& u, SurfaceGeometry& geom) const -> void
     {
         assert(emitter);
         emitter->SamplePosition(u, geom);
     }
 
+    //! Evaluate positional PDF.
     auto EvaluatePositionPDF(const SurfaceGeometry& geom, bool evalDelta) const -> Float
     {
         assert(emitter);
         return emitter->EvaluatePositionPDF(geom, evalDelta);
     }
 
+    //! Evaluate the positional component of the emitted quantity.
     auto EvaluatePosition(const SurfaceGeometry& geom, bool evalDelta) const -> SPD
     {
         assert(emitter);

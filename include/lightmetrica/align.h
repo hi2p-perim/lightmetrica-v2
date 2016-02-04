@@ -33,6 +33,11 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \addtogroup core
+    \{
+*/
+
 namespace
 {
     /*!
@@ -317,5 +322,7 @@ struct boost_pool_aligned_allocator
     static char* malloc(const size_type bytes) { return static_cast<char*>(aligned_malloc(bytes, Align)); }
     static void free(const char* block) { aligned_free((void*)block); }
 };
+
+//! \}
 
 LM_NAMESPACE_END

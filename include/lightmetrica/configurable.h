@@ -42,6 +42,8 @@ class PropertyNode;
           param_1: ...
           param_2: ...
           ...
+
+    \ingroup core
 */
 class Configurable : public Component
 {
@@ -56,7 +58,17 @@ public:
 
 public:
 
-    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
+    /*!
+        \brief Initialize the configurable component.
+        
+        Initializes the component with the parameters specified by
+        the property node `prop`.
+
+        \params prop The propery node pointing to `params` node.
+        \retval true Succeeded to initialize.
+        \retval false Failed to initialize.
+    */
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode* prop));
 
 };
 

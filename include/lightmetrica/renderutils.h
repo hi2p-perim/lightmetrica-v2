@@ -30,6 +30,10 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \brief Utility functions for rendering.
+    \ingroup core.
+*/
 class RenderUtils
 {
 public:
@@ -38,6 +42,7 @@ public:
 
 public:
 
+    //! Compute geometry term.
     static auto GeometryTerm(const SurfaceGeometry& geom1, const SurfaceGeometry& geom2) -> Float
     {
         auto p1p2 = geom2.p - geom1.p;

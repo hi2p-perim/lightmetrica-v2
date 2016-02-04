@@ -240,5 +240,17 @@
 #define LM_NAMESPACE_BEGIN namespace lightmetrica_v2 {
 #define LM_NAMESPACE_END }
 
+// --------------------------------------------------------------------------------
+
+// Definition of some doxygen groups
+/*!
+    \defgroup detail Detail
+    \brief Impelmenetation detail.
+*/
+/*!
+    \defgroup core Core
+    \brief Core library of the framework.
+*/
+
 #pragma endregion
 

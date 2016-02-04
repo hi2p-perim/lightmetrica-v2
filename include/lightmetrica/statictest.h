@@ -28,6 +28,8 @@
 
 LM_NAMESPACE_BEGIN
 
+//! \cond
+
 extern "C"
 {
     LM_PUBLIC_API auto StaticFuncTest_Func1() -> int;
@@ -49,5 +51,7 @@ namespace detail
 
     };
 }
+
+//! \endcond
 
 LM_NAMESPACE_END

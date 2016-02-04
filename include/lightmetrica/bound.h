@@ -28,6 +28,12 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \addtogroup math
+    \{
+*/
+
+//! Axis-aligned bounding box.
 struct Bound
 {
     Vec3 min{  Math::Inf() };
@@ -36,6 +42,7 @@ struct Bound
 
 namespace Math
 {
+    //! Merge two bounds
     LM_INLINE auto Union(const Bound& a, const Bound& b) -> Bound
     {
         Bound r;
@@ -44,6 +51,7 @@ namespace Math
         return r;
     }
 
+    //! Merge one bound and a point
     LM_INLINE auto Union(const Bound& a, const Vec3& p) -> Bound
     {
         Bound r;
@@ -52,5 +60,7 @@ namespace Math
         return r;
     }
 }
+
+//! \}
 
 LM_NAMESPACE_END

@@ -103,11 +103,6 @@ public:
         return SPD(1_f);
     };
 
-    LM_IMPL_F(RasterPosition) = [this](const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) -> bool
-    {
-        return false;
-    };
-
 private:
 
     SPD Le_;

@@ -32,6 +32,13 @@ class Scene;
 class Film;
 
 /*!
+    \defgroup renderer Renderer
+    \brief Abstraction of renderers
+*/
+
+/*!
+    \brief A base class of the renderer.
+    \ingroup renderer
 */
 class Renderer : public Configurable
 {
@@ -46,6 +53,13 @@ public:
 
 public:
 
+    /*!
+        \brief Render an image.
+        The function starts to render the `scene` to the `film`.
+        \param scene Scene.
+        \retval true Succeeded to render the scene.
+        \retval true Failed to render the scene.
+    */
     LM_INTERFACE_F(0, Render, void(const Scene*, Film*));
 
 };

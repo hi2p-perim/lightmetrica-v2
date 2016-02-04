@@ -31,6 +31,10 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \brief Helper utility function for BSDF computations.
+    \ingroup bsdf
+*/
 class BSDFUtils
 {
 public:
@@ -39,6 +43,15 @@ public:
 
 public:
 
+    /*!
+        \brief Compute correction factor for shading normal.
+        \param transportDir Transport direction.
+        \param geom         Surface geometry.
+        \param localWi      `wi` in local shading coordinates.
+        \param localWo      `wo` in local shading coordinates.
+        \param worldWi      `wi` in world coordinates.
+        \param worldWo      `wo` in world coordinates.
+    */
     static auto ShadingNormalCorrection(const SurfaceGeometry& geom, const Vec3& wi, const Vec3& wo, TransportDirection transDir) -> Float
     {
         const auto localWi = geom.ToLocal * wi;
@@ -52,11 +65,23 @@ public:
         return 1_f;
     }
 
+    /*!
+        \brief Compute reflection in the local coordinates.
+        \param wi Incident direction in the local coordinates.
+        \return   Reflected outgoing direction in the local coordinates.
+    */
     static auto LocalReflect(const Vec3& wi) -> Vec3
     {
         return Vec3(-wi.x, -wi.y, wi.z);
     }
 
+    /*!
+        \brief Compute refraction in the local coordinates.
+        \param wi        Incident direction in the local coordinates.
+        \param eta       Index of refraction.
+        \param cosThetaT Inner product between surface normal and the refracted vector.
+        \return          Refracted outgoing direction in the local coordinates.
+    */
     static auto LocalRefract(const Vec3& wi, Float eta, Float cosThetaT) -> Vec3
     {
         return Vec3(-eta * wi.x, -eta * wi.y, cosThetaT);

@@ -756,8 +756,7 @@ using EnableIfAVXType = std::enable_if_t<std::is_same<T, double>::value && Opt =
 
 #pragma region Math operations
 /*!
-    \defgroup math_operations Math operations
-    \brief Math operations for basic types
+    \addtogroup math_object_types
     \{
 */
 
@@ -1206,9 +1205,6 @@ using Mat4 = TMat4<Float, SIMD::Default>;
 namespace Math
 {
     #pragma region Constants
-    //! \defgroup constants Constants
-    //! \ingroup math_utils
-    //! \{
 
     template <typename T = Float> constexpr auto Pi()              -> T     { return T(3.141592653589793238462643383279502884e+00); }
     template <typename T = Float> constexpr auto InvPi()           -> T     { return T(1.0 / 3.141592653589793238462643383279502884e+00); }
@@ -1219,15 +1215,11 @@ namespace Math
     template <>                   constexpr auto Eps<float>()      -> float { return 1e-4f; }
     template <typename T = Float> constexpr auto EpsIsect()        -> T     { return T(1e-4); }
 
-    //! \}
     #pragma endregion
 
     // --------------------------------------------------------------------------------
 
     #pragma region Basic functions
-    //! \defgroup basic_functions Basic functions
-    //! \ingroup math_utils
-    //! \{
 
     template <typename T> constexpr auto Radians(const T& v) -> T { return v * Pi<T>() / T(180); }
     template <typename T> constexpr auto Degrees(const T& v) -> T { return v * T(180) / Pi<T>(); }
@@ -1258,15 +1250,11 @@ namespace Math
         return result;
     }
 
-    //! \}
     #pragma endregion
 
     // --------------------------------------------------------------------------------
 
     #pragma region Vector functions
-    //! \defgroup vector_functions Vector functions
-    //! \ingroup math_utils
-    //! \{
 
     #pragma region Dot
 
@@ -1475,15 +1463,11 @@ namespace Math
 
     #pragma endregion
 
-    //! \}
     #pragma endregion
 
     // --------------------------------------------------------------------------------
 
     #pragma region Matrix functions
-    //! \defgroup matrix_functions Matrix functions
-    //! \ingroup math_utils
-    //! \{
 
     #pragma region Transpose
 
@@ -1761,15 +1745,11 @@ namespace Math
 
     #pragma endregion
 
-    //! \}
     #pragma endregion
 
     // --------------------------------------------------------------------------------
 
     #pragma region Transform
-    //! \defgroup transform Transform
-    //! \ingroup math_utils
-    //! \{
 
     #pragma region Translate
 
@@ -1848,15 +1828,11 @@ namespace Math
 
     #pragma endregion
 
-    //! \}
     #pragma endregion   
 
     // --------------------------------------------------------------------------------
 
     #pragma region Linear algebra
-    //! \defgroup linear_algebra Linear algebra
-    //! \ingroup math_utils
-    //! \{
 
     template <typename T, SIMD Opt>
     auto OrthonormalBasis(const TVec3<T, Opt>& a, TVec3<T, Opt>& b, TVec3<T, Opt>& c) -> void
@@ -1865,7 +1841,6 @@ namespace Math
         b = Normalize(Cross(c, a));
     }
 
-    //! \}
     #pragma endregion
 }
 

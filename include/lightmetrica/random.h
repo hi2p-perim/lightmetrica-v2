@@ -29,12 +29,14 @@
 
 LM_NAMESPACE_BEGIN
 
+//! \cond
 class Random;
 extern "C" LM_PUBLIC_API auto Random_Constructor(Random* p) -> void;
 extern "C" LM_PUBLIC_API auto Random_Destructor(Random* p) -> void;
 extern "C" LM_PUBLIC_API auto Random_SetSeed(Random* p, unsigned int seed) -> void;
 extern "C" LM_PUBLIC_API auto Random_NextUInt(Random* p) -> unsigned int;
 extern "C" LM_PUBLIC_API auto Random_Next(Random* p) -> double;
+//! \endcond
 
 /*!
     \brief Random number generator.
@@ -42,6 +44,8 @@ extern "C" LM_PUBLIC_API auto Random_Next(Random* p) -> double;
     As the underlying implementation, we uses SIMD-oriented Fast Mersenne Twister (SFMT)
     using an implementation by Mutsuo Saito and Makoto Matsumoto:
     http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/
+
+    \ingroup math
 */
 class Random
 {
@@ -53,12 +57,16 @@ public:
 
 public:
 
+    //! Set seed and initialize internal state.
     auto SetSeed(unsigned int seed) -> void { LM_EXPORTED_F(Random_SetSeed, this, seed); }
 
+    //! Generate an uniform random number as unsigned int type.
     auto NextUInt() -> unsigned int { return LM_EXPORTED_F(Random_NextUInt, this); }
 
+    //! Generate an uniform random number in [0,1].
     auto Next() -> Float { return Float(LM_EXPORTED_F(Random_Next, this)); }
 
+    //! Generate uniform random numbers in [0,1]^2.
     LM_INLINE auto Next2D() -> Vec2
     {
         // Note : according to C++ standard, evaluation order of the arguments are undefined

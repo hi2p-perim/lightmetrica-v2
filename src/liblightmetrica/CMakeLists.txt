@@ -93,7 +93,6 @@ set(
 
     # detail
     "stringtemplate.cpp"
-    "config.cpp"
     "propertyutils.cpp"
 	"version.cpp"
 )
@@ -112,7 +111,6 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 set(
     _CORE_DETAIL_HEADER_FILES
 	"${_INCLUDE_DIR}/detail/stringtemplate.h"
-	"${_INCLUDE_DIR}/detail/config.h"
 	"${_INCLUDE_DIR}/detail/propertyutils.h"
     "${_INCLUDE_DIR}/detail/version.h"
 )
@@ -161,7 +159,6 @@ set(
     _ASSET_HEADER_FILES
 	"${_INCLUDE_DIR}/asset.h"
 	"${_INCLUDE_DIR}/assets.h"
-	"${_INCLUDE_DIR}/primitives.h"
 	"${_INCLUDE_DIR}/light.h"
 	"${_INCLUDE_DIR}/emitter.h"
 	"${_INCLUDE_DIR}/sensor.h"
@@ -175,7 +172,6 @@ set(
 set(
     _ASSET_SOURCE_FILES
 	"assets.cpp"
-	"primitives.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\asset" FILES ${_ASSET_HEADER_FILES})

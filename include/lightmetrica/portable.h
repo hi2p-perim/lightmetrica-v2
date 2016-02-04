@@ -31,6 +31,11 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \addtogroup component
+    \{
+*/
+
 // Most default types fallen here
 template <typename T>
 struct Portable
@@ -101,5 +106,7 @@ struct Portable<const std::string&>
     Portable(const std::string& s) : p(s.c_str()) {}
     auto Get() const -> std::string { return std::string(p); }
 };
+
+//! \}
 
 LM_NAMESPACE_END

@@ -33,20 +33,17 @@ LM_NAMESPACE_BEGIN
 
 class PropertyTree;
 
+//! Type of the property node
 enum class PropertyNodeType : int
 {
     Null,
-    Scalar,
-    Sequence,
-    Map,
+    Scalar,         //!< Scalar type
+    Sequence,       //!< Sequence type
+    Map,            //!< Map type
     Undefined,
 };
 
-/*!
-    Property node.
-
-    An element of the property.
-*/
+//! An element of the property
 class PropertyNode : public Component
 {
 public:
@@ -60,44 +57,34 @@ public:
 
 public:
 
+    //! Get the tree associated to the node
     LM_INTERFACE_F(0, Tree, const PropertyTree*());
+
+    //! Get the current node type
     LM_INTERFACE_F(1, Type, PropertyNodeType());
+
+    //! Get the current line in the loaded property node
     LM_INTERFACE_F(2, Line, int());
 
-    /*!
-        Key of the node.
-        Only available for `Map` type.
-    */
+    //! Key of the node
     LM_INTERFACE_F(3, Key, std::string());
 
-    /*!
-        Scalar value of the node.
-        Only available for `Scalar` type.
-    */
+    //! Scalar value of the node
     LM_INTERFACE_F(4, Scalar, std::string());
+
+    //! Scalar value of the node (raw version)
     LM_INTERFACE_F(5, RawScalar, const char*());
 
-    /*!
-        Get a number of child elements.
-        Only available for `Sequence` type.
-    */
+    //! Get a number of child elements
     LM_INTERFACE_F(6, Size, int());
 
-    /*!
-        Find a child by name.
-        Only available for `Map` type.
-    */
+    //! Find a child by name
     LM_INTERFACE_F(7, Child, const PropertyNode*(const std::string&));
 
-    /*!
-        Get a child by index.
-        Only available for `Sequence` type.
-    */
+    //! Get a child by index
     LM_INTERFACE_F(8, At, const PropertyNode*(int));
 
-    /*!
-        Parent node (nullptr for root node).
-    */
+    //! Parent node (nullptr for root node)
     LM_INTERFACE_F(9, Parent, const PropertyNode*());
 
 public:
@@ -197,7 +184,7 @@ inline auto PropertyNode::As<std::vector<unsigned int>>() const -> std::vector<u
 }
 
 /*!
-    Property tree.
+    \brief Property tree.
     
     Manages tree structure.
     Mainly utilized as asset parameters.
@@ -216,18 +203,16 @@ public:
 
 public:
     
+    //! Load property tree from the file
     LM_INTERFACE_F(0, LoadFromFile, bool(const std::string&));
 
-    /*!
-        Load property from YAML sequences.
-    */
+    //! Load property tree from YAML sequences
     LM_INTERFACE_F(1, LoadFromString, bool(const std::string&));
 
+    //! Returns file path if the tree loaded from the file, otherwise returns empty string
     LM_INTERFACE_F(2, Path, std::string());
 
-    /*!
-        Get root node.
-    */
+    //! Get root node
     LM_INTERFACE_F(3, Root, const PropertyNode*());
 
 };

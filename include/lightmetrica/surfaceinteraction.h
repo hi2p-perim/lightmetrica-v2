@@ -29,28 +29,39 @@
 LM_NAMESPACE_BEGIN
 
 /*!
+    \addtogroup core
+    \{
+*/
+
+/*!
+    \brief Generalized BSDF type.
+    BSDF types of the surface interaction.
 */
 namespace SurfaceInteraction
 {
     enum Type
     {
-        D = 1 << 0,
-        G = 1 << 1,
-        S = 1 << 2,
-        L = 1 << 3,
-        E = 1 << 4,
-        BSDF = D | G | S,
-        Emitter = L | E,
+        D = 1 << 0,         //!< Diffuse
+        G = 1 << 1,         //!< Glossy
+        S = 1 << 2,         //!< Specular
+        L = 1 << 3,         //!< Light
+        E = 1 << 4,         //!< Sensor
+        BSDF = D | G | S,   //!< BSDF flag (D or G or S)
+        Emitter = L | E,    //!< Emitter flag (L or E)
         None = 0
     };
 };
 
 /*!
+    \brief Transport directioin.
+    The direction of light transport.
 */
 enum class TransportDirection
 {
-    LE,
-    EL
+    LE,     //!< Light to sensor (L to E)
+    EL      //!< Sensor to light (E to L)
 };
+
+//! \}
 
 LM_NAMESPACE_END

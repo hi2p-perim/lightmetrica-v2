@@ -40,9 +40,13 @@ struct Ray;
 struct Intersection;
 
 /*!
-    \brief Scene.
+    \defgroup scene Scene
+    \brief Scene configuration of the framework.
+*/
 
-    A base class of the scene.
+/*!
+    \brief A base class of the scene.
+    \ingroup scene
 */
 class Scene : public Component
 {

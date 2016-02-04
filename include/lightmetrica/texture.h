@@ -29,6 +29,16 @@
 
 LM_NAMESPACE_BEGIN
 
+/*!
+    \defgroup texture Texture
+    \brief 2-dimensional textures
+    \ingroup asset
+*/
+
+/*!
+    \brief An interface for 2-dimensional textures.
+    \ingroup texture
+*/
 class Texture : public Asset
 {
 public:
@@ -42,6 +52,11 @@ public:
 
 public:
 
+    /*!
+        \brief Evaluate the texture value.
+        \param uv Texture coordinates.
+        \return Texture color.
+    */
     LM_INTERFACE_F(0, Evaluate, Vec3(const Vec2& uv));
 
 };
