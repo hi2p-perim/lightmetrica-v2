@@ -91,11 +91,6 @@ public:
         return true;
     };
 
-    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
-    {
-        return true;
-    };
-
 public:
 
     LM_IMPL_F(NumVertices) = [this]() -> int { return (int)(ps_.size()) / 3; };

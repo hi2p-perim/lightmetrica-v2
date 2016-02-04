@@ -29,9 +29,6 @@
 #include <lightmetrica/reflection.h>
 #include <lightmetrica/static.h>
 #include <lightmetrica/logger.h>
-#if 0
-#include <lightmetrica/metacounter.h>
-#endif
 #include <lightmetrica/align.h>
 #if LM_DEBUG_MODE
 #include <lightmetrica/debug.h>
@@ -199,9 +196,19 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
 {
 	using InterfaceType = Iface;
     using Type = ReturnType(ArgTypes...);
+    
     Component* o_;
     const char* name_;
-    explicit VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>(Component* o, const char* name) : o_(o), name_(name) {};
+    
+    explicit VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>(Component* o, const char* name)
+        : o_(o), name_(name)
+    {}
+
+    auto Implemented() const -> bool
+    {
+        return o_->vt_[ID].f != nullptr;
+    }
+
     auto operator()(ArgTypes... args) const -> ReturnType
     {
         // Convert argument types to portable types and call the functions stored in the vtable.
@@ -291,43 +298,10 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
     static constexpr int NumInterfaces = BaseType::NumInterfaces + N
 
 // Define interface member function
-#if LM_INTELLISENSE
-    // Nasty workaround for intellisense
-    #define LM_INTERFACE_F(ID, Name, Signature) \
-            const std::function<Signature> Name
-#else
-	// Not creating an alias Name ## _G_ generates an error on GCC
-    #define LM_INTERFACE_F(ID, Name, Signature) \
-            static constexpr int Name ## _ID_ = BaseType::NumInterfaces + ID; \
-			using Name ## _G_ = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>; \
-            const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = Name ## _G_::Get(this, #Name)
-#endif
-
-#if 0
-#define LM_INTERFACE_CLASS(Current, Base) \
-    LM_DEFINE_CLASS_TYPE(Current, Base); \
-    using BaseType = Base; \
-    using InterfaceType = Current; \
-    using UniquePtr = std::unique_ptr<InterfaceType, void(*)(Component*)>
-
-#define LM_INTERFACE_CLASS_END() \
-    static constexpr int NumInterfaces = BaseType::NumInterfaces + MetaCounter<InterfaceType>::Value(); \
-    static auto Stat_() -> void { \
-        LM_LOG_INFO("IFs: " + std::to_string(MetaCounter<InterfaceType>::Value())); \
-        LM_LOG_INFO("Sum IFs: " + std::to_string(NumInterfaces)); \
-    }
-
-// Define interface member function
-#if LM_INTELLISENSE
-    // Nasty workaround for intellisense
-    #define LM_INTERFACE_F(Name, Signature) \
-            const std::function<Signature> Name
-#else
-    #define LM_INTERFACE_F(Name, Signature) \
-            static constexpr int Name ## _ID_ = BaseType::NumInterfaces + MetaCounter<InterfaceType>::Next() - 1; \
-            const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this, #Name)
-#endif
-#endif
+#define LM_INTERFACE_F(ID, Name, Signature) \
+        static constexpr int Name ## _ID_ = BaseType::NumInterfaces + ID; \
+		using Name ## _G_ = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>; \
+        const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = Name ## _G_::Get(this, #Name)
 
 #pragma endregion
 

@@ -61,11 +61,6 @@ public:
         return true;
     };
 
-    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
-    {
-        return true;
-    };
-
     LM_IMPL_F(Type) = [this]() -> int
     {
         return SurfaceInteraction::G;

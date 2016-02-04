@@ -66,7 +66,18 @@ struct A1 final : public A
     };
 };
 
+struct A2 final : public A
+{
+    LM_IMPL_CLASS(A2, A);
+
+    LM_IMPL_F(Func1) = [this](int v) -> void
+    {
+        std::cout << v << std::endl;
+    };
+};
+
 LM_COMPONENT_REGISTER_IMPL_DEFAULT(A1);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(A2);
 
 struct B1 final : public B
 {
@@ -113,9 +124,17 @@ TEST(ComponentTest, Simple)
     }));
 }
 
+TEST(ComponentTest, CheckImplemented)
+{
+    auto p = ComponentFactory::Create<A>("A2");
+    EXPECT_TRUE(p->Func1.Implemented());
+    EXPECT_FALSE(p->Func2.Implemented());
+    EXPECT_FALSE(p->Func3.Implemented());
+}
+
 TEST(ComponentTest, FailedToCreate)
 {
-    auto* p = ComponentFactory::Create("A2");
+    auto* p = ComponentFactory::Create("A3");
     ASSERT_TRUE(p == nullptr);
 }
 

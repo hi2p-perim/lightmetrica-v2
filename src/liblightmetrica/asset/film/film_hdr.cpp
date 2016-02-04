@@ -198,11 +198,6 @@ public:
         return true;
     };
 
-    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
-    {
-        return true;
-    };
-
     LM_IMPL_F(Clone) = [this](Clonable* o) -> void
     {
         auto* film = static_cast<Film_HDR*>(o);

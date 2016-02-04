@@ -116,8 +116,9 @@ public:
         namespace fs = boost::filesystem;
 
         // Skip if directory does not exist
-        if (!fs::exists(fs::path(directory)))
+        if (!fs::is_directory(fs::path(directory)))
         {
+            LM_LOG_WARN("Missing plugin directory '" + directory + "'. Skipping.");
             return;
         }
 

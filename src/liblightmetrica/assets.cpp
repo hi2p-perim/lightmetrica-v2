@@ -139,6 +139,12 @@ public:
     {
         for (const auto& asset : assets_)
         {
+            // Process only if PostLoad function is implemented
+            if (!asset->PostLoad.Implemented())
+            {
+                continue;
+            }
+
             if (!asset->PostLoad(scene))
             {
                 return false;
