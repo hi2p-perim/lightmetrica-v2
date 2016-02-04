@@ -47,7 +47,7 @@ public:
         dist.Clear();
         const auto* fs = primitive->mesh->Faces();
         const auto* ps = primitive->mesh->Positions();
-        for (size_t i = 0; i < primitive->mesh->NumFaces(); i++)
+        for (int i = 0; i < primitive->mesh->NumFaces(); i++)
         {
             unsigned int i1 = fs[3 * i];
             unsigned int i2 = fs[3 * i + 1];

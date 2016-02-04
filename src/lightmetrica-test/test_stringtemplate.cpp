@@ -48,7 +48,7 @@ TEST_F(StringTemplateTest, Expand)
 TEST_F(StringTemplateTest, Expand_Fail)
 {
     EXPECT_EQ("", StringTemplate::Expand("{{a}}", {{"b", "Hello"}}));
-    EXPECT_EQ("", StringTemplate::Expand("{{a}}", {}));
+    EXPECT_EQ("", StringTemplate::Expand("{{a}}", std::unordered_map<std::string, std::string>()));
 }
 
 LM_TEST_NAMESPACE_END

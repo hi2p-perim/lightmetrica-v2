@@ -31,7 +31,7 @@ LM_NAMESPACE_BEGIN
 /*!
     Types.
 */
-enum class Type
+enum class Types
 {
     Class,
 };
@@ -42,7 +42,7 @@ enum class Type
 */
 struct TypeInfo
 {
-    Type type;
+    Types type;
     const char* name;
     struct
     {
@@ -53,7 +53,7 @@ struct TypeInfo
 #define LM_DEFINE_CLASS_TYPE(ClassType, BaseClassType) \
     static TypeInfo Type_() { \
         TypeInfo t; \
-        t.type = Type::Class; \
+        t.type = Types::Class; \
         t.name = #ClassType; \
         t.classT.base = #BaseClassType; \
         return t; \

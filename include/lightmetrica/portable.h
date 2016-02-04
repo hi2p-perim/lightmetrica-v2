@@ -27,6 +27,7 @@
 #include <lightmetrica/macros.h>
 #include <vector>
 #include <string>
+#include <cstring>
 
 LM_NAMESPACE_BEGIN
 

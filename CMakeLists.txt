@@ -198,9 +198,14 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
 
     # Ignore unknown pragma
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-function")
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+
+	# Handle a linker error
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fPIC")
+
+	set(COMMON_LIBRARIES "dl")
 endif()
 
 # Clang

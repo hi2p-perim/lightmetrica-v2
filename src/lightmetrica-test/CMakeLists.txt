@@ -154,7 +154,7 @@ list(APPEND _SOURCE_FILES ${_ASSET_SOURCE_FILES})
 #
 
 pch_add_executable(${_PROJECT_NAME} PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} liblightmetrica)
+target_link_libraries(${_PROJECT_NAME} ${COMMON_LIBRARIES} liblightmetrica)
 add_dependencies(${_PROJECT_NAME} liblightmetrica)
 
 # Solution directory

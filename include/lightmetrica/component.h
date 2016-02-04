@@ -197,6 +197,7 @@ struct VirtualFunction;
 template <int ID, typename Iface, typename ReturnType, typename ...ArgTypes>
 struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
 {
+	using InterfaceType = Iface;
     using Type = ReturnType(ArgTypes...);
     Component* o_;
     const char* name_;
@@ -295,9 +296,11 @@ struct VirtualFunctionGenerator<ID, Iface, ReturnType(ArgTypes...)>
     #define LM_INTERFACE_F(ID, Name, Signature) \
             const std::function<Signature> Name
 #else
+	// Not creating an alias Name ## _G_ generates an error on GCC
     #define LM_INTERFACE_F(ID, Name, Signature) \
             static constexpr int Name ## _ID_ = BaseType::NumInterfaces + ID; \
-            const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>::Get(this, #Name)
+			using Name ## _G_ = VirtualFunctionGenerator<Name ## _ID_, InterfaceType, Signature>; \
+            const VirtualFunction<Name ## _ID_, InterfaceType, Signature> Name = Name ## _G_::Get(this, #Name)
 #endif
 
 #if 0

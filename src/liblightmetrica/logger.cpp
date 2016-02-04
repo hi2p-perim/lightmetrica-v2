@@ -37,6 +37,8 @@
 #pragma clang diagnostic ignored "-Wunused-local-typedef"
 #include <boost/asio.hpp>
 #pragma clang diagnostic pop
+#else
+#include <boost/asio.hpp>
 #endif
 
 #include <tbb/tbb.h>

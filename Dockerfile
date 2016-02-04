@@ -6,15 +6,34 @@ RUN apt-get update -qq
 RUN apt-get install -qq -y git software-properties-common 
 RUN add-apt-repository -y ppa:george-edison55/cmake-3.x
 RUN apt-get update -qq
-RUN apt-get install -qq -y python cmake build-essential libfreeimage-dev libboost-dev libboost-regex-dev libboost-program-options-dev libboost-system-dev libboost-filesystem-dev libboost-coroutine-dev libboost-context-dev freeglut3-dev libxmu-dev libxi-dev libglm-dev libyaml-cpp-dev libtbb-dev libeigen3-dev libctemplate-dev
+RUN apt-get install -qq -y python cmake build-essential libfreeimage-dev freeglut3-dev libxmu-dev libxi-dev libtbb-dev libeigen3-dev wget
+
+# Update to gcc-4.9
+RUN sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+RUN sudo apt-get update -qq
+RUN sudo apt-get install -y gcc-4.9 g++-4.9
+RUN sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
+
+# Install boost
+RUN wget -O boost_1_60_0.tar.bz2 "http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.bz2/download"
+RUN tar --bzip2 -xf boost_1_60_0.tar.bz2
+RUN cd boost_1_60_0 && ./bootstrap.sh --with-libraries=program_options,filesystem,system,regex,coroutine,context && ./b2 -j8
 
 # Install assimp
 RUN git clone --depth=1 --branch v3.1.1 https://github.com/assimp/assimp.git assimp
-RUN mkdir -p assimp/build && cd assimp/build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j 1 && make install
+RUN mkdir -p assimp/build && cd assimp/build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j && make install
 
 # Install embree
-RUN git clone --depth=1 --branch v2.5.1 https://github.com/embree/embree.git embree
-RUN mkdir -p embree/build && cd embree/build && cmake -D CMAKE_BUILD_TYPE=Release -D ENABLE_ISPC_SUPPORT=OFF -D RTCORE_TASKING_SYSTEM=INTERNAL -D ENABLE_TUTORIALS=OFF .. && make -j 1 && make install && cp libembree.so /usr/local/lib
+RUN git clone --depth=1 --branch v2.8.0 https://github.com/embree/embree.git embree
+RUN mkdir -p embree/build && cd embree/build && cmake -D CMAKE_BUILD_TYPE=Release -D ENABLE_ISPC_SUPPORT=OFF -D RTCORE_TASKING_SYSTEM=INTERNAL -D ENABLE_TUTORIALS=OFF .. && make -j && make install && cp libembree.so /usr/local/lib
+
+# Install google-ctemplate
+RUN git clone --depth=1 https://github.com/OlafvdSpek/ctemplate.git ctemplate
+RUN cd ctemplate && ./configure && make -j && make install
+
+# Install yaml-cpp
+RUN git clone --depth=1 https://github.com/jbeder/yaml-cpp.git yaml-cpp
+RUN mkdir -p yaml-cpp/build && cd yaml-cpp/build && cmake -DCMAKE_BUILD_TYPE=Release -D BUILD_SHARED_LIBS=ON .. && make -j && make install
 
 # Add a project file to the container
 COPY . /lightmetrica/

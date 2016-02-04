@@ -249,7 +249,7 @@ namespace
             using FuncPtrType = decltype(&Func); \
             static auto func = []() -> FuncPtrType { \
                 const auto* lib = StaticInit<ExternalPolicy>::Instance().Library(); \
-                const auto* f = reinterpret_cast<FuncPtrType>(lib->GetFuncPointer(#Func)); \
+                const FuncPtrType f = reinterpret_cast<FuncPtrType>(lib->GetFuncPointer(#Func)); \
                 if (!f) std::exit(EXIT_FAILURE); \
                 return f; \
             }(); \

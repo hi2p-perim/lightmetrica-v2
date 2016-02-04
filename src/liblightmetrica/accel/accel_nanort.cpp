@@ -33,6 +33,9 @@
 #include <lightmetrica/intersectionutils.h>
 
 #define NANORT_IMPLEMENTATION
+
+#if LM_COMPILER_MSVC
+
 #pragma warning(push)
 #pragma warning(disable:4244)
 #pragma warning(disable:4267)
@@ -42,6 +45,20 @@
 #pragma warning(disable:4305)
 #include <nanort/nanort.h>
 #pragma warning(pop)
+
+#elif LM_COMPILER_GCC
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#include <nanort/nanort.h>
+#pragma GCC diagnostic pop
+
+#else
+
+#include <nanort/nanort.h>
+
+#endif
 
 LM_NAMESPACE_BEGIN
 

@@ -645,7 +645,7 @@ private:
             PropertyUtils::PrintPrettyError(n);
             return boost::none;
         }
-        LM_LOG_INFO("Type: '" + tn->As<std::string>() + "'");
+        LM_LOG_INFO("Type: '" + tn->template As<std::string>() + "'");
 
         const auto pn = n->Child("params");
         //if (!pn)
@@ -655,17 +655,17 @@ private:
         //    return boost::none;
         //}
 
-        auto p = ComponentFactory::Create<AssetT>(name + "::" + tn->As<std::string>());
+        auto p = ComponentFactory::Create<AssetT>(name + "::" + tn->template As<std::string>());
         if (!p)
         {
-            LM_LOG_ERROR("Failed to create '" + tn->As<std::string>() + "'");
+            LM_LOG_ERROR("Failed to create '" + tn->template As<std::string>() + "'");
             PropertyUtils::PrintPrettyError(tn);
             return boost::none;
         }
 
         if (!p->Initialize(pn))
         {
-            LM_LOG_ERROR("Failed to initialize '" + tn->As<std::string>() + "'");
+            LM_LOG_ERROR("Failed to initialize '" + tn->template As<std::string>() + "'");
             return boost::none;
         }
 

@@ -29,6 +29,7 @@
 #if LM_PLATFORM_WINDOWS
 #include <Windows.h>
 #endif
+#include <cstddef>
 
 LM_NAMESPACE_BEGIN
 
