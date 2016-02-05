@@ -21,19 +21,19 @@ RUN cd boost_1_60_0 && ./bootstrap.sh --with-libraries=program_options,filesyste
 
 # Install assimp
 RUN git clone --depth=1 --branch v3.1.1 https://github.com/assimp/assimp.git assimp
-RUN mkdir -p assimp/build && cd assimp/build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j && make install
+RUN mkdir -p assimp/build && cd assimp/build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j 1 && make install
 
 # Install embree
 RUN git clone --depth=1 --branch v2.8.0 https://github.com/embree/embree.git embree
-RUN mkdir -p embree/build && cd embree/build && cmake -D CMAKE_BUILD_TYPE=Release -D ENABLE_ISPC_SUPPORT=OFF -D RTCORE_TASKING_SYSTEM=INTERNAL -D ENABLE_TUTORIALS=OFF .. && make -j && make install && cp libembree.so /usr/local/lib
+RUN mkdir -p embree/build && cd embree/build && cmake -D CMAKE_BUILD_TYPE=Release -D ENABLE_ISPC_SUPPORT=OFF -D RTCORE_TASKING_SYSTEM=INTERNAL -D ENABLE_TUTORIALS=OFF .. && make -j 1 && make install && cp libembree.so /usr/local/lib
 
 # Install google-ctemplate
 RUN git clone --depth=1 https://github.com/OlafvdSpek/ctemplate.git ctemplate
-RUN cd ctemplate && ./configure && make -j && make install
+RUN cd ctemplate && ./configure && make -j 1 && make install
 
 # Install yaml-cpp
 RUN git clone --depth=1 https://github.com/jbeder/yaml-cpp.git yaml-cpp
-RUN mkdir -p yaml-cpp/build && cd yaml-cpp/build && cmake -DCMAKE_BUILD_TYPE=Release -D BUILD_SHARED_LIBS=ON .. && make -j && make install
+RUN mkdir -p yaml-cpp/build && cd yaml-cpp/build && cmake -DCMAKE_BUILD_TYPE=Release -D BUILD_SHARED_LIBS=ON .. && make -j 1 && make install
 
 # Add a project file to the container
 COPY . /lightmetrica/
@@ -42,6 +42,6 @@ COPY . /lightmetrica/
 RUN find /lightmetrica -print0 | xargs -0 touch
 
 # Build lightmetrica
-RUN mkdir -p lightmetrica/build && cd lightmetrica/build && BOOST_ROOT="" BOOST_INCLUDEDIR="/usr/include" BOOST_LIBRARYDIR="/usr/lib/x86_64-linux-gnu" cmake -DCMAKE_BUILD_TYPE=Release .. && make -j
+RUN mkdir -p lightmetrica/build && cd lightmetrica/build && BOOST_ROOT="" BOOST_INCLUDEDIR="/boost_1_60_0" BOOST_LIBRARYDIR="/boost_1_60_0/stage/lib" cmake -DCMAKE_BUILD_TYPE=Release .. && make -j
 ENV PATH /lightmetrica/build/bin:$PATH
 ENTRYPOINT ["lightmetrica"]
