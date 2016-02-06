@@ -133,7 +133,7 @@ set(
     "${_INCLUDE_DIR}/bound.h"
 )
 
-set(_DSFMT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/src/dSFMT-src-2.2.3")
+set(_DSFMT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external-src/dSFMT-src-2.2.3")
 set(
     _MATH_SOURCE_FILES
     "random.cpp"

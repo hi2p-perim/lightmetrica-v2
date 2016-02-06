@@ -30,7 +30,7 @@ set(_PROJECT_NAME "lightmetrica-test")
 set(_HEADER_FILES_ROOT "Header Files")
 set(_SOURCE_FILES_ROOT "Source Files")
 set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica-test")
-set(_GTEST_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external/src/gtest-1.7.0")
+set(_GTEST_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external-src/gtest-1.7.0")
 
 # --------------------------------------------------------------------------------
 
