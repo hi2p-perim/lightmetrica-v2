@@ -133,15 +133,15 @@ add_definitions(-DCTEMPLATE_DLL_DECL=)           # Use static library
 include_directories(${CTEMPLATE_INCLUDE_DIRS})
 
 # Google test
-include_directories("${PROJECT_SOURCE_DIR}/external/src/gtest-1.7.0")
-include_directories("${PROJECT_SOURCE_DIR}/external/src/gtest-1.7.0/include")
+include_directories("${PROJECT_SOURCE_DIR}/external-src/gtest-1.7.0")
+include_directories("${PROJECT_SOURCE_DIR}/external-src/gtest-1.7.0/include")
 # if (MSVC AND MSVC_VERSION EQUAL 1700)
 #     # Workaround for VS2012
 #     add_definitions(-D_VARIADIC_MAX=10)
 # endif()
 
 # dSFMT
-include_directories("${PROJECT_SOURCE_DIR}/external/src/dSFMT-src-2.2.3")
+include_directories("${PROJECT_SOURCE_DIR}/external-src/dSFMT-src-2.2.3")
 add_definitions(-DDSFMT_MEXP=19937)
 
 # --------------------------------------------------------------------------------
@@ -221,9 +221,6 @@ endif()
 #
 # Include and output directories
 #
-
-# Include directory for header-only libraries
-include_directories("external/include")
 
 # Include directory for generated headers
 include_directories(${PROJECT_BINARY_DIR})
