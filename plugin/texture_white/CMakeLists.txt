@@ -22,22 +22,5 @@
 #  THE SOFTWARE.
 #
 
-set(_PROJECT_NAME "texture_white")
-
-# Create a library 
-add_library(${_PROJECT_NAME} SHARED "texture_white.cpp")
-add_dependencies(${_PROJECT_NAME} liblightmetrica)
-
-# Output directory
-set_target_properties(${_PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/plugin")
-set_target_properties(${_PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/plugin")
-if (MSVC)
-    set_target_properties(${_PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug/plugin")
-    set_target_properties(${_PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release/plugin")
-endif()
-
-# Remove automatic lib- prefix
-set_target_properties(${_PROJECT_NAME} PROPERTIES PREFIX "")
-
-# Solution directory
-set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "plugin")
+include(AddPlugin)
+add_plugin(NAME "texture_white" SOURCE "texture_white.cpp")

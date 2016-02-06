@@ -86,7 +86,7 @@ enum class SubcommandType
 {
     Help,
     Render,
-    Verify,
+    //Verify,
 };
 
 struct ProgramOption
@@ -174,7 +174,7 @@ public:
                     po::options_description renderOpt("Options");
                     renderOpt.add_options()
                         ("help", "Display help message (this message)")
-                        ("scene,s", po::value<std::string>()->required(), "Scene description file")
+                        ("scene,s", po::value<std::string>()->required(), "Scene configuration file")
                         ("output,o", po::value<std::string>()->default_value("result"), "Output image")
                         ("verbose,v", po::bool_switch()->default_value(false), "Adds detailed information on the output");
 
@@ -204,6 +204,7 @@ public:
             
                 // --------------------------------------------------------------------------------
 
+                #if 0
                 #pragma region Process verify subcommand
 
                 if (subcmd == "verify")
@@ -213,6 +214,7 @@ public:
                 }
 
                 #pragma endregion
+                #endif
             }
 
             throw po::invalid_option_value(subcmd);
@@ -261,7 +263,6 @@ public:
         {
             case SubcommandType::Help:   { return ProcessCommand_Help(opt);   }
             case SubcommandType::Render: { return ProcessCommand_Render(opt); }
-            case SubcommandType::Verify: { return ProcessCommand_Verify(opt); }
         }
 
         return false;
@@ -275,17 +276,19 @@ private:
         |
         | Usage: lightmetrica [subcommand] [options]
         | 
+        | Welcome to Lightmetrica!
+        |
+        | Lightmetrica: A modern, research-oriented renderer
+        | Documentation: http://lightmetrica.org/doc
+        |
         | Subcommands:
         | 
-        |     - lightmetrica help
-        |       Print global help message (this message).
-        | 
-        |     - lightmetrica verify
-        |       Verification of the scene file.
-        | 
-        |     - lightmetrica render
-        |       Render the image.
-        |       `lightmetrica render --help` for more detailed help.
+        | - lightmetrica help
+        |   Print global help message (this message).
+        |
+        | - lightmetrica render
+        |   Render the image.
+        |   `lightmetrica render --help` for more detailed help.
         |
         )x"));
         return true;
@@ -602,11 +605,6 @@ private:
         // --------------------------------------------------------------------------------
 
         return true;
-    }
-
-    auto ProcessCommand_Verify(const ProgramOption& opt) -> bool
-    {
-        throw std::runtime_error("not implemented");
     }
 
 private:

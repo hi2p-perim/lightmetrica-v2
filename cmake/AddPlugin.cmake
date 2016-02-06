@@ -22,5 +22,26 @@
 #  THE SOFTWARE.
 #
 
-include(AddPlugin)
-add_plugin(NAME "renderer_normal" SOURCE "renderer_normal.cpp")
+include(CMakeParseArguments)
+
+function(add_plugin)
+    cmake_parse_arguments(_ARG "" "NAME" "SOURCE" ${ARGN})
+
+    # Create a library 
+    add_library(${_ARG_NAME} SHARED ${_ARG_SOURCE})
+    add_dependencies(${_ARG_NAME} liblightmetrica)
+
+    # Output directory
+    set_target_properties(${_ARG_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/plugin")
+    set_target_properties(${_ARG_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/plugin")
+    if (MSVC)
+        set_target_properties(${_ARG_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug/plugin")
+        set_target_properties(${_ARG_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release/plugin")
+    endif()
+
+    # Remove automatic lib- prefix
+    set_target_properties(${_ARG_NAME} PROPERTIES PREFIX "")
+
+    # Solution directory
+    set_target_properties(${_ARG_NAME} PROPERTIES FOLDER "plugin")
+endfunction()

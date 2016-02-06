@@ -23,6 +23,7 @@
 */
 
 #include <lightmetrica/texture.h>
+#include <lightmetrica/property.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -36,16 +37,25 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
+        scale_ = prop->ChildAs<Float>("scale", 100_f);
+        color1_ = prop->ChildAs<Vec3>("color1", Vec3(1_f, 0_f, 0_f));
+        color2_ = prop->ChildAs<Vec3>("color2", Vec3(1_f));
         return true;
     };
 
     LM_IMPL_F(Evaluate) = [this](const Vec2& uv) -> Vec3
     {
-        const Float Scale = 100_f;
-        const int u = (int)(uv.x * Scale);
-        const int v = (int)(uv.y * Scale);
-        return (u + v) % 2 == 0 ? Vec3(1, 0, 0) : Vec3(1);
+        const int u = (int)(uv.x * scale_);
+        const int v = (int)(uv.y * scale_);
+        return (u + v) % 2 == 0 ? color1_ : color2_;
     };
+
+private:
+
+    Float scale_;
+    Vec3 color1_;
+    Vec3 color2_;
+
 };
 
 LM_COMPONENT_REGISTER_IMPL(Texture_Checker, "texture::checker")
