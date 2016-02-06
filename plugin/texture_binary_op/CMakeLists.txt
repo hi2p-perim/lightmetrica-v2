@@ -22,7 +22,5 @@
 #  THE SOFTWARE.
 #
 
-add_subdirectory("texture_checker")
-add_subdirectory("texture_white")
-add_subdirectory("renderer_normal")
-add_subdirectory("texture_binary_op")
+include(AddPlugin)
+add_plugin(NAME "texture_binary_op" SOURCE "texture_binary_op.cpp")
