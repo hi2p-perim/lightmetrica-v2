@@ -42,6 +42,6 @@ COPY . /lightmetrica/
 RUN find /lightmetrica -print0 | xargs -0 touch
 
 # Build lightmetrica
-RUN mkdir -p lightmetrica/build && cd lightmetrica/build && BOOST_ROOT="" BOOST_INCLUDEDIR="/boost_1_60_0" BOOST_LIBRARYDIR="/boost_1_60_0/stage/lib" cmake -DCMAKE_BUILD_TYPE=Release .. && make -j
+RUN mkdir -p lightmetrica/build && cd lightmetrica/build && BOOST_ROOT="" BOOST_INCLUDEDIR="/boost_1_60_0" BOOST_LIBRARYDIR="/boost_1_60_0/stage/lib" cmake -DCMAKE_BUILD_TYPE=Release .. && make -j 1
 ENV PATH /lightmetrica/build/bin:$PATH
 ENTRYPOINT ["lightmetrica"]
