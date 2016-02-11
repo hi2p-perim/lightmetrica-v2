@@ -77,12 +77,10 @@ endif()
 #
 
 # Boost
-if (MSVC)
-    set(Boost_USE_STATIC_LIBS ON)
-    set(Boost_USE_MULTITHREADED ON)
-    set(Boost_USE_STATIC_RUNTIME OFF)
-    add_definitions(-DBOOST_ALL_NO_LIB)
-endif()
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+add_definitions(-DBOOST_ALL_NO_LIB)
 find_package(Boost 1.59 REQUIRED COMPONENTS program_options filesystem system regex coroutine context)
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -232,7 +230,7 @@ include_directories("include")
 include_directories("pch")
 
 # Output directories 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 if (MSVC)
@@ -274,6 +272,15 @@ string(REGEX REPLACE "([0-9]+)/([0-9]+)/([0-9]+) *.*(\n|\r)$" "\\1.\\2.\\3" LM_C
 
 # --------------------------------------------------------------------------------
 
+# rpath settings
+# https://cmake.org/Wiki/CMake_RPATH_handling
+if (APPLE)
+    # Relative to the main executable
+    set(CMAKE_INSTALL_RPATH "@executable_path")
+endif()
+
+# --------------------------------------------------------------------------------
+
 #
 # Project definitions
 #
@@ -306,7 +313,8 @@ FILE(GLOB_RECURSE _PLUGIN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/plugin/*.h")
 install(FILES ${_PLUGIN_FILES} DESTINATION "plugin")
 
 # Example scenes
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/example" DESTINATION ".")
+get_filename_component(_EXAMPLE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/example" REALPATH)
+install(DIRECTORY "${_EXAMPLE_PATH}/" DESTINATION "./example")
 
 # --------------------------------------------------------------------------------
 
@@ -331,9 +339,13 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 if (WIN32)
     set(CPACK_SYSTEM_NAME "win-x86_64")
 elseif(APPLE)
-    set(CPACK_SYSTEM_NAME "Darwin-x86_64")
+    set(CPACK_SYSTEM_NAME "osx-x86_64")
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(CPACK_SYSTEM_NAME "Linux-x86_64")
+    set(CPACK_SYSTEM_NAME "linux-x86_64")
 endif()
+
+# Configuration for DragNDrop installer for OSX
+set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
+set(CPACK_DMG_FORMAT "UDBZ")
 
 include(CPack)

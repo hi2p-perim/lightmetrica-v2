@@ -77,7 +77,7 @@ else()
 	# Find library files
 	find_library(
 		CTEMPLATE_LIBRARY
-		NAMES ctemplate
+		NAMES libctemplate.a ctemplate
 		PATHS
 			/usr/lib64
 			/usr/lib

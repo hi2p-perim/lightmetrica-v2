@@ -70,7 +70,7 @@ else()
 	# Find library files
 	find_library(
 		FREEIMAGE_LIBRARY
-		NAMES freeimage
+		NAMES libfreeimage.a freeimage
 		PATHS
 			/usr/lib64
 			/usr/lib
