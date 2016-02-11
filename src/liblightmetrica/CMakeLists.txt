@@ -40,10 +40,14 @@ set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica")
 
 set(
     _HEADER_FILES
+    "${_INCLUDE_DIR}/lightmetrica.h"
 )
 set(
     _SOURCE_FILES
 )
+
+source_group("${_HEADER_FILES_ROOT}" FILES ${_CORE_HEADER_FILES})
+list(APPEND _HEADER_FILES ${_CORE_HEADER_FILES})
 
 # --------------------------------------------------------------------------------
 
@@ -377,7 +381,9 @@ set_target_properties(${_PROJECT_NAME} PROPERTIES PREFIX "")
 set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "lib")
 
 # Install
-install(TARGETS ${_PROJECT_NAME} RUNTIME DESTINATION bin)
+install(TARGETS ${_PROJECT_NAME}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION bin)
 
 # --------------------------------------------------------------------------------
 

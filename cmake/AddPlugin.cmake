@@ -46,5 +46,7 @@ function(add_plugin)
     set_target_properties(${_ARG_NAME} PROPERTIES FOLDER "plugin")
 
     # Install
-    install(TARGETS ${_ARG_NAME} RUNTIME DESTINATION "bin/plugin")
+    install(TARGETS ${_ARG_NAME}
+        RUNTIME DESTINATION "bin/plugin"
+        LIBRARY DESTINATION "bin/plugin")
 endfunction()

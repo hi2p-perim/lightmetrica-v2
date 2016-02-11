@@ -22,14 +22,7 @@
     THE SOFTWARE.
 */
 
-#include <lightmetrica/renderer.h>
-#include <lightmetrica/scene.h>
-#include <lightmetrica/film.h>
-#include <lightmetrica/ray.h>
-#include <lightmetrica/primitive.h>
-#include <lightmetrica/surfacegeometry.h>
-#include <lightmetrica/emitter.h>
-#include <lightmetrica/intersection.h>
+#include <lightmetrica/lightmetrica.h>
 
 LM_NAMESPACE_BEGIN
 

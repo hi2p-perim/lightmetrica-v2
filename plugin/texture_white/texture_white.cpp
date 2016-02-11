@@ -22,7 +22,7 @@
     THE SOFTWARE.
 */
 
-#include <lightmetrica/texture.h>
+#include <lightmetrica/lightmetrica.h>
 
 LM_NAMESPACE_BEGIN
 
