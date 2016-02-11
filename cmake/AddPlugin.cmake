@@ -44,4 +44,7 @@ function(add_plugin)
 
     # Solution directory
     set_target_properties(${_ARG_NAME} PROPERTIES FOLDER "plugin")
+
+    # Install
+    install(TARGETS ${_ARG_NAME} RUNTIME DESTINATION "bin/plugin")
 endfunction()

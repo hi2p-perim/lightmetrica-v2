@@ -290,3 +290,50 @@ add_subdirectory("src/lightmetrica-test")
 
 # Plugin
 add_subdirectory("plugin")
+
+# --------------------------------------------------------------------------------
+
+#
+# Install
+#
+
+# Include files
+FILE(GLOB _INCLUDE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/lightmetrica/*.h")
+install(FILES ${_INCLUDE_FILES} DESTINATION "include/lightmetrica")
+
+# Plugin sources
+FILE(GLOB_RECURSE _PLUGIN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/plugin/*.h")
+install(FILES ${_PLUGIN_FILES} DESTINATION "plugin")
+
+# Example scenes
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/example" DESTINATION ".")
+
+# --------------------------------------------------------------------------------
+
+#
+# Packaging with CPack
+#
+
+# Package version
+set(CPACK_PACKAGE_VERSION       "${LM_VERSION_MAJOR}.${LM_VERSION_MINOR}.${LM_VERSION_PATCH}.${LM_VERSION_REVISION}")
+set(CPACK_PACKAGE_VERSION_MAJOR ${LM_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${LM_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${LM_VERSION_PATCH})
+
+# Package name, etc.
+set(CPACK_PACKAGE_NAME "Lightmetrica")
+set(CPACK_PACKAGE_VENDOR "Hisanari Otsu")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A modern, research-oriented renderer")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+
+# Platform specific configuration
+if (WIN32)
+    set(CPACK_SYSTEM_NAME "win-x86_64")
+elseif(APPLE)
+    set(CPACK_SYSTEM_NAME "Darwin-x86_64")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(CPACK_SYSTEM_NAME "Linux-x86_64")
+endif()
+
+include(CPack)

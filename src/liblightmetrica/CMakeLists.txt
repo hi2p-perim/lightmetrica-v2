@@ -376,6 +376,9 @@ set_target_properties(${_PROJECT_NAME} PROPERTIES PREFIX "")
 # Solution directory
 set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "lib")
 
+# Install
+install(TARGETS ${_PROJECT_NAME} RUNTIME DESTINATION bin)
+
 # --------------------------------------------------------------------------------
 
 #
@@ -391,18 +394,21 @@ if(WIN32)
             NAME ${_PROJECT_NAME}
             DLL ${BINARY_FILE_NAME})
     endforeach()
+    install(FILES "${EXT_BINARY_FILES}" DESTINATION bin)
 
     # Embree
     add_custom_command_copy_dll_release_debug(
         NAME ${_PROJECT_NAME}
         DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll
         DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/embree.dll)
+    install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll" DESTINATION bin)
 
 	# Assimp
     add_custom_command_copy_dll_release_debug(
         NAME ${_PROJECT_NAME}
         DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll
         DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/assimp-vc140-mtd.dll)
+    install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll" DESTINATION bin)
 
     # TBB
     get_filename_component(_TBB_DLL_PATH_RELEASE "$ENV{TBB_ROOT}/bin/$ENV{TBB_ARCH_PLATFORM}/${_GENERATOR_PREFIX}/tbb.dll" ABSOLUTE)
@@ -411,5 +417,6 @@ if(WIN32)
         NAME ${_PROJECT_NAME}
         DLL_RELEASE ${_TBB_DLL_PATH_RELEASE}
         DLL_DEBUG ${_TBB_DLL_PATH_DEBUG})
+    install(FILES "${_TBB_DLL_PATH_RELEASE}" DESTINATION bin)
 
 endif()
