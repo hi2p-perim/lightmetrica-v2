@@ -37,8 +37,17 @@ LM_TEST_NAMESPACE_BEGIN
 
 struct AccelTest : public ::testing::TestWithParam<const char*>
 {
-    virtual auto SetUp() -> void override { Logger::SetVerboseLevel(2); Logger::Run(); }
-    virtual auto TearDown() -> void override { Logger::Stop(); }
+    virtual auto SetUp() -> void override
+    {
+        Logger::SetVerboseLevel(2); Logger::Run();
+        ComponentFactory::LoadPlugin("./plugin/accel_embree");
+    }
+
+    virtual auto TearDown() -> void override
+    {
+        ComponentFactory::UnloadPlugins();
+        Logger::Stop();
+    }
 };
 
 INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree"));
@@ -292,6 +301,7 @@ TEST_P(AccelTest, Simple2)
     Stub_Scene scene(mesh);
 
     const auto accel = ComponentFactory::Create<Accel>(GetParam());
+    ASSERT_NE(nullptr, accel);
     EXPECT_TRUE(accel->Initialize(nullptr));
     EXPECT_TRUE(accel->Build(&scene));
 

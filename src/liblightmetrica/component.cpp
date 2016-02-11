@@ -99,11 +99,18 @@ public:
 
         // Load plugin
         std::unique_ptr<DynamicLibrary> plugin(new DynamicLibrary);
+        #if LM_PLATFORM_WINDOWS
+        const auto parent = boost::filesystem::path(path).parent_path().string();
+        SetDllDirectory(parent.c_str());
+        #endif
         if (!plugin->Load(path))
         {
             LM_LOG_WARN("Failed to load library: " + path);
             return false;
         }
+        #if LM_PLATFORM_WINDOWS
+        SetDllDirectory(nullptr);
+        #endif
 
         plugins.push_back(std::move(plugin));
 

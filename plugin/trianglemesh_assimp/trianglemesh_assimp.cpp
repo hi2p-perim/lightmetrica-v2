@@ -22,10 +22,13 @@
     THE SOFTWARE.
 */
 
-#include <pch.h>
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/logger.h>
+
+#include <regex>
+#include <vector>
+#include <boost/filesystem.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/DefaultLogger.hpp>

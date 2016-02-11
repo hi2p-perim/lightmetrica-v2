@@ -22,7 +22,6 @@
     THE SOFTWARE.
 */
 
-#include <pch.h>
 #include <lightmetrica/accel.h>
 #include <lightmetrica/scene.h>
 #include <lightmetrica/property.h>
@@ -32,6 +31,8 @@
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/intersectionutils.h>
 #include <lightmetrica/fp.h>
+
+#include <unordered_map>
 
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>

@@ -22,9 +22,24 @@
 #  THE SOFTWARE.
 #
 
-add_subdirectory("texture_checker")
-add_subdirectory("texture_white")
-add_subdirectory("renderer_normal")
-add_subdirectory("texture_binary_op")
-add_subdirectory("accel_embree")
-add_subdirectory("trianglemesh_assimp")
+find_package(Assimp)
+if (ASSIMP_FOUND)
+    include_directories(${ASSIMP_INCLUDE_DIRS})
+
+    include(AddPlugin)
+
+    set(_PROJECT_NAME "trianglemesh_assimp")
+    add_plugin(NAME ${_PROJECT_NAME} SOURCE "trianglemesh_assimp.cpp")
+    target_link_libraries(${_PROJECT_NAME} ${ASSIMP_LIBRARIES} ${Boost_LIBRARIES})
+
+    if (WIN32)
+        include (CopyDLL)
+        add_custom_target(copydlls_assimp)
+        add_custom_command_copy_dll_release_debug(
+            TARGET copydlls_assimp
+            NAME ${_PROJECT_NAME}
+            DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll
+            DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/assimp-vc140-mtd.dll)
+        install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll" DESTINATION bin)
+    endif()
+endif()

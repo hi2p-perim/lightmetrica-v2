@@ -22,9 +22,25 @@
 #  THE SOFTWARE.
 #
 
-add_subdirectory("texture_checker")
-add_subdirectory("texture_white")
-add_subdirectory("renderer_normal")
-add_subdirectory("texture_binary_op")
-add_subdirectory("accel_embree")
-add_subdirectory("trianglemesh_assimp")
+find_package(Embree)
+
+if (EMBREE_FOUND)
+    include_directories(${EMBREE_INCLUDE_DIRS})
+
+    include(AddPlugin)
+
+    set(_PROJECT_NAME "accel_embree")
+    add_plugin(NAME ${_PROJECT_NAME} SOURCE "accel_embree.cpp")
+    target_link_libraries(${_PROJECT_NAME} ${EMBREE_LIBRARIES})
+
+    if (WIN32)
+        include (CopyDLL)
+        add_custom_target(copydlls_embree)
+        add_custom_command_copy_dll_release_debug(
+            TARGET copydlls_embree
+            NAME ${_PROJECT_NAME}
+            DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll
+            DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/embree.dll)
+        install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll" DESTINATION bin)
+    endif()
+endif()

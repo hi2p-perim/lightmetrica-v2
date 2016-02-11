@@ -109,17 +109,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 find_package(TBB REQUIRED)
 include_directories(${TBB_INCLUDE_DIRS})
 
-# Assimp
-find_package(Assimp REQUIRED)
-include_directories(${ASSIMP_INCLUDE_DIRS})
-
 # FreeImage
 find_package(FreeImage REQUIRED)
 include_directories(${FREEIMAGE_INCLUDE_DIRS})
-
-# Embree
-find_package(Embree REQUIRED)
-include_directories(${EMBREE_INCLUDE_DIRS})
 
 # yaml-cpp
 find_package(YamlCpp REQUIRED)

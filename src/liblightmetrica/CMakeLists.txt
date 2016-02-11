@@ -23,7 +23,6 @@
 #
 
 include (PCHTargets)
-include (CopyDLL)
 
 # --------------------------------------------------------------------------------
 
@@ -239,7 +238,6 @@ set(
 	_ASSET_TRIANGLE_MESH_SOURCE_FILES
 	"asset/trianglemesh/trianglemesh_raw.cpp"
 	"asset/trianglemesh/trianglemesh_obj.cpp"
-	"asset/trianglemesh/trianglemesh_assimp.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\trianglemesh" FILES ${_ASSET_TRIANGLE_MESH_SOURCE_FILES})
@@ -310,7 +308,6 @@ list(APPEND _SOURCE_FILES ${_SCENE_SOURCE_FILES})
 set(
     _ACCEL_SOURCE_FILES
 	"accel/accel_naive.cpp"
-	"accel/accel_embree.cpp"
 	"accel/accel_nanort.cpp"
 )
 
@@ -369,7 +366,7 @@ list(APPEND _SOURCE_FILES ${_GENERATED_VERSION_DEF})
 #
 
 pch_add_library(${_PROJECT_NAME} SHARED PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${CTEMPLATE_LIBRARIES} ${EMBREE_LIBRARIES} ${FREEIMAGE_LIBRARIES} ${ASSIMP_LIBRARIES})
+target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${CTEMPLATE_LIBRARIES} ${FREEIMAGE_LIBRARIES})
 
 # Proprocessor definition for exporting symbols
 set_target_properties(${_PROJECT_NAME} PROPERTIES COMPILE_DEFINITIONS "LM_EXPORTS")
@@ -391,35 +388,25 @@ install(TARGETS ${_PROJECT_NAME}
 # Configure automatic copy of dynamic libraries
 #
 
-if(WIN32)
+if (WIN32)
+    include (CopyDLL)
+    add_custom_target(copydlls)
 
     # Libraries in external directory
     file(GLOB EXT_BINARY_FILES "${LM_EXTERNAL_BINARY_PATH}/*.dll")
     foreach(BINARY_FILE_NAME ${EXT_BINARY_FILES})
         add_custom_command_copy_dll(
+            TARGET copydlls
             NAME ${_PROJECT_NAME}
             DLL ${BINARY_FILE_NAME})
     endforeach()
     install(FILES "${EXT_BINARY_FILES}" DESTINATION bin)
 
-    # Embree
-    add_custom_command_copy_dll_release_debug(
-        NAME ${_PROJECT_NAME}
-        DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll
-        DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/embree.dll)
-    install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll" DESTINATION bin)
-
-	# Assimp
-    add_custom_command_copy_dll_release_debug(
-        NAME ${_PROJECT_NAME}
-        DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll
-        DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/assimp-vc140-mtd.dll)
-    install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll" DESTINATION bin)
-
     # TBB
     get_filename_component(_TBB_DLL_PATH_RELEASE "$ENV{TBB_ROOT}/bin/$ENV{TBB_ARCH_PLATFORM}/${_GENERATOR_PREFIX}/tbb.dll" ABSOLUTE)
     get_filename_component(_TBB_DLL_PATH_DEBUG "$ENV{TBB_ROOT}/bin/$ENV{TBB_ARCH_PLATFORM}/${_GENERATOR_PREFIX}/tbb_debug.dll" ABSOLUTE)
     add_custom_command_copy_dll_release_debug(
+        TARGET copydlls
         NAME ${_PROJECT_NAME}
         DLL_RELEASE ${_TBB_DLL_PATH_RELEASE}
         DLL_DEBUG ${_TBB_DLL_PATH_DEBUG})

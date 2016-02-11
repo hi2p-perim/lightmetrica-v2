@@ -33,9 +33,6 @@ if(WIN32)
 
 	include(CMakeParseArguments)
 
-	# Create empty target
-    add_custom_target(copydlls)
-
     #
     # add_custom_command_copy_dll
     #
@@ -50,9 +47,9 @@ if(WIN32)
     #     + Target DLL file
     #
     function(add_custom_command_copy_dll)
-        cmake_parse_arguments(_ARG "" "NAME;DLL" "" ${ARGN})
+        cmake_parse_arguments(_ARG "" "TARGET;NAME;DLL" "" ${ARGN})
         add_custom_command(
-            TARGET copydlls
+            TARGET ${_ARG_TARGET}
             PRE_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     ${_ARG_DLL}
@@ -76,9 +73,9 @@ if(WIN32)
     #     + Target DLL file (debug)
     #
     function(add_custom_command_copy_dll_release_debug)
-        cmake_parse_arguments(_ARG "" "NAME;DLL_RELEASE;DLL_DEBUG" "" ${ARGN})
+        cmake_parse_arguments(_ARG "" "TARGET;NAME;DLL_RELEASE;DLL_DEBUG" "" ${ARGN})
         add_custom_command(
-            TARGET copydlls
+            TARGET ${_ARG_TARGET}
             PRE_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "$<$<CONFIG:release>:${_ARG_DLL_RELEASE}>$<$<CONFIG:debug>:${_ARG_DLL_DEBUG}>"
