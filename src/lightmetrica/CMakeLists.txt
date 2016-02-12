@@ -53,4 +53,4 @@ add_dependencies(${_PROJECT_NAME} liblightmetrica)
 set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "app")
 
 # Install
-install(TARGETS ${_PROJECT_NAME} RUNTIME DESTINATION bin)
+install(TARGETS ${_PROJECT_NAME} RUNTIME DESTINATION "lightmetrica/bin")

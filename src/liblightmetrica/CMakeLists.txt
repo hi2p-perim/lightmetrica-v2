@@ -379,8 +379,8 @@ set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "lib")
 
 # Install
 install(TARGETS ${_PROJECT_NAME}
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION bin)
+    RUNTIME DESTINATION "lightmetrica/bin"
+    LIBRARY DESTINATION "lightmetrica/bin")
 
 # --------------------------------------------------------------------------------
 
@@ -400,7 +400,7 @@ if (WIN32)
             NAME ${_PROJECT_NAME}
             DLL ${BINARY_FILE_NAME})
     endforeach()
-    install(FILES "${EXT_BINARY_FILES}" DESTINATION bin)
+    install(FILES "${EXT_BINARY_FILES}" DESTINATION "lightmetrica/bin")
 
     # TBB
     get_filename_component(_TBB_DLL_PATH_RELEASE "$ENV{TBB_ROOT}/bin/$ENV{TBB_ARCH_PLATFORM}/${_GENERATOR_PREFIX}/tbb.dll" ABSOLUTE)
@@ -410,6 +410,6 @@ if (WIN32)
         NAME ${_PROJECT_NAME}
         DLL_RELEASE ${_TBB_DLL_PATH_RELEASE}
         DLL_DEBUG ${_TBB_DLL_PATH_DEBUG})
-    install(FILES "${_TBB_DLL_PATH_RELEASE}" DESTINATION bin)
+    install(FILES "${_TBB_DLL_PATH_RELEASE}" DESTINATION "lightmetrica/bin")
 
 endif()

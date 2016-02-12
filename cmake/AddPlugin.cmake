@@ -47,6 +47,6 @@ function(add_plugin)
 
     # Install
     install(TARGETS ${_ARG_NAME}
-        RUNTIME DESTINATION "bin/plugin"
-        LIBRARY DESTINATION "bin/plugin")
+        RUNTIME DESTINATION "lightmetrica/bin/plugin"
+        LIBRARY DESTINATION "lightmetrica/bin/plugin")
 endfunction()

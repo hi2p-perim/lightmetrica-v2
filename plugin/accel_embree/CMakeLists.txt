@@ -41,6 +41,6 @@ if (EMBREE_FOUND)
             NAME ${_PROJECT_NAME}
             DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll
             DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/embree.dll)
-        install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll" DESTINATION bin)
+        install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/embree.dll" DESTINATION "lightmetrica/bin/plugin")
     endif()
 endif()

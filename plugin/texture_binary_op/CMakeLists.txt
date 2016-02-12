@@ -24,3 +24,4 @@
 
 include(AddPlugin)
 add_plugin(NAME "texture_binary_op" SOURCE "texture_binary_op.cpp")
+install(FILES "texture_binary_op.cpp" DESTINATION "lightmetrica/plugin")

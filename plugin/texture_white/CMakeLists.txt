@@ -24,3 +24,4 @@
 
 include(AddPlugin)
 add_plugin(NAME "texture_white" SOURCE "texture_white.cpp")
+install(FILES "texture_white.cpp" DESTINATION "lightmetrica/plugin")

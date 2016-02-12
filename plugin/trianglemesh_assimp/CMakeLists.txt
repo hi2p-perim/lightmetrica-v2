@@ -40,6 +40,6 @@ if (ASSIMP_FOUND)
             NAME ${_PROJECT_NAME}
             DLL_RELEASE ${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll
             DLL_DEBUG ${LM_EXTERNAL_BINARY_PATH}/Debug/assimp-vc140-mtd.dll)
-        install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll" DESTINATION bin)
+        install(FILES "${LM_EXTERNAL_BINARY_PATH}/Release/assimp-vc140-mt.dll" DESTINATION "lightmetrica/bin/plugin")
     endif()
 endif()

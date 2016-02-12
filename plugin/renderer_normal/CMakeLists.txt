@@ -24,3 +24,4 @@
 
 include(AddPlugin)
 add_plugin(NAME "renderer_normal" SOURCE "renderer_normal.cpp")
+install(FILES "renderer_normal.cpp" DESTINATION "lightmetrica/plugin")

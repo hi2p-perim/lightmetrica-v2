@@ -298,15 +298,11 @@ add_subdirectory("plugin")
 
 # Include files
 FILE(GLOB _INCLUDE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/lightmetrica/*.h")
-install(FILES ${_INCLUDE_FILES} DESTINATION "include/lightmetrica")
-
-# Plugin sources
-FILE(GLOB_RECURSE _PLUGIN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/plugin/*.h")
-install(FILES ${_PLUGIN_FILES} DESTINATION "plugin")
+install(FILES ${_INCLUDE_FILES} DESTINATION "lightmetrica/include/lightmetrica")
 
 # Example scenes
 get_filename_component(_EXAMPLE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/example" REALPATH)
-install(DIRECTORY "${_EXAMPLE_PATH}/" DESTINATION "./example")
+install(DIRECTORY "${_EXAMPLE_PATH}/" DESTINATION "lightmetrica/example")
 
 # --------------------------------------------------------------------------------
 
@@ -321,7 +317,7 @@ set(CPACK_PACKAGE_VERSION_MINOR ${LM_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${LM_VERSION_PATCH})
 
 # Package name, etc.
-set(CPACK_PACKAGE_NAME "Lightmetrica")
+set(CPACK_PACKAGE_NAME "lightmetrica")
 set(CPACK_PACKAGE_VENDOR "Hisanari Otsu")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A modern, research-oriented renderer")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
