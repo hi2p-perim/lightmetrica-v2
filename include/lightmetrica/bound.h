@@ -25,6 +25,7 @@
 #pragma once
 
 #include <lightmetrica/math.h>
+#include <lightmetrica/ray.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -38,6 +39,8 @@ struct Bound
 {
     Vec3 min{  Math::Inf() };
     Vec3 max{ -Math::Inf() };
+    auto operator[](int i) const -> const Vec3& { return (&min)[i]; }
+    auto operator[](int i)       -> Vec3&       { return (&max)[i]; }
 };
 
 namespace Math
@@ -58,6 +61,33 @@ namespace Math
         r.min = Math::Min(a.min, p);
         r.max = Math::Max(a.max, p);
         return r;
+    }
+
+    //! Intersection query between ray and bound
+    LM_INLINE auto IntersectBound(const Bound& bound, const Ray& ray, Float tMin, Float tMax) -> bool
+    {
+        const bool rayDirNeg[3] = { ray.d.x < 0_f, ray.d.y < 0_f, ray.d.z < 0_f };
+        Float tmin;
+        Float tmax;
+
+        const Float txmax = (bound[1 - rayDirNeg[0]].x - ray.o.x) * (ray.d.x == 0 ? FLT_MAX : 1.0_f / ray.d.x);
+        const Float txmin = (bound[rayDirNeg[0]].x - ray.o.x) * (ray.d.x == 0 ? 0_f : 1.0_f / ray.d.x);
+        tmin = txmin;
+        tmax = txmax;
+
+        const Float tymax = (bound[1 - rayDirNeg[1]].y - ray.o.y) * (ray.d.y == 0 ? FLT_MAX : 1.0_f / ray.d.y);
+        const Float tymin = (bound[rayDirNeg[1]].y - ray.o.y) * (ray.d.y == 0 ? 0_f : 1.0_f / ray.d.y);
+        if ((tmin > tymax) || (tymin > tmax)) return false;
+        if (tymin > tmin) tmin = tymin;
+        if (tymax < tmax) tmax = tymax;
+
+        const Float tzmax = (bound[1 - rayDirNeg[2]].z - ray.o.z) * (ray.d.z == 0 ? FLT_MAX : 1.0_f / ray.d.z);
+        const Float tzmin = (bound[rayDirNeg[2]].z - ray.o.z) * (ray.d.z == 0 ? 0_f : 1.0_f / ray.d.z);
+        if ((tmin > tzmax) || (tzmin > tmax)) return false;
+        if (tzmin > tmin) tmin = tzmin;
+        if (tzmax < tmax) tmax = tzmax;
+
+        return (tmin < tMax) && (tmax > tMin);
     }
 }
 

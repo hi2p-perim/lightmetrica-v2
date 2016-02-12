@@ -286,6 +286,7 @@ set(
     _SCENE_HEADER_FILES
 	"${_INCLUDE_DIR}/scene.h"
 	"${_INCLUDE_DIR}/accel.h"
+	"${_INCLUDE_DIR}/triaccel.h"
 	"${_INCLUDE_DIR}/primitive.h"
 )
 
@@ -309,6 +310,11 @@ set(
     _ACCEL_SOURCE_FILES
 	"accel/accel_naive.cpp"
 	"accel/accel_nanort.cpp"
+	"accel/accel_bvh.cpp"
+	"accel/accel_sahbvh.cpp"
+	"accel/accel_binsahbvh.cpp"
+	"accel/accel_xyzsahbvh.cpp"
+	"accel/accel_qbvh.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\accel" FILES ${_ACCEL_SOURCE_FILES})
