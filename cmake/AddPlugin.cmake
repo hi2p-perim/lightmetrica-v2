@@ -25,7 +25,7 @@
 include(CMakeParseArguments)
 
 function(add_plugin)
-    cmake_parse_arguments(_ARG "" "NAME" "SOURCE" ${ARGN})
+    cmake_parse_arguments(_ARG "NO_INSTALL" "NAME" "SOURCE" ${ARGN})
 
     # Create a library 
     add_library(${_ARG_NAME} SHARED ${_ARG_SOURCE})
@@ -46,7 +46,9 @@ function(add_plugin)
     set_target_properties(${_ARG_NAME} PROPERTIES FOLDER "plugin")
 
     # Install
-    install(TARGETS ${_ARG_NAME}
-        RUNTIME DESTINATION "lightmetrica/bin/plugin"
-        LIBRARY DESTINATION "lightmetrica/bin/plugin")
+    if (NOT _ARG_NO_INSTALL)
+        install(TARGETS ${_ARG_NAME}
+            RUNTIME DESTINATION "lightmetrica/bin/plugin"
+            LIBRARY DESTINATION "lightmetrica/bin/plugin")
+    endif()
 endfunction()

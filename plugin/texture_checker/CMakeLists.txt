@@ -23,5 +23,5 @@
 #
 
 include(AddPlugin)
-add_plugin(NAME "texture_checker" SOURCE "texture_checker.cpp")
+add_plugin(NAME "texture_checker" SOURCE "texture_checker.cpp" NO_INSTALL)
 install(FILES "texture_checker.cpp" DESTINATION "lightmetrica/plugin")
