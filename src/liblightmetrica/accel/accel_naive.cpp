@@ -90,7 +90,7 @@ public:
 
     LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
-        bool intersected = false;
+        bool hit = false;
         size_t minIndex = 0;
         Vec2 minB;
 
@@ -100,14 +100,14 @@ public:
             Vec2 b;
             if (triangles_[i].Intersect(ray, minT, maxT, b[0], b[1], t))
             {
-                intersected = true;
+                hit = true;
                 maxT = t;
                 minIndex = i;
                 minB = b;
             }
         }
 
-        if (!intersected)
+        if (!hit)
         {
             return false;
         }

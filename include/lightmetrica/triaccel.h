@@ -134,7 +134,7 @@ struct TriAccelTriangle
         }
         #endif
 
-        // Calculate the plane intersection (Typo in the thesis?)
+        // Calculate the plane intersection
         t = (n_d - o_u*n_u - o_v*n_v - o_k) / (d_u * n_u + d_v * n_v + d_k);
         if (t < mint || t > maxt)
         {
@@ -149,7 +149,7 @@ struct TriAccelTriangle
         u = hv * b_nu + hu * b_nv;
         v = hu * c_nu + hv * c_nv;
 
-        return u >= 0 && v >= 0 && u + v <= 1;
+        return u >= 0_f && v >= 0_f && u + v <= 1_f;
     }
 
 };

@@ -311,9 +311,9 @@ set(
 	"accel/accel_naive.cpp"
 	"accel/accel_nanort.cpp"
 	"accel/accel_bvh.cpp"
-	"accel/accel_sahbvh.cpp"
-	"accel/accel_binsahbvh.cpp"
-	"accel/accel_xyzsahbvh.cpp"
+	"accel/accel_bvh_sah.cpp"
+	"accel/accel_bvh_sahbin.cpp"
+	"accel/accel_bvh_sahxyz.cpp"
 	"accel/accel_qbvh.cpp"
 )
 
@@ -335,6 +335,7 @@ set(
     _RENDERER_SOURCE_FILES
 	"renderer/renderer_null.cpp"
 	"renderer/renderer_raycast.cpp"
+	"renderer/renderer_raycast_pixel.cpp"
 	"renderer/renderer_pt.cpp"
 	"renderer/renderer_ptdirect.cpp"
 	"renderer/renderer_lt.cpp"

@@ -54,11 +54,11 @@ struct BVHNode
     };
 };
 
-class Accel_BVH final : public Accel
+class Accel_BVHSAHBin final : public Accel
 {
 public:
 
-    LM_IMPL_CLASS(Accel_BVH, Accel);
+    LM_IMPL_CLASS(Accel_BVHSAHBin, Accel);
 
 public:
 
@@ -122,9 +122,14 @@ public:
             nodes_.emplace_back(new BVHNode);
             auto* node = nodes_[idx].get();
 
+            // Current bound & centroid bound
+            node->bound = Bound();
+            Bound centroldBound;
             for (int i = begin; i < end; i++)
             {
-                node->bound = Math::Union(node->bound, bounds_[i]);
+                const auto bound = bounds_[indices_[i]];
+                node->bound = Math::Union(node->bound, bound);
+                centroldBound = Math::Union(centroldBound, bound.Centroid());
             }
 
             // Leaf node
@@ -137,16 +142,85 @@ public:
                 return idx;
             }
 
+            // Select longest axis
+            int axis = node->bound.LongestAxis();
+
+            // Sort along the longest axis with bin sort
+            // In order to guarantee the existence of a split position we utilizes centroid bounds
+            const int NumBins = 100;
+            Bound bounds[NumBins];
+            int counts[NumBins] = { 0 };
+            for (int i = begin; i < end; i++)
+            {
+                const auto b = bounds_[indices_[i]];
+                const Float min = centroldBound.min[axis];
+                const Float max = centroldBound.max[axis];
+                int triIdx = std::min((int)((b.Centroid()[axis] - min) / (max - min) * NumBins), NumBins - 1);
+                bounds[triIdx] = Math::Union(bounds[triIdx], b);
+                counts[triIdx]++;
+            }
+
+            // Compute local SAH costs
+            Float costs[NumBins - 1];
+            for (int split = 0; split < NumBins - 1; split++)
+            {
+                // Compute bounds of split parts
+                Bound bound1;
+                Bound bound2;
+                int n1 = 0;
+                int n2 = 0;
+
+                for (int i = 0; i <= split; i++)
+                {
+                    bound1 = Math::Union(bound1, bounds[i]);
+                    n1 += counts[i];
+                }
+
+                for (int i = split + 1; i < NumBins; i++)
+                {
+                    bound2 = Math::Union(bound2, bounds[i]);
+                    n2 += counts[i];
+                }
+
+                // Compute local SAH cost
+                const Float Cb = 0.125_f;
+                const Float C1 = n1 > 0 ? bound1.SurfaceArea() * n1 : 0_f;
+                const Float C2 = n2 > 0 ? bound2.SurfaceArea() * n2 : 0_f;
+                costs[split] = Cb + (C1 + C2) / node->bound.SurfaceArea();
+            }
+
+            // Find minimum partition with minimum local cost
+            const int minSplitIdx = (int)(std::distance(costs, std::min_element(costs, costs + NumBins - 1)));
+
+            // If minimum cost is beyond the cost with leaf node (i.e. end - begin) create a leaf node
+            if (costs[minSplitIdx] > (Float)(end - begin))
+            {
+                node->isleaf = true;
+                node->leaf.begin = begin;
+                node->leaf.end = end;
+                return idx;
+            }
+
+            // Split index for objects
+            const int mid = begin + (int)(std::distance(indices_.begin() + begin, std::partition(indices_.begin() + begin, indices_.begin() + end, [&](int i) -> bool
+            {
+                const auto c = bounds_[i].Centroid()[axis];
+                const Float min = centroldBound.min[axis];
+                const Float max = centroldBound.max[axis];
+                int idx = std::min((int)((c - min) / (max - min) * NumBins), NumBins - 1);
+                return idx <= minSplitIdx;
+            })));
+
             // Intermediate node
-            const int mid = begin + (end - begin) / 2;
             node->isleaf = false;
             node->internal.child1 = Build_(begin, mid);
             node->internal.child2 = Build_(mid, end);
-
             return idx;
         };
 
         nodes_.clear();
+        indices_.assign(triangles_.size(), 0);
+        std::iota(indices_.begin(), indices_.end(), 0);
         Build_(0, (int)(triangles_.size()));
 
         #pragma endregion
@@ -179,11 +253,11 @@ public:
                 {
                     Float t;
                     Vec2 b;
-                    if (triangles_[i].Intersect(ray, minT, maxT, b[0], b[1], t))
+                    if (triangles_[indices_[i]].Intersect(ray, minT, maxT, b[0], b[1], t))
                     {
                         hit = true;
                         maxT = t;
-                        minIndex = i;
+                        minIndex = indices_[i];
                         minB = b;
                     }
                 }
@@ -215,9 +289,10 @@ private:
 
     std::vector<TriAccelTriangle> triangles_;
     std::vector<std::unique_ptr<BVHNode>> nodes_;
+    std::vector<int> indices_;                      // Triangle indices
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Accel_BVH, "accel::bvh");
+LM_COMPONENT_REGISTER_IMPL(Accel_BVHSAHBin, "accel::bvh_sahbin");
 
 LM_NAMESPACE_END

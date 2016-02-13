@@ -54,11 +54,11 @@ struct BVHNode
     };
 };
 
-class Accel_BVH final : public Accel
+class Accel_BVHSAH final : public Accel
 {
 public:
 
-    LM_IMPL_CLASS(Accel_BVH, Accel);
+    LM_IMPL_CLASS(Accel_BVHSAH, Accel);
 
 public:
 
@@ -122,9 +122,11 @@ public:
             nodes_.emplace_back(new BVHNode);
             auto* node = nodes_[idx].get();
 
+            // Current bound
+            node->bound = Bound();
             for (int i = begin; i < end; i++)
             {
-                node->bound = Math::Union(node->bound, bounds_[i]);
+                node->bound = Math::Union(node->bound, bounds_[indices_[i]]);
             }
 
             // Leaf node
@@ -137,16 +139,66 @@ public:
                 return idx;
             }
 
+            // Determine split index
+            int mid = 0;
+
+            // Select longest axis
+            int axis = node->bound.LongestAxis();
+
+            // Sort along the longest axis
+            std::sort(indices_.begin() + begin, indices_.begin() + end, [&](int v1, int v2) -> bool
+            {
+                return bounds_[v1].Centroid()[axis] < bounds_[v2].Centroid()[axis];
+            });
+
+            // Compute local SAH costs
+            const int NumSplitCandidates = std::min(100, end - begin - 2);
+            std::vector<Float> costs(NumSplitCandidates);
+            for (int split = 0; split < NumSplitCandidates; split++)
+            {
+                // Object split index
+                const int objSplitIndex = begin + 1 + split * (end - begin - 2) / NumSplitCandidates;
+
+                // Compute bounds of split parts
+                Bound bound1;
+                Bound bound2;
+                for (int i = begin; i < end; i++)
+                {
+                    const auto b = bounds_[indices_[i]];
+                    if (i < objSplitIndex) bound1 = Math::Union(bound1, b);
+                    else bound2 = Math::Union(bound2, b);
+                }
+
+                // Compute local SAH cost
+                const Float Cb = 0.125_f;
+                const int n1 = objSplitIndex - begin;
+                const int n2 = end - objSplitIndex;
+                costs[split] = Cb + (bound1.SurfaceArea() * n1 + bound2.SurfaceArea() * n2) / node->bound.SurfaceArea();
+            }
+
+            // Select split position with minimum local cost
+            const int split = (int)(std::distance(costs.begin(), std::min_element(costs.begin(), costs.end())));
+            mid = begin + 1 + split * (end - begin - 2) / NumSplitCandidates;
+
+            // If minimum cost is beyond the cost with leaf node (i.e. end - begin) create a leaf node
+            if (costs[split] > (Float)(end - begin))
+            {
+                node->isleaf = true;
+                node->leaf.begin = begin;
+                node->leaf.end = end;
+                return idx;
+            }
+
             // Intermediate node
-            const int mid = begin + (end - begin) / 2;
             node->isleaf = false;
             node->internal.child1 = Build_(begin, mid);
             node->internal.child2 = Build_(mid, end);
-
             return idx;
         };
 
         nodes_.clear();
+        indices_.assign(triangles_.size(), 0);
+        std::iota(indices_.begin(), indices_.end(), 0);
         Build_(0, (int)(triangles_.size()));
 
         #pragma endregion
@@ -179,11 +231,11 @@ public:
                 {
                     Float t;
                     Vec2 b;
-                    if (triangles_[i].Intersect(ray, minT, maxT, b[0], b[1], t))
+                    if (triangles_[indices_[i]].Intersect(ray, minT, maxT, b[0], b[1], t))
                     {
                         hit = true;
                         maxT = t;
-                        minIndex = i;
+                        minIndex = indices_[i];
                         minB = b;
                     }
                 }
@@ -215,9 +267,10 @@ private:
 
     std::vector<TriAccelTriangle> triangles_;
     std::vector<std::unique_ptr<BVHNode>> nodes_;
+    std::vector<int> indices_;                      // Triangle indices
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Accel_BVH, "accel::bvh");
+LM_COMPONENT_REGISTER_IMPL(Accel_BVHSAH, "accel::bvh_sah");
 
 LM_NAMESPACE_END

@@ -37,10 +37,30 @@ LM_NAMESPACE_BEGIN
 //! Axis-aligned bounding box.
 struct Bound
 {
-    Vec3 min{  Math::Inf() };
-    Vec3 max{ -Math::Inf() };
+
+    Vec3 min = Vec3( Math::Inf());
+    Vec3 max = Vec3(-Math::Inf());
+
     auto operator[](int i) const -> const Vec3& { return (&min)[i]; }
     auto operator[](int i)       -> Vec3&       { return (&max)[i]; }
+
+    auto LongestAxis() const -> int
+    {
+        const auto d = max - min;
+        return d.x > d.y && d.x > d.z ? 0 : d.y > d.z ? 1 : 2;
+    }
+
+    auto SurfaceArea() const -> Float
+    {
+        const auto d = max - min;
+        return 2_f * (d.x * d.y + d.y * d.z + d.z * d.x);
+    }
+
+    auto Centroid() const -> Vec3
+    {
+        return (min + max) * 0.5_f;
+    }
+
 };
 
 namespace Math

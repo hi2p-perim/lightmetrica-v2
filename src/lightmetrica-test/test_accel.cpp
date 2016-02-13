@@ -50,7 +50,7 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
     }
 };
 
-INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree"));
+INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree", "accel::bvh", "accel::bvh_sah", "accel::bvh_sahbin", "accel::bvh_sahxyz", "accel::qbvh"));
 
 #pragma endregion
 

@@ -528,7 +528,7 @@ private:
 
         #pragma region Initialize accel
         
-        const auto accel = InitializeConfigurable<Accel>(root, "accel", "embree");
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "embree", "qbvh" });
         if (!accel)
         {
             return false;
@@ -611,7 +611,7 @@ private:
 
     // Function to initialize configurable component
     template <typename AssetT>
-    auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::string& def = "") -> boost::optional<typename AssetT::UniquePtr>
+    auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::vector<std::string>& defs = {}) -> boost::optional<typename AssetT::UniquePtr>
     {
         static_assert(std::is_base_of<Configurable, AssetT>::value, "AssetT must inherits Configurable");
 
@@ -621,19 +621,31 @@ private:
         const auto* n = root->Child(name);
         if (!n)
         {
-            if (!def.empty())
-            {
-                LM_LOG_WARN("Missing '" + name + "' node");
-                LM_LOG_INDENTER();
-                LM_LOG_WARN("Using default type: '" + def + "'");
-                return ComponentFactory::Create<AssetT>(name + "::" + def);
-            }
-            else
+            if (defs.empty())
             {
                 LM_LOG_ERROR("Missing '" + name + "' node");
                 PropertyUtils::PrintPrettyError(root);
                 return boost::none;
             }
+
+            LM_LOG_WARN("Missing '" + name + "' node");
+            LM_LOG_INDENTER();
+
+            for (const auto& def : defs)
+            {
+                LM_LOG_WARN("Using default type '" + def + "'");
+                LM_LOG_INDENTER();
+                auto p = ComponentFactory::Create<AssetT>(name + "::" + def);
+                if (p == nullptr)
+                {
+                    LM_LOG_WARN("Failed to create '" + def + "'. Trying next candidate..");
+                    continue;
+                }
+                return std::move(p);
+            }
+
+            LM_UNREACHABLE();
+            return boost::none;
         }
 
         const auto tn = n->Child("type");

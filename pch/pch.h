@@ -34,6 +34,7 @@
 #include <chrono>
 #include <regex>
 #include <tuple>
+#include <numeric>
 
 #include <boost/format.hpp>
 //#include <boost/scoped_array.hpp>
