@@ -53,7 +53,7 @@ struct Ray4
     }
 };
 
-struct QBVHNode
+struct QBVHNode : public SIMDAlignedType
 {
     // Constant which indicates a empty leaf node
     static const int EmptyLeafNode = 0xffffffff;
@@ -74,10 +74,7 @@ struct QBVHNode
     int children[4];
 
 public:
-    void* operator new(std::size_t size){ return _aligned_malloc(size, 16); }
-    void operator delete(void* p) { _aligned_free(p); }
 
-public:
     QBVHNode()
     {
         for (int i = 0; i < 3; i++)
@@ -362,7 +359,6 @@ public:
                     // Set information to parent node
                     nodes_[parent]->createIntermediateNode(child, current);
                     nodes_[parent]->setBound(child, bound);
-                    const auto& parentNode = nodes_[parent];
 
                     // Child indices
                     child1 = 0;

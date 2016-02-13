@@ -528,7 +528,7 @@ private:
 
         #pragma region Initialize accel
         
-        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "embree", "qbvh" });
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "qbvh" });
         if (!accel)
         {
             return false;

@@ -90,18 +90,18 @@ namespace Math
         Float tmin;
         Float tmax;
 
-        const Float txmax = (bound[1 - rayDirNeg[0]].x - ray.o.x) * (ray.d.x == 0 ? FLT_MAX : 1.0_f / ray.d.x);
+        const Float txmax = (bound[1 - rayDirNeg[0]].x - ray.o.x) * (ray.d.x == 0 ? Math::Inf() : 1.0_f / ray.d.x);
         const Float txmin = (bound[rayDirNeg[0]].x - ray.o.x) * (ray.d.x == 0 ? 0_f : 1.0_f / ray.d.x);
         tmin = txmin;
         tmax = txmax;
 
-        const Float tymax = (bound[1 - rayDirNeg[1]].y - ray.o.y) * (ray.d.y == 0 ? FLT_MAX : 1.0_f / ray.d.y);
+        const Float tymax = (bound[1 - rayDirNeg[1]].y - ray.o.y) * (ray.d.y == 0 ? Math::Inf() : 1.0_f / ray.d.y);
         const Float tymin = (bound[rayDirNeg[1]].y - ray.o.y) * (ray.d.y == 0 ? 0_f : 1.0_f / ray.d.y);
         if ((tmin > tymax) || (tymin > tmax)) return false;
         if (tymin > tmin) tmin = tymin;
         if (tymax < tmax) tmax = tymax;
 
-        const Float tzmax = (bound[1 - rayDirNeg[2]].z - ray.o.z) * (ray.d.z == 0 ? FLT_MAX : 1.0_f / ray.d.z);
+        const Float tzmax = (bound[1 - rayDirNeg[2]].z - ray.o.z) * (ray.d.z == 0 ? Math::Inf() : 1.0_f / ray.d.z);
         const Float tzmin = (bound[rayDirNeg[2]].z - ray.o.z) * (ray.d.z == 0 ? 0_f : 1.0_f / ray.d.z);
         if ((tmin > tzmax) || (tzmin > tmax)) return false;
         if (tzmin > tmin) tmin = tzmin;
