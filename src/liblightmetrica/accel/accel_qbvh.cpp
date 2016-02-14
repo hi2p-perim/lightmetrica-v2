@@ -88,7 +88,7 @@ public:
         }
     }
 
-    void setBound(int childIndex, const Bound& bound)
+    auto SetBound(int childIndex, const Bound& bound) -> void
     {
         for (int axis = 0; axis < 3; axis++)
         {
@@ -97,7 +97,7 @@ public:
         }
     }
 
-    void createLeaf(int childIndex, unsigned int size, unsigned int offset)
+    auto CreateLeaf(int childIndex, unsigned int size, unsigned int offset) -> void
     {
         if (size == 0)
         {
@@ -111,18 +111,18 @@ public:
         }
     }
 
-    void createIntermediateNode(int childIndex, unsigned int index)
+    auto CreateIntermediateNode(int childIndex, unsigned int index) -> void
     {
         children[childIndex] = static_cast<int>(index);
     }
 
-    static void extractLeafData(int data, unsigned int& size, unsigned int& offset)
+    static auto ExtractLeafData(int data, unsigned int& size, unsigned int& offset) -> void
     {
         size = static_cast<unsigned int>(((data >> 27) & 0xf) + 1);
         offset = data & 0x07ffffff;
     }
 
-    int intersect(const Ray4& ray4, const __m128 invRayDirMinT[3], const __m128 invRayDirMaxT[3], const int rayDirSign[3], float _minT, float _maxT)
+    auto Intersect(const Ray4& ray4, const __m128 invRayDirMinT[3], const __m128 invRayDirMaxT[3], const int rayDirSign[3], float _minT, float _maxT) -> int
     {
         __m128 minT = _mm_set1_ps(_minT);
         __m128 maxT = _mm_set1_ps(_maxT);
@@ -220,8 +220,8 @@ public:
             if (end - begin < LeafNumNodes)
             {
                 const auto& node = nodes_[parent];
-                node->setBound(child, bound);
-                node->createLeaf(child, end - begin, begin);
+                node->SetBound(child, bound);
+                node->CreateLeaf(child, end - begin, begin);
                 return;
             }
 
@@ -357,8 +357,8 @@ public:
                     nodes_.emplace_back(new QBVHNode, [](QBVHNode* p){ delete p; });
 
                     // Set information to parent node
-                    nodes_[parent]->createIntermediateNode(child, current);
-                    nodes_[parent]->setBound(child, bound);
+                    nodes_[parent]->CreateIntermediateNode(child, current);
+                    nodes_[parent]->SetBound(child, bound);
 
                     // Child indices
                     child1 = 0;
@@ -449,7 +449,7 @@ public:
 
                 // Intersection with objects
                 unsigned int size, offset;
-                QBVHNode::extractLeafData(data, size, offset);
+                QBVHNode::ExtractLeafData(data, size, offset);
                 for (unsigned int i = offset; i < offset + size; i++)
                 {
                     Float t;
@@ -469,11 +469,8 @@ public:
             {
                 #pragma region Intermediate node
 
-                #if MIRO_ENABLE_ACCEL_STAT 
-                m_stat.rayBoundIsect += 4;
-                #endif
                 const auto& node = nodes_[data];
-                int mask = node->intersect(ray4, invRayDirMinT, invRayDirMaxT, rayDirSign, minT, maxT);
+                int mask = node->Intersect(ray4, invRayDirMinT, invRayDirMaxT, rayDirSign, minT, maxT);
                 if (mask & 0x1) stack[++stackIndex] = node->children[0];
                 if (mask & 0x2) stack[++stackIndex] = node->children[1];
                 if (mask & 0x4) stack[++stackIndex] = node->children[2];
