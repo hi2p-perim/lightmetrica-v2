@@ -15,7 +15,7 @@ Documentation
 
 - [Documentation](http://lightmetrica.org/doc)
 - [Developer's guide](http://lightmetrica.org/doc/dev_guide/)
-- [API documnetation](http://doc.lightmetrica.org)
+- [API documentation](http://doc.lightmetrica.org)
 
 Discussions
 --------------------
