@@ -29,7 +29,7 @@ RUN mkdir -p embree/build && cd embree/build && cmake -D CMAKE_BUILD_TYPE=Releas
 
 # Install google-ctemplate
 RUN git clone --depth=1 https://github.com/OlafvdSpek/ctemplate.git ctemplate
-RUN cd ctemplate && ./configure && make -j 1 && make install
+RUN cd ctemplate && ./configure --enable-shared --with-pic && make -j 1 && make install
 
 # Install yaml-cpp
 RUN git clone --depth=1 https://github.com/jbeder/yaml-cpp.git yaml-cpp
