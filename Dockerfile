@@ -17,7 +17,7 @@ RUN sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --sl
 # Install boost
 RUN wget -O boost_1_60_0.tar.bz2 "http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.bz2/download"
 RUN tar --bzip2 -xf boost_1_60_0.tar.bz2
-RUN cd boost_1_60_0 && ./bootstrap.sh --with-libraries=program_options,filesystem,system,regex,coroutine,context && ./b2 -j8
+RUN cd boost_1_60_0 && ./bootstrap.sh --with-libraries=program_options,filesystem,system,regex,coroutine,context && ./b2 cxxflags=-fPIC cflags=-fPIC link=static -j8
 
 # Install assimp
 RUN git clone --depth=1 --branch v3.1.1 https://github.com/assimp/assimp.git assimp
