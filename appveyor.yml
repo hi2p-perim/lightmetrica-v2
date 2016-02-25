@@ -10,13 +10,11 @@ clone_folder: c:\projects\lightmetrica-v2
 environment:
   BOOST_INCLUDEDIR: C:\Libraries\boost_1_59_0
   BOOST_LIBRARYDIR: C:\Libraries\boost_1_59_0\lib64-msvc-14.0
-  TBB_ROOT: C:\tbb\tbb44_20151115oss
+  TBB_ROOT: C:\projects\lightmetrica-v2\external\src\tbb44_20150928oss
   TBB_ARCH_PLATFORM: intel64
 
 install:
   - git clone https://github.com/hi2p-perim/lightmetrica-v2-external.git C:\projects\lightmetrica-v2\external
-  - curl https://www.threadingbuildingblocks.org/sites/default/files/software_releases/windows/tbb44_20151115oss_win_0.zip > C:\tbb.zip
-  - 7z x C:\tbb.zip -oc:\tbb -y > nul
 
 build_script:
   - cd C:\projects\lightmetrica-v2
