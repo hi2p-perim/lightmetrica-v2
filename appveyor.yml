@@ -19,7 +19,7 @@ install:
   - 7z x C:\tbb.zip -oc:\tbb -y > nul
 
 build_script:
-  - cd c:\projects\lightmetrica
+  - cd C:\projects\lightmetrica-v2
   - md build
   - cd build
   - cmake -G "Visual Studio 14 Win64" ..
