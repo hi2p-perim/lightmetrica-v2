@@ -575,19 +575,19 @@ public:
         initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
         #endif
 
-        sched_->Process(scene, film, &initRng, [this](const Scene* scene, Film* film, Random* rng)
+        static thread_local Path subpathL, subpathE;
+        static thread_local Path path;
+
+        sched_->Process(scene, film, &initRng, [&](const Scene* scene, Film* film, Random* rng)
         {
-            Path subpathL, subpathE;		// BDPT subpaths
-            Path path;						// BDPT fullpath
-
-            // --------------------------------------------------------------------------------
-
             #pragma region Sample subpaths
 
+            subpathL.vertices.clear();
+            subpathE.vertices.clear();
             subpathL.SampleSubpath(scene, rng, TransportDirection::LE, maxNumVertices_);
             subpathE.SampleSubpath(scene, rng, TransportDirection::EL, maxNumVertices_);
 
-            #pragma endregion
+            #pragma endregion 
 
             // --------------------------------------------------------------------------------
 

@@ -72,13 +72,13 @@ public:
         the surface position on the scene.
 
         \param u            Uniform random number in [0,1]^2.
-        \param uComp        Uniform random number for component selection in [0,1].
+        \param uComp        Uniform random number for component selection etc. in [0,1].
         \param queryType    SurfaceInteraction type for the sample query.
         \param geom         Surface geometry information of the surface point.
         \param wi           Incident direction.
         \param wo           Sampled outgoing direction.
     */
-    LM_INTERFACE_F(1, SampleDirection, void(const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo));
+    LM_INTERFACE_F(1, SampleDirection, void(const Vec2& u, Float u2, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo));
 
     /*!
         \brief Evaluate PDF with the direction.

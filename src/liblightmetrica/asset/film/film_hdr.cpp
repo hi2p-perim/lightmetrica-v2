@@ -166,12 +166,14 @@ enum class HDRImageType
 {
     RadianceHDR,
     OpenEXR,
+    PNG,
 };
 
 const std::string HDRImageType_String[] =
 {
     "radiancehdr",
     "openexr",
+    "png",
 };
 
 LM_ENUM_TYPE_MAP(HDRImageType);
@@ -239,6 +241,7 @@ public:
 
     LM_IMPL_F(Save) = [this](const std::string& path) -> bool
     {
+        #if 0
         boost::filesystem::path p(path);
         {
             // Check if extension is already contained in `path`
@@ -260,6 +263,23 @@ public:
         }
 
         return SaveImage(p.string(), data_, width_, height_);
+        #endif
+
+        auto p = path;
+        if (type_ == HDRImageType::RadianceHDR)
+        {
+            p += ".hdr";
+        }
+        else if (type_ == HDRImageType::OpenEXR)
+        {
+            p += ".exr";
+        }
+        else if (type_ == HDRImageType::PNG)
+        {
+            p += ".png";
+        }
+
+        return SaveImage(p, data_, width_, height_);
     };
 
     LM_IMPL_F(Accumulate) = [this](const Film* film_) -> void

@@ -192,6 +192,7 @@ set(
     _ASSET_SENSOR_SOURCE_FILES
 	"asset/sensor/sensor_pinhole.cpp"
 	"asset/sensor/sensor_area.cpp"
+	"asset/sensor/sensor_thinlens.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\sensor" FILES ${_ASSET_SENSOR_SOURCE_FILES})

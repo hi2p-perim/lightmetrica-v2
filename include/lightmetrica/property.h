@@ -209,11 +209,14 @@ public:
     //! Load property tree from YAML sequences
     LM_INTERFACE_F(1, LoadFromString, bool(const std::string&));
 
+    //! Load property tree from YAML sequences with filename
+    LM_INTERFACE_F(2, LoadFromStringWithFilename, bool(const std::string&, const std::string&));
+
     //! Returns file path if the tree loaded from the file, otherwise returns empty string
-    LM_INTERFACE_F(2, Path, std::string());
+    LM_INTERFACE_F(3, Path, std::string());
 
     //! Get root node
-    LM_INTERFACE_F(3, Root, const PropertyNode*());
+    LM_INTERFACE_F(4, Root, const PropertyNode*());
 
 };
 

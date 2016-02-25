@@ -187,6 +187,12 @@ public:
         return true;
     };
 
+    LM_IMPL_F(LoadFromStringWithFilename) = [this](const std::string& input, const std::string& path) -> bool
+    {
+        path_ = path;
+        return LoadFromString(input);
+    };
+
     LM_IMPL_F(Path) = [this]() -> std::string
     {
         return path_;

@@ -100,6 +100,7 @@ struct ProgramOption
         std::string SceneFile;
         std::string OutputPath;
         bool Verbose;
+        std::unordered_map<std::string, std::string> TemplateDict;
     } Render;
 
 public:
@@ -176,7 +177,8 @@ public:
                         ("help", "Display help message (this message)")
                         ("scene,s", po::value<std::string>()->required(), "Scene configuration file")
                         ("output,o", po::value<std::string>()->default_value("result"), "Output image")
-                        ("verbose,v", po::bool_switch()->default_value(false), "Adds detailed information on the output");
+                        ("verbose,v", po::bool_switch()->default_value(false), "Adds detailed information on the output")
+                        ("template,t", po::value<std::vector<std::string>>()->multitoken()->zero_tokens()->composing(), "String templates");
 
                     auto opts = po::collect_unrecognized(parsed.options, po::include_positional);
                     opts.erase(opts.begin());
@@ -196,6 +198,22 @@ public:
                     Render.SceneFile  = vm["scene"].as<std::string>();
                     Render.OutputPath = vm["output"].as<std::string>();
                     Render.Verbose    = vm["verbose"].as<bool>();
+
+                    if (vm.count("template"))
+                    {
+                        for (const auto& str : vm["template"].as<std::vector<std::string>>())
+                        {
+                            // Parse {key} = {value}
+                            std::regex re(R"x((\w+) *= *(.+))x");
+                            std::smatch match;
+                            if (!std::regex_match(str, match, re))
+                            {
+                                continue;
+                            }
+
+                            Render.TemplateDict[match[1]] = match[2];
+                        }
+                    }
 
                     return true;
                 }
@@ -429,7 +447,21 @@ private:
             LM_LOG_INFO("Loading scene file");
             LM_LOG_INDENTER();
             LM_LOG_INFO("Loading '" + opt.Render.SceneFile + "'");
-            if (!sceneConf->LoadFromFile(opt.Render.SceneFile))
+
+            // Load from file
+            std::ifstream t(opt.Render.SceneFile);
+            if (!t.is_open())
+            {
+                LM_LOG_ERROR("Failed to open: " + opt.Render.SceneFile);
+                return false;
+            }
+
+            std::stringstream ss;
+            ss << t.rdbuf();
+
+            // Expand template & load scene file
+            const auto expanded = StringTemplate::Expand(ss.str(), opt.Render.TemplateDict);
+            if (!sceneConf->LoadFromStringWithFilename(expanded, opt.Render.SceneFile))
             {
                 return false;
             }
