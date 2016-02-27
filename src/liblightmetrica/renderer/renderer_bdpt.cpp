@@ -36,6 +36,7 @@
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/scheduler.h>
 #include <lightmetrica/renderutils.h>
+#include <tbb/tbb.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -575,11 +576,24 @@ public:
         initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
         #endif
 
+        #if LM_COMPILER_CLANG
+        tbb::enumerable_thread_specific<Path> subpathL_, subpathE_;
+        tbb::enumerable_thread_specific<Path> path_;
+        #else
         static thread_local Path subpathL, subpathE;
         static thread_local Path path;
+        #endif
 
         sched_->Process(scene, film, &initRng, [&](const Scene* scene, Film* film, Random* rng)
         {
+            #if LM_COMPILER_CLANG
+            auto& subpathL = subpathL_.local();
+            auto& subpathE = subpathE_.local();
+            auto& path     = path_.local();
+            #endif
+
+            // --------------------------------------------------------------------------------
+
             #pragma region Sample subpaths
 
             subpathL.vertices.clear();
