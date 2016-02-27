@@ -54,7 +54,7 @@ public:
                 // Position and direction of a ray
                 const auto* E = scene->Sensor()->emitter;
                 SurfaceGeometry geomE;
-                E->SamplePosition(Vec2(), geomE);
+                E->SamplePosition(Vec2(), Vec2(), geomE);
                 Vec3 wo;
                 E->SampleDirection(rasterPos, 0_f, 0, geomE, Vec3(), wo);
 

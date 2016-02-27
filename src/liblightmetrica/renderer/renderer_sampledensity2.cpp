@@ -68,7 +68,7 @@ public:
             const auto* E = scene->Sensor();
 
             SurfaceGeometry geomE;
-            E->SamplePosition(Vec2(0.5), geomE);    // Fix
+            E->SamplePosition(Vec2(0.5), Vec2(0.5), geomE);    // Fix
 
             // Sample direction
             Vec3 wo;

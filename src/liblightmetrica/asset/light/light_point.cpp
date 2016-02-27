@@ -64,7 +64,7 @@ public:
 
     LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
     {
-        return Sampler::UniformSampleSpherePDFSA(wo);
+        return Sampler::UniformSampleSpherePDFSA();
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
@@ -74,7 +74,7 @@ public:
 
 public:
 
-    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, SurfaceGeometry& geom) -> void
+    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom) -> void
     {
         geom.degenerated = true;
         geom.p = position_;

@@ -134,10 +134,10 @@ public:
     }
 
     //! Sample a position on the light.
-    auto SamplePosition(const Vec2& u, SurfaceGeometry& geom) const -> void
+    auto SamplePosition(const Vec2& u, const Vec2& u2, SurfaceGeometry& geom) const -> void
     {
         assert(emitter);
-        emitter->SamplePosition(u, geom);
+        emitter->SamplePosition(u, u2, geom);
     }
 
     //! Evaluate positional PDF.

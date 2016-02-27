@@ -40,15 +40,23 @@ LM_NAMESPACE_BEGIN
 struct SurfaceGeometry
 {
 
-    bool degenerated;   //!< True if the point is spatially degenerated, e.g., point light source
-    Vec3 p;             //!< Intersection point
-    Vec3 sn;            //!< Shading normal
-    Vec3 gn;            //!< Geometry normal
-    Vec3 dpdu, dpdv;    //!< Tangent vectors
-    Vec3 dndu, dndv;    //!< Partial derivatives of shading normal
-    Vec2 uv;            //!< Texture coordinates
-    Mat3 ToLocal;       //!< Conversion matrix from world coordinates to shading coordinates 
-    Mat3 ToWorld;       //!< Conversion matrix from shading coordinates to world coordinates 
+    bool degenerated;        //!< True if the point is spatially degenerated, e.g., point light source
+    bool infinite = false;   //!< Intersected point is on the infinite point from the scene
+    Vec3 p;                  //!< Intersection point
+    Vec3 sn;                 //!< Shading normal
+    Vec3 gn;                 //!< Geometry normal
+    Vec3 dpdu, dpdv;         //!< Tangent vectors
+    Vec3 dndu, dndv;         //!< Partial derivatives of shading normal
+    Vec2 uv;                 //!< Texture coordinates
+    Mat3 ToLocal;            //!< Conversion matrix from world coordinates to shading coordinates 
+    Mat3 ToWorld;            //!< Conversion matrix from shading coordinates to world coordinates 
+
+    LM_INLINE auto ComputeTangentSpace() -> void
+    {
+        Math::OrthonormalBasis(sn, dpdu, dpdv);
+        ToWorld = Mat3(dpdu, dpdv, sn);
+        ToLocal = Math::Transpose(ToWorld);
+    }
 
 };
 

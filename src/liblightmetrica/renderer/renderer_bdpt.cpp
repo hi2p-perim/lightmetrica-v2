@@ -72,7 +72,7 @@ public:
                 v.type = type;
 
                 // Sample a position on the emitter
-                emitter->SamplePosition(rng->Next2D(), v.geom);
+                emitter->SamplePosition(rng->Next2D(), rng->Next2D(), v.geom);
 
                 // Create a vertex
                 vertices.push_back(v);

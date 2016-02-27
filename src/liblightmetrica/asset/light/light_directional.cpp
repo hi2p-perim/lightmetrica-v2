@@ -53,9 +53,9 @@ public:
 
     LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
     {
-        const auto bound = scene->GetBound();
-        center_  = (bound.max + bound.min) * .5_f;
-        radius_  = Math::Length(center_ - bound.max) * 1.01_f;  // Grow slightly
+        const auto bound = scene->GetSphereBound();
+        center_ = bound.center;
+        radius_ = bound.radius;
         invArea_ = 1_f / (2_f * Math::Pi() * radius_ * radius_);
         return true;
     };
@@ -84,22 +84,16 @@ public:
 
 public:
 
-    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, SurfaceGeometry& geom) -> void
+    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom) -> void
     {
         // Sample a point on the virtual disk
         const auto p = Sampler::UniformConcentricDiskSample(u) * radius_;
 
-        // Normals
+        // Surface geometry
+        geom.degenerated = false;
         geom.gn = direction_;
         geom.sn = geom.gn;
-
-        // Compute tangent space
-        Math::OrthonormalBasis(geom.sn, geom.dpdu, geom.dpdv);
-        geom.ToWorld = Mat3(geom.dpdu, geom.dpdv, geom.sn);
-        geom.ToLocal = Math::Transpose(geom.ToWorld);
-
-        // Position
-        geom.degenerated = false;
+        geom.ComputeTangentSpace();
         geom.p = center_ - direction_ * radius_ + (geom.dpdu * p.x + geom.dpdv * p.y);
     };
 

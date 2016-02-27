@@ -231,7 +231,7 @@ public:
             const auto* node = nodes_.at(idx).get();
 
             // Check intersection with bound
-            if (!Math::IntersectBound(node->bound, ray, minT, maxT))
+            if (!node->bound.Intersect(ray, minT, maxT))
             {
                 return false;
             }

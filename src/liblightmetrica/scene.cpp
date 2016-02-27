@@ -253,6 +253,7 @@ public:
                     {
                         primitive->emitter = static_cast<Emitter*>(assets->AssetByIDAndType(E->As<std::string>(), "sensor", primitive.get()));
                     }
+
                     if (!primitive->emitter)
                     {
                         LM_LOG_ERROR("Failed to create emitter");
@@ -351,6 +352,7 @@ public:
 
         #pragma region Compute scene bound
 
+        // AABB
         bound_ = Bound();
         for (const auto& primitive : primitives_)
         {
@@ -366,6 +368,10 @@ public:
             }
         }
 
+        // Bounding sphere
+        sphereBound_.center = (bound_.max + bound_.min) * .5_f;
+        sphereBound_.radius = Math::Length(sphereBound_.center - bound_.max) * 1.01_f;  // Grow slightly
+
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -375,6 +381,20 @@ public:
         if (!assets->PostLoad(this))
         {
             return false;
+        }
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Create emitter shapes
+
+        for (const auto& primitive : primitives_)
+        {
+            if (primitive->emitter && primitive->emitter->GetEmitterShape.Implemented())
+            {
+                emitterShapes_.push_back(primitive->emitter->GetEmitterShape());
+            }
         }
 
         #pragma endregion
@@ -404,8 +424,21 @@ public:
 
     LM_IMPL_F(Intersect) = [this](const Ray& ray, Intersection& isect) -> bool
     {
-        // TODO: Intersection with emitter shapes
-        return accel_->Intersect(this, ray, isect, Math::EpsIsect(), Math::Inf());
+        // Intersect with accel
+        bool hit = accel_->Intersect(this, ray, isect, Math::EpsIsect(), Math::Inf());
+
+        // Intersect with emitter shapes
+        Float maxT = hit ? Math::Length(isect.geom.p - ray.o) : Math::Inf();
+        for (size_t i = 0; i < emitterShapes_.size(); i++)
+        {
+            if (emitterShapes_[i]->Intersect(ray, Math::EpsIsect(), maxT, isect))
+            {
+                maxT = Math::Length(isect.geom.p - ray.o);
+                hit = true;
+            }
+        }
+
+        return hit;
     };
 
     LM_IMPL_F(IntersectWithRange) = [this](const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
@@ -474,6 +507,11 @@ public:
         return bound_;
     };
 
+    LM_IMPL_F(GetSphereBound) = [this]() -> SphereBound
+    {
+        return sphereBound_;
+    };
+
 private:
 
     std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
@@ -482,6 +520,8 @@ private:
     std::vector<size_t> lightPrimitiveIndices_;                     // Pointers to light primitives
     const Accel* accel_;
     Bound bound_;
+    SphereBound sphereBound_;
+    std::vector<const EmitterShape*> emitterShapes_;
 
 };
 

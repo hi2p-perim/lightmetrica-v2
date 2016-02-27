@@ -112,7 +112,8 @@ public:
     LM_INTERFACE_F(8, EvaluateEmitterPDF, Float(const Primitive* primitive));
 
     //! Compute the bound of the scene
-    LM_INTERFACE_F(9, GetBound, Bound());
+    LM_INTERFACE_F(9,  GetBound, Bound());
+    LM_INTERFACE_F(10, GetSphereBound, SphereBound());
 
 public:
 

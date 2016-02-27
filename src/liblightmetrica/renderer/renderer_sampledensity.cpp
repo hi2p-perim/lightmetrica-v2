@@ -68,7 +68,7 @@ public:
             const auto* E = scene->Sensor();
 
             SurfaceGeometry geomE;
-            E->SamplePosition(rng->Next2D(), geomE);
+            E->SamplePosition(rng->Next2D(), rng->Next2D(), geomE);
             const Float pdfPE = E->EvaluatePositionPDF(geomE, false);
             assert(pdfPE > 0);
 

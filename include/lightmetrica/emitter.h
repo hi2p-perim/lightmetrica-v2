@@ -29,6 +29,33 @@
 LM_NAMESPACE_BEGIN
 
 class PositionSampler;
+struct Ray;
+struct Intersection;
+
+/*!
+    \brief Shape associated with Emitter.
+    \ingroup asset
+*/
+class EmitterShape : public Component
+{
+public:
+
+    LM_INTERFACE_CLASS(EmitterShape, Component, 2);
+
+public:
+
+    EmitterShape() = default;
+    LM_DISABLE_COPY_AND_MOVE(EmitterShape);
+
+public:
+
+    //! Intersect query with the shape.
+    LM_INTERFACE_F(0, Intersect, bool(const Ray& ray, Float minT, Float maxT, Intersection& isect));
+    
+    //! Get primitive associated to the shape
+    LM_INTERFACE_F(1, GetPrimitive, const Primitive*());
+
+};
 
 /*!
     \brief An interface for Emitter.
@@ -38,7 +65,7 @@ class Emitter : public GeneralizedBSDF
 {
 public:
 
-    LM_INTERFACE_CLASS(Emitter, GeneralizedBSDF, 4);
+    LM_INTERFACE_CLASS(Emitter, GeneralizedBSDF, 5);
 
 public:
 
@@ -49,10 +76,11 @@ public:
 
     /*!
         \brief Sample a position on the light.
-        \param u Uniform random numbers in [0,1]^2.
+        \param u  Uniform random numbers in [0,1]^2.
+        \param u2 Uniform random numbers in [0,1]^2.
         \param geom Surface geometry at the sampled position.
     */
-    LM_INTERFACE_F(0, SamplePosition, void(const Vec2& u, SurfaceGeometry& geom));
+    LM_INTERFACE_F(0, SamplePosition, void(const Vec2& u, const Vec2& u2, SurfaceGeometry& geom));
 
     /*!
         \brief Evaluate positional PDF.
@@ -75,10 +103,21 @@ public:
         Returns false if calculated raster position is the outside of [0, 1]^2.
 
         \param wo           Outgoing direction from the point on the emitter.
-        \param geom         Surface geometry infromation around the point on the emitter.
+        \param geom         Surface geometry information around the point on the emitter.
         \param rasterPos    Computed raster position.
     */
     LM_INTERFACE_F(3, RasterPosition, bool(const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos));
+
+    /*!
+        \brief Get emitter shape.
+    
+        Some emitter is associated with shapes that can be intersected
+        (e.g., sphere for environment lights) in order to integrate emitters
+        with BPT based rendering techniques.
+
+        \return Instance of emitter shape.
+    */
+    LM_INTERFACE_F(4, GetEmitterShape, const EmitterShape*());
 
 };
 

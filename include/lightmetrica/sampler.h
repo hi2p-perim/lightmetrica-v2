@@ -82,7 +82,7 @@ public:
     }
 
     //! Evaluate the PDF of UniformSampleSphere with the solid angle measure
-    static auto UniformSampleSpherePDFSA(const Vec3& d) -> Float
+    static auto UniformSampleSpherePDFSA() -> Float
     {
         return Math::InvPi() * 0.25_f;
     }

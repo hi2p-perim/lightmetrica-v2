@@ -26,6 +26,7 @@
 
 #include <lightmetrica/math.h>
 #include <lightmetrica/ray.h>
+#include <lightmetrica/intersection.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -41,51 +42,30 @@ struct Bound
     Vec3 min = Vec3( Math::Inf());
     Vec3 max = Vec3(-Math::Inf());
 
-    auto operator[](int i) const -> const Vec3& { return (&min)[i]; }
-    auto operator[](int i)       -> Vec3&       { return (&max)[i]; }
+    LM_INLINE auto operator[](int i) const -> const Vec3& { return (&min)[i]; }
+    LM_INLINE auto operator[](int i)       -> Vec3&       { return (&max)[i]; }
 
-    auto LongestAxis() const -> int
+    LM_INLINE auto LongestAxis() const -> int
     {
         const auto d = max - min;
         return d.x > d.y && d.x > d.z ? 0 : d.y > d.z ? 1 : 2;
     }
 
-    auto SurfaceArea() const -> Float
+    LM_INLINE auto SurfaceArea() const -> Float
     {
         const auto d = max - min;
         return 2_f * (d.x * d.y + d.y * d.z + d.z * d.x);
     }
 
-    auto Centroid() const -> Vec3
+    LM_INLINE auto Centroid() const -> Vec3
     {
         return (min + max) * 0.5_f;
     }
 
-};
-
-namespace Math
-{
-    //! Merge two bounds
-    LM_INLINE auto Union(const Bound& a, const Bound& b) -> Bound
-    {
-        Bound r;
-        r.min = Math::Min(a.min, b.min);
-        r.max = Math::Max(a.max, b.max);
-        return r;
-    }
-
-    //! Merge one bound and a point
-    LM_INLINE auto Union(const Bound& a, const Vec3& p) -> Bound
-    {
-        Bound r;
-        r.min = Math::Min(a.min, p);
-        r.max = Math::Max(a.max, p);
-        return r;
-    }
-
     //! Intersection query between ray and bound
-    LM_INLINE auto IntersectBound(const Bound& bound, const Ray& ray, Float tMin, Float tMax) -> bool
+    LM_INLINE auto Intersect(const Ray& ray, Float tMin, Float tMax) const -> bool
     {
+        const auto& bound = *this;
         const bool rayDirNeg[3] = { ray.d.x < 0_f, ray.d.y < 0_f, ray.d.z < 0_f };
         Float tmin;
         Float tmax;
@@ -109,7 +89,83 @@ namespace Math
 
         return (tmin < tMax) && (tmax > tMin);
     }
+
+};
+
+namespace Math
+{
+    //! Merge two bounds
+    LM_INLINE auto Union(const Bound& a, const Bound& b) -> Bound
+    {
+        Bound r;
+        r.min = Math::Min(a.min, b.min);
+        r.max = Math::Max(a.max, b.max);
+        return r;
+    }
+
+    //! Merge one bound and a point
+    LM_INLINE auto Union(const Bound& a, const Vec3& p) -> Bound
+    {
+        Bound r;
+        r.min = Math::Min(a.min, p);
+        r.max = Math::Max(a.max, p);
+        return r;
+    }
 }
+
+// --------------------------------------------------------------------------------
+
+//! Bounding sphere.
+struct SphereBound
+{
+
+    Vec3 center;
+    Float radius;
+
+    auto Intersect(const Ray& ray, Float minT, Float maxT, Float& t) const -> bool
+    {
+        // Temporary variables
+        auto o = ray.o - center;
+        auto d = ray.d;
+        auto a = Math::Length2(d);
+        auto b = 2_f * Math::Dot(o, d);
+        auto c = Math::Length2(o) - radius * radius;
+
+        // --------------------------------------------------------------------------------
+
+        // Solve quadratic
+        auto det = b * b - 4_f * a * c;
+        if (det < 0_f)
+        {
+            return false;
+        }
+
+        auto e = Math::Sqrt(det);
+        auto denom = 2_f * a;
+        auto t0 = (-b - e) / denom;
+        auto t1 = (-b + e) / denom;
+        if (t0 > maxT || t1 < minT)
+        {
+            return false;
+        }
+
+        // --------------------------------------------------------------------------------
+
+        // Check range
+        t = t0;
+        if (t < minT)
+        {
+            t = t1;
+            if (t > maxT)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+};
 
 //! \}
 

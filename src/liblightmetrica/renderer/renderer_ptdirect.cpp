@@ -85,7 +85,7 @@ public:
             #pragma region Sample a position on the sensor
 
             SurfaceGeometry geomE;
-            E->SamplePosition(rng->Next2D(), geomE);
+            E->SamplePosition(rng->Next2D(), rng->Next2D(), geomE);
             const Float pdfPE = E->EvaluatePositionPDF(geomE, false);
 
             #pragma endregion
@@ -131,7 +131,7 @@ public:
                     #pragma region Sample a position on the light
 
                     SurfaceGeometry geomL;
-                    L->SamplePosition(rng->Next2D(), geomL);
+                    L->SamplePosition(rng->Next2D(), rng->Next2D(), geomL);
                     const Float pdfPL = L->EvaluatePositionPDF(geomL, false);
                     assert(pdfPL > 0);
 
@@ -237,6 +237,11 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region Path termination
+
+                if (isect.geom.infinite)
+                {
+                    break;
+                }
 
                 Float rrProb = 0.5_f;
                 if (rng->Next() > rrProb)

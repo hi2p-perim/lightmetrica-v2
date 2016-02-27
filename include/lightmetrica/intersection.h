@@ -42,10 +42,8 @@ struct Primitive;
 */
 struct Intersection
 {
-
-    SurfaceGeometry geom;       //!< Surface geometry of the intersection point.
-    const Primitive* primitive; //!< Primitive on the intersection point.
-
+    SurfaceGeometry geom;                   //!< Surface geometry of the intersection point.
+    const Primitive* primitive = nullptr;   //!< Primitive on the intersection point.
 };
 
 LM_NAMESPACE_END

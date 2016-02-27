@@ -111,7 +111,7 @@ public:
 
     #pragma region Emitter
 
-    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, SurfaceGeometry& geom) -> void
+    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom) -> void
     {
         // Handle the point on the lens as spatially degenerated position
         // the bidirectional handling of the position becomes same as pinhole camera.
