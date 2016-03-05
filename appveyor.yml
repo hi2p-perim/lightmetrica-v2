@@ -26,4 +26,4 @@ build_script:
 
 artifacts:
   - path: '*.zip'
-  - name: lightmetrica-v2-latest
+    name: lightmetrica-v2-latest
