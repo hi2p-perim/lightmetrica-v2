@@ -33,7 +33,7 @@ TEST(LoggerTest, LogMessagesWithVariousLevels)
 {
     const auto CheckLogOutput = [](const std::string& type, const std::string& message, const std::string& out) -> void
     {
-        std::regex re(R"x(^\| ([[:upper:]]+) +[\d]*\.\d{3} \| (.*)\n)x");
+        std::regex re(R"x(^\| ([[:upper:]]+) +[\d]*\.\d{3} \| (.*)[\s\S]*)x");
         std::smatch match;
         const bool result = std::regex_match(out, match, re);
         EXPECT_TRUE(result);
@@ -78,7 +78,7 @@ TEST(LoggerTest, Indenter)
 {
     const auto ExtractMessage = [](const std::string& out) -> std::string
     {
-        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| (.*))x");
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| (.*)[\s\S]*)x");
         std::smatch match;
         const bool result = std::regex_match(out, match, re);
         return result ? std::string(match[1]) : "";
@@ -129,7 +129,7 @@ TEST(LoggerTest, VerboseLevel)
             Logger::Stop();
         });
 
-        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .*\n)x");
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .*[\s\S]*)x");
         std::smatch match;
         EXPECT_TRUE(std::regex_match(out, match, re)) << out;
     }
@@ -146,7 +146,7 @@ TEST(LoggerTest, VerboseLevel)
             Logger::Stop();
         });
 
-        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| #[ \d]{2} \| .*\n)x");
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| #[ \d]{2} \| .*[\s\S]*)x");
         std::smatch match;
         EXPECT_TRUE(std::regex_match(out, match, re)) << out;
     }
@@ -163,7 +163,7 @@ TEST(LoggerTest, VerboseLevel)
             Logger::Stop();
         });
 
-        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .* \| @[ \d]{4} \| #[ \d]{2} \| .*\n)x");
+        std::regex re(R"x(^\| [[:upper:]]+ +[\d]*\.\d{3} \| .* \| @[ \d]{4} \| #[ \d]{2} \| .*[\s\S]*)x");
         std::smatch match;
         EXPECT_TRUE(std::regex_match(out, match, re)) << out;
     }
