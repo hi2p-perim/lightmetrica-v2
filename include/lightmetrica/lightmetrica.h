@@ -48,7 +48,6 @@
 #include <lightmetrica/logger.h>
 #include <lightmetrica/macros.h>
 #include <lightmetrica/math.h>
-#include <lightmetrica/metacounter.h>
 #include <lightmetrica/portable.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/property.h>
