@@ -193,6 +193,11 @@ public:
 
                 #pragma region Path termination
 
+                if (isect.geom.infinite)
+                {
+                    break;
+                }
+
                 Float rrProb = 0.5_f;
                 if (rng->Next() > rrProb)
                 {

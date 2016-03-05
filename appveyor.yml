@@ -22,7 +22,8 @@ build_script:
   - cd build
   - cmake -G "Visual Studio 14 Win64" ..
   - msbuild /m /p:Configuration=Release /p:Platform=x64 lightmetrica.sln
+  - cpack -G "ZIP"
 
-test_script:
-  - cd bin\Release
-  - lightmetrica.exe
+artifacts:
+  - path: '*.zip'
+  - name: lightmetrica-v2-latest
