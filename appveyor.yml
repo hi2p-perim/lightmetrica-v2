@@ -17,7 +17,9 @@ init:
   - cmake -E remove -f c:\programdata\chocolatey\bin\cpack.exe
 
 install:
+  - choco install git-lfs.install -version 1.1.0
   - git clone https://github.com/hi2p-perim/lightmetrica-v2-external.git C:\projects\lightmetrica-v2\external
+  - git clone https://github.com/hi2p-perim/lightmetrica-v2-example.git C:\projects\lightmetrica-v2\example
 
 build_script:
   - cd C:\projects\lightmetrica-v2
