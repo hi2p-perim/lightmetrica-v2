@@ -7,7 +7,7 @@ matrix:
     - os: osx
 
 install:
-  - ./.travis/install.sh
+  - source ./.travis/install.sh
 
 script:
-  - ./.travis/script.sh
+  - source ./.travis/script.sh
