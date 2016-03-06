@@ -4,9 +4,8 @@ Lightmetrica
 
 Lightmetrica : A modern, research-oriented renderer
 
-**This project is WIP**
-
 [![Build Status](https://travis-ci.org/hi2p-perim/lightmetrica-v2.svg?branch=master)](https://travis-ci.org/hi2p-perim/lightmetrica-v2)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/hi2p-perim/lightmetrica-v2?branch=master&svg=true)](https://ci.appveyor.com/project/HisanariOtsu/lightmetrica-v2)
 
 Project site: http://lightmetrica.org
 
