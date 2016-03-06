@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+	# Install some dependencies
+	brew update
+	brew install cmake tbb assimp freeimage
+	brew install boost
+
+	# Install ctemplate
+	cd $HOME
+	git clone https://github.com/OlafvdSpek/ctemplate.git
+	cd ctemplate
+	./configure
+	make -j
+	sudo make install
+
+	# Install yaml-cpp
+	cd $HOME
+	git clone https://github.com/jbeder/yaml-cpp.git
+	cd yaml-cpp
+	mkdir build
+	cd build
+	cmake -DCMAKE_BUILD_TYPE=Release ..
+	make -j
+	sudo make install
+
+	# Build lightmetrica
+	cd $TRAVIS_BUILD_DIR
+	mkdir build
+	cd build
+	cmake -DCMAKE_BUILD_TYPE=Release ..
+	make -j
+else
+	docker build -t lightmetrica .
+fi

@@ -1,8 +1,13 @@
 sudo: requried
 
-services:
-  - docker
+matrix:
+  include:
+    # - os: linux
+    #   services: docker
+    - os: osx
+
+install:
+  - ./.travis/install.sh
 
 script:
-  - docker build -t lightmetrica .
-  - docker run lightmetrica
+  - ./.travis/script.sh
