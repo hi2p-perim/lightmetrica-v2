@@ -2,8 +2,8 @@ sudo: requried
 
 matrix:
   include:
-    # - os: linux
-    #   services: docker
+    - os: linux
+      services: docker
     - os: osx
 
 install:

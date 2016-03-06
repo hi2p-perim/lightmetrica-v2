@@ -30,6 +30,12 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	cd build
 	cmake -DCMAKE_BUILD_TYPE=Release ..
 	make -j
+
+	# Packaging
+	cd $TRAVIS_BUILD_DIR
+	git clone --depth=1 https://github.com/hi2p-perim/lightmetrica-v2-example.git example
+	rm -rf example/.git example/.gitattributes
+	cpack -G "DragNDrop"
 else
 	docker build -t lightmetrica .
 fi
