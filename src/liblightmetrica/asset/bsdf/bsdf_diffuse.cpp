@@ -57,9 +57,11 @@ public:
         return true;
     };
 
+public:
+
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::D;
+        return SurfaceInteractionType::D;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void

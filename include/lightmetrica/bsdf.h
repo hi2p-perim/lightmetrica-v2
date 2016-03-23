@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <lightmetrica/generalizedbsdf.h>
+#include <lightmetrica/surfaceinteraction.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -38,11 +38,11 @@ LM_NAMESPACE_BEGIN
     \brief An interface for Emitter.
     \ingroup bsdf
 */
-class BSDF : public GeneralizedBSDF
+class BSDF : public SurfaceInteraction
 {
 public:
 
-    LM_INTERFACE_CLASS(BSDF, GeneralizedBSDF, 0);
+    LM_INTERFACE_CLASS(BSDF, SurfaceInteraction, 0);
 
 public:
 

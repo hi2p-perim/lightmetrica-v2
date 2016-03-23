@@ -44,7 +44,7 @@ class Sensor : public Emitter
 {
 public:
 
-    LM_INTERFACE_CLASS(Sensor, Emitter, 1);
+    LM_INTERFACE_CLASS(Sensor, Emitter, 2);
 
 public:
 
@@ -54,11 +54,23 @@ public:
 public:
 
     /*!
+        \brief Compute raster position from the direction and the position.
+
+        The function calculates the raster position from the outgoing ray.
+        Returns false if calculated raster position is the outside of [0, 1]^2.
+
+        \param wo           Outgoing direction from the point on the emitter.
+        \param geom         Surface geometry information around the point on the emitter.
+        \param rasterPos    Computed raster position.
+    */
+    LM_INTERFACE_F(0, RasterPosition, bool(const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos));
+
+    /*!
 		\brief Get film.
 		Returns the film referenced from the sensor.
 		\return Film.
 	*/
-    LM_INTERFACE_F(0, GetFilm, Film*());
+    LM_INTERFACE_F(1, GetFilm, Film*());
 
 };
 

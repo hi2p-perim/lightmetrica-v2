@@ -43,16 +43,16 @@ LM_NAMESPACE_BEGIN
       - CDF $F_X(E) = P(X^{-1}(X)), \forall E \in \mathcal{A}$
       - PDF $p_\mu(x)$ defined by $P(X \in A) = \inf_{x\in A} p_\mu(x) d\mu(x), \forall A\in F$
 */
-class ProbabilityDist : public Component
+class PDF : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(ProbabilityDist, Component);
+    LM_INTERFACE_CLASS(PDF, Component, 0);
 
 public:
 
-    ProbabilityDist() = default;
-    LM_DISABLE_COPY_AND_MOVE(ProbabilityDist);
+    PDF() = default;
+    LM_DISABLE_COPY_AND_MOVE(PDF);
    
 };
 
@@ -64,21 +64,21 @@ public:
 
 struct SurfaceGeometry;
 
-class PositionSampler : public ProbabilityDist
+class AreaPDF : public PDF
 {
 public:
 
-    LM_INTERFACE_CLASS(PositionSampler, Component);
+    LM_INTERFACE_CLASS(AreaPDF, PDF, 2);
 
 public:
 
-    PositionSampler() = default;
-    LM_DISABLE_COPY_AND_MOVE(PositionSampler);
+    AreaPDF() = default;
+    LM_DISABLE_COPY_AND_MOVE(AreaPDF);
 
 public:
 
     LM_INTERFACE_F(Sample, void(const Vec2& u, SurfaceGeometry& geom));
-    LM_INTERFACE_F(EvaluatePDF, Float(const SurfaceGeometry& geom, bool evalDelta));
+    LM_INTERFACE_F(Evaluate, Float(const SurfaceGeometry& geom, bool evalDelta));
     
 };
 
@@ -87,21 +87,21 @@ public:
       - PDF $p_{\sigma}(\omega_o | \omega_i, \mathbf{x})$
       - Solid angle measure $\sigma$
 */
-class DirectionSampler : public ProbabilityDist
+class DirectionPDF : public PDF
 {
 public:
 
-    LM_INTERFACE_CLASS(DirectionSampler, Component);
+    LM_INTERFACE_CLASS(DirectionPDF, PDF, 2);
 
 public:
 
-    DirectionSampler() = default;
-    LM_DISABLE_COPY_AND_MOVE(DirectionSampler);
+    DirectionPDF() = default;
+    LM_DISABLE_COPY_AND_MOVE(DirectionPDF);
     
 public:
 
-    LM_INTERFACE_F(Sample, void(const Vec2& u, double uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo));
-    LM_INTERFACE_F(EvaluatePDF, Float(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta));
+    LM_INTERFACE_F(Sample, void(const Vec2& u, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo));
+    LM_INTERFACE_F(Evaluate, Float(const SurfaceGeometry& geom, const Vec3& wi, const Vec3& wo, bool evalDelta));
 
 };
 

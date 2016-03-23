@@ -38,6 +38,8 @@ LM_NAMESPACE_BEGIN
 class TriangleMesh;
 class BSDF;
 class Emitter;
+class Light;
+class Sensor;
 
 /*!
 	\brief Primitive.
@@ -52,107 +54,60 @@ class Emitter;
 struct Primitive : public SIMDAlignedType
 {
 
+    // Primitive ID
     const char* id = nullptr;
+
+    // Transform & normal transform
     Mat4 transform;
     Mat3 normalTransform;
+
+    // Triangle mesh
     const TriangleMesh* mesh = nullptr;
-    const Emitter* emitter = nullptr;
-    const BSDF* bsdf = nullptr;
 
-public:
+    // Surface interactions
+    const SurfaceInteraction* si = nullptr;
+    const BSDF*    bsdf          = nullptr;
+    const Emitter* emitter       = nullptr;
+    const Light*   light         = nullptr;
+    const Sensor*  sensor        = nullptr;
 
-    //! Surface interaction type.
-    auto Type() const -> int
-    {
-        int type = 0;
+    /*!
+        Get underlying surface interaction types.
+        \return Surface interaction types.
+    */
+    //auto Type() const -> int
+    //{
+    //    int type = 0;
+    //    if (emitter)
+    //    {
+    //        type |= emitter->Type();
+    //    }
+    //    if (bsdf)
+    //    {
+    //        type |= bsdf->Type();
+    //    }
+    //    return type;
+    //}
 
-        if (emitter)
-        {
-            type |= emitter->Type();
-        }
-        if (bsdf)
-        {
-            type |= bsdf->Type();
-        }
-
-        return type;
-    }
-
-    //! Sample outgoing vector.
-    auto SampleDirection(const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) const -> void
-    {
-        assert((queryType & SurfaceInteraction::Emitter) == 0 || (queryType & SurfaceInteraction::BSDF) == 0);
-        
-        if ((queryType & SurfaceInteraction::Emitter) > 0)
-        {
-            emitter->SampleDirection(u, uComp, queryType, geom, wi, wo);
-            return;
-        }
-        else if ((queryType & SurfaceInteraction::BSDF) > 0)
-        {
-            bsdf->SampleDirection(u, uComp, queryType, geom, wi, wo);
-            return;
-        }
-
-        LM_UNREACHABLE();
-    }
-
-    //! Evaluate PDF with the direction.
-    auto EvaluateDirectionPDF(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) const -> Float
-    {
-        assert((queryType & SurfaceInteraction::Emitter) == 0 || (queryType & SurfaceInteraction::BSDF) == 0);
-
-        if ((queryType & SurfaceInteraction::Emitter) > 0)
-        {
-            return emitter->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
-        }
-        else if ((queryType & SurfaceInteraction::BSDF) > 0)
-        {
-            return bsdf->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
-        }
-
-        LM_UNREACHABLE();
-        return 0_f;
-    }
-
-    //! Evaluate generalized BSDF.
-    auto EvaluateDirection(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) const -> SPD
-    {
-        assert((types & SurfaceInteraction::Emitter) == 0 || (types & SurfaceInteraction::BSDF) == 0);
-
-        if ((types & SurfaceInteraction::Emitter) > 0)
-        {
-            return emitter->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
-        }
-        else if ((types & SurfaceInteraction::BSDF) > 0)
-        {
-            return bsdf->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
-        }
-
-        LM_UNREACHABLE();
-        return SPD();
-    }
-
-    //! Sample a position on the light.
-    auto SamplePosition(const Vec2& u, const Vec2& u2, SurfaceGeometry& geom) const -> void
-    {
-        assert(emitter);
-        emitter->SamplePosition(u, u2, geom);
-    }
-
-    //! Evaluate positional PDF.
-    auto EvaluatePositionPDF(const SurfaceGeometry& geom, bool evalDelta) const -> Float
-    {
-        assert(emitter);
-        return emitter->EvaluatePositionPDF(geom, evalDelta);
-    }
-
-    //! Evaluate the positional component of the emitted quantity.
-    auto EvaluatePosition(const SurfaceGeometry& geom, bool evalDelta) const -> SPD
-    {
-        assert(emitter);
-        return emitter->EvaluatePosition(geom, evalDelta);
-    }
+    /*!
+        Select the underlying surface interaction as given type.
+        \param queryType Surface interaction type.
+        \return          Selected surface interaction.
+    */
+    //auto As(int queryType) const -> const SurfaceInteraction*
+    //{
+    //    assert((queryType & SurfaceInteractionType::Emitter) == 0 || (queryType & SurfaceInteractionType::BSDF) == 0);
+    //    if ((queryType & SurfaceInteractionType::Emitter) > 0)
+    //    {
+    //        return emitter;
+    //    }
+    //    if ((queryType & SurfaceInteractionType::BSDF) > 0)
+    //    {
+    //        return bsdf;
+    //    }
+    //    LM_UNREACHABLE();
+    //    return nullptr;
+    //}
 
 };
 

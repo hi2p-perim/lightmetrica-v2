@@ -32,6 +32,7 @@
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>
 #include <lightmetrica/emitter.h>
+#include <lightmetrica/sensor.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/scheduler.h>
@@ -42,7 +43,7 @@ LM_NAMESPACE_BEGIN
 
 struct PathVertex
 {
-    int type = SurfaceInteraction::None;
+    int type = SurfaceInteractionType::None;
     SurfaceGeometry geom;
     const Primitive* primitive = nullptr;
 };
@@ -60,71 +61,80 @@ public:
     {
         PathVertex v;
         vertices.clear();
-        for (int step = 0; maxPathVertices == -1 || step < maxPathVertices; step++)
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Sample initial vertex
+
+        // Sample an emitter
+        const auto type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
+        const auto* emitter = scene->SampleEmitter(type, rng->Next());
+        v.primitive = emitter;
+        v.type = type;
+
+        // Sample a position on the emitter and initial ray direction
+        Vec3 initWo;
+        emitter->emitter->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), v.geom, initWo);
+
+        // Create a vertex
+        vertices.push_back(v);
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Sample intermediate vertex
+
+        for (int step = 1; maxPathVertices == -1 || step < maxPathVertices; step++)
         {
-            if (step == 0)
+            // Previous & two before vertex
+            const auto* pv = &vertices.back();
+            const auto* ppv = vertices.size() > 1 ? &vertices[vertices.size() - 2] : nullptr;
+
+            // Sample a next direction
+            Vec3 wo;
+            const auto wi = ppv ? Math::Normalize(ppv->geom.p - pv->geom.p) : Vec3();
+            if (step == 1)
             {
-                #pragma region Sample initial vertex
-
-                // Sample an emitter
-                const auto type = transDir == TransportDirection::LE ? SurfaceInteraction::L : SurfaceInteraction::E;
-                const auto* emitter = scene->SampleEmitter(type, rng->Next());
-                v.primitive = emitter;
-                v.type = type;
-
-                // Sample a position on the emitter
-                emitter->SamplePosition(rng->Next2D(), rng->Next2D(), v.geom);
-
-                // Create a vertex
-                vertices.push_back(v);
-
-                #pragma endregion
+                wo = initWo;
             }
             else
             {
-                #pragma region Sample intermediate vertex
-
-                // Previous & two before vertex
-                const auto* pv = &vertices.back();
-                const auto* ppv = vertices.size() > 1 ? &vertices[vertices.size() - 2] : nullptr;
-
-                // Sample a next direction
-                Vec3 wo;
-                const auto wi = ppv ? Math::Normalize(ppv->geom.p - pv->geom.p) : Vec3();
-                pv->primitive->SampleDirection(rng->Next2D(), rng->Next(), pv->type, pv->geom, wi, wo);
-                const auto f = pv->primitive->EvaluateDirection(pv->geom, pv->type, wi, wo, transDir, false);
-                if (f.Black())
-                {
-                    break;
-                }
-
-                // Intersection query
-                Ray ray = { pv->geom.p, wo };
-                Intersection isect;
-                if (!scene->Intersect(ray, isect))
-                {
-                    break;
-                }
-
-                // Set vertex information
-                v.geom = isect.geom;
-                v.primitive = isect.primitive;
-                v.type = isect.primitive->Type() & ~SurfaceInteraction::Emitter;
-
-                // Path termination
-                const Float rrProb = 0.5_f;
-                if (rng->Next() > rrProb)
-                {
-                    vertices.push_back(v);
-                    break;
-                }
-
-                // Add a vertex
-                vertices.push_back(v);
-
-                #pragma endregion
+                pv->primitive->si->SampleDirection(rng->Next2D(), rng->Next(), pv->type, pv->geom, wi, wo);
             }
+            const auto f = pv->primitive->si->EvaluateDirection(pv->geom, pv->type, wi, wo, transDir, false);
+            if (f.Black())
+            {
+                break;
+            }
+
+            // Intersection query
+            Ray ray = { pv->geom.p, wo };
+            Intersection isect;
+            if (!scene->Intersect(ray, isect))
+            {
+                break;
+            }
+
+            // Set vertex information
+            v.geom = isect.geom;
+            v.primitive = isect.primitive;
+            v.type = isect.primitive->si->Type() & ~SurfaceInteractionType::Emitter;
+
+            // Path termination
+            // TODO: replace it with efficient one
+            const Float rrProb = 0.5_f;
+            if (rng->Next() > rrProb)
+            {
+                vertices.push_back(v);
+                break;
+            }
+
+            // Add a vertex
+            vertices.push_back(v);
         }
+
+        #pragma endregion
     }
 
     auto Connect(const Scene* scene, int s, int t, const Path& subpathL, const Path& subpathE) -> bool
@@ -135,7 +145,7 @@ public:
 
         if (s == 0 && t > 0)
         {
-            if ((subpathE.vertices[t - 1].primitive->Type() & SurfaceInteraction::L) == 0)
+            if ((subpathE.vertices[t - 1].primitive->si->Type() & SurfaceInteractionType::L) == 0)
             {
                 return false;
             }
@@ -143,11 +153,11 @@ public:
             {
                 vertices.push_back(subpathE.vertices[i]);
             }
-            vertices.front().type = SurfaceInteraction::L;
+            vertices.front().type = SurfaceInteractionType::L;
         }
         else if (s > 0 && t == 0)
         {
-            if ((subpathL.vertices[s - 1].primitive->Type() & SurfaceInteraction::E) == 0)
+            if ((subpathL.vertices[s - 1].primitive->si->Type() & SurfaceInteractionType::E) == 0)
             {
                 return false;
             }
@@ -155,7 +165,7 @@ public:
             {
                 vertices.push_back(subpathL.vertices[i]);
             }
-            vertices.back().type = SurfaceInteraction::E;
+            vertices.back().type = SurfaceInteractionType::E;
         }
         else
         {
@@ -186,7 +196,8 @@ public:
     auto EvaluateContribution(const Scene* scene, int s) const -> SPD
     {
         const auto Cstar = EvaluateUnweightContribution(scene, s);
-        return Cstar.Black() ? SPD() : Cstar * EvaluatePowerHeuristicsMISWeightOpt(scene, s);
+        //return Cstar.Black() ? SPD() : Cstar * EvaluatePowerHeuristicsMISWeightOpt(scene, s);
+        return Cstar.Black() ? SPD() : Cstar * EvaluateSimpleMISWeight(scene, s);
     }
 
     auto SelectionProb(int s) const -> Float
@@ -211,7 +222,7 @@ public:
         const auto& v = vertices[vertices.size() - 1];
         const auto& vPrev = vertices[vertices.size() - 2];
         Vec2 rasterPos;
-        v.primitive->emitter->RasterPosition(Math::Normalize(vPrev.geom.p - v.geom.p), v.geom, rasterPos);
+        v.primitive->sensor->RasterPosition(Math::Normalize(vPrev.geom.p - v.geom.p), v.geom, rasterPos);
         return rasterPos;
     }
 
@@ -225,13 +236,13 @@ public:
         {
             const auto& v = vertices[0];
             const auto& vNext = vertices[1];
-            cst = v.primitive->EvaluatePosition(v.geom, true) * v.primitive->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vNext.geom.p - v.geom.p), TransportDirection::EL, true);
+            cst = v.primitive->si->EvaluatePosition(v.geom, true) * v.primitive->si->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vNext.geom.p - v.geom.p), TransportDirection::EL, true);
         }
         else if (s > 0 && t == 0)
         {
             const auto& v = vertices[n - 1];
             const auto& vPrev = vertices[n - 2];
-            cst = v.primitive->EvaluatePosition(v.geom, true) * v.primitive->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::LE, true);
+            cst = v.primitive->si->EvaluatePosition(v.geom, true) * v.primitive->si->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::LE, true);
         }
         else if (s > 0 && t > 0)
         {
@@ -239,8 +250,8 @@ public:
             const auto* vE = &vertices[s];
             const auto* vLPrev = s - 2 >= 0 ? &vertices[s - 2] : nullptr;
             const auto* vENext = s + 1 < n ? &vertices[s + 1] : nullptr;
-            const auto fsL = vL->primitive->EvaluateDirection(vL->geom, vL->type, vLPrev ? Math::Normalize(vLPrev->geom.p - vL->geom.p) : Vec3(), Math::Normalize(vE->geom.p - vL->geom.p), TransportDirection::LE, true);
-            const auto fsE = vE->primitive->EvaluateDirection(vE->geom, vE->type, vENext ? Math::Normalize(vENext->geom.p - vE->geom.p) : Vec3(), Math::Normalize(vL->geom.p - vE->geom.p), TransportDirection::EL, true);
+            const auto fsL = vL->primitive->si->EvaluateDirection(vL->geom, vL->type, vLPrev ? Math::Normalize(vLPrev->geom.p - vL->geom.p) : Vec3(), Math::Normalize(vE->geom.p - vL->geom.p), TransportDirection::LE, true);
+            const auto fsE = vE->primitive->si->EvaluateDirection(vE->geom, vE->type, vENext ? Math::Normalize(vENext->geom.p - vE->geom.p) : Vec3(), Math::Normalize(vL->geom.p - vE->geom.p), TransportDirection::EL, true);
             const Float G = RenderUtils::GeometryTerm(vL->geom, vE->geom);
             cst = fsL * G * fsE;
         }
@@ -279,8 +290,9 @@ public:
         else
         {
             {
-                const auto& v = vertices[0];
-                alphaL = LocalContrb(v.primitive->EvaluatePosition(v.geom, false), v.primitive->EvaluatePositionPDF(v.geom, false) * scene->EvaluateEmitterPDF(v.primitive));
+                const auto* v = &vertices[0];
+                const auto* vNext = &vertices[1];
+                alphaL = LocalContrb(v->primitive->si->EvaluatePosition(v->geom, false), v->primitive->si->EvaluatePositionGivenDirectionPDF(v->geom, Math::Normalize(vNext->geom.p - v->geom.p), false) * scene->EvaluateEmitterPDF(v->primitive));
             }
             for (int i = 0; i < s - 1; i++)
             {
@@ -289,7 +301,7 @@ public:
                 const auto* vNext = &vertices[i + 1];
                 const auto wi = vPrev ? Math::Normalize(vPrev->geom.p - v->geom.p) : Vec3();
                 const auto wo = Math::Normalize(vNext->geom.p - v->geom.p);
-                alphaL *= LocalContrb(v->primitive->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, false), v->primitive->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false));
+                alphaL *= LocalContrb(v->primitive->si->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, false), v->primitive->si->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false));
             }
         }
 
@@ -313,8 +325,9 @@ public:
         else
         {
             {
-                const auto& v = vertices[n - 1];
-                alphaE = LocalContrb(v.primitive->EvaluatePosition(v.geom, false), v.primitive->EvaluatePositionPDF(v.geom, false) * scene->EvaluateEmitterPDF(v.primitive));
+                const auto* v = &vertices[n - 1];
+                const auto* vPrev = &vertices[n - 2];
+                alphaE = LocalContrb(v->primitive->si->EvaluatePosition(v->geom, false), v->primitive->si->EvaluatePositionGivenDirectionPDF(v.geom, Math::Normalize(vPrev->geom.p - v->geom.p), false) * scene->EvaluateEmitterPDF(v->primitive));
             }
             for (int i = n - 1; i > s; i--)
             {
@@ -323,7 +336,7 @@ public:
                 const auto* vNext = i < n - 1 ? &vertices[i + 1] : nullptr;
                 const auto wi = vNext ? Math::Normalize(vNext->geom.p - v->geom.p) : Vec3();
                 const auto wo = Math::Normalize(vPrev->geom.p - v->geom.p);
-                alphaE *= LocalContrb(v->primitive->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, false), v->primitive->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false));
+                alphaE *= LocalContrb(v->primitive->si->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, false), v->primitive->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false));
             }
         }
 
@@ -367,6 +380,8 @@ public:
         assert(nonzero != 0);
         return 1_f / nonzero;
     }
+
+#if 0
 
     auto EvaluatePowerHeuristicsMISWeightOpt(const Scene* scene, int s) const -> Float
     {
@@ -497,6 +512,8 @@ public:
         }
     }
 
+#endif
+
     auto EvaluatePDF(const Scene* scene, int s) const -> Float
     {
         // Cases with p_{s,t}(x) = 0
@@ -512,28 +529,46 @@ public:
         Float pdf = 1;
         const int n = (int)(vertices.size());
         const int t = n - s;
+        if (s == 1 && t == 1)
+        {
+            pdf = 0_f;
+        }
         if (s > 0)
         {
-            pdf *= vertices[0].primitive->EvaluatePositionPDF(vertices[0].geom, false) * scene->EvaluateEmitterPDF(vertices[0].primitive);
-            for (int i = 0; i < s - 1; i++)
+            if (s == 1)
             {
-                const auto* vi = &vertices[i];
-                const auto* vip = i - 1 >= 0 ? &vertices[i - 1] : nullptr;
-                const auto* vin = &vertices[i + 1];
-                pdf *= vi->primitive->EvaluateDirectionPDF(vi->geom, vi->type, vip ? Math::Normalize(vip->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vin->geom.p - vi->geom.p), false);
-                pdf *= RenderUtils::GeometryTerm(vi->geom, vin->geom);
+                pdf = vertices[0].primitive->emitter->EvaluatePositionGivenPreviousPositionPDF(vertices[0].geom, vertices[1].geom, false);
+            }
+            else
+            {
+                pdf *= vertices[0].primitive->emitter->EvaluatePositionGivenDirectionPDF(vertices[0].geom, Math::Normalize(vertices[1].geom.p - vertices[0].geom.p), false) * scene->EvaluateEmitterPDF(vertices[0].primitive);
+                for (int i = 0; i < s - 1; i++)\
+                {
+                    const auto* vi = &vertices[i];
+                    const auto* vip = i - 1 >= 0 ? &vertices[i - 1] : nullptr;
+                    const auto* vin = &vertices[i + 1];
+                    pdf *= vi->primitive->si->EvaluateDirectionPDF(vi->geom, vi->type, vip ? Math::Normalize(vip->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vin->geom.p - vi->geom.p), false);
+                    pdf *= RenderUtils::GeometryTerm(vi->geom, vin->geom);
+                }
             }
         }
         if (t > 0)
         {
-            pdf *= vertices[n - 1].primitive->EvaluatePositionPDF(vertices[n - 1].geom, false) * scene->EvaluateEmitterPDF(vertices[n - 1].primitive);
-            for (int i = n - 1; i >= s + 1; i--)
+            if (t == 1)
             {
-                const auto* vi = &vertices[i];
-                const auto* vip = &vertices[i - 1];
-                const auto* vin = i + 1 < n ? &vertices[i + 1] : nullptr;
-                pdf *= vi->primitive->EvaluateDirectionPDF(vi->geom, vi->type, vin ? Math::Normalize(vin->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vip->geom.p - vi->geom.p), false);
-                pdf *= RenderUtils::GeometryTerm(vi->geom, vip->geom);
+                pdf = vertices[n - 1].primitive->emitter->EvaluatePositionGivenPreviousPositionPDF(vertices[n - 1].geom, vertices[n - 2].geom, false);
+            }
+            else
+            {
+                pdf *= vertices[n - 1].primitive->sf->EvaluatePositionGivenDirectionPDF(vertices[n - 1].geom, Math::Normalize(vertices[n - 2].geom.p - vertices[n - 1].geom.p), false) * scene->EvaluateEmitterPDF(vertices[n - 1].primitive);
+                for (int i = n - 1; i >= s + 1; i--)
+                {
+                    const auto* vi = &vertices[i];
+                    const auto* vip = &vertices[i - 1];
+                    const auto* vin = i + 1 < n ? &vertices[i + 1] : nullptr;
+                    pdf *= vi->primitive->sf->EvaluateDirectionPDF(vi->geom, vi->type, vin ? Math::Normalize(vin->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vip->geom.p - vi->geom.p), false);
+                    pdf *= RenderUtils::GeometryTerm(vi->geom, vip->geom);
+                }
             }
         }
 

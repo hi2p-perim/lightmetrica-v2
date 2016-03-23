@@ -32,6 +32,8 @@
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>
 #include <lightmetrica/emitter.h>
+#include <lightmetrica/light.h>
+#include <lightmetrica/sensor.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/scheduler.h>
@@ -73,7 +75,7 @@ public:
         {
             #pragma region Sample a light
 
-            const auto* L = scene->SampleEmitter(SurfaceInteraction::L, rng->Next());
+            const auto* L = scene->SampleEmitter(SurfaceInteractionType::L, rng->Next());
             const Float pdfL = scene->EvaluateEmitterPDF(L);
             assert(pdfL > 0);
 
@@ -81,12 +83,13 @@ public:
 
             // --------------------------------------------------------------------------------
 
-            #pragma region Sample a position on the light
+            #pragma region Sample a position on the light and initial ray direction
 
             SurfaceGeometry geomL;
-            L->SamplePosition(rng->Next2D(), rng->Next2D(), geomL);
-            const Float pdfPL = L->EvaluatePositionPDF(geomL, false);
-            assert(pdfPL > 0);
+            Vec3 initWo;
+            L->light->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), geomL, initWo);
+            const Float pdfPL = L->light->EvaluatePositionGivenDirectionPDF(geomL, initWo, false);
+            assert(pdfPE > 0);
 
             #pragma endregion
 
@@ -94,9 +97,9 @@ public:
 
             #pragma region Temporary variables
 
-            auto throughput = L->EvaluatePosition(geomL, false) / pdfPL / pdfL;
-            const auto* prim = L;
-            int type = SurfaceInteraction::L;
+            auto throughput = L->light->EvaluatePosition(geomL, false) / pdfPL / pdfL;
+            const auto* primitive = L;
+            int type = SurfaceInteractionType::L;
             auto geom = geomL;
             Vec3 wi;
             int numVertices = 1;
@@ -119,7 +122,7 @@ public:
                 {
                     #pragma region Sample a sensor
 
-                    const auto* E = scene->SampleEmitter(SurfaceInteraction::E, rng->Next());
+                    const auto* E = scene->SampleEmitter(SurfaceInteractionType::E, rng->Next());
                     const Float pdfE = scene->EvaluateEmitterPDF(E);
                     assert(pdfE > 0);
 
@@ -130,8 +133,8 @@ public:
                     #pragma region Sample a position on the sensor
 
                     SurfaceGeometry geomE;
-                    E->SamplePosition(rng->Next2D(), rng->Next2D(), geomE);
-                    const Float pdfPE = E->EvaluatePositionPDF(geomE, false);
+                    E->sensor->SamplePositionGivenPreviousPosition(rng->Next2D(), geom, geomE);
+                    const Float pdfPE = E->sensor->EvaluatePositionGivenPreviousPositionPDF(geomE, geom, false);
                     assert(pdfPE > 0);
 
                     #pragma endregion
@@ -141,11 +144,11 @@ public:
                     #pragma region Evaluate contribution
 
                     const auto ppE = Math::Normalize(geomE.p - geom.p);
-                    const auto fsL = prim->EvaluateDirection(geom, type, wi, ppE, TransportDirection::LE, true);
-                    const auto fsE = E->EvaluateDirection(geomE, SurfaceInteraction::E, Vec3(), -ppE, TransportDirection::EL, true);
+                    const auto fsL = primitive->si->EvaluateDirection(geom, type, wi, ppE, TransportDirection::LE, true);
+                    const auto fsE = E->sensor->EvaluateDirection(geomE, SurfaceInteractionType::E, Vec3(), -ppE, TransportDirection::EL, false);
                     const auto G = RenderUtils::GeometryTerm(geom, geomE);
                     const auto V = scene->Visible(geom.p, geomE.p) ? 1_f : 0_f;
-                    const auto WeP = E->EvaluatePosition(geomE, false);
+                    const auto WeP = E->sensor->EvaluatePosition(geomE, false);
                     const auto C = throughput * fsL * G * V * fsE * WeP / pdfE / pdfPE;
 
                     #pragma endregion
@@ -158,7 +161,7 @@ public:
                     {
                         // Pixel index
                         Vec2 rasterPos;
-                        E->emitter->RasterPosition(-ppE, geomE, rasterPos);
+                        E->sensor->RasterPosition(-ppE, geomE, rasterPos);
 
                         // Accumulate to film
                         film->Splat(rasterPos, C);
@@ -174,8 +177,15 @@ public:
                 #pragma region Sample next direction
 
                 Vec3 wo;
-                prim->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
-                const Float pdfD = prim->EvaluateDirectionPDF(geom, type, wi, wo, false);
+                if (type == SurfaceInteractionType::L)
+                {
+                    wo = initWo;
+                }
+                else
+                {
+                    primitive->si->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                }
+                const Float pdfD = primitive->si->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
@@ -183,7 +193,7 @@ public:
 
                 #pragma region Evaluate direction
 
-                const auto fs = prim->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
+                const auto fs = primitive->si->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
                 if (fs.Black())
                 {
                     break;
@@ -242,8 +252,8 @@ public:
                 #pragma region Update information
 
                 geom = isect.geom;
-                prim = isect.primitive;
-                type = isect.primitive->Type() & ~SurfaceInteraction::Emitter;
+                primitive = isect.primitive;
+                type = isect.primitive->si->Type() & ~SurfaceInteractionType::Emitter;
                 wi = -ray.d;
                 numVertices++;
 

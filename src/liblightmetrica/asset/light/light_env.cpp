@@ -32,6 +32,7 @@
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/triangleutils.h>
 #include <lightmetrica/scene.h>
+#include <lightmetrica/renderutils.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -107,7 +108,7 @@ public:
     LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
     {
         bound_ = scene->GetSphereBound();
-        invArea_ = 1_f / (2_f * Math::Pi() * bound_.radius * bound_.radius);
+        invArea_ = 1_f / (Math::Pi() * bound_.radius * bound_.radius);
         emitterShape_.reset(new EmitterShape_EnvLight(bound_, primitive_));
         return true;
     };
@@ -116,54 +117,82 @@ public:
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::L;
+        return SurfaceInteractionType::L;
     };
 
-    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    // Sample x \sim p_A(x | x_prev)
+    LM_IMPL_F(SamplePositionGivenPreviousPosition) = [this](const Vec2& u, const SurfaceGeometry& geomPrev, SurfaceGeometry& geom) -> void
     {
-        wo = geom.gn;
+        // First sample a direction from p_\omega(wo)
+        const auto d = Sampler::UniformSampleSphere(u);
+
+        // Calculate intersection point on virtual disk
+        Ray ray = { geomPrev.p, d };
+        Intersection isect;
+        if (!emitterShape_->Intersect(ray, 0_f, Math::Inf(), isect))
+        {
+            LM_UNREACHABLE();
+            return;
+        }
+        
+        // Sampled surface geometry
+        geom = isect.geom;
     };
 
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
-    {
-        return 1_f;
-    };
-
-    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
-    {
-        // TODO
-        return SPD(1_f);
-    };
-
-public:
-
-    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom) -> void
+    // Sample (x, \omega) \sim p_{A,\sigma^\perp}(x, \omega_o) = p_{\sigma^\perp}(\omega_o) p_A(x | \omega_o)
+    LM_IMPL_F(SamplePositionAndDirection) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom, Vec3& wo) -> void
     {
         // Sample a direction from p_\omega(wo)
-        // Here we sample from the uniform sphere
         const auto d = Sampler::UniformSampleSphere(u);
 
         // Sample a point on the virtual disk
         const auto p = Sampler::UniformConcentricDiskSample(u2) * bound_.radius;
 
-        // Surface geometry
+        // Sampled surface geometry
         geom.degenerated = false;
         geom.infinite = true;
         geom.gn = -d;
         geom.sn = geom.gn;
         geom.ComputeTangentSpace();
         geom.p = center_ + d * bound_.radius + (geom.dpdu * p.x + geom.dpdv * p.y);
+
+        // Sampled direction
+        wo = -d;
     };
 
-    LM_IMPL_F(EvaluatePositionPDF) = [this](const SurfaceGeometry& geom, bool evalDelta) -> Float
+    // Evaluate p_{\sigma^\perp}(\omega_o)
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
     {
-        return Sampler::UniformSampleSpherePDFSA() * invArea_;
+        // |cos(geom.sn, wo)| is always 1
+        return Sampler::UniformSampleSpherePDFSA();
+    };
+
+    // Evaluate p_A(x | \omega_o)
+    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> Float
+    {
+        return invArea_;
+    };
+
+    // Evaluate p_A(x | x_prev)
+    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> Float
+    {
+        if (evalDelta) { return 0_f; }
+        return RenderUtils::ConvertSAToArea(Sampler::UniformSampleSpherePDFSA(), geomPrev, geom);
+    };
+
+    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
+    {
+        // TODO
+        if (evalDelta) { return 0_f; }
+        return SPD(1_f);
     };
 
     LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
     {
-        return SPD(1);
+        return SPD(1_f);
     };
+
+public:
 
     LM_IMPL_F(GetEmitterShape) = [this]() -> const EmitterShape*
     {  

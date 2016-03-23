@@ -76,7 +76,6 @@ set(
 	"${_INCLUDE_DIR}/enum.h"
 	"${_INCLUDE_DIR}/probability.h"
 	"${_INCLUDE_DIR}/debug.h"
-	"${_INCLUDE_DIR}/surfaceinteraction.h"
 	"${_INCLUDE_DIR}/bsdfutils.h"
 	"${_INCLUDE_DIR}/scheduler.h"
 	"${_INCLUDE_DIR}/renderutils.h"
@@ -166,7 +165,7 @@ set(
 	"${_INCLUDE_DIR}/emitter.h"
 	"${_INCLUDE_DIR}/sensor.h"
 	"${_INCLUDE_DIR}/bsdf.h"
-	"${_INCLUDE_DIR}/generalizedbsdf.h"
+	"${_INCLUDE_DIR}/surfaceinteraction.h"
 	"${_INCLUDE_DIR}/trianglemesh.h"
 	"${_INCLUDE_DIR}/film.h"
 	"${_INCLUDE_DIR}/texture.h"
@@ -191,8 +190,8 @@ list(APPEND _SOURCE_FILES ${_ASSET_SOURCE_FILES})
 set(
     _ASSET_SENSOR_SOURCE_FILES
 	"asset/sensor/sensor_pinhole.cpp"
-	"asset/sensor/sensor_area.cpp"
-	"asset/sensor/sensor_thinlens.cpp"
+	#"asset/sensor/sensor_area.cpp"
+	#"asset/sensor/sensor_thinlens.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\sensor" FILES ${_ASSET_SENSOR_SOURCE_FILES})
@@ -207,8 +206,8 @@ list(APPEND _SOURCE_FILES ${_ASSET_SENSOR_SOURCE_FILES})
 set(
     _ASSET_LIGHT_SOURCE_FILES
 	"asset/light/light_area.cpp"
-	"asset/light/light_point.cpp"
-	"asset/light/light_directional.cpp"
+	#"asset/light/light_point.cpp"
+	#"asset/light/light_directional.cpp"
 	"asset/light/light_env.cpp"
 )
 
@@ -252,12 +251,12 @@ list(APPEND _SOURCE_FILES ${_ASSET_TRIANGLE_MESH_SOURCE_FILES})
 
 set(
 	_ASSET_BSDF_SOURCE_FILES
-	"asset/bsdf/bsdf_null.cpp"
+	#"asset/bsdf/bsdf_null.cpp"
 	"asset/bsdf/bsdf_diffuse.cpp"
-	"asset/bsdf/bsdf_cooktorrance.cpp"
-	"asset/bsdf/bsdf_flesnel.cpp"
-	"asset/bsdf/bsdf_reflectall.cpp"
-	"asset/bsdf/bsdf_refractall.cpp"
+	#"asset/bsdf/bsdf_cooktorrance.cpp"
+	#"asset/bsdf/bsdf_flesnel.cpp"
+	#"asset/bsdf/bsdf_reflectall.cpp"
+	#"asset/bsdf/bsdf_refractall.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\bsdf" FILES ${_ASSET_BSDF_SOURCE_FILES})
@@ -334,17 +333,17 @@ set(
 
 set(
     _RENDERER_SOURCE_FILES
-	"renderer/renderer_null.cpp"
-	"renderer/renderer_raycast.cpp"
-	"renderer/renderer_raycast_pixel.cpp"
+	#"renderer/renderer_null.cpp"
+	#"renderer/renderer_raycast.cpp"
+	#"renderer/renderer_raycast_pixel.cpp"
 	"renderer/renderer_pt.cpp"
 	"renderer/renderer_ptdirect.cpp"
-	"renderer/renderer_lt.cpp"
+	#"renderer/renderer_lt.cpp"
 	"renderer/renderer_ltdirect.cpp"
 	"renderer/renderer_bdpt.cpp"
-	"renderer/renderer_sampledensity.cpp"
-	"renderer/renderer_sampledensity2.cpp"
-	"renderer/renderer_bdpt.cpp"
+	#"renderer/renderer_sampledensity.cpp"
+	#"renderer/renderer_sampledensity2.cpp"
+	#"renderer/renderer_bdpt.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})

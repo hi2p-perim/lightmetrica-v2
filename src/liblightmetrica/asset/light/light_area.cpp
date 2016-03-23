@@ -58,12 +58,21 @@ public:
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::L;
+        return SurfaceInteractionType::L;
     };
 
-    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    LM_IMPL_F(SamplePositionGivenPreviousPosition) = [this](const Vec2& u, const SurfaceGeometry& geomPrev, SurfaceGeometry& geom) -> void
     {
-        const auto localWo = Sampler::CosineSampleHemisphere(u);
+        TriangleUtils::SampleTriangleMesh(u, primitive_, dist_, geom);
+    };
+
+    LM_IMPL_F(SamplePositionAndDirection) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom, Vec3& wo) -> void
+    {
+        // Position
+        TriangleUtils::SampleTriangleMesh(u, primitive_, dist_, geom);
+
+        // Direction
+        const auto localWo = Sampler::CosineSampleHemisphere(u2);
         wo = geom.ToWorld * localWo;
     };
 
@@ -74,23 +83,21 @@ public:
         return Sampler::CosineSampleHemispherePDFProjSA(localWo);
     };
 
+    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> Float
+    {
+        return invArea_;
+    };
+
+    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> Float
+    {
+        return invArea_;
+    };
+
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
         const auto localWo = geom.ToLocal * wo;
         if (Math::LocalCos(localWo) <= 0) { return SPD(); }
         return Le_;
-    };
-
-public:
-
-    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom) -> void
-    {
-        TriangleUtils::SampleTriangleMesh(u, primitive_, dist_, geom);
-    };
-
-    LM_IMPL_F(EvaluatePositionPDF) = [this](const SurfaceGeometry& geom, bool evalDelta) -> Float
-    {
-        return invArea_;
     };
 
     LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD

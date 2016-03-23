@@ -24,13 +24,14 @@
 
 #pragma once
 
-#include <lightmetrica/generalizedbsdf.h>
+#include <lightmetrica/surfaceinteraction.h>
 
 LM_NAMESPACE_BEGIN
 
 class PositionSampler;
 struct Ray;
 struct Intersection;
+struct Bound;
 
 /*!
     \brief Shape associated with Emitter.
@@ -61,11 +62,11 @@ public:
     \brief An interface for Emitter.
     \ingroup asset
 */
-class Emitter : public GeneralizedBSDF
+class Emitter : public SurfaceInteraction
 {
 public:
 
-    LM_INTERFACE_CLASS(Emitter, GeneralizedBSDF, 5);
+    LM_INTERFACE_CLASS(Emitter, SurfaceInteraction, 2);
 
 public:
 
@@ -73,40 +74,6 @@ public:
     LM_DISABLE_COPY_AND_MOVE(Emitter);
 
 public:
-
-    /*!
-        \brief Sample a position on the light.
-        \param u  Uniform random numbers in [0,1]^2.
-        \param u2 Uniform random numbers in [0,1]^2.
-        \param geom Surface geometry at the sampled position.
-    */
-    LM_INTERFACE_F(0, SamplePosition, void(const Vec2& u, const Vec2& u2, SurfaceGeometry& geom));
-
-    /*!
-        \brief Evaluate positional PDF.
-        \param geom Surface geometry.
-        \return Evaluated PDF.
-    */
-    LM_INTERFACE_F(1, EvaluatePositionPDF, Float(const SurfaceGeometry& geom, bool evalDelta));
-
-    /*!
-        \brief Evaluate the positional component of the emitted quantity.
-        \param geom Surface geometry.
-        \return Positional component of the emitted quantity.
-    */
-    LM_INTERFACE_F(2, EvaluatePosition, SPD(const SurfaceGeometry& geom, bool evalDelta));
-
-    /*!
-        \brief Compute raster position from the direction and the position.
-
-        The function calculates the raster position from the outgoing ray.
-        Returns false if calculated raster position is the outside of [0, 1]^2.
-
-        \param wo           Outgoing direction from the point on the emitter.
-        \param geom         Surface geometry information around the point on the emitter.
-        \param rasterPos    Computed raster position.
-    */
-    LM_INTERFACE_F(3, RasterPosition, bool(const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos));
 
     /*!
         \brief Get emitter shape.
@@ -117,7 +84,13 @@ public:
 
         \return Instance of emitter shape.
     */
-    LM_INTERFACE_F(4, GetEmitterShape, const EmitterShape*());
+    LM_INTERFACE_F(0, GetEmitterShape, const EmitterShape*());
+
+    /*!
+        \brief Get bound of the emitter.
+        \return Bound.
+    */
+    LM_INTERFACE_F(1, GetBound, Bound());
 
 };
 

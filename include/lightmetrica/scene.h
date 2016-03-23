@@ -52,7 +52,7 @@ class Scene : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene, Component, 10);
+    LM_INTERFACE_CLASS(Scene, Component, 11);
 
 public:
 

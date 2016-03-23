@@ -39,6 +39,103 @@
 
 LM_NAMESPACE_BEGIN
 
+class SurfaceInteractionSelector : public SurfaceInteraction
+{
+    friend class Scene_;
+
+public:
+
+    LM_IMPL_CLASS(SurfaceInteractionSelector, SurfaceInteraction);
+
+public:
+
+    LM_IMPL_F(Type) = [this]() -> int
+    {
+        return (emitter_ ? emitter_->Type() : 0) | (bsdf_ ? bsdf_->Type() : 0);
+    };
+
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float u2, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    {
+        if ((queryType & SurfaceInteractionType::Emitter) > 0)
+        {
+            emitter_->SampleDirection(u, u2, queryType, geom, wi, wo);
+            return;
+        }
+        if ((queryType & SurfaceInteractionType::BSDF) > 0)
+        {
+            bsdf_->SampleDirection(u, u2, queryType, geom, wi, wo);
+            return;
+        }
+        LM_UNREACHABLE();
+    };
+
+    LM_IMPL_F(SamplePositionGivenPreviousPosition) = [this](const Vec2& u, const SurfaceGeometry& geomPrev, SurfaceGeometry& geom) -> void
+    {
+        assert(emitter_ != nullptr);
+        emitter_->SamplePositionGivenPreviousPosition(u, geomPrev, geom);
+    };
+
+    LM_IMPL_F(SamplePositionAndDirection) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom, Vec3& wo) -> void
+    {
+        assert(emitter_ != nullptr);
+        emitter_->SamplePositionAndDirection(u, u2, geom, wo);
+    };
+
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    {
+        if ((queryType & SurfaceInteractionType::Emitter) > 0)
+        {
+            return emitter_->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
+        }
+        if ((queryType & SurfaceInteractionType::BSDF) > 0)
+        {
+            return bsdf_->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
+        }
+        LM_UNREACHABLE();
+        return 0_f;
+    };
+
+    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> Float
+    {
+        assert(emitter_ != nullptr);
+        return emitter_->EvaluatePositionGivenDirectionPDF(geom, wo, evalDelta);
+    };
+
+    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> Float
+    {
+        assert(emitter_ != nullptr);
+        return emitter_->EvaluatePositionGivenPreviousPositionPDF(geom, geomPrev, evalDelta);
+    };
+
+    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
+    {
+        if ((types & SurfaceInteractionType::Emitter) > 0)
+        {
+            return emitter_->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
+        }
+        if ((types & SurfaceInteractionType::BSDF) > 0)
+        {
+            return bsdf_->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
+        }
+        LM_UNREACHABLE();
+        return SPD();
+    };
+
+    LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
+    {
+        assert(emitter_ != nullptr);
+        return emitter_->EvaluatePosition(geom, evalDelta);
+    };
+
+private:
+
+    const Emitter* emitter_ = nullptr;
+    const BSDF* bsdf_ = nullptr;
+
+};
+
+// --------------------------------------------------------------------------------
+
 class Scene_ final : public Scene
 {
 public:
@@ -246,12 +343,14 @@ public:
                 {
                     if (L)
                     {
-                        primitive->emitter = static_cast<Emitter*>(assets->AssetByIDAndType(L->As<std::string>(), "light", primitive.get()));
+                        primitive->light   = static_cast<const Light*>(assets->AssetByIDAndType(L->As<std::string>(), "light", primitive.get()));
+                        primitive->emitter = static_cast<const Emitter*>(primitive->light);
                         lightPrimitiveIndices_.push_back(primitives_.size());
                     }
                     else if (E)
                     {
-                        primitive->emitter = static_cast<Emitter*>(assets->AssetByIDAndType(E->As<std::string>(), "sensor", primitive.get()));
+                        primitive->sensor  = static_cast<const Sensor*>(assets->AssetByIDAndType(E->As<std::string>(), "sensor", primitive.get()));
+                        primitive->emitter = static_cast<const Emitter*>(primitive->sensor);
                     }
 
                     if (!primitive->emitter)
@@ -266,8 +365,21 @@ public:
 
                 // --------------------------------------------------------------------------------
 
+                #pragma region Combined surface interaction type
+
+                std::unique_ptr<SurfaceInteractionSelector> csi(new SurfaceInteractionSelector);
+                csi->emitter_ = primitive->emitter;
+                csi->bsdf_ = primitive->bsdf;
+                primitive->si = csi.get();
+                csis_.push_back(std::move(csi));
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
                 #pragma region Add primitive
 
+                // Register primitive ID
                 if (primitive->id)
                 {
                     primitiveIDMap_[primitive->id] = primitive.get();
@@ -366,8 +478,13 @@ public:
                     bound_ = Math::Union(bound_, p);
                 }
             }
-        }
 
+            if (primitive->emitter && primitive->emitter->GetBound.Implemented())
+            {
+                bound_ = Math::Union(bound_, primitive->emitter->GetBound());
+            }
+        }
+        
         // Bounding sphere
         sphereBound_.center = (bound_.max + bound_.min) * .5_f;
         sphereBound_.radius = Math::Length(sphereBound_.center - bound_.max) * 1.01_f;  // Grow slightly
@@ -428,16 +545,19 @@ public:
         bool hit = accel_->Intersect(this, ray, isect, Math::EpsIsect(), Math::Inf());
 
         // Intersect with emitter shapes
-        Float maxT = hit ? Math::Length(isect.geom.p - ray.o) : Math::Inf();
-        for (size_t i = 0; i < emitterShapes_.size(); i++)
+        if (!hit)
         {
-            if (emitterShapes_[i]->Intersect(ray, Math::EpsIsect(), maxT, isect))
+            Float maxT = Math::Inf();
+            for (size_t i = 0; i < emitterShapes_.size(); i++)
             {
-                maxT = Math::Length(isect.geom.p - ray.o);
-                hit = true;
+                if (emitterShapes_[i]->Intersect(ray, Math::EpsIsect(), maxT, isect))
+                {
+                    maxT = Math::Length(isect.geom.p - ray.o);
+                    hit = true;
+                }
             }
         }
-
+        
         return hit;
     };
 
@@ -469,14 +589,14 @@ public:
 
     LM_IMPL_F(SampleEmitter) = [this](int type, Float u) -> const Primitive*
     {
-        if ((type & SurfaceInteraction::L) > 0)
+        if ((type & SurfaceInteractionType::L) > 0)
         {
             int n = static_cast<int>(lightPrimitiveIndices_.size());
             int i = Math::Clamp(static_cast<int>(u * n), 0, n - 1);
             return primitives_.at(lightPrimitiveIndices_[i]).get();
         }
 
-        if ((type & SurfaceInteraction::E) > 0)
+        if ((type & SurfaceInteractionType::E) > 0)
         {
             return sensorPrimitive_;
         }
@@ -487,13 +607,13 @@ public:
 
     LM_IMPL_F(EvaluateEmitterPDF) = [this](const Primitive* primitive) -> Float
     {
-        if ((primitive->Type() & SurfaceInteraction::L) > 0)
+        if ((primitive->emitter->Type() & SurfaceInteractionType::L) > 0)
         {
             const int n = static_cast<int>(lightPrimitiveIndices_.size());
             return 1_f / Float(n);
         }
 
-        if ((primitive->Type() & SurfaceInteraction::E) > 0)
+        if ((primitive->emitter->Type() & SurfaceInteractionType::E) > 0)
         {
             return 1_f;
         }
@@ -514,14 +634,16 @@ public:
 
 private:
 
-    std::vector<std::unique_ptr<Primitive>> primitives_;            // Primitives
-    std::unordered_map<std::string, Primitive*> primitiveIDMap_;    // Mapping from ID to primitive pointer
-    Primitive* sensorPrimitive_;                                    // Pointer to sensor primitive
-    std::vector<size_t> lightPrimitiveIndices_;                     // Pointers to light primitives
-    const Accel* accel_;
-    Bound bound_;
-    SphereBound sphereBound_;
-    std::vector<const EmitterShape*> emitterShapes_;
+    std::vector<std::unique_ptr<Primitive>> primitives_;                // Primitives
+    std::vector<std::unique_ptr<SurfaceInteractionSelector>> csis_;     // Combined surface interaction (emitter + bsdf) created per primitive
+    std::unordered_map<std::string, Primitive*> primitiveIDMap_;        // Mapping from ID to primitive pointer
+    Primitive* sensorPrimitive_;                                        // Pointer to sensor primitive
+    std::vector<size_t> lightPrimitiveIndices_;                         // Pointers to light primitives
+
+    const Accel* accel_;                                                // Acceleration structure
+    Bound bound_;                                                       // Scene bound (AABB)
+    SphereBound sphereBound_;                                           // Scene bound (sphere)
+    std::vector<const EmitterShape*> emitterShapes_;                    // Special shapes for emitters
 
 };
 
