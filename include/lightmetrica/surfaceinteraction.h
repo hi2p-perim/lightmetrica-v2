@@ -26,6 +26,7 @@
 
 #include <lightmetrica/asset.h>
 #include <lightmetrica/surfacegeometry.h>
+#include <lightmetrica/probability.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -147,7 +148,7 @@ public:
         \param evalDelta    `true` if we do not want to ignore the delta function
                             in the distribution, otherwise `false`.
     */
-    LM_INTERFACE_F(4, EvaluateDirectionPDF, Float(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta));
+    LM_INTERFACE_F(4, EvaluateDirectionPDF, PDFVal(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta));
 
     /*!
         \brief Evaluate joint PDF.
@@ -193,8 +194,8 @@ public:
         \param evalDelta  Evaluates underlying delta function if enabled.
         \return           Evaluated PDF.
     */
-    LM_INTERFACE_F(5, EvaluatePositionGivenDirectionPDF,        Float(const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta));
-    LM_INTERFACE_F(6, EvaluatePositionGivenPreviousPositionPDF, Float(const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta));
+    LM_INTERFACE_F(5, EvaluatePositionGivenDirectionPDF,        PDFVal(const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta));
+    LM_INTERFACE_F(6, EvaluatePositionGivenPreviousPositionPDF, PDFVal(const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta));
 
     enum class PositionPDFTypes
     {

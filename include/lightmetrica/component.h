@@ -503,6 +503,8 @@ public:
         static_assert(std::is_base_of<Clonable, InterfaceType>::value, "InterfaceType must inherit Clonable");
         using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
         auto* p2 = static_cast<InterfaceType*>(p->createFunc());
+        p2->createFunc  = p->createFunc;
+        p2->releaseFunc = p->releaseFunc;
         assert(p2);
         p->Clone(p2);
         return ReturnType(p2, p->releaseFunc);

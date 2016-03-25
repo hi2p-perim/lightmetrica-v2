@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <lightmetrica/math.h>
+#include <lightmetrica/probability.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -67,9 +67,12 @@ public:
     }
 
     //! Evaluate the PDF of CosineSampleHemisphere with the solid angle measure
-    static auto CosineSampleHemispherePDFProjSA(const Vec3& d) -> Float
+    static auto CosineSampleHemispherePDFProjSA(const Vec3& d) -> PDFVal
     {
-        return Math::InvPi();
+        PDFVal pdf;
+        pdf.measure = PDFMeasure::ProjectedSolidAngle;
+        pdf.v = Math::InvPi();
+        return pdf;
     }
 
     //! Sample a direction uniformly from the unit sphere
@@ -82,9 +85,12 @@ public:
     }
 
     //! Evaluate the PDF of UniformSampleSphere with the solid angle measure
-    static auto UniformSampleSpherePDFSA() -> Float
+    static auto UniformSampleSpherePDFSA() -> PDFVal
     {
-        return Math::InvPi() * 0.25_f;
+        PDFVal pdf;
+        pdf.measure = PDFMeasure::SolidAngle;
+        pdf.v = Math::InvPi() * 0.25_f;
+        return pdf;
     }
 
     //! Uniformly sample a triangle, returns barycentric coordinates

@@ -76,21 +76,21 @@ public:
         wo = geom.ToWorld * localWo;
     };
 
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         const auto localWo = geom.ToLocal * wo;
-        if (Math::LocalCos(localWo) <= 0_f) { return 0_f; }
+        if (Math::LocalCos(localWo) <= 0_f) { return PDFVal(PDFMeasure::Area, 0_f); }
         return Sampler::CosineSampleHemispherePDFProjSA(localWo);
     };
 
-    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> PDFVal
     {
-        return invArea_;
+        return PDFVal(PDFMeasure::Area, invArea_);
     };
 
-    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> PDFVal
     {
-        return invArea_;
+        return PDFVal(PDFMeasure::Area, invArea_);
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD

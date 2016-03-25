@@ -65,11 +65,11 @@ struct Primitive : public SIMDAlignedType
     const TriangleMesh* mesh = nullptr;
 
     // Surface interactions
-    const SurfaceInteraction* si = nullptr;
-    const BSDF*    bsdf          = nullptr;
-    const Emitter* emitter       = nullptr;
-    const Light*   light         = nullptr;
-    const Sensor*  sensor        = nullptr;
+    const SurfaceInteraction* surface = nullptr;
+    const BSDF*    bsdf               = nullptr;
+    const Emitter* emitter            = nullptr;
+    const Light*   light              = nullptr;
+    const Sensor*  sensor             = nullptr;
 
     /*!
         Get underlying surface interaction types.

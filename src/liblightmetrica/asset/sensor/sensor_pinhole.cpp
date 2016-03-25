@@ -86,19 +86,19 @@ public:
         wo = vx_ * woEye.x + vy_ * woEye.y + vz_ * woEye.z;
     };
 
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
-        return Importance(wo, geom);
+        return PDFVal(PDFMeasure::ProjectedSolidAngle, Importance(wo, geom));
     };
 
-    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> PDFVal
     {
-        return !evalDelta ? 1_f : 0_f;
+        return PDFVal(PDFMeasure::Area, !evalDelta ? 1_f : 0_f);
     };
 
-    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> PDFVal
     {
-        return !evalDelta ? 1_f : 0_f;
+        return PDFVal(PDFMeasure::Area, !evalDelta ? 1_f : 0_f);
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD

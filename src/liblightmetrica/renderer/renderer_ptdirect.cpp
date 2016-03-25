@@ -76,8 +76,8 @@ public:
             #pragma region Sample a sensor
 
             const auto* E = scene->SampleEmitter(SurfaceInteractionType::E, rng->Next());
-            const Float pdfE = scene->EvaluateEmitterPDF(E);
-            assert(pdfE > 0);
+            const auto pdfE = scene->EvaluateEmitterPDF(E);
+            assert(pdfE.v > 0);
 
             #pragma endregion
 
@@ -88,8 +88,8 @@ public:
             SurfaceGeometry geomE;
             Vec3 initWo;
             E->sensor->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), geomE, initWo);
-            const Float pdfPE = E->sensor->EvaluatePositionGivenDirectionPDF(geomE, initWo, false);
-            assert(pdfPE > 0);
+            const auto pdfPE = E->sensor->EvaluatePositionGivenDirectionPDF(geomE, initWo, false);
+            assert(pdfPE.v > 0);
 
             #pragma endregion
 
@@ -124,8 +124,8 @@ public:
                     #pragma region Sample a light
 
                     const auto* L = scene->SampleEmitter(SurfaceInteractionType::L, rng->Next());
-                    const Float pdfL = scene->EvaluateEmitterPDF(L);
-                    assert(pdfL > 0);
+                    const auto pdfL = scene->EvaluateEmitterPDF(L);
+                    assert(pdfL > 0_f);
 
                     #pragma endregion
 
@@ -135,8 +135,8 @@ public:
 
                     SurfaceGeometry geomL;
                     L->light->SamplePositionGivenPreviousPosition(rng->Next2D(), geom, geomL);
-                    const Float pdfPL = L->light->EvaluatePositionGivenPreviousPositionPDF(geomL, geom, false);
-                    assert(pdfPL > 0);
+                    const auto pdfPL = L->light->EvaluatePositionGivenPreviousPositionPDF(geomL, geom, false);
+                    assert(pdfPL > 0_f);
 
                     #pragma endregion
 
@@ -145,7 +145,7 @@ public:
                     #pragma region Evaluate contribution
 
                     const auto ppL = Math::Normalize(geomL.p - geom.p);
-                    const auto fsE = primitive->si->EvaluateDirection(geom, type, wi, ppL, TransportDirection::EL, true);
+                    const auto fsE = primitive->surface->EvaluateDirection(geom, type, wi, ppL, TransportDirection::EL, true);
                     const auto fsL = L->light->EvaluateDirection(geomL, SurfaceInteractionType::L, Vec3(), -ppL, TransportDirection::LE, false);
                     const auto G = RenderUtils::GeometryTerm(geom, geomL);
                     const auto V = scene->Visible(geom.p, geomL.p) ? 1_f : 0_f;
@@ -187,9 +187,9 @@ public:
                 }
                 else
                 {
-                    primitive->si->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                    primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
                 }
-                const Float pdfD = primitive->si->EvaluateDirectionPDF(geom, type, wi, wo, false);
+                const auto pdfD = primitive->surface->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
@@ -211,7 +211,7 @@ public:
 
                 #pragma region Evaluate direction
 
-                const auto fs = primitive->si->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, false);
+                const auto fs = primitive->surface->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, false);
                 if (fs.Black())
                 {
                     break;
@@ -223,7 +223,7 @@ public:
 
                 #pragma region Update throughput
 
-                assert(pdfD > 0);
+                assert(pdfD > 0_f);
                 throughput *= fs / pdfD;
 
                 #pragma endregion
@@ -271,7 +271,7 @@ public:
 
                 geom = isect.geom;
                 primitive = isect.primitive;
-                type = isect.primitive->si->Type() & ~SurfaceInteractionType::Emitter;
+                type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
                 wi = -ray.d;
                 numVertices++;
 

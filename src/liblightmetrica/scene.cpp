@@ -81,7 +81,7 @@ public:
         emitter_->SamplePositionAndDirection(u, u2, geom, wo);
     };
 
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         if ((queryType & SurfaceInteractionType::Emitter) > 0)
         {
@@ -92,16 +92,16 @@ public:
             return bsdf_->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
         }
         LM_UNREACHABLE();
-        return 0_f;
+        return PDFVal();
     };
 
-    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         assert(emitter_ != nullptr);
         return emitter_->EvaluatePositionGivenDirectionPDF(geom, wo, evalDelta);
     };
 
-    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> PDFVal
     {
         assert(emitter_ != nullptr);
         return emitter_->EvaluatePositionGivenPreviousPositionPDF(geom, geomPrev, evalDelta);
@@ -370,7 +370,7 @@ public:
                 std::unique_ptr<SurfaceInteractionSelector> csi(new SurfaceInteractionSelector);
                 csi->emitter_ = primitive->emitter;
                 csi->bsdf_ = primitive->bsdf;
-                primitive->si = csi.get();
+                primitive->surface = csi.get();
                 csis_.push_back(std::move(csi));
 
                 #pragma endregion
@@ -605,21 +605,21 @@ public:
         return nullptr;
     };
 
-    LM_IMPL_F(EvaluateEmitterPDF) = [this](const Primitive* primitive) -> Float
+    LM_IMPL_F(EvaluateEmitterPDF) = [this](const Primitive* primitive) -> PDFVal
     {
         if ((primitive->emitter->Type() & SurfaceInteractionType::L) > 0)
         {
             const int n = static_cast<int>(lightPrimitiveIndices_.size());
-            return 1_f / Float(n);
+            return PDFVal(PDFMeasure::Discrete, 1_f / Float(n));
         }
 
         if ((primitive->emitter->Type() & SurfaceInteractionType::E) > 0)
         {
-            return 1_f;
+            return PDFVal(PDFMeasure::Discrete, 1_f);
         }
 
         LM_UNREACHABLE();
-        return 0_f;
+        return PDFVal(PDFMeasure::Discrete, 0_f);
     };
 
     LM_IMPL_F(GetBound) = [this]() -> Bound

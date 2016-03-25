@@ -55,18 +55,6 @@ public:
         return t / p1p2L2;
     }
 
-    //! Convert solid angle measure to area measure
-    static auto ConvertSAToArea(Float pdfSA, const SurfaceGeometry& geom1, const SurfaceGeometry& geom2) -> Float
-    {
-        auto p1p2 = geom2.p - geom1.p;
-        const auto p1p2L2 = Math::Dot(p1p2, p1p2);
-        const auto p1p2L = Math::Sqrt(p1p2L2);
-        p1p2 /= p1p2L;
-        Float t = 1_f;
-        if (!geom2.degenerated) { t *= Math::Abs(Math::Dot(geom2.sn, -p1p2)); }
-        return pdfSA * t / p1p2L2;
-    }
-
 };
 
 LM_NAMESPACE_END

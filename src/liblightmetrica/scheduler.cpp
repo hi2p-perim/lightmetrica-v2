@@ -316,6 +316,11 @@ public:
         #pragma endregion
     };
 
+    LM_IMPL_F(GetNumSamples) = [this]() -> long long
+    {
+        return numSamples_;
+    };
+
 private:
 
     int numThreads_;

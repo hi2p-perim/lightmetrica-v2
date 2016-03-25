@@ -74,8 +74,8 @@ public:
             #pragma region Sample a sensor
 
             const auto* E = scene->SampleEmitter(SurfaceInteractionType::E, rng->Next());
-            const Float pdfE = scene->EvaluateEmitterPDF(E);
-            assert(pdfE > 0);
+            const auto pdfE = scene->EvaluateEmitterPDF(E);
+            assert(pdfE.v > 0);
 
             #pragma endregion
 
@@ -86,8 +86,8 @@ public:
             SurfaceGeometry geomE;
             Vec3 initWo;
             E->sensor->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), geomE, initWo);
-            const Float pdfPE = E->sensor->EvaluatePositionGivenDirectionPDF(geomE, initWo, false);
-            assert(pdfPE > 0);
+            const auto pdfPE = E->sensor->EvaluatePositionGivenDirectionPDF(geomE, initWo, false);
+            assert(pdfPE.v > 0);
 
             #pragma endregion
 
@@ -137,9 +137,9 @@ public:
                 }
                 else
                 {
-                    primitive->si->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                    primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
                 }
-                const auto pdfD = primitive->si->EvaluateDirectionPDF(geom, type, wi, wo, false);
+                const auto pdfD = primitive->surface->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
@@ -147,7 +147,7 @@ public:
 
                 #pragma region Evaluate direction
 
-                const auto fs = primitive->si->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, false);
+                const auto fs = primitive->surface->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, false);
                 if (fs.Black())
                 {
                     break;
@@ -159,7 +159,7 @@ public:
 
                 #pragma region Update throughput
 
-                assert(pdfD > 0);
+                assert(pdfD > 0_f);
                 throughput *= fs / pdfD;
 
                 #pragma endregion
@@ -184,7 +184,7 @@ public:
 
                 #pragma region Handle hit with light source
 
-                if ((isect.primitive->si->Type() & SurfaceInteractionType::L) > 0)
+                if ((isect.primitive->surface->Type() & SurfaceInteractionType::L) > 0)
                 {
                     // Accumulate to film
                     const auto C =
@@ -223,7 +223,7 @@ public:
 
                 geom = isect.geom;
                 primitive = isect.primitive;
-                type = isect.primitive->si->Type() & ~SurfaceInteractionType::Emitter;
+                type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
                 wi = -ray.d;
                 numVertices++;
 

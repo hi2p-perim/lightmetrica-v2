@@ -26,6 +26,7 @@
 
 #include <lightmetrica/macros.h>
 #include <lightmetrica/math.h>
+#include <lightmetrica/probability.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -115,6 +116,13 @@ LM_INLINE auto operator/(const DiscreteSPD<3>& spd1, const DiscreteSPD<3>& spd2)
 LM_INLINE auto operator/(const DiscreteSPD<3>& spd, Float s) -> DiscreteSPD<3>
 {
     return DiscreteSPD<3>(spd.v / s);
+}
+
+LM_INLINE auto operator/(const DiscreteSPD<3>& spd, const PDFVal& p) -> DiscreteSPD<3>
+{
+    assert(p.v != 0_f || (p.v == 0_f && spd.Black()));
+    if (spd.Black()) return DiscreteSPD<3>();
+    return spd / p.v;
 }
 
 #if LM_SPECTRUM_MULTI

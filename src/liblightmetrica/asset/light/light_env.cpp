@@ -161,29 +161,29 @@ public:
     };
 
     // Evaluate p_{\sigma^\perp}(\omega_o)
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         // |cos(geom.sn, wo)| is always 1
-        return Sampler::UniformSampleSpherePDFSA();
+        return PDFVal(PDFMeasure::ProjectedSolidAngle, Sampler::UniformSampleSpherePDFSA().v);
     };
 
     // Evaluate p_A(x | \omega_o)
-    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> PDFVal
     {
-        return invArea_;
+        return PDFVal(PDFMeasure::Area, invArea_);
     };
 
     // Evaluate p_A(x | x_prev)
-    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> PDFVal
     {
-        if (evalDelta) { return 0_f; }
-        return RenderUtils::ConvertSAToArea(Sampler::UniformSampleSpherePDFSA(), geomPrev, geom);
+        if (evalDelta) { return PDFVal(PDFMeasure::Area, 0_f); }
+        return Sampler::UniformSampleSpherePDFSA().ConvertToArea(geomPrev, geom);
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
         // TODO
-        if (evalDelta) { return 0_f; }
+        //if (evalDelta) { return 0_f; }
         return SPD(1_f);
     };
 
