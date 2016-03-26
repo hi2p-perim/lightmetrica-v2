@@ -82,7 +82,7 @@ public:
         const auto localWo = geom.ToLocal * wo;
         if (Math::LocalCos(localWi) <= 0_f || Math::LocalCos(localWo) <= 0_f)
         {
-            return PDFVal(PDFMeasure::SolidAngle, 0_f);
+            return PDFVal(PDFMeasure::ProjectedSolidAngle, 0_f);
         }
 
         return Sampler::CosineSampleHemispherePDFProjSA(localWo);

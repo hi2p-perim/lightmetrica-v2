@@ -52,7 +52,7 @@ public:
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::S;
+        return SurfaceInteractionType::S;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
@@ -88,11 +88,11 @@ public:
         }
     };
 
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         if (evalDelta)
         {
-            return 0_f;
+            return PDFVal(PDFMeasure::ProjectedSolidAngle, 0_f);
         }
 
         // Local directions
@@ -112,16 +112,16 @@ public:
         if (Math::LocalCos(localWi) * Math::LocalCos(localWo) >= 0_f)
         {
             // Reflection
-            return Fr;
+            return PDFVal(PDFMeasure::ProjectedSolidAngle, Fr);
         }
         else
         {
             // Refraction
-            return 1_f - Fr;
+            return PDFVal(PDFMeasure::ProjectedSolidAngle, 1_f - Fr);
         }
 
         LM_UNREACHABLE();
-        return 0_f;
+        return PDFVal(PDFMeasure::ProjectedSolidAngle, 0_f);
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD

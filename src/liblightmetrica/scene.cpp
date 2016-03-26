@@ -310,18 +310,10 @@ public:
                 {
                     primitive->bsdf = static_cast<const BSDF*>(assets->AssetByIDAndType(bsdfNode->As<std::string>(), "bsdf", primitive.get()));
                 }
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Check if mesh and bsdf are both loaded
-
-                if ((primitive->mesh == nullptr) != (primitive->bsdf == nullptr))
+                else
                 {
-                    LM_LOG_ERROR("Missing one of 'mesh' or 'bsdf' node");
-                    PropertyUtils::PrintPrettyError(propNode);
-                    return false;
+                    // If bsdf node is empty, assign 'null' bsdf.
+                    primitive->bsdf = nullBSDF_.get();
                 }
 
                 #pragma endregion
@@ -644,6 +636,9 @@ private:
     Bound bound_;                                                       // Scene bound (AABB)
     SphereBound sphereBound_;                                           // Scene bound (sphere)
     std::vector<const EmitterShape*> emitterShapes_;                    // Special shapes for emitters
+
+    // Predefined assets
+    BSDF::UniquePtr nullBSDF_ = ComponentFactory::Create<BSDF>("bsdf::null");
 
 };
 

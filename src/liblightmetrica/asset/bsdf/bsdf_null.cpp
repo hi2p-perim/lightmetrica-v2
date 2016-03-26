@@ -35,28 +35,28 @@ public:
 
 public:
 
-    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
+    LM_IMPL_F(Type) = [this]() -> int
     {
-        return true;
+        return SurfaceInteractionType::BSDF;
     };
 
-    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float u2, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
     {
 
     };
 
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
-        return 0_f;
+        return PDFVal();
     };
 
-    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta)
+    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
         return SPD();
     };
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::nulltype");
+LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::null");
 
 LM_NAMESPACE_END

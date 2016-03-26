@@ -50,7 +50,7 @@ public:
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::S;
+        return SurfaceInteractionType::S;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
@@ -65,21 +65,21 @@ public:
         wo = geom.ToWorld * localWo;
     };
 
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         if (evalDelta)
         {
-            return 0_f;
+            return PDFVal(PDFMeasure::ProjectedSolidAngle, 0_f);
         }
 
         const auto localWi = geom.ToLocal * wi;
         const auto localWo = geom.ToLocal * wo;
         if (Math::LocalCos(localWi) <= 0_f || Math::LocalCos(localWo) <= 0_f)
         {
-            return 0_f;
+            return PDFVal(PDFMeasure::ProjectedSolidAngle, 0_f);
         }
 
-        return 1_f;
+        return PDFVal(PDFMeasure::ProjectedSolidAngle, 1_f);
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD

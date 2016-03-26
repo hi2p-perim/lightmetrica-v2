@@ -100,7 +100,7 @@ public:
         #pragma endregion
     };
 
-    LM_IMPL_F(Process) = [this](const Scene* scene, Film* film, Random* initRng, const std::function<void(const Scene*, Film*, Random*)>& processSampleFunc) -> void
+    LM_IMPL_F(Process) = [this](const Scene* scene, Film* film, Random* initRng, const std::function<void(const Scene*, Film*, Random*)>& processSampleFunc) -> long long
     {
         #pragma region Thread local storage
 
@@ -314,6 +314,10 @@ public:
         film->Rescale((Float)(film->Width() * film->Height()) / processedSamples);
 
         #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        return processedSamples;
     };
 
     LM_IMPL_F(GetNumSamples) = [this]() -> long long

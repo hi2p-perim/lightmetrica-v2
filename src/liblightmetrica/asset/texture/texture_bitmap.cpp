@@ -39,7 +39,7 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        #pragma region Path
+        #pragma region Load params
 
         const auto localpath = prop->Child("path")->As<std::string>();
         const auto basepath = boost::filesystem::path(prop->Tree()->Path()).parent_path();
@@ -138,6 +138,15 @@ public:
             }
 
             FreeImage_Unload(fibitmap);
+
+            // --------------------------------------------------------------------------------
+
+            // Scale
+            const auto scale = prop->ChildAs<Float>("scale", 1_f);
+            for (auto& v : data_)
+            {
+                v *= scale;
+            }
 
             // --------------------------------------------------------------------------------
 

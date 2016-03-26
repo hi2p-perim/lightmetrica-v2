@@ -33,6 +33,8 @@
 #include <lightmetrica/triangleutils.h>
 #include <lightmetrica/scene.h>
 #include <lightmetrica/renderutils.h>
+#include <lightmetrica/texture.h>
+#include <lightmetrica/assets.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -102,6 +104,19 @@ public:
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
         primitive_ = primitive;
+
+        if (prop->Child("envmap"))
+        {
+            const auto id = prop->Child("envmap")->As<std::string>();
+            envmap_ = static_cast<const Texture*>(assets->AssetByIDAndType(id, "texture", primitive));
+        }
+        else
+        {
+            Le_ = SPD::FromRGB(prop->ChildAs<Vec3>("Le", Vec3(1_f)));
+        }
+
+        rotate_ = prop->ChildAs<Float>("rotate", 0_f);
+
         return true;
     };
 
@@ -182,9 +197,19 @@ public:
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
-        // TODO
-        //if (evalDelta) { return 0_f; }
-        return SPD(1_f);
+        if (evalDelta) { return 0_f; }
+
+        if (envmap_)
+        {
+            // Convert ray direction to the uv coordinates of light probe
+            // See http://www.pauldebevec.com/Probes/ for details
+            const auto d = -Vec3(Math::Rotate(Math::Radians(rotate_), Vec3(0_f, 1_f, 0_f)) * Vec4(wo.x, wo.y, wo.z, 0_f));
+            const auto r = (1_f / Math::Pi()) * Math::Acos(Math::Clamp(d.z, -1_f, 1_f)) / Math::Sqrt(d.x*d.x + d.y*d.y);
+            const auto uv = (Vec2(d.x, -d.y) * r + Vec2(1_f)) * .5_f;
+            return SPD::FromRGB(envmap_->Evaluate(uv));
+        }
+
+        return Le_;
     };
 
     LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
@@ -206,6 +231,10 @@ public:
     Float invArea_;
     const Primitive* primitive_;
     std::unique_ptr<EmitterShape_EnvLight> emitterShape_;
+
+    SPD Le_;
+    const Texture* envmap_ = nullptr;
+    Float rotate_;
 
 };
 

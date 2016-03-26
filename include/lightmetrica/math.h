@@ -1226,6 +1226,7 @@ namespace Math
     template <typename T> LM_INLINE auto Cos(const T& v)     -> T { return std::cos(v); }
     template <typename T> LM_INLINE auto Sin(const T& v)     -> T { return std::sin(v); }
     template <typename T> LM_INLINE auto Tan(const T& v)     -> T { return std::tan(v); }
+    template <typename T> LM_INLINE auto Acos(const T& v)    -> T { return std::acos(v); }
     template <typename T> LM_INLINE auto Abs(const T& v)     -> T { return std::abs(v); }
     template <typename T> LM_INLINE auto Sqrt(const T& v)    -> T { return std::sqrt(v); }
     template <typename T> LM_INLINE auto Fract(const T& v)   -> T { return v - std::floor(v); }

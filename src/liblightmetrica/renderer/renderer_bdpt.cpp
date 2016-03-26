@@ -39,24 +39,190 @@
 #include <lightmetrica/renderutils.h>
 #include <tbb/tbb.h>
 
+#define LM_BDPT_DEBUG 0
+
 LM_NAMESPACE_BEGIN
+
+// --------------------------------------------------------------------------------
+
+struct Path;
+
+struct MISWeight : public Component
+{
+    LM_INTERFACE_CLASS(MISWeight, Component, 1);
+    LM_INTERFACE_F(0, Evaluate, Float(const Path& path, const Scene* scene, int s, bool direct));
+};
+
+// --------------------------------------------------------------------------------
+
+#pragma region Path structures
 
 struct PathVertex
 {
-
-    // Surface interaction type
-    int type = SurfaceInteractionType::None;
-
-    // Surface geometry
+    int type;
     SurfaceGeometry geom;
-
-    // Primitive
     const Primitive* primitive = nullptr;
+};
 
-    // Specifies the path vertex is sampled with direct emitter sampling.
-    // This parameter is utilized only with subpaths.
-    bool direct = false;
-                                
+struct SubpathVertex
+{
+    boost::optional<PathVertex> sv;
+    boost::optional<PathVertex> direct;
+};
+
+struct Subpath
+{
+
+    std::vector<SubpathVertex> vertices;
+
+public:
+
+    auto Sample(const Scene* scene, Random* rng, TransportDirection transDir, int maxPathVertices) -> void
+    {
+        vertices.clear();
+
+        // --------------------------------------------------------------------------------
+
+        Vec3 initWo;
+        for (int step = 0; maxPathVertices == -1 || step < maxPathVertices; step++)
+        {
+            if (step == 0)
+            {
+                #pragma region Sample initial vertex
+
+                PathVertex sv;
+
+                // Sample an emitter
+                sv.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
+                sv.primitive = scene->SampleEmitter(sv.type, rng->Next());
+
+                // Sample a position on the emitter and initial ray direction
+                sv.primitive->emitter->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), sv.geom, initWo);
+
+                // Add a vertex
+                SubpathVertex v;
+                v.sv = sv;
+                vertices.push_back(v);
+
+                #pragma endregion
+            }
+            else
+            {
+                #pragma region Sample a vertex with PDF with BSDF
+
+                const auto sv = [&]() -> boost::optional<PathVertex>
+                {
+                    // Previous & two before vertex
+                    const auto* pv = &vertices.back().sv.get();
+                    const auto* ppv = vertices.size() > 1 ? &vertices[vertices.size() - 2].sv.get() : nullptr;
+
+                    // Sample a next direction
+                    Vec3 wo;
+                    const auto wi = ppv ? Math::Normalize(ppv->geom.p - pv->geom.p) : Vec3();
+                    if (step == 1)
+                    {
+                        wo = initWo;
+                    }
+                    else
+                    {
+                        pv->primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), pv->type, pv->geom, wi, wo);
+                    }
+                    const auto f = pv->primitive->surface->EvaluateDirection(pv->geom, pv->type, wi, wo, transDir, false);
+                    if (f.Black())
+                    {
+                        return boost::none;
+                    }
+
+                    // Intersection query
+                    Ray ray = { pv->geom.p, wo };
+                    Intersection isect;
+                    if (!scene->Intersect(ray, isect))
+                    {
+                        return boost::none;
+                    }
+
+                    // Create vertex
+                    PathVertex v;
+                    v.geom = isect.geom;
+                    v.primitive = isect.primitive;
+                    v.type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
+
+                    return v;
+                }();
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Sample a vertex with direct emitter sampling
+
+                const auto direct = [&]() -> boost::optional<PathVertex>
+                {
+                    PathVertex v;
+                    const auto& pv = vertices.back().sv;
+
+                    // Sample a emitter
+                    v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::E : SurfaceInteractionType::L;
+                    v.primitive = scene->SampleEmitter(v.type, rng->Next());
+                    const auto pdfSel = scene->EvaluateEmitterPDF(v.primitive);
+                    assert(pdfSel.v > 0);
+
+                    // Sample a position on the emitter
+                    v.primitive->emitter->SamplePositionGivenPreviousPosition(rng->Next2D(), pv->geom, v.geom);
+                    const auto pdfP = v.primitive->emitter->EvaluatePositionGivenPreviousPositionPDF(v.geom, pv->geom, false);
+                    assert(pdfP.v > 0);
+
+                    // Check visibility
+                    if (!scene->Visible(pv->geom.p, v.geom.p))
+                    {
+                        return boost::none;
+                    }
+
+                    return v;
+                }();
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Add a vertex
+
+                if (sv || direct)
+                {
+                    SubpathVertex v;
+                    v.sv = sv;
+                    v.direct = direct;
+                    vertices.push_back(v);
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Path termination
+
+                if (!sv)
+                {
+                    break;
+                }
+
+                if (sv->geom.infinite)
+                {
+                    break;
+                }
+
+                // TODO: replace it with efficient one
+                const Float rrProb = 0.5_f;
+                if (rng->Next() > rrProb)
+                {
+                    break;
+                }
+
+                #pragma endregion
+            }
+        }
+    }
+
 };
 
 struct Path
@@ -68,192 +234,105 @@ public:
 
     #pragma region BDPT path initialization
 
-    auto SampleSubpath(const Scene* scene, Random* rng, TransportDirection transDir, int maxPathVertices) -> void
+    auto Connect(const Scene* scene, int s, int t, bool direct, const Subpath& subpathL, const Subpath& subpathE) -> bool
     {
+        assert(s > 0 || t > 0);
         vertices.clear();
-
-        // --------------------------------------------------------------------------------
-
-        #pragma region Sample intermediate vertex
-
-        Vec3 initWo;
-        for (int step = 0; maxPathVertices == -1 || step < maxPathVertices; step++)
+        if (s == 0 && t > 0)
         {
-            if (step == 0)
+            if (!direct)
             {
-                #pragma region Sample initial vertex
-        
-                PathVertex v;
-
-                // Sample an emitter
-                v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
-                v.primitive = scene->SampleEmitter(v.type, rng->Next());
-
-                // Sample a position on the emitter and initial ray direction
-                v.primitive->emitter->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), v.geom, initWo);
-
-                // Create a vertex
-                vertices.push_back(v);
-
-                #pragma endregion
+                if (!subpathE.vertices[t - 1].sv)
+                {
+                    return false;
+                }
+                if ((subpathE.vertices[t - 1].sv->primitive->surface->Type() & SurfaceInteractionType::L) == 0)
+                {
+                    return false;
+                }
+                for (int i = t - 1; i >= 0; i--)
+                {
+                    assert(subpathE.vertices[i].sv);
+                    vertices.push_back(*subpathE.vertices[i].sv);
+                }
             }
             else
             {
-                #pragma region Sample intermediate vertex
-
-                // Previous & two before vertex
-                const auto* pv = &vertices.back();
-                const auto* ppv = vertices.size() > 1 ? &vertices[vertices.size() - 2] : nullptr;
-
-                // Sample a next direction
-                Vec3 wo;
-                const auto wi = ppv ? Math::Normalize(ppv->geom.p - pv->geom.p) : Vec3();
-                if (step == 1)
+                if (!subpathE.vertices[t - 1].direct)
                 {
-                    wo = initWo;
+                    return false;
                 }
-                else
+                vertices.push_back(*subpathE.vertices[t - 1].direct);
+                for (int i = t - 2; i >= 0; i--)
                 {
-                    pv->primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), pv->type, pv->geom, wi, wo);
+                    assert(subpathE.vertices[i].sv);
+                    vertices.push_back(*subpathE.vertices[i].sv);
                 }
-                const auto f = pv->primitive->surface->EvaluateDirection(pv->geom, pv->type, wi, wo, transDir, false);
-                if (f.Black())
-                {
-                    break;
-                }
-
-                // Intersection query
-                Ray ray = { pv->geom.p, wo };
-                Intersection isect;
-                if (!scene->Intersect(ray, isect))
-                {
-                    break;
-                }
-
-                // Set vertex information
-                PathVertex v;
-                v.geom = isect.geom;
-                v.primitive = isect.primitive;
-                v.type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
-                
-                // Add a vertex
-                vertices.push_back(v);
-
-                // Terminate if intersected with infinite light sources
-                if (isect.geom.infinite)
-                {
-                    break;
-                }
-
-                #pragma endregion
             }
 
-            // --------------------------------------------------------------------------------
-
-            #pragma region Path termination
-
-            // TODO: replace it with efficient one
-            const Float rrProb = 0.5_f;
-            if (rng->Next() > rrProb)
-            {
-                #pragma region Add last vertex with direct light sampling
-
-                const auto& pv = vertices.back();
-                PathVertex v;
-                v.direct = true;
-                v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::E : SurfaceInteractionType::L;
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Sample a emitter
-
-                v.primitive = scene->SampleEmitter(v.type, rng->Next());
-                const auto pdfSel = scene->EvaluateEmitterPDF(v.primitive);
-                assert(pdfSel.v > 0);
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Sample a position on the emitter
-
-                SurfaceGeometry geom;
-                v.primitive->emitter->SamplePositionGivenPreviousPosition(rng->Next2D(), pv.geom, geom);
-                const auto pdfP = v.primitive->emitter->EvaluatePositionGivenPreviousPositionPDF(geom, pv.geom, false);
-                assert(pdfP.v > 0);
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                vertices.push_back(v);
-                
-                #pragma endregion
-
-                break;
-            }
-
-            #pragma endregion
-        }
-
-        #pragma endregion
-    }
-
-    auto Connect(const Scene* scene, int s, int t, const Path& subpathL, const Path& subpathE) -> bool
-    {
-        assert(s > 0 || t > 0);
-
-        vertices.clear();
-
-        if (s == 0 && t > 0)
-        {
-            if ((subpathE.vertices[t - 1].primitive->surface->Type() & SurfaceInteractionType::L) == 0)
-            {
-                return false;
-            }
-            for (int i = t - 1; i >= 0; i--)
-            {
-                vertices.push_back(subpathE.vertices[i]);
-            }
             vertices.front().type = SurfaceInteractionType::L;
         }
         else if (s > 0 && t == 0)
         {
-            if ((subpathL.vertices[s - 1].primitive->surface->Type() & SurfaceInteractionType::E) == 0)
+            if (!direct)
             {
-                return false;
+                if (!subpathL.vertices[s - 1].sv)
+                {
+                    return false;
+                }
+                if ((subpathL.vertices[s - 1].sv->primitive->surface->Type() & SurfaceInteractionType::E) == 0)
+                {
+                    return false;
+                }
+                for (int i = 0; i < s; i++)
+                {
+                    assert(subpathL.vertices[i].sv);
+                    vertices.push_back(*subpathL.vertices[i].sv);
+                }
             }
-            for (int i = 0; i < s; i++)
+            else
             {
-                vertices.push_back(subpathL.vertices[i]);
+                if (!subpathL.vertices[s - 1].direct)
+                {
+                    return false;
+                }
+                for (int i = 0; i < s - 1; i++)
+                {
+                    assert(subpathL.vertices[i].sv);
+                    vertices.push_back(*subpathL.vertices[i].sv);
+                }
+                vertices.push_back(*subpathL.vertices[s - 1].direct);
             }
+
             vertices.back().type = SurfaceInteractionType::E;
         }
         else
         {
             assert(s > 0 && t > 0);
-            if (subpathL.vertices[s - 1].geom.infinite || subpathE.vertices[t - 1].geom.infinite)
+            assert(!direct);
+            if (!subpathL.vertices[s - 1].sv || !subpathE.vertices[t - 1].sv)
             {
                 return false;
             }
-            if (subpathL.vertices[s - 1].direct || subpathL.vertices[t - 1].direct)
+            if (subpathL.vertices[s - 1].sv->geom.infinite || subpathE.vertices[t - 1].sv->geom.infinite)
             {
                 return false;
             }
-            if (!scene->Visible(subpathL.vertices[s - 1].geom.p, subpathE.vertices[t - 1].geom.p))
+            if (!scene->Visible(subpathL.vertices[s - 1].sv->geom.p, subpathE.vertices[t - 1].sv->geom.p))
             {
                 return false;
             }
             for (int i = 0; i < s; i++)
             {
-                vertices.push_back(subpathL.vertices[i]);
+                assert(subpathL.vertices[i].sv);
+                vertices.push_back(*subpathL.vertices[i].sv);
             }
             for (int i = t - 1; i >= 0; i--)
             {
-                vertices.push_back(subpathE.vertices[i]);
+                assert(subpathE.vertices[i].sv);
+                vertices.push_back(*subpathE.vertices[i].sv);
             }
         }
-
         return true;
     }
 
@@ -263,11 +342,11 @@ public:
 
     #pragma region BDPT path evaluation
 
-    auto EvaluateContribution(const Scene* scene, int s, bool direct) const -> SPD
+    auto EvaluateContribution(const MISWeight* mis, const Scene* scene, int s, bool direct) const -> SPD
     {
-        const auto Cstar = EvaluateUnweightContribution(scene, s, direct);
-        //return Cstar.Black() ? SPD() : Cstar * EvaluatePowerHeuristicsMISWeightOpt(scene, s);
-        return Cstar.Black() ? SPD() : Cstar * EvaluateSimpleMISWeight(scene);
+        //const auto Cstar = EvaluateUnweightContribution(scene, s, direct);
+        const auto Cstar = EvaluateF(s, direct) / EvaluatePDF(scene, s, direct);
+        return Cstar.Black() ? SPD() : Cstar * mis->Evaluate(*this, scene, s, direct);
     }
 
     auto SelectionPDF(int s, bool direct) const -> Float
@@ -278,37 +357,15 @@ public:
         Float selectionProb = 1;
 
         // Light subpath
-        for (int i = 0; i < s - 2; i++)
+        for (int i = 1; i < s - 1; i++)
         {
             selectionProb *= rrProb;    
         }
-        if (s >= 2)
-        {
-            if (vertices[s - 1].direct && direct)
-            {
-                selectionProb *= (1_f - rrProb);
-            }
-            else
-            {
-                selectionProb *= rrProb;
-            }
-        }
         
         // Eye subpath
-        for (int i = 0; i < t - 2; i++)
+        for (int i = 1; i < t - 1; i++)
         {
             selectionProb *= rrProb;
-        }
-        if (t >= 2)
-        {
-            if (vertices[s].direct && direct)
-            {
-                selectionProb *= (1_f - rrProb);
-            }
-            else
-            {
-                selectionProb *= rrProb;
-            }
         }
 
         return selectionProb;
@@ -333,13 +390,13 @@ public:
         {
             const auto& v = vertices[0];
             const auto& vNext = vertices[1];
-            cst = v.primitive->surface->EvaluatePosition(v.geom, true) * v.primitive->surface->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vNext.geom.p - v.geom.p), TransportDirection::EL, true);
+            cst = v.primitive->emitter->EvaluatePosition(v.geom, true) * v.primitive->emitter->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vNext.geom.p - v.geom.p), TransportDirection::EL, false);
         }
         else if (s > 0 && t == 0)
         {
             const auto& v = vertices[n - 1];
             const auto& vPrev = vertices[n - 2];
-            cst = v.primitive->surface->EvaluatePosition(v.geom, true) * v.primitive->surface->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::LE, true);
+            cst = v.primitive->emitter->EvaluatePosition(v.geom, true) * v.primitive->emitter->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::LE, false);
         }
         else if (s > 0 && t > 0)
         {
@@ -356,6 +413,83 @@ public:
         return cst;
     }
 
+    auto EvaluateF(int s, bool direct) const -> SPD
+    {
+        const int n = (int)(vertices.size());
+        const int t = n - s;
+        assert(n >= 2);
+
+        // --------------------------------------------------------------------------------
+
+        SPD fL;
+        if (s == 0)
+        {
+            fL = SPD(1_f);
+        }
+        else
+        {
+            {
+                const auto* vL  = &vertices[0];
+                fL = vL->primitive->emitter->EvaluatePosition(vL->geom, false);
+            }
+            for (int i = 0; i < s - 1; i++)
+            {
+                const auto* v     = &vertices[i];
+                const auto* vPrev = i >= 1 ? &vertices[i - 1] : nullptr;
+                const auto* vNext = &vertices[i + 1];
+                const auto wi = vPrev ? Math::Normalize(vPrev->geom.p - v->geom.p) : Vec3();
+                const auto wo = Math::Normalize(vNext->geom.p - v->geom.p);
+                fL *= v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, t == 0 && i == s - 2 && direct);
+                fL *= RenderUtils::GeometryTerm(v->geom, vNext->geom);
+            }
+        }
+        if (fL.Black())
+        {
+            return SPD();
+        }
+        
+        // --------------------------------------------------------------------------------
+
+        SPD fE;
+        if (t == 0)
+        {
+            fE = SPD(1_f);
+        }
+        else
+        {
+            {
+                const auto* vE = &vertices[n - 1];
+                fE = vE->primitive->emitter->EvaluatePosition(vE->geom, false);
+            }
+            for (int i = n - 1; i > s; i--)
+            {
+                const auto* v     = &vertices[i];
+                const auto* vPrev = &vertices[i - 1];
+                const auto* vNext = i < n - 1 ? &vertices[i + 1] : nullptr;
+                const auto wi = vNext ? Math::Normalize(vNext->geom.p - v->geom.p) : Vec3();
+                const auto wo = Math::Normalize(vPrev->geom.p - v->geom.p);
+                fE *= v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, s == 0 && i == 1 && direct);
+                fE *= RenderUtils::GeometryTerm(v->geom, vPrev->geom);
+            }
+        }
+        if (fE.Black())
+        {
+            return SPD();
+        }
+
+        // --------------------------------------------------------------------------------
+
+        const auto cst = EvaluateCst(s);
+        if (cst.Black())
+        {
+            return SPD();
+        }
+
+        // --------------------------------------------------------------------------------
+
+        return fL * cst * fE;
+    }
+
     auto EvaluateUnweightContribution(const Scene* scene, int s, bool direct) const -> SPD
     {
         const int n = (int)(vertices.size());
@@ -368,7 +502,7 @@ public:
         SPD alphaL;
         if (s == 0)
         {
-            alphaL = SPD(1);
+            alphaL = SPD(1_f);
         }
         else
         {
@@ -377,8 +511,7 @@ public:
                 const auto* vNext = &vertices[1];
                 alphaL =
                     v->primitive->surface->EvaluatePosition(v->geom, false) /
-                    v->primitive->surface->EvaluatePositionGivenDirectionPDF(v->geom, Math::Normalize(vNext->geom.p - v->geom.p), false) /
-                    scene->EvaluateEmitterPDF(v->primitive).v;
+                    v->primitive->surface->EvaluatePositionGivenDirectionPDF(v->geom, Math::Normalize(vNext->geom.p - v->geom.p), false) / scene->EvaluateEmitterPDF(v->primitive).v;
             }
             for (int i = 0; i < s - 1; i++)
             {
@@ -388,9 +521,9 @@ public:
                 const auto wi = vPrev ? Math::Normalize(vPrev->geom.p - v->geom.p) : Vec3();
                 const auto wo = Math::Normalize(vNext->geom.p - v->geom.p);
                 alphaL *= 
-                    v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, false) /
-                    (vNext->direct && direct
-                        ? vNext->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vNext->geom, v->geom, false).ConvertToProjSA(vNext->geom, v->geom)
+                    v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, t == 0 && i == s - 2 && direct) /
+                    (t == 0 && i == s - 2 && direct
+                        ? vNext->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vNext->geom, v->geom, false).ConvertToProjSA(vNext->geom, v->geom) * scene->EvaluateEmitterPDF(vNext->primitive).v
                         : v->primitive->surface->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false));
             }
         }
@@ -408,7 +541,7 @@ public:
         SPD alphaE;
         if (t == 0)
         {
-            alphaE = SPD(1);
+            alphaE = SPD(1_f);
         }
         else
         {
@@ -417,8 +550,7 @@ public:
                 const auto* vPrev = &vertices[n - 2];
                 alphaE =
                     v->primitive->surface->EvaluatePosition(v->geom, false) /
-                    v->primitive->surface->EvaluatePositionGivenDirectionPDF(v->geom, Math::Normalize(vPrev->geom.p - v->geom.p), false) /
-                    scene->EvaluateEmitterPDF(v->primitive).v;
+                    v->primitive->surface->EvaluatePositionGivenDirectionPDF(v->geom, Math::Normalize(vPrev->geom.p - v->geom.p), false) / scene->EvaluateEmitterPDF(v->primitive).v;
             }
             for (int i = n - 1; i > s; i--)
             {
@@ -428,9 +560,9 @@ public:
                 const auto wi = vNext ? Math::Normalize(vNext->geom.p - v->geom.p) : Vec3();
                 const auto wo = Math::Normalize(vPrev->geom.p - v->geom.p);
                 alphaE *= 
-                    v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, false) /
-                    (vPrev->direct && direct
-                        ? vPrev->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vPrev->geom, v->geom, false).ConvertToProjSA(vPrev->geom, v->geom)
+                    v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, s == 0 && i == 1 && direct) /
+                    (s == 0 && i == 1 && direct
+                        ? vPrev->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vPrev->geom, v->geom, false).ConvertToProjSA(vPrev->geom, v->geom) * scene->EvaluateEmitterPDF(vPrev->primitive).v
                         : v->primitive->surface->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false));
             }
         }
@@ -458,171 +590,21 @@ public:
         return alphaL * cst * alphaE;
     }
 
-    auto EvaluateSimpleMISWeight(const Scene* scene) const -> Float
-    {
-        const int n = (int)(vertices.size());
-        int nonzero = 0;
-
-        for (int s = 0; s <= n; s++)
-        {
-            for (int d = 0; d < 2; d++)
-            {
-                bool direct = d == 1;
-                const auto t = n - s;
-                if (s > 0 && t > 0 && direct)
-                {
-                    continue;
-                }
-                if (EvaluatePDF(scene, s, direct).v > 0_f)
-                {
-                    nonzero++;
-                }
-            }
-        }
-
-        assert(nonzero != 0);
-        return 1_f / nonzero;
-    }
-
-#if 0
-
-    auto EvaluatePowerHeuristicsMISWeightOpt(const Scene* scene, int s) const -> Float
-    {
-        Float invWeight = 0;
-        const int n = static_cast<int>(vertices.size());
-        const Float ps = EvaluatePDF(scene, s);
-        assert(ps > 0);
-
-        for (int i = 0; i <= n; i++)
-        {
-            const auto pi = EvaluatePDF(scene, i);
-            if (pi > 0)
-            {
-                const auto r = pi / ps;
-                invWeight += r * r;
-            }
-        }
-
-        return 1_f / invWeight;
-    }
-
-    auto EvaluateMISWeight(const Scene* scene, int s) const -> Float
-    {
-        Float piDivps;
-        bool prevPDFIsZero;
-        Float invWeight = 1;
-        const int n = static_cast<int>(vertices.size());
-
-        const Float ps = EvaluatePDF(scene, s);
-        assert(ps > 0);
-
-        piDivps = 1;
-        prevPDFIsZero = false;
-        for (int i = s - 1; i >= 0; i--)
-        {
-            if (EvaluateCst(i).Black())
-            {
-                prevPDFIsZero = true;
-                continue;
-            }
-
-            if (prevPDFIsZero)
-            {
-                piDivps = EvaluatePDF(scene, i) / ps;
-                prevPDFIsZero = false;
-            }
-            else
-            {
-                const Float ratio = EvaluatePDFRatio(scene, i);
-                if (ratio == 0)
-                {
-                    break;
-                }
-                piDivps *= 1_f / ratio;
-            }
-
-            invWeight += piDivps * piDivps;
-        }
-
-        piDivps = 1;
-        prevPDFIsZero = false;
-        for (int i = s; i < n; i++)
-        {
-            if (EvaluateCst(i+1).Black())
-            {
-                prevPDFIsZero = true;
-                continue;
-            }
-
-            if (prevPDFIsZero)
-            {
-                piDivps = EvaluatePDF(scene, i) / ps;
-                prevPDFIsZero = false;
-            }
-            else
-            {
-                const Float ratio = EvaluatePDFRatio(scene, i);
-                if (ratio == 0)
-                {
-                    break;
-                }
-                piDivps *= ratio;
-            }
-
-            invWeight += piDivps * piDivps;
-        }
-
-        return 1_f / invWeight;
-    }
-
-    auto EvaluatePDFRatio(const Scene* scene, int i) const -> Float
-    {
-        const int n = static_cast<int>(vertices.size());
-
-        if (i == 0)
-        {
-            const auto* x0 = &vertices[0];
-            const auto* x1 = &vertices[1];
-            const auto* x2 = n > 2 ? &vertices[2] : nullptr;
-            const Float G = RenderUtils::GeometryTerm(x0->geom, x1->geom);
-            const Float pAx0 = x0->primitive->EvaluatePositionPDF(x0->geom, false) * scene->EvaluateEmitterPDF(x0->primitive);
-            const Float pDx1x0 = x1->primitive->EvaluateDirectionPDF(x1->geom, x1->type, x2 ? Math::Normalize(x2->geom.p - x1->geom.p) : Vec3(), Math::Normalize(x0->geom.p - x1->geom.p), false);
-            return pAx0 / pDx1x0 / G;
-        }
-
-        if (i == n - 1)
-        {
-            const auto* xnp = &vertices[n - 1];
-            const auto* xnp2 = &vertices[n - 2];
-            const auto* xnp3 = n > 2 ? &vertices[n - 3] : nullptr;
-            const Float G = RenderUtils::GeometryTerm(xnp->geom, xnp2->geom);
-            const Float pAxnp = xnp->primitive->EvaluatePositionPDF(xnp->geom, false) * scene->EvaluateEmitterPDF(xnp->primitive);
-            const Float pDxnp2xnp = xnp2->primitive->EvaluateDirectionPDF(xnp2->geom, xnp2->type, xnp3 ? Math::Normalize(xnp3->geom.p - xnp2->geom.p) : Vec3(), Math::Normalize(xnp->geom.p - xnp2->geom.p), false);
-            return pDxnp2xnp * G / pAxnp;
-        }
-
-        {
-            const auto* xi = &vertices[i];
-            const auto* xin = &vertices[i + 1];
-            const auto* xip = &vertices[i - 1];
-            const auto* xin2 = i + 2 < n ? &vertices[i + 2] : nullptr;
-            const auto* xip2 = i - 2 >= 0 ? &vertices[i - 2] : nullptr;
-            const Float Gxipxi = RenderUtils::GeometryTerm(xip->geom, xi->geom);
-            const Float Gxinxi = RenderUtils::GeometryTerm(xin->geom, xi->geom);
-            const Float pDxipxi = xip->primitive->EvaluateDirectionPDF(xip->geom, xip->type, xip2 ? Math::Normalize(xip2->geom.p - xip->geom.p) : Vec3(), Math::Normalize(xi->geom.p - xip->geom.p), false);
-            const Float pDxinxi = xin->primitive->EvaluateDirectionPDF(xin->geom, xin->type, xin2 ? Math::Normalize(xin2->geom.p - xin->geom.p) : Vec3(), Math::Normalize(xi->geom.p - xin->geom.p), false);
-            return pDxipxi * Gxipxi / pDxinxi / Gxinxi;
-        }
-    }
-
-#endif
-
     auto EvaluatePDF(const Scene* scene, int s, bool direct) const -> PDFVal
     {
+        // There is no connection with some cases
+        const int n = (int)(vertices.size());
+        const int t = n - s;
+        if (s > 0 && t > 0 && direct)
+        {
+            return PDFVal(PDFMeasure::ProdArea, 0_f);
+        }
+
         // Cases with p_{s,t}(x) = 0
         // i.e. the strategy (s,t) cannot generate the path
-        // This condition is equivalent to c_{s,t}(x) = 0
-        if (EvaluateCst(s).Black())
+        // This condition is equivalent to f_{s,t}(x) = 0
+        // TODO: replace with efficient one
+        if (EvaluateF(s, direct).Black())
         {
             return PDFVal(PDFMeasure::ProdArea, 0_f);
         }
@@ -630,8 +612,6 @@ public:
         // Otherwise the path can be generated with the given strategy (s,t)
         // so p_{s,t} can be safely evaluated.
         PDFVal pdf(PDFMeasure::ProdArea, 1_f);
-        const int n = (int)(vertices.size());
-        const int t = n - s;
         if (s > 0)
         {
             pdf *= vertices[0].primitive->emitter->EvaluatePositionGivenDirectionPDF(vertices[0].geom, Math::Normalize(vertices[1].geom.p - vertices[0].geom.p), false) * scene->EvaluateEmitterPDF(vertices[0].primitive).v;
@@ -640,9 +620,9 @@ public:
                 const auto* vi = &vertices[i];
                 const auto* vip = i - 1 >= 0 ? &vertices[i - 1] : nullptr;
                 const auto* vin = &vertices[i + 1];
-                if (vin->direct && direct)
+                if (t == 0 && i == s - 2 && direct)
                 {
-                    pdf *= vin->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vin->geom, vi->geom, false);
+                    pdf *= vin->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vin->geom, vi->geom, false) * scene->EvaluateEmitterPDF(vin->primitive).v;
                 }
                 else
                 {
@@ -658,9 +638,9 @@ public:
                 const auto* vi = &vertices[i];
                 const auto* vip = &vertices[i - 1];
                 const auto* vin = i + 1 < n ? &vertices[i + 1] : nullptr;
-                if (vip->direct && direct)
+                if (s == 0 && i == s + 1 && direct)
                 {
-                    pdf *= vip->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vip->geom, vi->geom, false);
+                    pdf *= vip->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vip->geom, vi->geom, false) * scene->EvaluateEmitterPDF(vip->primitive).v;
                 }
                 else
                 {
@@ -675,6 +655,92 @@ public:
     #pragma endregion
 
 };
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region MIS weights implementations
+
+class MISWeight_Simple : public MISWeight
+{
+public:
+
+    LM_IMPL_CLASS(MISWeight_Simple, MISWeight);
+
+public:
+
+    LM_IMPL_F(Evaluate) = [this](const Path& path, const Scene* scene, int s_, bool direct_) -> Float
+    {
+        const int n = (int)(path.vertices.size());
+        int nonzero = 0;
+
+        for (int s = 0; s <= n; s++)
+        {
+            for (int d = 0; d < 2; d++)
+            {
+                bool direct = d == 1;
+                const auto t = n - s;
+                if (s > 0 && t > 0 && direct)
+                {
+                    continue;
+                }
+                if (path.EvaluatePDF(scene, s, direct).v > 0_f)
+                {
+                    nonzero++;
+                }
+            }
+        }
+
+        assert(nonzero != 0);
+        return 1_f / nonzero;
+    };
+
+};
+
+class MISWeight_PowerHeuristics : public MISWeight
+{
+public:
+
+    LM_IMPL_CLASS(MISWeight_PowerHeuristics, MISWeight);
+
+public:
+
+    LM_IMPL_F(Evaluate) = [this](const Path& path, const Scene* scene, int s_, bool direct_) -> Float
+    {
+        const int n = static_cast<int>(path.vertices.size());
+        const auto ps = path.EvaluatePDF(scene, s_, direct_);
+        assert(ps > 0_f);
+
+        Float invWeight = 0;
+        for (int s = 0; s <= n; s++)
+        {
+            for (int d = 0; d < 2; d++)
+            {
+                bool direct = d == 1;
+                const auto t = n - s;
+                if (s > 0 && t > 0 && direct)
+                {
+                    continue;
+                }
+                const auto pi = path.EvaluatePDF(scene, s, direct);
+                if (pi > 0_f)
+                {
+                    const auto r = pi.v / ps.v;
+                    invWeight += r * r;
+                }
+            }
+        }
+
+        return 1_f / invWeight;
+    };
+
+};
+
+LM_COMPONENT_REGISTER_IMPL(MISWeight_Simple,          "misweight::simple");
+LM_COMPONENT_REGISTER_IMPL(MISWeight_PowerHeuristics, "misweight::powerheuristics");
+
+#pragma endregion
 
 // --------------------------------------------------------------------------------
 
@@ -706,20 +772,11 @@ public:
 
 public:
 
-    Renderer_BDPT()
-        : sched_(ComponentFactory::Create<Scheduler>())
-    {}
-
-public:
-
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
         sched_->Load(prop);
         maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
-        //s_ = prop->ChildAs<int>("s", -1);
-        //t_ = prop->ChildAs<int>("t", -1);
-        //n_ = prop->ChildAs<int>("n", -1);
-        //d_ = prop->ChildAs<int>("d", -1);
+        mis_ = ComponentFactory::Create<MISWeight>("misweight::" + prop->ChildAs<std::string>("mis", "powerheuristics"));
         return true;
     };
 
@@ -736,20 +793,22 @@ public:
         tbb::enumerable_thread_specific<Path> subpathL_, subpathE_;
         tbb::enumerable_thread_specific<Path> path_;
         #else
-        static thread_local Path subpathL, subpathE;
+        static thread_local Subpath subpathL, subpathE;
         static thread_local Path path;
         #endif
 
         // --------------------------------------------------------------------------------
 
+        #if LM_BDPT_DEBUG
         std::vector<Film::UniquePtr> strategyFilms1;
         std::vector<Film::UniquePtr> strategyFilms2;
         std::unordered_map<Strategy, size_t, StrategyHash> strategyFilmMap;
         std::mutex strategyFilmMutex;
+        #endif
 
         // --------------------------------------------------------------------------------
 
-        sched_->Process(scene, film, &initRng, [&](const Scene* scene, Film* film, Random* rng)
+        const auto processedSamples = sched_->Process(scene, film, &initRng, [&](const Scene* scene, Film* film, Random* rng)
         {
             #if LM_COMPILER_CLANG
             auto& subpathL = subpathL_.local();
@@ -763,8 +822,8 @@ public:
 
             subpathL.vertices.clear();
             subpathE.vertices.clear();
-            subpathL.SampleSubpath(scene, rng, TransportDirection::LE, maxNumVertices_);
-            subpathE.SampleSubpath(scene, rng, TransportDirection::EL, maxNumVertices_);
+            subpathL.Sample(scene, rng, TransportDirection::LE, maxNumVertices_);
+            subpathE.Sample(scene, rng, TransportDirection::EL, maxNumVertices_);
 
             #pragma endregion 
 
@@ -787,23 +846,12 @@ public:
                 const int maxS = Math::Min(nL, n);
                 for (int s = minS; s <= maxS; s++)
                 {
-                    #pragma region Connect subpaths & create fullpath
-
-                    const int t = n - s;
-                    if (!path.Connect(scene, s, t, subpathL, subpathE))
-                    {
-                        continue;
-                    }
-
-                    #pragma endregion
-
-                    // --------------------------------------------------------------------------------
-
                     for (int d = 0; d < 2; d++)
                     {
                         #pragma region Exclude some combination of paths to control number of strategies
 
                         const bool direct = d == 1;
+                        const int t = n - s;
 
                         // Only direct connection with the cases with s=0 and t=0
                         if (s > 0 && t > 0 && direct)
@@ -811,12 +859,13 @@ public:
                             continue;
                         }
 
-                        // Last sampled vertex is not direct light sampling
-                        if (t == 0 && direct && !path.vertices[s - 1].direct)
-                        {
-                            continue;
-                        }
-                        if (s == 0 && direct && !path.vertices[s].direct)
+                        #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        #pragma region Connect subpaths & create fullpath
+
+                        if (!path.Connect(scene, s, t, direct, subpathL, subpathE))
                         {
                             continue;
                         }
@@ -827,7 +876,7 @@ public:
 
                         #pragma region Evaluate contribution
 
-                        const auto C = path.EvaluateContribution(scene, s, direct) / path.SelectionPDF(s, direct);
+                        const auto C = path.EvaluateContribution(mis_.get(), scene, s, direct) / path.SelectionPDF(s, direct);
                         if (C.Black())
                         {
                             continue;
@@ -843,14 +892,7 @@ public:
 
                         film->Splat(path.RasterPosition(), C);
 
-                        if (s == 0 && t == 2 && d == 0)
-                        {
-                            if (std::abs(Cstar.v.x - 2_f) > Math::EpsLarge())
-                            {
-                                __debugbreak();
-                            }
-                        }
-
+                        #if LM_BDPT_DEBUG
                         {
                             std::unique_lock<std::mutex> lock(strategyFilmMutex);
                             Strategy strategy{ s, t, d };
@@ -858,11 +900,14 @@ public:
                             {
                                 strategyFilms1.push_back(ComponentFactory::Clone<Film>(film));
                                 strategyFilms2.push_back(ComponentFactory::Clone<Film>(film));
+                                strategyFilms1.back()->Clear();
+                                strategyFilms2.back()->Clear();
                                 strategyFilmMap[strategy] = strategyFilms1.size()-1;
                             }
                             strategyFilms1[strategyFilmMap[strategy]]->Splat(path.RasterPosition(), C);
                             strategyFilms2[strategyFilmMap[strategy]]->Splat(path.RasterPosition(), Cstar);
                         }
+                        #endif
 
                         #pragma endregion
                     }
@@ -874,25 +919,24 @@ public:
 
         // --------------------------------------------------------------------------------
 
+        #if LM_BDPT_DEBUG
         for (const auto& kv : strategyFilmMap)
         {
             const auto* f1 = strategyFilms1[kv.second].get();
             const auto* f2 = strategyFilms2[kv.second].get();
-            f1->Rescale((Float)(f1->Width() * f1->Height()) / sched_->GetNumSamples());
-            f2->Rescale((Float)(f2->Width() * f2->Height()) / sched_->GetNumSamples());
-            f1->Save(boost::str(boost::format("f1_s%02d_t%02d_d%d") % kv.first.s % kv.first.t % kv.first.d));
-            f2->Save(boost::str(boost::format("f2_s%02d_t%02d_d%d") % kv.first.s % kv.first.t % kv.first.d));
+            f1->Rescale((Float)(f1->Width() * f1->Height()) / processedSamples);
+            f2->Rescale((Float)(f2->Width() * f2->Height()) / processedSamples);
+            f1->Save(boost::str(boost::format("f1_n%02d_s%02d_t%02d_d%d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t % kv.first.d));
+            f2->Save(boost::str(boost::format("f2_n%02d_s%02d_t%02d_d%d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t % kv.first.d));
         }
+        #endif
     };
 
 private:
 
     int maxNumVertices_;
-    Scheduler::UniquePtr sched_;
-    //int s_;
-    //int t_;
-    //int n_;
-    //int d_;
+    Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
+    MISWeight::UniquePtr mis_{ nullptr, nullptr };
 
 };
 
