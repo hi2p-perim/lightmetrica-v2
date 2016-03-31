@@ -125,6 +125,11 @@ public:
         return R * D * G * F / (4_f * Math::LocalCos(localWi)) / Math::LocalCos(localWo) * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
     };
 
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return false;
+    };
+
 private:
 
     auto EvaluateBechmannDist(const Vec3& H) const -> Float

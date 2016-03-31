@@ -65,7 +65,7 @@ class SurfaceInteraction : public Asset
 {
 public:
 
-    LM_INTERFACE_CLASS(SurfaceInteraction, Asset, 9);
+    LM_INTERFACE_CLASS(SurfaceInteraction, Asset, 11);
 
 public:
 
@@ -258,6 +258,9 @@ public:
         \return           Positional component of the emitted quantity.
     */
     LM_INTERFACE_F(8, EvaluatePosition, SPD(const SurfaceGeometry& geom, bool evalDelta));
+
+    LM_INTERFACE_F(9,  IsDeltaDirection, bool(int type));
+    LM_INTERFACE_F(10, IsDeltaPosition, bool());
 
     #pragma endregion
 

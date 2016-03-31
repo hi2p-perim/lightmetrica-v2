@@ -127,6 +127,22 @@ public:
         return emitter_->EvaluatePosition(geom, evalDelta);
     };
 
+
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        if ((type & SurfaceInteractionType::Emitter) > 0)
+        {
+            return emitter_->IsDeltaDirection(type);
+        }
+        if ((type & SurfaceInteractionType::BSDF) > 0)
+        {
+            return bsdf_->IsDeltaDirection(type);
+        }
+
+        LM_UNREACHABLE();
+        return false;
+    };
+
 private:
 
     const Emitter* emitter_ = nullptr;

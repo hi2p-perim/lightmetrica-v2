@@ -197,7 +197,10 @@ public:
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
-        if (evalDelta) { return 0_f; }
+        if (evalDelta)
+        {
+            return 0_f;
+        }
 
         if (envmap_)
         {
@@ -215,6 +218,16 @@ public:
     LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
     {
         return SPD(1_f);
+    };
+
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return true;
+    };
+
+    LM_IMPL_F(IsDeltaPosition) = [this]() -> bool
+    {
+        return false;
     };
 
 public:

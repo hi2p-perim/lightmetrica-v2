@@ -164,13 +164,9 @@ public:
                     // Sample a emitter
                     v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::E : SurfaceInteractionType::L;
                     v.primitive = scene->SampleEmitter(v.type, rng->Next());
-                    const auto pdfSel = scene->EvaluateEmitterPDF(v.primitive);
-                    assert(pdfSel.v > 0);
 
                     // Sample a position on the emitter
                     v.primitive->emitter->SamplePositionGivenPreviousPosition(rng->Next2D(), pv->geom, v.geom);
-                    const auto pdfP = v.primitive->emitter->EvaluatePositionGivenPreviousPositionPDF(v.geom, pv->geom, false);
-                    assert(pdfP.v > 0);
 
                     // Check visibility
                     if (!scene->Visible(pv->geom.p, v.geom.p))
@@ -344,8 +340,8 @@ public:
 
     auto EvaluateContribution(const MISWeight* mis, const Scene* scene, int s, bool direct) const -> SPD
     {
-        //const auto Cstar = EvaluateUnweightContribution(scene, s, direct);
-        const auto Cstar = EvaluateF(s, direct) / EvaluatePDF(scene, s, direct);
+        const auto Cstar = EvaluateUnweightContribution(scene, s, direct);
+        //const auto Cstar = EvaluateF(s, direct) / EvaluatePDF(scene, s, direct);
         return Cstar.Black() ? SPD() : Cstar * mis->Evaluate(*this, scene, s, direct);
     }
 
@@ -590,21 +586,63 @@ public:
         return alphaL * cst * alphaE;
     }
 
-    auto EvaluatePDF(const Scene* scene, int s, bool direct) const -> PDFVal
+    auto Samplable(int s, bool direct) const -> bool
     {
         // There is no connection with some cases
         const int n = (int)(vertices.size());
         const int t = n - s;
         if (s > 0 && t > 0 && direct)
         {
-            return PDFVal(PDFMeasure::ProdArea, 0_f);
+            return false;
         }
 
-        // Cases with p_{s,t}(x) = 0
-        // i.e. the strategy (s,t) cannot generate the path
-        // This condition is equivalent to f_{s,t}(x) = 0
-        // TODO: replace with efficient one
-        if (EvaluateF(s, direct).Black())
+        // Delta connection with direct light sampling
+        if (t == 0 && s > 0 && direct)
+        {
+            if (vertices[n - 2].primitive->surface->IsDeltaDirection(vertices[n - 2].type))
+            {
+                return false;
+            }
+        }
+        if (s == 0 && t > 0 && direct)
+        {
+            if (vertices[1].primitive->surface->IsDeltaDirection(vertices[1].type))
+            {
+                return false;
+            }
+        }
+
+        // Delta connection of endpoints
+        if (s == 0 && t > 0)
+        {
+            if (vertices[0].primitive->emitter->IsDeltaPosition())
+            {
+                return false;
+            }
+        }
+        else if (s > 0 && t == 0)
+        {
+            if (vertices[n - 1].primitive->emitter->IsDeltaPosition())
+            {
+                return false;
+            }
+        }
+        else if (s > 0 && t > 0)
+        {
+            const auto* vL = &vertices[s - 1];
+            const auto* vE = &vertices[s];
+            if (vL->primitive->surface->IsDeltaDirection(vL->type) || vE->primitive->surface->IsDeltaDirection(vE->type))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    auto EvaluatePDF(const Scene* scene, int s, bool direct) const -> PDFVal
+    {
+        if (!Samplable(s, direct))
         {
             return PDFVal(PDFMeasure::ProdArea, 0_f);
         }
@@ -612,6 +650,8 @@ public:
         // Otherwise the path can be generated with the given strategy (s,t)
         // so p_{s,t} can be safely evaluated.
         PDFVal pdf(PDFMeasure::ProdArea, 1_f);
+        const int n = (int)(vertices.size());
+        const int t = n - s;
         if (s > 0)
         {
             pdf *= vertices[0].primitive->emitter->EvaluatePositionGivenDirectionPDF(vertices[0].geom, Math::Normalize(vertices[1].geom.p - vertices[0].geom.p), false) * scene->EvaluateEmitterPDF(vertices[0].primitive).v;
@@ -764,6 +804,10 @@ struct StrategyHash
     }
 };
 
+/*!
+    \brief BDPT renderer.
+    Implements bidirectional path tracing.
+*/
 class Renderer_BDPT final : public Renderer
 {
 public:
@@ -790,7 +834,7 @@ public:
         #endif
 
         #if LM_COMPILER_CLANG
-        tbb::enumerable_thread_specific<Path> subpathL_, subpathE_;
+        tbb::enumerable_thread_specific<Subpath> subpathL_, subpathE_;
         tbb::enumerable_thread_specific<Path> path_;
         #else
         static thread_local Subpath subpathL, subpathE;
@@ -820,8 +864,6 @@ public:
 
             #pragma region Sample subpaths
 
-            subpathL.vertices.clear();
-            subpathE.vertices.clear();
             subpathL.Sample(scene, rng, TransportDirection::LE, maxNumVertices_);
             subpathE.Sample(scene, rng, TransportDirection::EL, maxNumVertices_);
 

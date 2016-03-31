@@ -105,6 +105,16 @@ public:
         return SPD(1_f);
     };
 
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return false;
+    };
+
+    LM_IMPL_F(IsDeltaPosition) = [this]() -> bool
+    {
+        return false;
+    };
+
 private:
 
     SPD Le_;

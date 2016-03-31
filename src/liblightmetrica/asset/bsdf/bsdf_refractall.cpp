@@ -119,6 +119,11 @@ public:
         return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir) * refrCorrection * refrCorrection;
     };
 
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return true;
+    };
+
 public:
 
     SPD R_;

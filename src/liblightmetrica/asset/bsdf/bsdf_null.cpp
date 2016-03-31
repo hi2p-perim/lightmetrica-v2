@@ -55,6 +55,11 @@ public:
         return SPD();
     };
 
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return false;
+    };
+
 };
 
 LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::null");

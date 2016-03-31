@@ -162,6 +162,11 @@ public:
         return SPD();
     };
 
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return true;
+    };
+
 private:
 
     auto EvaluateFresnelTerm(const Vec3& localWi, Float etaI, Float etaT) const -> Float

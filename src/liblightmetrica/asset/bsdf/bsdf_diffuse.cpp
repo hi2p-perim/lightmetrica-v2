@@ -101,6 +101,11 @@ public:
         return R * Math::InvPi() * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
     };
 
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return false;
+    };
+
 public:
 
     SPD R_;

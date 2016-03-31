@@ -111,6 +111,16 @@ public:
         return !evalDelta ? SPD(1) : SPD();
     };
 
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return false;
+    };
+
+    LM_IMPL_F(IsDeltaPosition) = [this]() -> bool
+    {
+        return true;
+    };
+
 private:
 
     auto Importance(const Vec3& wo, const SurfaceGeometry& geom) const -> Float
