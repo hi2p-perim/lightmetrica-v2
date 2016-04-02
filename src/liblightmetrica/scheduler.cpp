@@ -192,7 +192,7 @@ public:
 
                 for (long long sample = range.begin(); sample != range.end(); sample++)
                 {
-                    // Process sample
+                    // Process sampleprocessedSamples
                     processSampleFunc(scene, ctx.film.get(), &ctx.rng);
 
                     // Report progress

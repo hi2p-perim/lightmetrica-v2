@@ -35,6 +35,7 @@
 #include <lightmetrica/light.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/film.h>
+#include <tbb/tbb.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -51,8 +52,13 @@ struct Photon : public SIMDAlignedType
 struct PhotonMap : public Component
 {
     LM_INTERFACE_CLASS(PhotonMap, Component, 0);
+
+    // Build photon map
     virtual auto Build(const std::vector<Photon>& photons) -> void = 0;
-    virtual auto CollectPhotons(const Vec3& p, Float& maxDist2, const std::function<void(const Photon&, Float&)>& collectFunc) const -> void = 0;
+
+    // Collect at most n nearest photons within the distance sqrt(maxDist2) from p.
+    // The collected photons are stored into `collected` ordered from the fatherest photons.
+    virtual auto CollectPhotons(const Vec3& p, int n, Float maxDist2, std::vector<Photon>& collected) const -> Float = 0;
 };
 
 class PhotonMap_Naive : public PhotonMap
@@ -68,16 +74,41 @@ public:
         photons_ = photons;
     }
 
-    virtual auto CollectPhotons(const Vec3& p, Float& maxDist2, const std::function<void(const Photon&, Float&)>& collectFunc) const -> void
+    virtual auto CollectPhotons(const Vec3& p, int n, Float maxDist2, std::vector<Photon>& collected) const -> Float
     {
+        collected.clear();
+
+        const auto comp = [&](const Photon& p1, const Photon& p2)
+        {
+            return Math::Length2(p1.p - p) < Math::Length2(p2.p - p);
+        };
+
         for (const auto& photon : photons_)
         {
-            const auto dist2 = Math::Length2(photon.p - p);
-            if (dist2 < maxDist2)
+            if (Math::Length2(photon.p - p) < maxDist2)
             {
-                collectFunc(photon, maxDist2);
+                if ((int)(collected.size()) < n)
+                {
+                    collected.push_back(photon);
+                    if ((int)(collected.size()) == n)
+                    {
+                        // Create heap
+                        std::make_heap(collected.begin(), collected.end(), comp);
+                        maxDist2 = Math::Length2(collected.front().p - p);
+                    }
+                }
+                else
+                {
+                    // Update heap
+                    std::pop_heap(collected.begin(), collected.end(), comp);
+                    collected.back() = photon;
+                    std::push_heap(collected.begin(), collected.end(), comp);
+                    maxDist2 = Math::Length2(collected.front().p - p);
+                }
             }
         }
+
+        return maxDist2;
     }
 
 private:
@@ -118,6 +149,7 @@ public:
     virtual auto Build(const std::vector<Photon>& photons) -> void
     {
         // Build function
+        int processedPhotons = 0;
         const std::function<int(int, int)> Build_ = [&](int begin, int end) -> int
         {
             int idx = (int)(nodes_.size());
@@ -138,6 +170,12 @@ public:
                 node->isleaf = true;
                 node->leaf.begin = begin;
                 node->leaf.end = end;
+
+                // Progress update
+                processedPhotons += end - begin;
+                const double progress = (double)(processedPhotons) / photons.size() * 100.0;
+                LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+                
                 return idx;
             }
 
@@ -167,10 +205,19 @@ public:
         indices_.assign(photons.size(), 0);
         std::iota(indices_.begin(), indices_.end(), 0);
         Build_(0, (int)(photons.size()));
+
+        LM_LOG_INFO("Progress: 100.0%");
     }
 
-    virtual auto CollectPhotons(const Vec3& p, Float& maxDist2, const std::function<void(const Photon&, Float&)>& collectFunc) const -> void
+    virtual auto CollectPhotons(const Vec3& p, int n, Float maxDist2, std::vector<Photon>& collected) const -> Float
     {
+        collected.clear();
+
+        const auto comp = [&](const Photon& p1, const Photon& p2)
+        {
+            return Math::Length2(p1.p - p) < Math::Length2(p2.p - p);
+        };
+
         const std::function<void(int)> Collect = [&](int idx) -> void
         {
             const auto* node = nodes_.at(idx).get();
@@ -183,7 +230,24 @@ public:
                     const auto dist2 = Math::Length2(photon.p - p);
                     if (dist2 < maxDist2)
                     {
-                        collectFunc(photon, maxDist2);
+                        if ((int)(collected.size()) < n)
+                        {
+                            collected.push_back(photon);
+                            if ((int)(collected.size()) == n)
+                            {
+                                // Create heap
+                                std::make_heap(collected.begin(), collected.end(), comp);
+                                maxDist2 = Math::Length2(collected.front().p - p);
+                            }
+                        }
+                        else
+                        {
+                            // Update heap
+                            std::pop_heap(collected.begin(), collected.end(), comp);
+                            collected.back() = photon;
+                            std::push_heap(collected.begin(), collected.end(), comp);
+                            maxDist2 = Math::Length2(collected.front().p - p);
+                        }
                     }
                 }
                 return;
@@ -211,6 +275,8 @@ public:
         };
 
         Collect(0);
+
+        return maxDist2;
     }
 
 private:
@@ -231,8 +297,8 @@ LM_COMPONENT_REGISTER_IMPL(PhotonMap_KdTree, "photonmap::kdtree");
 #pragma region PM renderer
 
 /*!
-    Photon mapping renderer.
-    Implements photon mapping. Unoptimized version.
+    \brief Photon mapping renderer.
+    Implements photon mapping.
     References:
       - H. W. Jensen, Global illumination using photon maps,
         Procs. of the Eurographics Workshop on Rendering Techniques 96, pp.21-30, 1996.
@@ -251,7 +317,7 @@ public:
     {
         sched_->Load(prop);
         maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
-        maxPhotons_ = prop->ChildAs<int>("max_photons", 1000);
+        numPhotonTraceSamples_ = prop->ChildAs<long long>("num_photon_trace_samples", 100000L);
         finalgather_ = prop->ChildAs<int>("finalgather", 1);
         pm_ = ComponentFactory::Create<PhotonMap>("photonmap::" + prop->ChildAs<std::string>("photonmap", "kdtree"));
         return true;
@@ -268,177 +334,245 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        #pragma region Trace photons
+        #pragma region Function to parallelize photon tracing
 
-        std::vector<Photon> photons;
-        long long tracedLightPaths = 0;
+        const auto ProcessPT = [&](const std::function<void(Random*, std::vector<Photon>&)>& processSampleFunc) -> std::vector<Photon>
         {
             LM_LOG_INFO("Tracing photons");
             LM_LOG_INDENTER();
 
-            std::unique_ptr<Random> rng(new Random);
-            rng->SetSeed(initRng.NextUInt());
+            // --------------------------------------------------------------------------------
 
-            for (tracedLightPaths = 0; (int)(photons.size()) < maxPhotons_; tracedLightPaths++)
+            #pragma region Thread local storage
+
+            struct Context
             {
-                #pragma region Sample a light
+                std::thread::id id;
+                Random rng;
+                std::vector<Photon> photons;
+                long long processedSamples = 0;
+            };
 
-                const auto* L = scene->SampleEmitter(SurfaceInteractionType::L, rng->Next());
-                const auto pdfL = scene->EvaluateEmitterPDF(L);
-                assert(pdfL > 0_f);
+            tbb::enumerable_thread_specific<Context> contexts;
+            const auto mainThreadID = std::this_thread::get_id();
+            std::mutex ctxInitMutex;
+        
+            #pragma endregion
 
-                #pragma endregion
+            // --------------------------------------------------------------------------------
 
-                // --------------------------------------------------------------------------------
+            #pragma region Render loop
 
-                #pragma region Sample a position on the light and initial ray direction
-
-                SurfaceGeometry geomL;
-                Vec3 initWo;
-                L->light->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), geomL, initWo);
-                const auto pdfPL = L->light->EvaluatePositionGivenDirectionPDF(geomL, initWo, false);
-                assert(pdfPL > 0_f);
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Temporary variables
-
-                auto throughput = L->light->EvaluatePosition(geomL, false) / pdfPL / pdfL;
-                const auto* primitive = L;
-                int type = SurfaceInteractionType::L;
-                auto geom = geomL;
-                Vec3 wi;
-                int numVertices = 1;
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                while (true)
+            std::atomic<long long> processedSamples(0);
+            tbb::parallel_for(tbb::blocked_range<long long>(0, numPhotonTraceSamples_, 10000), [&](const tbb::blocked_range<long long>& range) -> void
+            {
+                auto& ctx = contexts.local();
+                if (ctx.id == std::thread::id())
                 {
-                    if (maxNumVertices_ != -1 && numVertices >= maxNumVertices_)
+                    std::unique_lock<std::mutex> lock(ctxInitMutex);
+                    ctx.id = std::this_thread::get_id();
+                    ctx.rng.SetSeed(initRng.NextUInt());
+                }
+
+                for (long long sample = range.begin(); sample != range.end(); sample++)
+                {
+                    // Process sample
+                    processSampleFunc(&ctx.rng, ctx.photons);
+
+                    // Update progress
+                    ctx.processedSamples++;
+                    if (ctx.processedSamples > 100000)
                     {
-                        break;
-                    }
-
-                    // --------------------------------------------------------------------------------
-
-                    #pragma region Sample next direction
-
-                    Vec3 wo;
-                    if (type == SurfaceInteractionType::L)
-                    {
-                        wo = initWo;
-                    }
-                    else
-                    {
-                        primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
-                    }
-                    const auto pdfD = primitive->surface->EvaluateDirectionPDF(geom, type, wi, wo, false);
-
-                    #pragma endregion
-
-                    // --------------------------------------------------------------------------------
-
-                    #pragma region Evaluate direction
-
-                    const auto fs = primitive->surface->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
-                    if (fs.Black())
-                    {
-                        break;
-                    }
-
-                    #pragma endregion
-
-                    // --------------------------------------------------------------------------------
-
-                    #pragma region Update throughput
-
-                    assert(pdfD > 0_f);
-                    throughput *= fs / pdfD;
-
-                    #pragma endregion
-
-                    // --------------------------------------------------------------------------------
-
-                    #pragma region Intersection
-
-                    // Setup next ray
-                    Ray ray = { geom.p, wo };
-
-                    // Intersection query
-                    Intersection isect;
-                    if (!scene->Intersect(ray, isect))
-                    {
-                        break;
-                    }
-
-                    if (isect.geom.infinite)
-                    {
-                        break;
-                    }
-
-                    #pragma endregion
-
-                    // --------------------------------------------------------------------------------
-
-                    #pragma region Record photon
-
-                    if ((isect.primitive->surface->Type() & SurfaceInteractionType::D) > 0 || (isect.primitive->surface->Type() & SurfaceInteractionType::G) > 0)
-                    {
-                        Photon photon;
-                        photon.p = isect.geom.p;
-                        photon.throughput = throughput;
-                        photon.wi = -ray.d;
-                        photon.numVertices = numVertices + 1;
-                        photons.push_back(photon);
-                        if ((int)(photons.size()) == maxPhotons_)
+                        processedSamples += ctx.processedSamples;
+                        ctx.processedSamples = 0;
+                        if (std::this_thread::get_id() == mainThreadID)
                         {
-                            break;
+                            processedSamples += ctx.photons.size();
+                            const double progress = (double)(processedSamples) / numPhotonTraceSamples_ * 100.0;
+                            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
                         }
                     }
+                }
+            });
 
-                    #pragma endregion
+            LM_LOG_INFO("Progress: 100.0%");
 
-                    // --------------------------------------------------------------------------------
+            #pragma endregion
 
-                    #pragma region Path termination
+            // --------------------------------------------------------------------------------
 
-                    const Float rrProb = 0.5_f;
-                    if (rng->Next() > rrProb)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        throughput /= rrProb;
-                    }
+            #pragma region Gather results
 
-                    #pragma endregion
+            std::vector<Photon> photons;
+            contexts.combine_each([&](const Context& ctx)
+            {
+                photons.insert(photons.end(), ctx.photons.begin(), ctx.photons.end());
+            });
 
-                    // --------------------------------------------------------------------------------
+            #pragma endregion
 
-                    #pragma region Update information
+            // --------------------------------------------------------------------------------
 
-                    geom = isect.geom;
-                    primitive = isect.primitive;
-                    type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
-                    wi = -ray.d;
-                    numVertices++;
+            LM_LOG_INFO(boost::str(boost::format("# of traced light paths: %d") % numPhotonTraceSamples_));
+            LM_LOG_INFO(boost::str(boost::format("# of photons           : %d") % photons.size()));
 
-                    #pragma endregion
+            return photons;
+        };
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Trace photons
+
+        const auto photons = ProcessPT([scene, this](Random* rng, std::vector<Photon>& photons)
+        {
+            #pragma region Sample a light
+
+            const auto* L = scene->SampleEmitter(SurfaceInteractionType::L, rng->Next());
+            const auto pdfL = scene->EvaluateEmitterPDF(L);
+            assert(pdfL > 0_f);
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Sample a position on the light and initial ray direction
+
+            SurfaceGeometry geomL;
+            Vec3 initWo;
+            L->light->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), geomL, initWo);
+            const auto pdfPL = L->light->EvaluatePositionGivenDirectionPDF(geomL, initWo, false);
+            assert(pdfPL > 0_f);
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Temporary variables
+
+            auto throughput = L->light->EvaluatePosition(geomL, false) / pdfPL / pdfL;
+            const auto* primitive = L;
+            int type = SurfaceInteractionType::L;
+            auto geom = geomL;
+            Vec3 wi;
+            int numVertices = 1;
+
+            #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            while (true)
+            {
+                if (maxNumVertices_ != -1 && numVertices >= maxNumVertices_)
+                {
+                    break;
                 }
 
                 // --------------------------------------------------------------------------------
 
-                const double progress = (double)(photons.size()) / maxPhotons_ * 100.0;
-                LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
-            }
+                #pragma region Sample next direction
 
-            LM_LOG_INFO("Progress: 100.0%");
-        }
+                Vec3 wo;
+                if (type == SurfaceInteractionType::L)
+                {
+                    wo = initWo;
+                }
+                else
+                {
+                    primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                }
+                const auto pdfD = primitive->surface->EvaluateDirectionPDF(geom, type, wi, wo, false);
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Evaluate direction
+
+                const auto fs = primitive->surface->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
+                if (fs.Black())
+                {
+                    break;
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Update throughput
+
+                assert(pdfD > 0_f);
+                throughput *= fs / pdfD;
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Intersection
+
+                // Setup next ray
+                Ray ray = { geom.p, wo };
+
+                // Intersection query
+                Intersection isect;
+                if (!scene->Intersect(ray, isect))
+                {
+                    break;
+                }
+
+                if (isect.geom.infinite)
+                {
+                    break;
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Record photon
+
+                if ((isect.primitive->surface->Type() & SurfaceInteractionType::D) > 0 || (isect.primitive->surface->Type() & SurfaceInteractionType::G) > 0)
+                {
+                    Photon photon;
+                    photon.p = isect.geom.p;
+                    photon.throughput = throughput;
+                    photon.wi = -ray.d;
+                    photon.numVertices = numVertices + 1;
+                    photons.push_back(photon);
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Path termination
+
+                const Float rrProb = 0.5_f;
+                if (rng->Next() > rrProb)
+                {
+                    break;
+                }
+                else
+                {
+                    throughput /= rrProb;
+                }
+
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Update information
+
+                geom = isect.geom;
+                primitive = isect.primitive;
+                type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
+                wi = -ray.d;
+                numVertices++;
+
+                #pragma endregion
+            }
+        });
 
         #pragma endregion
 
@@ -458,7 +592,7 @@ public:
 
         #pragma region Trace eye rays
 
-        sched_->Process(scene, film, &initRng, [&tracedLightPaths, this](const Scene* scene, Film* film, Random* rng)
+        sched_->Process(scene, film, &initRng, [this](const Scene* scene, Film* film, Random* rng)
         {
             #pragma region Sample a sensor
 
@@ -601,42 +735,8 @@ public:
                     {
                         #pragma region Collect photons
 
-                        struct PhotonInfo
-                        {
-                            const Photon* photon;
-                            Float dist2;
-                        };
-
-                        const size_t numNNQueryPhotons = 20;
-                        Float maxDist2 = 0.1_f * 0.1_f;
-                        std::vector<PhotonInfo> photonInfo;
-                        pm_->CollectPhotons(isect.geom.p, maxDist2, [&](const Photon& photon, Float& maxDist2)
-                        {
-                            auto dist2 = Math::Length2(photon.p - isect.geom.p);
-                            const auto comp = [](const PhotonInfo& p1, const PhotonInfo& p2)
-                            {
-                                return p1.dist2 < p2.dist2;
-                            };
-
-                            if (photonInfo.size() < numNNQueryPhotons)
-                            {
-                                photonInfo.push_back(PhotonInfo{ &photon, dist2 });
-                                if (photonInfo.size() == numNNQueryPhotons)
-                                {
-                                    // Create heap
-                                    std::make_heap(photonInfo.begin(), photonInfo.end(), comp);
-                                    maxDist2 = photonInfo.front().dist2;
-                                }
-                            }
-                            else
-                            {
-                                // Update heap
-                                std::pop_heap(photonInfo.begin(), photonInfo.end(), comp);
-                                photonInfo.back() = PhotonInfo{ &photon, dist2 };
-                                std::push_heap(photonInfo.begin(), photonInfo.end(), comp);
-                                maxDist2 = photonInfo.front().dist2;
-                            }
-                        });
+                        std::vector<Photon> collected;
+                        const auto maxDist2 = pm_->CollectPhotons(isect.geom.p, 20, 0.1_f * 0.1_f, collected);
 
                         #pragma endregion
 
@@ -649,19 +749,17 @@ public:
                             auto s = 1_f - Math::Length2(photon.p - p) / maxDist2;
                             return 3_f * Math::InvPi() * s * s;
                         };
-                        for (const auto& info : photonInfo)
+                        for (const auto& photon : collected)
                         {
-                            if (numVertices + info.photon->numVertices > maxNumVertices_)
+                            if (numVertices + photon.numVertices > maxNumVertices_)
                             {
                                 continue;
                             }
 
-                            // Evaluate photon density estimation kernel
-                            // Do not to forget to divide by #tracedLightPaths
-                            auto k = Kernel(isect.geom.p, *info.photon, maxDist2);
-                            auto p = k / (maxDist2 * tracedLightPaths);
-                            const auto f = isect.primitive->surface->EvaluateDirection(isect.geom, SurfaceInteractionType::BSDF, -ray.d, info.photon->wi, TransportDirection::EL, true);
-                            const auto C = throughput * p * f * info.photon->throughput;
+                            auto k = Kernel(isect.geom.p, photon, maxDist2);
+                            auto p = k / (maxDist2 * numPhotonTraceSamples_);
+                            const auto f = isect.primitive->surface->EvaluateDirection(isect.geom, SurfaceInteractionType::BSDF, -ray.d, photon.wi, TransportDirection::EL, true);
+                            const auto C = throughput * p * f * photon.throughput;
                             film->Splat(rasterPos, C);
                         }
 
@@ -712,7 +810,7 @@ public:
 private:
 
     int maxNumVertices_;
-    int maxPhotons_;
+    long long numPhotonTraceSamples_;
     int finalgather_;
     Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
     PhotonMap::UniquePtr pm_{ nullptr, nullptr };

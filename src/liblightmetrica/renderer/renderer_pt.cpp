@@ -69,6 +69,8 @@ public:
         initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
         #endif
 
+        std::atomic<bool> init(false);
+
         sched_->Process(scene, film, &initRng, [this](const Scene* scene, Film* film, Random* rng)
         {
             #pragma region Sample a sensor
