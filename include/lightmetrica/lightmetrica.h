@@ -40,7 +40,6 @@
 #include <lightmetrica/exception.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/fp.h>
-#include <lightmetrica/generalizedbsdf.h>
 #include <lightmetrica/intersection.h>
 #include <lightmetrica/intersectionutils.h>
 #include <lightmetrica/light.h>

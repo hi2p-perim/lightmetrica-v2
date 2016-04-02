@@ -191,7 +191,7 @@ set(
     _ASSET_SENSOR_SOURCE_FILES
 	"asset/sensor/sensor_pinhole.cpp"
 	#"asset/sensor/sensor_area.cpp"
-	#"asset/sensor/sensor_thinlens.cpp"
+	"asset/sensor/sensor_thinlens.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\asset\\sensor" FILES ${_ASSET_SENSOR_SOURCE_FILES})
@@ -206,8 +206,8 @@ list(APPEND _SOURCE_FILES ${_ASSET_SENSOR_SOURCE_FILES})
 set(
     _ASSET_LIGHT_SOURCE_FILES
 	"asset/light/light_area.cpp"
-	#"asset/light/light_point.cpp"
-	#"asset/light/light_directional.cpp"
+	"asset/light/light_point.cpp"
+	"asset/light/light_directional.cpp"
 	"asset/light/light_env.cpp"
 )
 

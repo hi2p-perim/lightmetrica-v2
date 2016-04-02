@@ -65,22 +65,29 @@ public:
         return true;
     };
 
-    LM_IMPL_F(GetFilm) = [this]() -> Film*
-    {
-        return film_;
-    };
-
 public:
-
-    #pragma region GeneralizedBSDF
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteraction::E;
+        return SurfaceInteractionType::E;
     };
 
-    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    LM_IMPL_F(SamplePositionGivenPreviousPosition) = [this](const Vec2& u, const SurfaceGeometry& geomPrev, SurfaceGeometry& geom) -> void
     {
+        // Handle the point on the lens as spatially degenerated position
+        // the bidirectional handling of the position becomes same as pinhole camera.
+        geom.degenerated = true;
+        const auto lensUV = Sampler::UniformConcentricDiskSample(u) * lensRadius_;
+        geom.p = position_ + lensUV.x * vx_ + lensUV.y * vy_;
+    };
+
+    LM_IMPL_F(SamplePositionAndDirection) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom, Vec3& wo) -> void
+    {
+        // Sample a position on the lens
+        geom.degenerated = true;
+        const auto lensUV = Sampler::UniformConcentricDiskSample(u2) * lensRadius_;
+        geom.p = position_ + lensUV.x * vx_ + lensUV.y * vy_;
+
         // Sample a direction
         const auto rasterPos = 2.0_f * u - Vec2(1.0_f);
         const Float tanFov = Math::Tan(fov_ * 0.5_f);
@@ -95,9 +102,19 @@ public:
         wo = Math::Normalize(Pf - geom.p);
     };
 
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> Float
+    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
-        return Importance(wo, geom);
+        return PDFVal(PDFMeasure::ProjectedSolidAngle, Importance(wo, geom));
+    };
+
+    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> PDFVal
+    {
+        return PDFVal(PDFMeasure::Area, !evalDelta ? 1_f : 0_f);
+    };
+
+    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> PDFVal
+    {
+        return PDFVal(PDFMeasure::Area, !evalDelta ? 1_f : 0_f);
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
@@ -105,32 +122,58 @@ public:
         return SPD(Importance(wo, geom));
     };
 
-    #pragma endregion
-
-public:
-
-    #pragma region Emitter
-
-    LM_IMPL_F(SamplePosition) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom) -> void
-    {
-        // Handle the point on the lens as spatially degenerated position
-        // the bidirectional handling of the position becomes same as pinhole camera.
-        geom.degenerated = true;
-
-        // Sample a position on the lens
-        const auto lensUV = Sampler::UniformConcentricDiskSample(u) * lensRadius_;
-        geom.p = position_ + lensUV.x * vx_ + lensUV.y * vy_;
-    };
-
-    LM_IMPL_F(EvaluatePositionPDF) = [this](const SurfaceGeometry& geom, bool evalDelta) -> Float
-    {
-        return !evalDelta ? 1_f : 0_f;
-    };
-
     LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
     {
         return !evalDelta ? SPD(1) : SPD();
     };
+
+    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
+    {
+        return false;
+    };
+
+    LM_IMPL_F(IsDeltaPosition) = [this]() -> bool
+    {
+        return true;
+    };
+
+private:
+
+    auto Importance(const Vec3& wo, const SurfaceGeometry& geom) const -> Float
+    {
+        // Calculate raster position
+        Vec2 rasterPos;
+        if (!RasterPosition(wo, geom, rasterPos))
+        {
+            return 0_f;
+        }
+
+        // Intersection point with focal plane
+        assert(Math::Dot(-vz_, wo) > 0);
+        const float tf = focalDistance_ / Math::Dot(-vz_, wo);
+        const auto Pf = geom.p + wo * tf;
+
+        // Original ray direction before refraction
+        const auto woOrig = Math::Normalize(Pf - position_);
+
+        // Evaluate importance
+        const auto V = Math::Transpose(Mat3(vx_, vy_, vz_));
+        const auto woEye = V * woOrig;
+        const Float tanFov = Math::Tan(fov_ * 0.5_f);
+        const Float cosTheta = -Math::LocalCos(woEye);
+        const Float invCosTheta = 1_f / cosTheta;
+        const Float A = tanFov * tanFov * aspect_ * 4_f;
+        return invCosTheta * invCosTheta * invCosTheta / A;
+    }
+
+public:
+
+    LM_IMPL_F(GetBound) = [this]() -> Bound
+    {
+        return Math::Union(Bound(), position_);
+    };
+
+public:
 
     LM_IMPL_F(RasterPosition) = [this](const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) -> bool
     {
@@ -167,36 +210,10 @@ public:
         return true;
     };
 
-    #pragma endregion
-
-private:
-
-    auto Importance(const Vec3& wo, const SurfaceGeometry& geom) const -> Float
+    LM_IMPL_F(GetFilm) = [this]() -> Film*
     {
-        // Calculate raster position
-        Vec2 rasterPos;
-        if (!RasterPosition(wo, geom, rasterPos))
-        {
-            return 0_f;
-        }
-
-        // Intersection point with focal plane
-        assert(Math::Dot(-vz_, wo) > 0);
-        const float tf = focalDistance_ / Math::Dot(-vz_, wo);
-        const auto Pf = geom.p + wo * tf;
-
-        // Original ray direction before refraction
-        const auto woOrig = Math::Normalize(Pf - position_);
-
-        // Evaluate importance
-        const auto V = Math::Transpose(Mat3(vx_, vy_, vz_));
-        const auto woEye = V * woOrig;
-        const Float tanFov = Math::Tan(fov_ * 0.5_f);
-        const Float cosTheta = -Math::LocalCos(woEye);
-        const Float invCosTheta = 1_f / cosTheta;
-        const Float A = tanFov * tanFov * aspect_ * 4_f;
-        return invCosTheta * invCosTheta * invCosTheta / A;
-    }
+        return film_;
+    };
 
 private:
 

@@ -169,7 +169,7 @@ public:
         geom.gn = -d;
         geom.sn = geom.gn;
         geom.ComputeTangentSpace();
-        geom.p = center_ + d * bound_.radius + (geom.dpdu * p.x + geom.dpdv * p.y);
+        geom.p = bound_.center + d * bound_.radius + (geom.dpdu * p.x + geom.dpdv * p.y);
 
         // Sampled direction
         wo = -d;
@@ -239,7 +239,6 @@ public:
 
 public:
 
-    Vec3 center_;
     SphereBound bound_;
     Float invArea_;
     const Primitive* primitive_;
