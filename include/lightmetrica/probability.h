@@ -101,6 +101,12 @@ struct PDFVal
                 pdf.v = v / RenderUtils::GeometryTerm(geom1, geom2);
                 return pdf;
             }
+
+            default:
+            {
+                LM_UNREACHABLE();
+                return PDFVal();
+            }
         }
 
         LM_UNREACHABLE();
