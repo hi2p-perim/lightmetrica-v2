@@ -52,6 +52,8 @@ struct Photon : public SIMDAlignedType
 struct PhotonMap : public Component
 {
     LM_INTERFACE_CLASS(PhotonMap, Component, 0);
+    
+    virtual ~PhotonMap() {}
 
     // Build photon map
     virtual auto Build(const std::vector<Photon>& photons) -> void = 0;

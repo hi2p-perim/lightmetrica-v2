@@ -297,7 +297,7 @@ TEST_F(SceneTest, SensorNode)
     const auto scene = ComponentFactory::Create<Scene>();
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
-    EXPECT_EQ("n2", std::string(scene->Sensor()->id));
+    EXPECT_EQ("n2", std::string(scene->GetSensor()->id));
 }
 
 // --------------------------------------------------------------------------------

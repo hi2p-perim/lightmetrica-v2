@@ -52,7 +52,7 @@ public:
                 Vec2 rasterPos((Float(x) + 0.5_f) / Float(w), (Float(y) + 0.5_f) / Float(h));
 
                 // Position and direction of a ray
-                const auto* E = scene->Sensor()->emitter;
+                const auto* E = scene->GetSensor()->emitter;
                 SurfaceGeometry geomE;
                 Vec3 wo;
                 E->SamplePositionAndDirection(Vec2(), Vec2(), geomE, wo);
