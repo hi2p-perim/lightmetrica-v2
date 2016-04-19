@@ -342,6 +342,7 @@ set(
 	"renderer/renderer_ltdirect.cpp"
 	"renderer/renderer_bdpt.cpp"
 	"renderer/renderer_pm.cpp"
+	"renderer/renderer_ppm.cpp"
 	#"renderer/renderer_sampledensity.cpp"
 	#"renderer/renderer_sampledensity2.cpp"
 )
