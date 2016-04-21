@@ -37,6 +37,7 @@
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/scheduler.h>
 #include <lightmetrica/renderutils.h>
+#include <lightmetrica/detail/photonmap.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -59,6 +60,7 @@ public:
     {
         maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
         numSamples_     = prop->ChildAs<long long>("num_samples", 100000L);
+        numPhotonPass_  = prop->ChildAs<long long>("num_photon_pass", 1000L);
         return true;
     };
 
@@ -192,7 +194,6 @@ public:
         #pragma region Collect measumrement points
 
         std::vector<PathVertex> mp;
-
         for (long long sample = 0; sample < numSamples_; sample++)
         {
             TraceSubpath(&initRng, TransportDirection::EL, [&](const PathVertex& v) -> bool
@@ -213,8 +214,7 @@ public:
 
         // --------------------------------------------------------------------------------
 
-#if 1
-
+#if 0
         // Output the measurement points to the file
         {
             std::ofstream ofs("mp.dat");
@@ -224,13 +224,13 @@ public:
                 ofs << boost::str(boost::format("%.15f %.15f %.15f") % p.x % p.y % p.z) << std::endl;
             }
         }
-
 #endif
         
         // --------------------------------------------------------------------------------
 
-        #pragma region Create acceleration structure from a set of measurement points
+        #pragma region Photon scattering pass
 
+        // Create photon map
         
 
         #pragma endregion
@@ -243,7 +243,8 @@ public:
 private:
 
     int maxNumVertices_;
-    long long numSamples_;
+    long long numSamples_;      // Number of measurement points
+    long long numPhotonPass_;   // Number of photon scattering passes
 
 };
 
