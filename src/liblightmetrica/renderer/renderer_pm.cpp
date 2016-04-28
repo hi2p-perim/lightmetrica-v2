@@ -80,7 +80,7 @@ public:
 
         #pragma region Function to parallelize photon tracing
 
-        const auto ProcessPT = [&](const std::function<void(Random*, std::vector<Photon>&)>& processSampleFunc) -> std::vector<Photon>
+        const auto ProcessPhotonTrace = [&](const std::function<void(Random*, std::vector<Photon>&)>& processSampleFunc) -> std::vector<Photon>
         {
             LM_LOG_INFO("Tracing photons");
             LM_LOG_INDENTER();
@@ -169,7 +169,7 @@ public:
 
         #pragma region Trace photons
 
-        const auto photons = ProcessPT([scene, this](Random* rng, std::vector<Photon>& photons)
+        const auto photons = ProcessPhotonTrace([scene, this](Random* rng, std::vector<Photon>& photons)
         {
             #pragma region Sample a light
 
