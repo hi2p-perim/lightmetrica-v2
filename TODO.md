@@ -8,6 +8,8 @@ TODO
 - [ ] Redesign of various sampling functions for the support of mathematically consistent handling of probability distributions.
 - [ ] Automatic generation of entire documentation from sources. Think about the pipeline to achieve that.
 - [ ] Error handling of property inputs
+- [ ] Replace ctemplate library
+- [ ] Default template parameter
 
 Discussions
 --------------------

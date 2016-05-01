@@ -26,6 +26,7 @@
 
 #include <lightmetrica/component.h>
 #include <lightmetrica/spectrum.h>
+#include <functional>
 
 LM_NAMESPACE_BEGIN
 
@@ -54,21 +55,19 @@ struct PhotonMap : public Component
         Build the photon map with the underlying spatial data structure
         utilizing the given vector of photons.
     */
-    virtual auto Build(const std::vector<Photon>& photons) -> void = 0;
+    virtual auto Build(std::vector<Photon>&& photons) -> void = 0;
 
     /*!
         \brief Collect photons
 
-        Collect at most `n` nearest photons within the distance sqrt(maxDist2) from `p`.
+        Collect nearest photons within the distance `radius` from `p`.
         The collected photons are stored into `collected` ordered from the most distant photons.
 
-        \param p            Gather point
-        \param n            Number of maximum photons to be collected
-        \param maxDist2     Maximum distance from the gather point
-        \param collected    Collected photons
-        \return             Maximum distance from the gather point for the collected photons
+        \param p          Gather point
+        \param radius     Maximum distance from the gather point
+        \param collected  Collected photons
     */
-    virtual auto CollectPhotons(const Vec3& p, int n, Float maxDist2, std::vector<Photon>& collected) const -> Float = 0;
+    virtual auto CollectPhotons(const Vec3& p, Float radius, const std::function<void(const Photon&)>& collectFunc) const -> void = 0;
 };
 
 //! \}

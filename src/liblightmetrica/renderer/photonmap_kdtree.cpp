@@ -57,7 +57,7 @@ public:
 
 public:
 
-    virtual auto Build(const std::vector<Photon>& photons) -> void
+    virtual auto Build(std::vector<Photon>&& photons) -> void
     {
         // Build function
         int processedPhotons = 0;
@@ -84,7 +84,7 @@ public:
 
                 // Progress update
                 processedPhotons += end - begin;
-                const double progress = (double)(processedPhotons) / photons.size() * 100.0;
+                const double progress = (double)(processedPhotons) / photons_.size() * 100.0;
                 LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
                 
                 return idx;
@@ -113,22 +113,21 @@ public:
 
         photons_ = photons;
         nodes_.clear();
-        indices_.assign(photons.size(), 0);
+        indices_.assign(photons_.size(), 0);
         std::iota(indices_.begin(), indices_.end(), 0);
-        Build_(0, (int)(photons.size()));
+        Build_(0, (int)(photons_.size()));
 
         LM_LOG_INFO("Progress: 100.0%");
     }
 
-    virtual auto CollectPhotons(const Vec3& p, int n, Float maxDist2, std::vector<Photon>& collected) const -> Float
+    virtual auto CollectPhotons(const Vec3& p, Float radius, const std::function<void(const Photon&)>& collectFunc) const -> void
     {
-        collected.clear();
-
         const auto comp = [&](const Photon& p1, const Photon& p2)
         {
             return Math::Length2(p1.p - p) < Math::Length2(p2.p - p);
         };
 
+        const Float radius2 = radius * radius;
         const std::function<void(int)> Collect = [&](int idx) -> void
         {
             const auto* node = nodes_.at(idx).get();
@@ -138,27 +137,9 @@ public:
                 for (int i = node->leaf.begin; i < node->leaf.end; i++)
                 {
                     const auto& photon = photons_[indices_[i]];
-                    const auto dist2 = Math::Length2(photon.p - p);
-                    if (dist2 < maxDist2)
+                    if (Math::Length2(photon.p - p) < radius2)
                     {
-                        if ((int)(collected.size()) < n)
-                        {
-                            collected.push_back(photon);
-                            if ((int)(collected.size()) == n)
-                            {
-                                // Create heap
-                                std::make_heap(collected.begin(), collected.end(), comp);
-                                maxDist2 = Math::Length2(collected.front().p - p);
-                            }
-                        }
-                        else
-                        {
-                            // Update heap
-                            std::pop_heap(collected.begin(), collected.end(), comp);
-                            collected.back() = photon;
-                            std::push_heap(collected.begin(), collected.end(), comp);
-                            maxDist2 = Math::Length2(collected.front().p - p);
-                        }
+                        collectFunc(photon);
                     }
                 }
                 return;
@@ -170,7 +151,7 @@ public:
             if (p[axis] < split)
             {
                 Collect(node->internal.child1);
-                if (dist2 < maxDist2)
+                if (dist2 < radius2)
                 {
                     Collect(node->internal.child2);
                 }
@@ -178,7 +159,7 @@ public:
             else
             {
                 Collect(node->internal.child2);
-                if (dist2 < maxDist2)
+                if (dist2 < radius2)
                 {
                     Collect(node->internal.child1);
                 }
@@ -186,8 +167,6 @@ public:
         };
 
         Collect(0);
-
-        return maxDist2;
     }
 
 private:

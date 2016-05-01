@@ -22,47 +22,46 @@
     THE SOFTWARE.
 */
 
-#include <pch.h>
-#include <lightmetrica/detail/photonmap.h>
+#pragma once
+
+#include <lightmetrica/macros.h>
+#include <lightmetrica/surfacegeometry.h>
+#include <lightmetrica/surfaceinteraction.h>
+#include <lightmetrica/spectrum.h>
+#include <functional>
+#include <vector>
 
 LM_NAMESPACE_BEGIN
 
-class PhotonMap_Naive : public PhotonMap
+class Scene;
+class Random;
+struct Photon;
+struct Primitive;
+
+///! Utility class for phton density based techniques.
+class PhotonMapUtils
 {
 public:
 
-    LM_IMPL_CLASS(PhotonMap_Naive, PhotonMap);
+    struct PathVertex
+    {
+        int type;
+        SurfaceGeometry geom;
+        const Primitive* primitive = nullptr;
+    };
 
 public:
 
-    virtual auto Build(std::vector<Photon>&& photons) -> void
-    {
-        photons_ = photons;
-    }
+    LM_DISABLE_CONSTRUCT(PhotonMapUtils);
 
-    virtual auto CollectPhotons(const Vec3& p, Float radius, const std::function<void(const Photon&)>& collectFunc) const -> void
-    {
-        const auto comp = [&](const Photon& p1, const Photon& p2)
-        {
-            return Math::Length2(p1.p - p) < Math::Length2(p2.p - p);
-        };
+public:
 
-        const Float radius2 = radius * radius;
-        for (const auto& photon : photons_)
-        {
-            if (Math::Length2(photon.p - p) < radius2)
-            {
-                collectFunc(photon);
-            }
-        }
-    }
+    ///! Function to parallelize photon tracing
+    LM_PUBLIC_API static auto ProcessPhotonTrace(Random* initRng, long long numPhotonTraceSamples, const std::function<void(Random*, std::vector<Photon>&)>& processSampleFunc) -> std::vector<Photon>;
 
-private:
-
-    std::vector<Photon> photons_;
+    ///! Function to trace subpath (TODO: refactor it as path sampler)
+    LM_PUBLIC_API static auto TraceSubpath(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const std::function<bool(int step, const Vec2&, const PathVertex&, const PathVertex&, SPD&)>& processPathVertexFunc) -> void;
 
 };
-
-LM_COMPONENT_REGISTER_IMPL(PhotonMap_Naive, "photonmap::naive");
 
 LM_NAMESPACE_END

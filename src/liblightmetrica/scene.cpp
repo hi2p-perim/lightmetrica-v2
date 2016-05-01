@@ -127,7 +127,6 @@ public:
         return emitter_->EvaluatePosition(geom, evalDelta);
     };
 
-
     LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
     {
         if ((type & SurfaceInteractionType::Emitter) > 0)
