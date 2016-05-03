@@ -115,6 +115,8 @@ public:
         return false;
     };
 
+    LM_IMPL_F(Emittance) = [this]() -> SPD { return Le_; };
+
 private:
 
     SPD Le_;

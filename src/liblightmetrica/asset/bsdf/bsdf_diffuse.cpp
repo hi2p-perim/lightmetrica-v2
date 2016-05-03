@@ -106,6 +106,8 @@ public:
         return false;
     };
 
+    LM_IMPL_F(Reflectance) = [this]() -> SPD { return R_; };
+
 public:
 
     SPD R_;

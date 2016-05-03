@@ -42,6 +42,7 @@ struct SurfaceGeometry
 
     bool degenerated;        //!< True if the point is spatially degenerated, e.g., point light source
     bool infinite = false;   //!< Intersected point is on the infinite point from the scene
+    int faceindex;           //!< Triangle face index (only valid if the surface geometry is associated with a triangle)
     Vec3 p;                  //!< Intersection point
     Vec3 sn;                 //!< Shading normal
     Vec3 gn;                 //!< Geometry normal

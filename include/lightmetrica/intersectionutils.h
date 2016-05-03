@@ -56,7 +56,7 @@ public:
         \param b Barycentric coordinates of the triangle at the intersection point.
         \param faceIndex Triangle face index.
     */
-    static auto CreateTriangleIntersection(const Primitive* primitive, const Vec3& p, const Vec2& b, int faceIndex) -> Intersection
+    static auto CreateTriangleIntersection(const Primitive* primitive, const Vec3& p, const Vec2& b, int faceindex) -> Intersection
     {
         Intersection isect;
 
@@ -64,14 +64,17 @@ public:
         const auto* mesh = primitive->mesh;
         isect.primitive = primitive;
 
+        // Triangle face index
+        isect.geom.faceindex = faceindex;
+
         // Intersection point
         isect.geom.p = p;
 
         // Face indices
         const auto* fs = mesh->Faces();
-        int v1 = fs[3 * faceIndex];
-        int v2 = fs[3 * faceIndex + 1];
-        int v3 = fs[3 * faceIndex + 2];
+        int v1 = fs[3 * faceindex];
+        int v2 = fs[3 * faceindex + 1];
+        int v3 = fs[3 * faceindex + 2];
 
         // Geometry normal
         const auto* ps = mesh->Positions();

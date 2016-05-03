@@ -42,12 +42,17 @@ class BSDF : public SurfaceInteraction
 {
 public:
 
-    LM_INTERFACE_CLASS(BSDF, SurfaceInteraction, 0);
+    LM_INTERFACE_CLASS(BSDF, SurfaceInteraction, 1);
 
 public:
 
     BSDF() = default;
     LM_DISABLE_COPY_AND_MOVE(BSDF);
+
+public:
+
+    ///! Get reflectance if available.
+    LM_INTERFACE_F(0, Reflectance, SPD());
 
 };
 

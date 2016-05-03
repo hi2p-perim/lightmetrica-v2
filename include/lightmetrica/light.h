@@ -42,12 +42,17 @@ class Light : public Emitter
 {
 public:
 
-    LM_INTERFACE_CLASS(Light, Emitter, 0);
+    LM_INTERFACE_CLASS(Light, Emitter, 1);
 
 public:
 
     Light() = default;
     LM_DISABLE_COPY_AND_MOVE(Light);
+
+public:
+
+    ///! Get emittance if available.
+    LM_INTERFACE_F(0, Emittance, SPD());
 
 };
 

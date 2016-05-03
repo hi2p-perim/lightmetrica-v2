@@ -22,10 +22,6 @@
 #  THE SOFTWARE.
 #
 
-add_subdirectory("texture_checker")
-add_subdirectory("texture_white")
-add_subdirectory("renderer_normal")
-add_subdirectory("texture_binary_op")
-add_subdirectory("accel_embree")
-add_subdirectory("trianglemesh_assimp")
-add_subdirectory("renderer_radiosity")
+include(AddPlugin)
+add_plugin(NAME "renderer_radiosity" SOURCE "renderer_radiosity.cpp" NO_INSTALL)
+install(FILES "renderer_radiosity.cpp" DESTINATION "lightmetrica/plugin")
