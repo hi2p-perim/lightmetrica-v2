@@ -1140,6 +1140,150 @@ LM_INLINE auto operator/<double, SIMD::AVX, TVec4>(const TVec4<double, SIMD::AVX
 
 // --------------------------------------------------------------------------------
 
+#pragma region Comparators
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator==(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> bool
+{
+    constexpr int N = VecT<T, Opt>::NC;
+    for (int i = 0; i < N; i++) if (v1[i] != v2[i]) return false;
+    return true;
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator==(const VecT<T, Opt>& v, const T& s) -> bool
+{
+    return v == VecT<T, Opt>(s);
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator!=(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> bool
+{
+    return !(v1 == v2);
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator!=(const VecT<T, Opt>& v, const T& s) -> bool
+{
+    return v == VecT<T, Opt>(s);
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator<(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> bool
+{
+    constexpr int N = VecT<T, Opt>::NC;
+    for (int i = 0; i < N; i++) if (v1[i] >= v2[i]) return false;
+    return true;
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator<(const VecT<T, Opt>& v, const T& s) -> bool
+{
+    return v < VecT<T, Opt>(s);
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator>(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> bool
+{
+    constexpr int N = VecT<T, Opt>::NC;
+    for (int i = 0; i < N; i++) if (v1[i] <= v2[i]) return false;
+    return true;
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator>(const VecT<T, Opt>& v, const T& s) -> bool
+{
+    return v > VecT<T, Opt>(s);
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator<=(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> bool
+{
+    return v1 < v2 || v1 == v2;
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator<=(const VecT<T, Opt>& v, const T& s) -> bool
+{
+    return v <= VecT<T, Opt>(s);
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator>=(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> bool
+{
+    return v1 > v2 || v1 == v2;
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
+LM_INLINE auto operator>=(const VecT<T, Opt>& v, const T& s) -> bool
+{
+    return v >= VecT<T, Opt>(s);
+}
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
 #pragma region operator- (unary)
 
 template <typename T, template <typename, SIMD> class VecT>

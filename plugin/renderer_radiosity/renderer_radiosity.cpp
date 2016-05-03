@@ -25,9 +25,28 @@
 #include <lightmetrica/lightmetrica.h>
 #include <stack>
 #include <boost/format.hpp>
+#if LM_COMPILER_MSVC
+#pragma warning(disable:4714)
+#endif
 #include <Eigen/Sparse>
 
+//namespace Eigen
+//{
+//    template <>
+//    class NumTraits<lightmetrica_v2::Vec3> : NumTraits<lightmetrica_v2::Float>
+//    {
+//
+//    };
+//
+//    
+//
+//}
+
 LM_NAMESPACE_BEGIN
+
+// For Eigen
+auto abs(const Vec3& v) -> Vec3 { return Vec3(std::abs(v.x), std::abs(v.y), std::abs(v.z)); }
+auto sqrt(const Vec3& v) -> Vec3 { return Vec3(std::sqrt(v.x), std::sqrt(v.y), std::sqrt(v.z)); }
 
 /*!
     \brief Radiosity renderer.
@@ -50,7 +69,7 @@ public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
-        subdivLimitArea_ = prop->ChildAs<Float>("subdivlimitarea", 0.01_f);
+        subdivLimitArea_ = prop->ChildAs<Float>("subdivlimitarea", 0.1_f);
         return true;
     };
 
@@ -130,7 +149,7 @@ public:
                 stack.push({ p1, p2, p3 });
                 while (!stack.empty())
                 {
-                    const auto& tri = stack.top(); 
+                    const auto tri = stack.top(); stack.pop();
                     if (tri.Area() < subdivLimitArea_)
                     {
                         patches.push_back({ primitive, tri.p1, tri.p2, tri.p3, gn });
@@ -154,18 +173,17 @@ public:
 
         #pragma endregion
 
-#if 0
-
         // --------------------------------------------------------------------------------
 
         #pragma region Setup matrices
 
+        const int N = (int)(patches.size());
         using Matrix = Eigen::SparseMatrix<Vec3>;
-        using Vector = Eigen::SparseVector<Vec3>;
+        using Vector = Eigen::Matrix<Vec3, Eigen::Dynamic, 1>;
 
         // Setup emission term
-        Vector E(patches.size());
-        for (size_t i = 0; i < patches.size(); i++)
+        Vector E(N);
+        for (int i = 0; i < N; i++)
         {
             const auto& patch = patches[i];
             const auto* light = patch.primitive->light;
@@ -173,11 +191,11 @@ public:
             {
                 continue;
             }
-            E.insert(i) = light->Emittance().ToRGB();
+            E(i) = light->Emittance().ToRGB();
         }
 
         // Helper function to estimate the form factor
-        const auto EstimateFromFactor = [&](size_t i, size_t j) -> Float
+        const auto EstimateFromFactor = [&](int i, int j) -> Float
         {
             const auto& pi = patches[i];
             const auto& pj = patches[j];
@@ -205,11 +223,11 @@ public:
         };
 
         // Setup matrix of interactions
-        Matrix K(patches.size(), patches.size());
+        Matrix K(N, N);
         K.setIdentity();
-        for (size_t i = 0; i < patches.size(); i++)
+        for (int i = 0; i < N; i++)
         {
-            for (size_t j = 0; j < patches.size(); j++)
+            for (int j = 0; j < N; j++)
             {
                 const auto Fij = EstimateFromFactor(i, j);
                 if (Fij > 0_f)
@@ -227,13 +245,11 @@ public:
 
         Eigen::BiCGSTAB<Matrix> solver;
         solver.compute(K);
-        const auto B = solver.solve(E);
+        Vector B = solver.solve(E);
 
         #pragma endregion
 
         // --------------------------------------------------------------------------------
-
-#endif
 
         #pragma region Rendering (ray casting)
 
@@ -247,10 +263,9 @@ public:
                 Vec2 rasterPos((Float(x) + 0.5_f) / Float(width), (Float(y) + 0.5_f) / Float(height));
 
                 // Position and direction of a ray
-                const auto* E = scene->Sensor()->emitter;
                 SurfaceGeometry geomE;
                 Vec3 wo;
-                E->SamplePositionAndDirection(rasterPos, Vec2(), geomE, wo);
+                scene->Sensor()->emitter->SamplePositionAndDirection(rasterPos, Vec2(), geomE, wo);
 
                 // Setup a ray
                 Ray ray = { geomE.p, wo };
@@ -263,16 +278,15 @@ public:
                     film->SetPixel(x, y, SPD());
                     continue;
                 }
-
+                
                 // --------------------------------------------------------------------------------
 
-                #pragma region Compute patch index
+                #pragma region Compute patch index & visualize the radiosity
 
                 // For this requirement, what we want to do here is to subdivide and
                 // check if the query point is in the triangle. This actually increase the complexity
-                // compared with the case that we use quad-tree for example, 
-                // but we guess the ray casting is fast enough.
-
+                // compared with the case that we use a quad-tree associated with each triangle for example, 
+                // but I think the ray casting is fast enough and this does not degrate performance so much.
                 {
                     const auto* mesh = isect.primitive->mesh;
                     const auto* fs = mesh->Faces();
@@ -297,29 +311,32 @@ public:
                     stack.push({ p1, p2, p3 });
                     while (!stack.empty())
                     {
-                        const auto& tri = stack.top();
+                        const auto tri = stack.top(); stack.pop();
                         if (tri.Area() < subdivLimitArea_)
                         {
                             // Check if the intersected point is in the subdivided triangle
-                            const auto d = isect.geom.p - tri.p1;
-                            const auto p12 = Math::Normalize(tri.p2 - tri.p1);
-                            const auto p13 = Math::Normalize(tri.p3 - tri.p1);
-                            const auto b1 = Math::Dot(d, p12) / Math::Length(tri.p2 - tri.p1);
-                            const auto b2 = Math::Dot(d, p13) / Math::Length(tri.p2 - tri.p1);
-                            if (0_f < b1 && 0_f < b2 && b1 + b2 < 1_f)
+                            const auto e0 = tri.p3 - tri.p1;
+                            const auto e1 = tri.p2 - tri.p1;
+                            const auto e2 = isect.geom.p - tri.p1;
+                            const auto dot00 = Math::Dot(e0, e0);
+                            const auto dot01 = Math::Dot(e0, e1);
+                            const auto dot02 = Math::Dot(e0, e2);
+                            const auto dot11 = Math::Dot(e1, e1);
+                            const auto dot12 = Math::Dot(e1, e2);
+                            const auto invDenom = 1_f / (dot00 * dot11 - dot01 * dot01);
+                            const auto u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+                            const auto v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+                            if (0_f < u && 0_f < v && u + v < 1_f)
                             {
-                                //film->SetPixel(x, y, SPD(B(patchindex)));
-
+                                film->SetPixel(x, y, SPD(B(patchindex)));
+                                
                                 // Visualize wire frame
                                 // Compute minimum distance from each edges
-                                const auto d1 = Math::Length(isect.geom.p - (p1 + b1 * p12));
-                                const auto d2 = Math::Length(isect.geom.p - (p1 + b2 * p13));
-                                const auto d3 = Math::Length(isect.geom.p - (tri.p2 + Math::Dot(isect.geom.p - tri.p2, tri.p3 - tri.p2) * (tri.p3 - tri.p2) / Math::Length2(tri.p3 - tri.p2)));
-                                const auto mind = Math::Min(d1, Math::Min(d2, d3));
-                                if (mind < 0.01f)
+                                /*const auto mind = Math::Min(u, Math::Min(v, 1_f - u - v));
+                                if (mind < 0.05f)
                                 {
-                                    film->SetPixel(x, y, SPD(1_f));
-                                }
+                                    film->SetPixel(x, y, SPD(Math::Abs(Math::Dot(isect.geom.sn, -ray.d))));
+                                }*/
                             }
 
                             patchindex++;
