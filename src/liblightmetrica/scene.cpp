@@ -392,6 +392,7 @@ public:
                     primitiveIDMap_[primitive->id] = primitive.get();
                 }
 
+                primitive->index = primitives_.size();
                 primitives_.push_back(std::move(primitive));
                 
                 #pragma endregion

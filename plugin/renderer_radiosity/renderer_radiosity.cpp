@@ -25,11 +25,15 @@
 #include <lightmetrica/lightmetrica.h>
 #include <stack>
 #include <sstream>
+#include <unordered_map>
 #include <boost/format.hpp>
 #if LM_COMPILER_MSVC
 #pragma warning(disable:4714)
 #endif
 #include <Eigen/Sparse>
+#include "ff.h"
+
+#define LM_RADIOSITY_DEBUG 0
 
 namespace Eigen
 {
@@ -94,6 +98,7 @@ auto operator<<(std::ostream& os, const Vec3& v) -> std::ostream&
     References:
       - [Cohen & Wallace 1995] Radiosity and realistic image synthesis
       - [Willmott & Heckbert 1997] An empirical comparison of radiosity algorithms
+      - [Schroder & Hanrahan 1993] On the form factor between two polygons
 */
 class Renderer_Radiosity final : public Renderer
 {
@@ -107,6 +112,7 @@ public:
     {
         subdivLimitArea_ = prop->ChildAs<Float>("subdivlimitarea", 0.1_f);
         wireframe_ = prop->ChildAs<int>("wireframe", 0);
+        analyticalFormFactor_ = prop->ChildAs<int>("analyticalformfactor", 0);
         return true;
     };
 
@@ -114,8 +120,9 @@ public:
     {
         #pragma region Create patches
 
-        // As well as the patches, we create the quad tree associated to each triangle
-        // to accelerate the query to get the patch index from the intersected point.
+        LM_LOG_INFO("Creating patches");
+
+        // --------------------------------------------------------------------------------
 
         struct Patch
         {
@@ -126,23 +133,35 @@ public:
             auto Area() const -> Float { return Math::Length(Math::Cross(p2 - p1, p3 - p1)) * 0.5_f; }
         };
 
-        struct QuadTreeNode
+        struct Index
         {
-            bool isleaf = false;
-            union
-            {
-                struct
-                {
-                    
-                } leaf;
-                struct
-                {
-                    
-                } internal;
-            };
+            int primitiveIndex;
+            int faceIndex;
         };
 
+        // Define Hash function for index
+        std::vector<int> psum(scene->NumPrimitives() + 1);
+        psum[0] = 0;
+        for (int i = 0; i < scene->NumPrimitives(); i++)
+        {
+            const auto* primitive = scene->PrimitiveAt(i);
+            psum[i + 1] = psum[i] + (primitive->mesh ? primitive->mesh->NumFaces() : 0);
+        }
+        const auto Hash = [&psum](const Index& index) -> size_t
+        {
+            assert(index.primitiveIndex >= 0);
+            assert(psum[index.primitiveIndex + 1] - psum[index.primitiveIndex] > index.faceIndex);
+            return psum[index.primitiveIndex] + index.faceIndex;
+        };
+        const auto IndexEq = [](const Index& lhs, const Index& rhs) -> bool
+        {
+            return lhs.primitiveIndex == rhs.primitiveIndex && lhs.faceIndex == rhs.faceIndex;
+        };
+
+        // --------------------------------------------------------------------------------
+
         std::vector<Patch> patches;
+        std::unordered_map<Index, size_t, decltype(Hash), decltype(IndexEq)> patchIndexMap(10, Hash, IndexEq);
         for (int i = 0; i < scene->NumPrimitives(); i++)
         {
             const auto* primitive = scene->PrimitiveAt(i);
@@ -208,6 +227,10 @@ public:
                     const auto tri = stack.top(); stack.pop();
                     if (tri.Area() < subdivLimitArea_)
                     {
+                        if (patchIndexMap.find({ i, fi }) == patchIndexMap.end())
+                        {
+                            patchIndexMap[{ i, fi }] = patches.size();
+                        }
                         patches.push_back({ primitive, tri.p1, tri.p2, tri.p3, gn });
                         continue;
                     }
@@ -233,8 +256,11 @@ public:
 
         #pragma region Setup matrices
 
+        LM_LOG_INFO("Setup matrix");
+
         const int N = (int)(patches.size());
-        using Matrix = Eigen::SparseMatrix<Vec3>;
+        //using Matrix = Eigen::SparseMatrix<Vec3>;
+        using Matrix = Eigen::Matrix<Vec3, Eigen::Dynamic, Eigen::Dynamic>;
         using Vector = Eigen::Matrix<Vec3, Eigen::Dynamic, 1>;
 
         // Setup emission term
@@ -251,7 +277,7 @@ public:
         }
 
         // Helper function to estimate the form factor
-        const auto EstimateFromFactor = [&](int i, int j) -> Float
+        const auto EstimateFormFactor = [&](int i, int j) -> Float
         {
             const auto& pi = patches[i];
             const auto& pj = patches[j];
@@ -274,6 +300,24 @@ public:
                 return 0_f;
             }
             
+            if (analyticalFormFactor_)
+            {
+                // Analytical solution [Schroder & Hanrahan 1993]
+                double p[3][3] =
+                {
+                    { pi.p1.x, pi.p1.y, pi.p1.z },
+                    { pi.p2.x, pi.p2.y, pi.p2.z },
+                    { pi.p3.x, pi.p3.y, pi.p3.z },
+                };
+                double q[3][3] =
+                {
+                    { pj.p1.x, pj.p1.y, pj.p1.z },
+                    { pj.p2.x, pj.p2.y, pj.p2.z },
+                    { pj.p3.x, pj.p3.y, pj.p3.z },
+                };
+                return (Float)(FormFactor(&(p[0]), 3, &(q[0]), 3));
+            }
+
             // Point-to-point estimate (Eq.4 in [Willmott & Heckbert 1997])
             return pj.Area() * cosThetai * cosThetaj / Math::Pi() / Math::Length2(ci - cj);
         };
@@ -285,13 +329,18 @@ public:
         {
             for (int j = 0; j < N; j++)
             {
-                const auto Fij = EstimateFromFactor(i, j);
+                const auto Fij = EstimateFormFactor(i, j);
                 if (Fij > 0_f)
                 {
                     K.coeffRef(i, j) -= patches[i].primitive->bsdf->Reflectance().ToRGB() * Fij;
                 }
             }
+
+            const double progress = 100.0 * i / N;
+            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
         }
+
+        LM_LOG_INFO("Progress: 100.0%");
 
         #pragma endregion
 
@@ -299,19 +348,25 @@ public:
 
         #pragma region Solve radiosity equation
 
+        LM_LOG_INFO("Solving linear system");
+
         Eigen::BiCGSTAB<Matrix> solver;
         solver.compute(K);
         Vector B = solver.solve(E);
 
+        #if LM_RADIOSITY_DEBUG
         std::stringstream ss;
         ss << B << std::endl;
         LM_LOG_INFO(ss.str());
+        #endif
 
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Rendering (ray casting)
+
+        LM_LOG_INFO("Visualizing result");
 
         const int width  = film->Width();
         const int height = film->Height();
@@ -366,7 +421,7 @@ public:
                         auto Area() const -> Float { return Math::Length(Math::Cross(p2 - p1, p3 - p1)) * 0.5_f; }
                     };
 
-                    int patchindex = 0;
+                    size_t patchindex = patchIndexMap[{ (int)(isect.primitive->index), isect.geom.faceindex }];
                     std::stack<Tri> stack;
                     stack.push({ p1, p2, p3 });
                     while (!stack.empty())
@@ -401,10 +456,6 @@ public:
                                 else
                                 {
                                     film->SetPixel(x, y, SPD(B(patchindex)));
-                                    if (patchindex == 2)
-                                    {
-                                        __debugbreak();
-                                    }
                                 }
                             }
 
@@ -438,6 +489,7 @@ private:
 
     Float subdivLimitArea_;
     int wireframe_;
+    int analyticalFormFactor_;
 
 };
 

@@ -23,5 +23,5 @@
 #
 
 include(AddPlugin)
-add_plugin(NAME "renderer_radiosity" SOURCE "renderer_radiosity.cpp" NO_INSTALL)
+add_plugin(NAME "renderer_radiosity" SOURCE "renderer_radiosity.cpp" "ff.h" "ffp.cpp" "claussen.h" "claussenp.cpp" NO_INSTALL)
 install(FILES "renderer_radiosity.cpp" DESTINATION "lightmetrica/plugin")

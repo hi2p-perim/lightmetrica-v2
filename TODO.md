@@ -10,6 +10,8 @@ TODO
 - [ ] Error handling of property inputs
 - [ ] Replace ctemplate library
 - [ ] Default template parameter
+- [ ] Add explanation of parameters
+- [ ] Function to list parameters from the command line
 
 Discussions
 --------------------

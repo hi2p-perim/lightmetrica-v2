@@ -57,6 +57,9 @@ struct Primitive : public SIMDAlignedType
     // Primitive ID
     const char* id = nullptr;
 
+    // Primitive index
+    size_t index;
+
     // Transform & normal transform
     Mat4 transform;
     Mat3 normalTransform;
