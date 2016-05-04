@@ -1172,9 +1172,22 @@ template <
     template <typename, SIMD> class VecT,
     typename = EnableIfVecType<T, Opt, VecT>
 >
+LM_INLINE auto operator==(const VecT<T, Opt>& v, int s) -> bool
+{
+    return v == VecT<T, Opt>(T(s));
+}
+
+template <
+    typename T,
+    SIMD Opt,
+    template <typename, SIMD> class VecT,
+    typename = EnableIfVecType<T, Opt, VecT>
+>
 LM_INLINE auto operator!=(const VecT<T, Opt>& v1, const VecT<T, Opt>& v2) -> bool
 {
-    return !(v1 == v2);
+    constexpr int N = VecT<T, Opt>::NC;
+    for (int i = 0; i < N; i++) if (v1[i] != v2[i]) return true;
+    return false;
 }
 
 template <

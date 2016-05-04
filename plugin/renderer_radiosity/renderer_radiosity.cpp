@@ -24,29 +24,65 @@
 
 #include <lightmetrica/lightmetrica.h>
 #include <stack>
+#include <sstream>
 #include <boost/format.hpp>
 #if LM_COMPILER_MSVC
 #pragma warning(disable:4714)
 #endif
 #include <Eigen/Sparse>
 
-//namespace Eigen
-//{
-//    template <>
-//    class NumTraits<lightmetrica_v2::Vec3> : NumTraits<lightmetrica_v2::Float>
-//    {
-//
-//    };
-//
-//    
-//
-//}
+namespace Eigen
+{
+    template <>
+    struct NumTraits<lightmetrica_v2::Vec3>
+    {
+        using T          = lightmetrica_v2::Vec3;
+        using VT         = lightmetrica_v2::Float;
+        using Real       = T;
+        using NonInteger = T;
+        using Nested     = T;
+        enum
+        {
+            IsComplex = 0,
+            IsInteger = 0,
+            IsSigned = 1,
+            RequireInitialization = 1,
+            ReadCost = 3,
+            AddCost = 3,
+            MulCost = 3
+        };
+        static inline T epsilon()         { return T(NumTraits<VT>::epsilon()); }
+        static inline T dummy_precision() { return T(NumTraits<VT>::dummy_precision()); }
+        static inline T highest()         { return T(std::numeric_limits<VT>::max()); }
+        static inline T lowest()          { return T(std::numeric_limits<VT>::min()); }
+    };
+
+    namespace internal
+    {
+        template<>
+        struct significant_decimals_impl<lightmetrica_v2::Vec3>
+        {
+            static inline int run()
+            {
+                return significant_decimals_impl<lightmetrica_v2::Float>::run();
+            }
+        };
+    }
+}
 
 LM_NAMESPACE_BEGIN
 
 // For Eigen
+// https://eigen.tuxfamily.org/dox/TopicCustomizingEigen.html
 auto abs(const Vec3& v) -> Vec3 { return Vec3(std::abs(v.x), std::abs(v.y), std::abs(v.z)); }
 auto sqrt(const Vec3& v) -> Vec3 { return Vec3(std::sqrt(v.x), std::sqrt(v.y), std::sqrt(v.z)); }
+auto log(const Vec3& v) -> Vec3 { return Vec3(std::log(v.x), std::log(v.y), std::log(v.z)); }
+auto ceil(const Vec3& v) -> Vec3 { return Vec3(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z)); }
+auto operator<<(std::ostream& os, const Vec3& v) -> std::ostream&
+{
+    os << "(" << v.x << "," << v.y << "," << v.z << ")";
+    return os;
+}
 
 /*!
     \brief Radiosity renderer.
@@ -70,12 +106,16 @@ public:
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
         subdivLimitArea_ = prop->ChildAs<Float>("subdivlimitarea", 0.1_f);
+        wireframe_ = prop->ChildAs<int>("wireframe", 0);
         return true;
     };
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
     {
         #pragma region Create patches
+
+        // As well as the patches, we create the quad tree associated to each triangle
+        // to accelerate the query to get the patch index from the intersected point.
 
         struct Patch
         {
@@ -84,6 +124,22 @@ public:
             Vec3 gn;
             auto Centroid() const -> Vec3 { return (p1 + p2 + p3) / 3_f; }
             auto Area() const -> Float { return Math::Length(Math::Cross(p2 - p1, p3 - p1)) * 0.5_f; }
+        };
+
+        struct QuadTreeNode
+        {
+            bool isleaf = false;
+            union
+            {
+                struct
+                {
+                    
+                } leaf;
+                struct
+                {
+                    
+                } internal;
+            };
         };
 
         std::vector<Patch> patches;
@@ -247,6 +303,10 @@ public:
         solver.compute(K);
         Vector B = solver.solve(E);
 
+        std::stringstream ss;
+        ss << B << std::endl;
+        LM_LOG_INFO(ss.str());
+
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -286,7 +346,7 @@ public:
                 // For this requirement, what we want to do here is to subdivide and
                 // check if the query point is in the triangle. This actually increase the complexity
                 // compared with the case that we use a quad-tree associated with each triangle for example, 
-                // but I think the ray casting is fast enough and this does not degrate performance so much.
+                // but I think the ray casting is fast enough and this does not degrade performance so much.
                 {
                     const auto* mesh = isect.primitive->mesh;
                     const auto* fs = mesh->Faces();
@@ -328,15 +388,24 @@ public:
                             const auto v = (dot00 * dot12 - dot01 * dot02) * invDenom;
                             if (0_f < u && 0_f < v && u + v < 1_f)
                             {
-                                film->SetPixel(x, y, SPD(B(patchindex)));
-                                
-                                // Visualize wire frame
-                                // Compute minimum distance from each edges
-                                /*const auto mind = Math::Min(u, Math::Min(v, 1_f - u - v));
-                                if (mind < 0.05f)
+                                if (wireframe_)
                                 {
-                                    film->SetPixel(x, y, SPD(Math::Abs(Math::Dot(isect.geom.sn, -ray.d))));
-                                }*/
+                                    // Visualize wire frame
+                                    // Compute minimum distance from each edges
+                                    const auto mind = Math::Min(u, Math::Min(v, 1_f - u - v));
+                                    if (mind < 0.05f)
+                                    {
+                                        film->SetPixel(x, y, SPD(Math::Abs(Math::Dot(isect.geom.sn, -ray.d))));
+                                    }
+                                }
+                                else
+                                {
+                                    film->SetPixel(x, y, SPD(B(patchindex)));
+                                    if (patchindex == 2)
+                                    {
+                                        __debugbreak();
+                                    }
+                                }
                             }
 
                             patchindex++;
@@ -368,6 +437,7 @@ public:
 private:
 
     Float subdivLimitArea_;
+    int wireframe_;
 
 };
 
