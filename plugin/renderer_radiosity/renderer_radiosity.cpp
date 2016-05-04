@@ -202,6 +202,7 @@ public:
             const auto* faces = mesh->Faces();
             for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
             {
+                // Transformed triangle vertices and geometric normal
                 unsigned int vi1 = faces[3 * fi];
                 unsigned int vi2 = faces[3 * fi + 1];
                 unsigned int vi3 = faces[3 * fi + 2];
@@ -210,6 +211,9 @@ public:
                 Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
                 const auto gn = Math::Normalize(Math::Cross(p2 - p1, p3 - p1));
                 
+                // Record current patch index associated to the primitive and face indices
+                patchIndexMap[{ i, fi }] = patches.size();
+
                 // --------------------------------------------------------------------------------
 
                 #pragma region Subdivide the triangle
@@ -227,10 +231,6 @@ public:
                     const auto tri = stack.top(); stack.pop();
                     if (tri.Area() < subdivLimitArea_)
                     {
-                        if (patchIndexMap.find({ i, fi }) == patchIndexMap.end())
-                        {
-                            patchIndexMap[{ i, fi }] = patches.size();
-                        }
                         patches.push_back({ primitive, tri.p1, tri.p2, tri.p3, gn });
                         continue;
                     }
