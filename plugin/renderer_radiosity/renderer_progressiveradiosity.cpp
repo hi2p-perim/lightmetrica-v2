@@ -24,85 +24,27 @@
 
 #include <lightmetrica/lightmetrica.h>
 #include "radiosityutils.h"
-#include <sstream>
 #include <boost/format.hpp>
-#if LM_COMPILER_MSVC
-#pragma warning(disable:4714)
-#endif
-#include <Eigen/Sparse>
-
-#define LM_RADIOSITY_DEBUG 0
-
-namespace Eigen
-{
-    template <>
-    struct NumTraits<lightmetrica_v2::Vec3>
-    {
-        using T          = lightmetrica_v2::Vec3;
-        using VT         = lightmetrica_v2::Float;
-        using Real       = T;
-        using NonInteger = T;
-        using Nested     = T;
-        enum
-        {
-            IsComplex = 0,
-            IsInteger = 0,
-            IsSigned = 1,
-            RequireInitialization = 1,
-            ReadCost = 3,
-            AddCost = 3,
-            MulCost = 3
-        };
-        static inline T epsilon()         { return T(NumTraits<VT>::epsilon()); }
-        static inline T dummy_precision() { return T(NumTraits<VT>::dummy_precision()); }
-        static inline T highest()         { return T(std::numeric_limits<VT>::max()); }
-        static inline T lowest()          { return T(std::numeric_limits<VT>::min()); }
-    };
-
-    namespace internal
-    {
-        template<>
-        struct significant_decimals_impl<lightmetrica_v2::Vec3>
-        {
-            static inline int run()
-            {
-                return significant_decimals_impl<lightmetrica_v2::Float>::run();
-            }
-        };
-    }
-}
 
 LM_NAMESPACE_BEGIN
 
-// For Eigen
-// https://eigen.tuxfamily.org/dox/TopicCustomizingEigen.html
-auto abs(const Vec3& v) -> Vec3 { return Vec3(std::abs(v.x), std::abs(v.y), std::abs(v.z)); }
-auto sqrt(const Vec3& v) -> Vec3 { return Vec3(std::sqrt(v.x), std::sqrt(v.y), std::sqrt(v.z)); }
-auto log(const Vec3& v) -> Vec3 { return Vec3(std::log(v.x), std::log(v.y), std::log(v.z)); }
-auto ceil(const Vec3& v) -> Vec3 { return Vec3(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z)); }
-auto operator<<(std::ostream& os, const Vec3& v) -> std::ostream&
-{
-    os << "(" << v.x << "," << v.y << "," << v.z << ")";
-    return os;
-}
-
 /*!
-    \brief Radiosity renderer.
-    
-    Implements the radiosity algorithm by directly solving linear system.
-    This implementation currently only supports the diffues BSDF (`bsdf::diffuse`)
-    and the area light (`light::area`).
+    \brief Progressive radiosity renderer.
 
+    Implements progressive radiosity algorithm [Cohen et al. 1988].
+    Similar to `renderer::radiosity`, this implementation only supports
+    the diffues BSDF (`bsdf::diffuse`) and the area light (`light::area`).
+    
     References:
+      - [Cohen et al. 1988] A progressive refinement approach to fast radiosity image generation
       - [Cohen & Wallace 1995] Radiosity and realistic image synthesis
       - [Willmott & Heckbert 1997] An empirical comparison of radiosity algorithms
-      - [Schroder & Hanrahan 1993] On the form factor between two polygons
 */
-class Renderer_Radiosity final : public Renderer
+class Renderer_ProgressiveRadiosity final : public Renderer
 {
 public:
 
-    LM_IMPL_CLASS(Renderer_Radiosity, Renderer);
+    LM_IMPL_CLASS(Renderer_ProgressiveRadiosity, Renderer);
 
 public:
 
@@ -110,7 +52,7 @@ public:
     {
         subdivLimitArea_ = prop->ChildAs<Float>("subdivlimitarea", 0.1_f);
         wireframe_ = prop->ChildAs<int>("wireframe", 0);
-        analyticalFormFactor_ = prop->ChildAs<int>("analyticalformfactor", 0);
+        numIterations_ = prop->ChildAs<long long>("num_iterations", 1000L);
         return true;
     };
 
@@ -122,17 +64,15 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        #pragma region Setup matrices
+        #pragma region Solve radiosity equation 
 
-        LM_LOG_INFO("Setup matrix");
+        LM_LOG_INFO("Solving radiosity equation");
 
         const int N = patches.Size();
-        //using Matrix = Eigen::SparseMatrix<Vec3>;
-        using Matrix = Eigen::Matrix<Vec3, Eigen::Dynamic, Eigen::Dynamic>;
-        using Vector = Eigen::Matrix<Vec3, Eigen::Dynamic, 1>;
+        std::vector<Vec3> S(N);        // Unshot radiosity
+        std::vector<Vec3> B(N);        // Solution
 
         // Setup emission term
-        Vector E(N);
         for (int i = 0; i < N; i++)
         {
             const auto& patch = patches.At(i);
@@ -141,46 +81,45 @@ public:
             {
                 continue;
             }
-            E(i) = light->Emittance().ToRGB();
+            S[i] = B[i] = light->Emittance().ToRGB();
         }
 
-        // Setup matrix of interactions
-        Matrix K(N, N);
-        K.setIdentity();
-        for (int i = 0; i < N; i++)
+        for (long long iteration = 0; iteration < numIterations_; iteration++)
         {
-            for (int j = 0; j < N; j++)
+            // Pick the patch with maximum power
+            Float maxPower = 0;
+            int maxPowerIndex = 0;
+            for (int i = 0; i < N; i++)
             {
-                const auto Fij = RadiosityUtils::EstimateFormFactor(scene, patches.At(i), patches.At(j), analyticalFormFactor_ ? true : false);
-                if (Fij > 0_f)
+                const auto& patch = patches.At(i);
+                const auto power = Math::Luminance(S[i]) * patch.Area();
+                if (power > maxPower)
                 {
-                    K.coeffRef(i, j) -= patches.At(i).primitive->bsdf->Reflectance().ToRGB() * Fij;
+                    maxPower = power;
+                    maxPowerIndex = i;
                 }
             }
+            
+            // Shoot the radiosity from the patch
+            auto radToShoot = S[maxPowerIndex];
+            S[maxPowerIndex] = Vec3();
+            
+            #pragma omp parallel for schedule(dynamic, 1)
+            for (int i = 0; i < N; i++)
+            {
+                if (i == maxPowerIndex) continue;
+                const auto ff = RadiosityUtils::EstimateFormFactor(scene, patches.At(maxPowerIndex), patches.At(i));
+                const auto R  = patches.At(i).primitive->bsdf->Reflectance().ToRGB();
+                const auto deltaRad = radToShoot * ff * R;
+                B[i] += deltaRad;
+                S[i] += deltaRad;
+            }
 
-            const double progress = 100.0 * i / N;
+            const double progress = 100.0 * iteration / numIterations_;
             LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
         }
 
         LM_LOG_INFO("Progress: 100.0%");
-
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        #pragma region Solve radiosity equation
-
-        LM_LOG_INFO("Solving linear system");
-
-        Eigen::BiCGSTAB<Matrix> solver;
-        solver.compute(K);
-        Vector B = solver.solve(E);
-
-        #if LM_RADIOSITY_DEBUG
-        std::stringstream ss;
-        ss << B << std::endl;
-        LM_LOG_INFO(ss.str());
-        #endif
 
         #pragma endregion
 
@@ -232,31 +171,31 @@ public:
                     }
                     else
                     {
-                        film->SetPixel(x, y, SPD(B(patchindex)));
+                        film->SetPixel(x, y, SPD(B[patchindex]));
                     }
                 });
             }
 
-            const double progress = 100.0 * y / film->Height();
-            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+            #pragma omp master
+            {
+                const double progress = 100.0 * y / film->Height();
+                LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+            }
         }
 
-        #pragma omp master
-        {
-            LM_LOG_INFO("Progress: 100.0%");
-        }
+        LM_LOG_INFO("Progress: 100.0%");
 
         #pragma endregion
     };
 
 private:
-
+    
     Float subdivLimitArea_;
     int wireframe_;
-    int analyticalFormFactor_;
+    long long numIterations_;
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_Radiosity, "renderer::radiosity");
+LM_COMPONENT_REGISTER_IMPL(Renderer_ProgressiveRadiosity, "renderer::progressiveradiosity");
 
 LM_NAMESPACE_END
