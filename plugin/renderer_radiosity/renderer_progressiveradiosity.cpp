@@ -24,6 +24,7 @@
 
 #include <lightmetrica/lightmetrica.h>
 #include "radiosityutils.h"
+#include <thread>
 #include <boost/format.hpp>
 
 LM_NAMESPACE_BEGIN
@@ -103,7 +104,6 @@ public:
             // Shoot the radiosity from the patch
             auto radToShoot = S[maxPowerIndex];
             S[maxPowerIndex] = Vec3();
-            
             #pragma omp parallel for schedule(dynamic, 1)
             for (int i = 0; i < N; i++)
             {
@@ -115,8 +115,11 @@ public:
                 S[i] += deltaRad;
             }
 
-            const double progress = 100.0 * iteration / numIterations_;
-            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+            if (iteration % 100 == 0)
+            {
+                const double progress = 100.0 * iteration / numIterations_;
+                LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+            }
         }
 
         LM_LOG_INFO("Progress: 100.0%");
@@ -177,6 +180,7 @@ public:
             }
 
             #pragma omp master
+            if (y % 10 == 0)
             {
                 const double progress = 100.0 * y / film->Height();
                 LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));

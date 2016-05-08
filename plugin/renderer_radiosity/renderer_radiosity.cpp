@@ -237,14 +237,15 @@ public:
                 });
             }
 
-            const double progress = 100.0 * y / film->Height();
-            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+            #pragma omp master
+            if (y % 10 == 0)
+            {
+                const double progress = 100.0 * y / film->Height();
+                LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+            }
         }
 
-        #pragma omp master
-        {
-            LM_LOG_INFO("Progress: 100.0%");
-        }
+        LM_LOG_INFO("Progress: 100.0%");
 
         #pragma endregion
     };
