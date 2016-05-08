@@ -102,19 +102,19 @@ public:
             }
             
             // Shoot the radiosity from the patch
-            auto radToShoot = S[maxPowerIndex];
-            S[maxPowerIndex] = Vec3();
             #pragma omp parallel for schedule(dynamic, 1)
             for (int i = 0; i < N; i++)
             {
                 if (i == maxPowerIndex) continue;
-                const auto ff = RadiosityUtils::EstimateFormFactor(scene, patches.At(maxPowerIndex), patches.At(i));
-                const auto R  = patches.At(i).primitive->bsdf->Reflectance().ToRGB();
-                const auto deltaRad = radToShoot * ff * R;
+                const auto ff = RadiosityUtils::EstimateFormFactor(scene, patches.At(i), patches.At(maxPowerIndex));
+                const auto R = patches.At(i).primitive->bsdf->Reflectance().ToRGB();
+                const auto deltaRad = S[maxPowerIndex] * ff * R;
                 B[i] += deltaRad;
                 S[i] += deltaRad;
             }
+            S[maxPowerIndex] = Vec3();
 
+            // Progress report
             if (iteration % 100 == 0)
             {
                 const double progress = 100.0 * iteration / numIterations_;
