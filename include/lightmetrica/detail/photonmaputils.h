@@ -38,7 +38,7 @@ class Random;
 struct Photon;
 struct Primitive;
 
-///! Utility class for phton density based techniques.
+///! Utility class for photon density based techniques.
 class PhotonMapUtils
 {
 public:

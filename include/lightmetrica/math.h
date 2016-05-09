@@ -1603,7 +1603,7 @@ namespace Math
 
     // --------------------------------------------------------------------------------
 
-    #pragma region Zero check
+    #pragma region Others
 
     template <typename T, SIMD Opt>
     LM_INLINE auto IsZero(const TVec3<T, Opt>& v) -> bool
@@ -1618,6 +1618,13 @@ namespace Math
         return (_mm_movemask_ps(_mm_cmpeq_ps(v.v_, _mm_setzero_ps())) & 0x7) == 7;
     }
     #endif
+
+    // TODO: This should be moved to `Spectrum`
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Luminance(const TVec3<T, Opt>& v) -> T
+    {
+        return Math::Dot<T, Opt>(TVec3<T, Opt>(T(0.212671), T(0.715160), T(0.072169)), v);
+    }
 
     #pragma endregion
 
