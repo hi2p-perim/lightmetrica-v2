@@ -12,6 +12,12 @@ TODO
 - [ ] Default template parameter
 - [ ] Add explanation of parameters
 - [ ] Function to list parameters from the command line
+- [ ] API compatibility and versioning
+- [ ] Serializaton, pause and resume rendering
+- [ ] CI of documentation including rendering and experiments. That is, generating images and experimens as a process of bulding documentation.
+- [ ] PDF formatted documentation
+- [ ] Comparitibility to mitsuba's scene file
+- [ ] Wrapper for mitsuba's BSDF
 
 Discussions
 --------------------
