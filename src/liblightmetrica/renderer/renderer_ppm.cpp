@@ -48,9 +48,9 @@ LM_NAMESPACE_BEGIN
 /*!
     \brief Progressive photon mapping renderer.
 
-    - Implements progressive photon mapping
-    - Based on the simplified implementation by Toshiya Hachisuka
-      http://www.ci.i.u-tokyo.ac.jp/~hachisuka/smallppm_exp.cpp
+    Implements progressive photon mapping
+    References:
+      - [Hachisuka et al. 2008] Progressive photon mapping
 */
 class Renderer_PPM final : public Renderer
 {
@@ -64,6 +64,8 @@ private:
     long long numSamples_;                                // Number of measurement points
     long long numPhotonPass_;                             // Number of photon scattering passes
     long long numPhotonTraceSamples_;                     // Number of photon trace samples for each pass
+    Float initialRadius_;                                 // Initial photon gather radius
+    Float alpha_;                                         // Fraction to control photons (see paper)
     PhotonMap::UniquePtr photonmap_{ nullptr, nullptr };  // Underlying photon map implementation
 
 public:
@@ -74,6 +76,8 @@ public:
         numSamples_            = prop->ChildAs<long long>("num_samples", 100000L);
         numPhotonPass_         = prop->ChildAs<long long>("num_photon_pass", 1000L);
         numPhotonTraceSamples_ = prop->ChildAs<long long>("num_photon_trace_samples", 100L);
+        initialRadius_         = prop->ChildAs<Float>("initial_radius", 0.1_f);
+        alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
         photonmap_             = ComponentFactory::Create<PhotonMap>("photonmap::" + prop->ChildAs<std::string>("photonmap", "kdtree"));
         return true;
     };
@@ -90,14 +94,19 @@ public:
         // --------------------------------------------------------------------------------
 
         #pragma region Collect measumrement points
+        LM_LOG_INFO("Collect measurement points");
 
         struct MeasurementPoint
         {
-            Float radius;
-            Vec2 rasterPos;
-            SPD throughput;
-            int numVertices;
-            PhotonMapUtils::PathVertex v;
+            Float radius;                   // Current photon radius
+            Vec2 rasterPos;                 // Raster position
+            Float N;                        // Accumulated photon count
+            Vec3 wi;                        // Direction to previous vertex
+            SPD throughputE;                // Throughput of importance
+            SPD tau;                        // Sum of throughput of luminance multiplies BSDF (Eq.10 in [Hachisuka et al. 2008]
+            PhotonMapUtils::PathVertex v;   // Current vertex information
+            SPD emission;                   // Contribution of LS*E
+            int numVertices;                // Number of vertices needed to generate the measurement point 
         };
 
         std::vector<MeasurementPoint> mps;
@@ -110,18 +119,30 @@ public:
                 if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
                 {
                     MeasurementPoint mp;
-                    mp.radius = 0.1_f;              // TODO: Determine from the sensor size
-                    mp.rasterPos = rasterPos;
-                    mp.throughput = throughput;
+                    mp.radius      = initialRadius_;
+                    mp.rasterPos   = rasterPos;
+                    mp.N           = 0_f;
+                    mp.wi          = Math::Normalize(pv.geom.p - v.geom.p);
+                    mp.throughputE = throughput;
+                    mp.v           = v;
                     mp.numVertices = numVertices;
-                    mp.v = v;
+
+                    // Handle hit with light source
+                    if ((v.primitive->surface->Type() & SurfaceInteractionType::L) > 0)
+                    {
+                        const auto C =
+                            throughput
+                            * v.primitive->emitter->EvaluateDirection(v.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(pv.geom.p - v.geom.p), TransportDirection::EL, false)
+                            * v.primitive->emitter->EvaluatePosition(v.geom, false);
+                        mp.emission = C;
+                    }
+
                     mps.push_back(std::move(mp));
                     return false;
                 }
                 return true;
             });
         }
-        
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -141,16 +162,20 @@ public:
         // --------------------------------------------------------------------------------
 
         #pragma region Photon scattering pass
-
+        long long totalPhotonTraceSamples = 0;
         for (long long pass = 0; pass < numPhotonPass_; pass++)
         {
-            LM_LOG_INFO("Photon scattering pass: " + std::to_string(pass));
+            LM_LOG_INFO("Pass " + std::to_string(pass));
+            LM_LOG_INDENTER();
 
-            // Trace photons
+            // --------------------------------------------------------------------------------
+
+            #pragma region Trace photons
             auto photons = PhotonMapUtils::ProcessPhotonTrace(&initRng, numPhotonTraceSamples_, [this, scene](Random* rng, std::vector<Photon>& photons)
             {
-                PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, const SPD& throughput) -> bool
+                PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
                 {
+                    // Record photon
                     if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
                     {
                         Photon photon;
@@ -160,34 +185,100 @@ public:
                         photon.numVertices = numVertices;
                         photons.push_back(photon);
                     }
+
+                    // Path termination
+                    const Float rrProb = 0.5_f;
+                    if (rng->Next() > rrProb)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        throughput /= rrProb;
+                    }
+
                     return true;
                 });
             });
+            totalPhotonTraceSamples += numPhotonTraceSamples_;
+            #pragma endregion
 
-            // Build photon map
-            photonmap_->Build(std::move(photons));
+            // --------------------------------------------------------------------------------
 
-            // Density estimation
-            for (const auto& mp : mps)
+            #pragma region Build photon map
             {
-                photonmap_->CollectPhotons(mp.v.geom.p, mp.radius, [&](const Photon& photon) -> void
+                LM_LOG_INFO("Building photon map");
+                LM_LOG_INDENTER();
+                photonmap_->Build(std::move(photons));
+            }
+            #pragma endregion
+            
+            // --------------------------------------------------------------------------------
+
+            #pragma region Density estimation
+            {
+                LM_LOG_INFO("Density estimation");
+                LM_LOG_INDENTER();
+
+                std::atomic<size_t> processed(0);
+                const auto mainThreadId = std::this_thread::get_id();
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, mps.size(), 1000), [&](const tbb::blocked_range<size_t>& range) -> void
                 {
-                    if (mp.numVertices + photon.numVertices - 1 > maxNumVertices_)
+                    for (size_t i = range.begin(); i != range.end(); i++)
                     {
-                        return;
+                        auto& mp = mps[i];
+
+                        // Accumulate radiance
+                        SPD deltaTau;
+                        Float M = 0_f;
+                        photonmap_->CollectPhotons(mp.v.geom.p, mp.radius, [&](const Photon& photon) -> void
+                        {
+                            if (mp.numVertices + photon.numVertices - 1 > maxNumVertices_)
+                            {
+                                return;
+                            }
+                            const auto f = mp.v.primitive->surface->EvaluateDirection(mp.v.geom, SurfaceInteractionType::BSDF, mp.wi, photon.wi, TransportDirection::EL, true);
+                            deltaTau += f * photon.throughput;
+                            M += 1_f;
+                        });
+
+                        // Progressive density estimation
+                        if (mp.N + M == 0_f)
+                        {
+                            continue;
+                        }
+                        const Float ratio = (mp.N + alpha_ * M) / (mp.N + M);
+                        mp.tau = (mp.tau + deltaTau) * ratio;
+                        mp.radius = mp.radius * Math::Sqrt(ratio);
+                        mp.N = mp.N + alpha_ * M;
                     }
 
+                    // --------------------------------------------------------------------------------
 
-
+                    processed += range.end() - range.begin();
+                    if (std::this_thread::get_id() == mainThreadId && processed % 10000 == 0)
+                    {
+                        const double progress = (double)(processed) / mps.size() * 100.0;
+                        LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+                    }
                 });
-            }
-        }
 
+                LM_LOG_INFO("Progress: 100.0%");
+            }
+            #pragma endregion
+        }
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
-        
+        film->Clear();
+        for (const auto& mp : mps)
+        {
+            const auto p = 1_f / (mp.radius * mp.radius * Math::Pi() * totalPhotonTraceSamples);
+            const auto C = mp.throughputE * p * mp.tau + mp.emission;
+            film->Splat(mp.rasterPos, C);
+        }
+        film->Rescale((Float)(film->Width() * film->Height()) / numSamples_);
     };
 
 };
