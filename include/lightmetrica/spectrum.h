@@ -88,6 +88,7 @@ struct DiscreteSPD<3>
 
     auto Black() const -> bool { return Math::IsZero(v); }
 
+    LM_INLINE auto operator+=(const DiscreteSPD<3>& spd) -> T& { v += spd.v; return *this; }
     LM_INLINE auto operator*=(const DiscreteSPD<3>& spd) -> T& { v *= spd.v; return *this; }
     LM_INLINE auto operator*=(Float s) -> T& { v *= s; return *this; }
     LM_INLINE auto operator/=(Float s) -> T& { v /= s; return *this; }

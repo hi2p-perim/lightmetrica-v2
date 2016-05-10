@@ -107,7 +107,7 @@ public:
     /*!
         \brief Get a sensor primitive.
     */
-    LM_INTERFACE_F(6, Sensor, const Primitive*());
+    LM_INTERFACE_F(6, GetSensor, const Primitive*());
 
     LM_INTERFACE_F(7, SampleEmitter, const Primitive*(int type, Float u));
     LM_INTERFACE_F(8, EvaluateEmitterPDF, PDFVal(const Primitive* primitive));

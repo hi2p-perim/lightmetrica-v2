@@ -580,7 +580,7 @@ public:
         return it != primitiveIDMap_.end() ? it->second : nullptr;
     };
 
-    LM_IMPL_F(Sensor) = [this]() -> const Primitive*
+    LM_IMPL_F(GetSensor) = [this]() -> const Primitive*
     {
         return sensorPrimitive_;
     };

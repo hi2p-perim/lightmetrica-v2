@@ -30,6 +30,12 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
+struct AssetsTest : public ::testing::Test
+{
+    virtual auto SetUp() -> void override { Logger::Run(); }
+    virtual auto TearDown() -> void override { Logger::Stop(); }
+};
+
 struct TestAsset : public Asset
 {
     LM_INTERFACE_CLASS(TestAsset, Asset, 1);
@@ -53,7 +59,7 @@ struct TestAsset2 : public TestAsset
 LM_COMPONENT_REGISTER_IMPL(TestAsset1, "testasset::testasset1");
 LM_COMPONENT_REGISTER_IMPL(TestAsset2, "testasset::testasset2");
 
-TEST(AssetsTest, AssetByIDAndType)
+TEST_F(AssetsTest, AssetByIDAndType)
 {
     const std::string AssetByIDAndType_Input = TestUtils::MultiLineLiteral(R"x(
     | test_1:
