@@ -609,7 +609,7 @@ private:
         {
             LM_LOG_INFO("Rendering");
             LM_LOG_INDENTER();
-            const auto* sensor = static_cast<const Sensor*>(scene.get()->Sensor()->emitter);
+            const auto* sensor = static_cast<const Sensor*>(scene.get()->GetSensor()->emitter);
             auto* film = sensor->GetFilm();
             //FPUtils::EnableFPControl();
             renderer.get()->Render(scene.get(), film);
@@ -625,7 +625,7 @@ private:
         {
             LM_LOG_INFO("Saving image");
             LM_LOG_INDENTER();
-            auto* film = static_cast<const Sensor*>(scene.get()->Sensor()->emitter)->GetFilm();
+            auto* film = static_cast<const Sensor*>(scene.get()->GetSensor()->emitter)->GetFilm();
             if (!film->Save(opt.Render.OutputPath))
             {
                 return false;

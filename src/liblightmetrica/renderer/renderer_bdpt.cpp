@@ -924,8 +924,6 @@ public:
                             continue;
                         }
 
-                        const auto Cstar = path.EvaluateUnweightContribution(scene, s, direct) / path.SelectionPDF(s, direct);
-
                         #pragma endregion
 
                         // --------------------------------------------------------------------------------
@@ -936,6 +934,7 @@ public:
 
                         #if LM_BDPT_DEBUG
                         {
+                            const auto Cstar = path.EvaluateUnweightContribution(scene, s, direct) / path.SelectionPDF(s, direct);
                             std::unique_lock<std::mutex> lock(strategyFilmMutex);
                             Strategy strategy{ s, t, d };
                             if (strategyFilmMap.find(strategy) == strategyFilmMap.end())
@@ -971,6 +970,8 @@ public:
             f1->Save(boost::str(boost::format("f1_n%02d_s%02d_t%02d_d%d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t % kv.first.d));
             f2->Save(boost::str(boost::format("f2_n%02d_s%02d_t%02d_d%d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t % kv.first.d));
         }
+        #else
+        LM_UNUSED(processedSamples);
         #endif
     };
 
