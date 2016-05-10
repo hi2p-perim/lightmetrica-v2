@@ -67,6 +67,7 @@ private:
     Float initialRadius_;                                 // Initial photon gather radius
     Float alpha_;                                         // Fraction to control photons (see paper)
     PhotonMap::UniquePtr photonmap_{ nullptr, nullptr };  // Underlying photon map implementation
+    int numThreads_;
 
 public:
 
@@ -79,6 +80,24 @@ public:
         initialRadius_         = prop->ChildAs<Float>("initial_radius", 0.1_f);
         alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
         photonmap_             = ComponentFactory::Create<PhotonMap>("photonmap::" + prop->ChildAs<std::string>("photonmap", "kdtree"));
+
+        if (prop->Child("num_threads"))
+        {
+            numThreads_ = prop->Child("num_threads")->As<int>();
+        }
+        else
+        {
+            #if LM_DEBUG_MODE
+            numThreads_ = 1;
+            #else
+            numThreads_ = 0;
+            #endif
+        }
+        if (numThreads_ <= 0)
+        {
+            numThreads_ = static_cast<int>(std::thread::hardware_concurrency()) + numThreads_;
+        }
+
         return true;
     };
 
@@ -91,11 +110,13 @@ public:
         initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
         #endif
 
+        tbb::task_scheduler_init tbbinit(numThreads_);
+        const auto mainThreadId = std::this_thread::get_id();
+
         // --------------------------------------------------------------------------------
 
         #pragma region Collect measumrement points
-        LM_LOG_INFO("Collect measurement points");
-
+        
         struct MeasurementPoint
         {
             Float radius;                   // Current photon radius
@@ -110,55 +131,101 @@ public:
         };
 
         std::vector<MeasurementPoint> mps;
-        for (long long sample = 0; sample < numSamples_; sample++)
         {
-            PhotonMapUtils::TraceSubpath(scene, &initRng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, const SPD& throughput) -> bool
+            LM_LOG_INFO("Collect measurement points");
+            LM_LOG_INDENTER();
+             
+            // --------------------------------------------------------------------------------
+
+            struct Context
             {
-                // Record the measurement point and terminate the path if the surface is D or G.
-                // Otherwise, continue to trace the path.
-                if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
+                std::thread::id id;
+                Random rng;
+                Film::UniquePtr film{ nullptr, nullptr };
+                std::vector<MeasurementPoint> mps;
+                long long processed = 0;
+            };
+            tbb::enumerable_thread_specific<Context> contexts;
+            std::mutex contextInitMutex;
+
+            // --------------------------------------------------------------------------------
+
+            std::atomic<long long> processed(0);
+            tbb::parallel_for(tbb::blocked_range<long long>(0, numSamples_, 1000), [&](const tbb::blocked_range<long long>& range) -> void
+            {
+                auto& ctx = contexts.local();
+                if (ctx.id == std::thread::id())
                 {
-                    MeasurementPoint mp;
-                    mp.radius      = initialRadius_;
-                    mp.rasterPos   = rasterPos;
-                    mp.N           = 0_f;
-                    mp.wi          = Math::Normalize(pv.geom.p - v.geom.p);
-                    mp.throughputE = throughput;
-                    mp.v           = v;
-                    mp.numVertices = numVertices;
-
-                    // Handle hit with light source
-                    if ((v.primitive->surface->Type() & SurfaceInteractionType::L) > 0)
-                    {
-                        const auto C =
-                            throughput
-                            * v.primitive->emitter->EvaluateDirection(v.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(pv.geom.p - v.geom.p), TransportDirection::EL, false)
-                            * v.primitive->emitter->EvaluatePosition(v.geom, false);
-                        mp.emission = C;
-                    }
-
-                    mps.push_back(std::move(mp));
-                    return false;
+                    std::unique_lock<std::mutex> lock(contextInitMutex);
+                    ctx.id = std::this_thread::get_id();
+                    ctx.rng.SetSeed(initRng.NextUInt());
+                    ctx.film = ComponentFactory::Clone<Film>(film);
                 }
-                return true;
+
+                // --------------------------------------------------------------------------------
+
+                for (long long sample = range.begin(); sample != range.end(); sample++)
+                {
+                    PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, const SPD& throughput) -> bool
+                    {
+                        // Record the measurement point and terminate the path if the surface is D or G.
+                        // Otherwise, continue to trace the path.
+                        if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
+                        {
+                            MeasurementPoint mp;
+                            mp.radius = initialRadius_;
+                            mp.rasterPos = rasterPos;
+                            mp.N = 0_f;
+                            mp.wi = Math::Normalize(pv.geom.p - v.geom.p);
+                            mp.throughputE = throughput;
+                            mp.v = v;
+                            mp.numVertices = numVertices;
+
+                            // Handle hit with light source
+                            if ((v.primitive->surface->Type() & SurfaceInteractionType::L) > 0)
+                            {
+                                const auto C =
+                                    throughput
+                                    * v.primitive->emitter->EvaluateDirection(v.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(pv.geom.p - v.geom.p), TransportDirection::EL, false)
+                                    * v.primitive->emitter->EvaluatePosition(v.geom, false);
+                                mp.emission = C;
+                            }
+
+                            ctx.mps.push_back(std::move(mp));
+                            return false;
+                        }
+                        return true;
+                    });
+                }
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Progress report
+                ctx.processed += range.end() - range.begin();
+                if (ctx.processed > 1000)
+                {
+                    processed += ctx.processed;
+                    ctx.processed = 0;
+                    if (std::this_thread::get_id() == mainThreadId)
+                    {
+                        const double progress = (double)(processed) / numSamples_ * 100.0;
+                        LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+                    }
+                }
+                #pragma endregion
+            });
+
+            LM_LOG_INFO("Progress: 100.0%");
+
+            // --------------------------------------------------------------------------------
+
+            // Gather results
+            contexts.combine_each([&](const Context& ctx)
+            {
+                mps.insert(mps.end(), ctx.mps.begin(), ctx.mps.end());
             });
         }
-        #pragma endregion
 
-        // --------------------------------------------------------------------------------
-
-        #if LM_PPM_DEBUG
-        // Output the measurement points to the file
-        {
-            std::ofstream ofs("mp.dat");
-            for (const auto& v : mp)
-            {
-                const auto& p = v.geom.p;
-                ofs << boost::str(boost::format("%.15f %.15f %.15f") % p.x % p.y % p.z) << std::endl;
-            }
-        }
-        #endif
-        
         // --------------------------------------------------------------------------------
 
         #pragma region Photon scattering pass
@@ -215,20 +282,40 @@ public:
             
             // --------------------------------------------------------------------------------
 
-            #pragma region Density estimation
+            #pragma region Progressive density estimation
             {
                 LM_LOG_INFO("Density estimation");
                 LM_LOG_INDENTER();
 
+                struct Context
+                {
+                    std::thread::id id;
+                    Film::UniquePtr film{ nullptr, nullptr };
+                    size_t processed = 0;
+                };
+                tbb::enumerable_thread_specific<Context> contexts;
+                std::mutex contextInitMutex;
+
+                // --------------------------------------------------------------------------------
+
                 std::atomic<size_t> processed(0);
-                const auto mainThreadId = std::this_thread::get_id();
                 tbb::parallel_for(tbb::blocked_range<size_t>(0, mps.size(), 1000), [&](const tbb::blocked_range<size_t>& range) -> void
                 {
+                    auto& ctx = contexts.local();
+                    if (ctx.id == std::thread::id())
+                    {
+                        std::unique_lock<std::mutex> lock(contextInitMutex);
+                        ctx.id = std::this_thread::get_id();
+                        ctx.film = ComponentFactory::Clone<Film>(film);
+                    }
+
+                    // --------------------------------------------------------------------------------
+
                     for (size_t i = range.begin(); i != range.end(); i++)
                     {
                         auto& mp = mps[i];
 
-                        // Accumulate radiance
+                        // Accumulate tau 
                         SPD deltaTau;
                         Float M = 0_f;
                         photonmap_->CollectPhotons(mp.v.geom.p, mp.radius, [&](const Photon& photon) -> void
@@ -242,7 +329,7 @@ public:
                             M += 1_f;
                         });
 
-                        // Progressive density estimation
+                        // Update information in the measreument point
                         if (mp.N + M == 0_f)
                         {
                             continue;
@@ -255,30 +342,42 @@ public:
 
                     // --------------------------------------------------------------------------------
 
-                    processed += range.end() - range.begin();
-                    if (std::this_thread::get_id() == mainThreadId && processed % 10000 == 0)
+                    #pragma region Progress report
+                    ctx.processed += range.end() - range.begin();
+                    if (ctx.processed > 1000)
                     {
-                        const double progress = (double)(processed) / mps.size() * 100.0;
-                        LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+                        processed += ctx.processed;
+                        ctx.processed = 0;
+                        if (std::this_thread::get_id() == mainThreadId)
+                        {
+                            const double progress = (double)(processed) / mps.size() * 100.0;
+                            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
+                        }
                     }
+                    #pragma endregion
                 });
 
                 LM_LOG_INFO("Progress: 100.0%");
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Record to film
+                film->Clear();
+                for (const auto& mp : mps)
+                {
+                    const auto p = 1_f / (mp.radius * mp.radius * Math::Pi() * totalPhotonTraceSamples);
+                    const auto C = mp.throughputE * p * mp.tau + mp.emission;
+                    film->Splat(mp.rasterPos, C);
+                }
+                film->Rescale((Float)(film->Width() * film->Height()) / numSamples_);
+                #if LM_PPM_DEBUG
+                film->Save(boost::str(boost::format("ppm_%05d") % pass));
+                #endif
+                #pragma endregion
             }
             #pragma endregion
         }
         #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        film->Clear();
-        for (const auto& mp : mps)
-        {
-            const auto p = 1_f / (mp.radius * mp.radius * Math::Pi() * totalPhotonTraceSamples);
-            const auto C = mp.throughputE * p * mp.tau + mp.emission;
-            film->Splat(mp.rasterPos, C);
-        }
-        film->Rescale((Float)(film->Width() * film->Height()) / numSamples_);
     };
 
 };

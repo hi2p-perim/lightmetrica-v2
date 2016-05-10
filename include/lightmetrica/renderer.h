@@ -56,7 +56,6 @@ public:
     /*!
         \brief Render an image.
         The function starts to render the `scene` to the `film`.
-        \param scene Scene.
         \retval true Succeeded to render the scene.
         \retval true Failed to render the scene.
     */

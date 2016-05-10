@@ -203,7 +203,7 @@ public:
                 // Position and direction of a ray
                 SurfaceGeometry geomE;
                 Vec3 wo;
-                scene->Sensor()->emitter->SamplePositionAndDirection(rasterPos, Vec2(), geomE, wo);
+                scene->GetSensor()->emitter->SamplePositionAndDirection(rasterPos, Vec2(), geomE, wo);
 
                 // Setup a ray
                 Ray ray = { geomE.p, wo };

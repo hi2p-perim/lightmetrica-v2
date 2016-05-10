@@ -82,7 +82,7 @@ auto PhotonMapUtils::ProcessPhotonTrace(Random* initRng, long long numPhotonTrac
 
             // Update progress
             ctx.processedSamples++;
-            if (ctx.processedSamples > 100000)
+            if (ctx.processedSamples > 10000)
             {
                 processedSamples += ctx.processedSamples;
                 ctx.processedSamples = 0;
