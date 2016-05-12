@@ -35,6 +35,7 @@
 #include <lightmetrica/detail/propertyutils.h>
 #include <lightmetrica/detail/stringtemplate.h>
 #include <lightmetrica/detail/version.h>
+#include <lightmetrica/detail/parallel.h>
 #include <lightmetrica/fp.h>
 
 #include <iostream>
@@ -177,6 +178,7 @@ public:
                         ("help", "Display help message (this message)")
                         ("scene,s", po::value<std::string>()->required(), "Scene configuration file")
                         ("output,o", po::value<std::string>()->default_value("result"), "Output image")
+                        ("num-threads,j", po::value<int>(), "Number of threads")
                         ("verbose,v", po::bool_switch()->default_value(false), "Adds detailed information on the output")
                         ("template,t", po::value<std::vector<std::string>>()->multitoken()->zero_tokens()->composing(), "String templates");
 
@@ -213,6 +215,11 @@ public:
 
                             Render.TemplateDict[match[1]] = match[2];
                         }
+                    }
+
+                    if (vm.count("num-threads"))
+                    {
+                        Parallel::SetNumThreads(vm["num-threads"].as<int>());
                     }
 
                     return true;

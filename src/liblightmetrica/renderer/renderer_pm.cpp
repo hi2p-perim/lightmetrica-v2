@@ -37,6 +37,7 @@
 #include <lightmetrica/film.h>
 #include <lightmetrica/detail/photonmap.h>
 #include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/parallel.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -80,55 +81,73 @@ public:
         // --------------------------------------------------------------------------------
 
         #pragma region Trace photons
-
-        auto photons = PhotonMapUtils::ProcessPhotonTrace(&initRng, numPhotonTraceSamples_, [this, scene](Random* rng, std::vector<Photon>& photons) -> void
+        std::vector<Photon> photons;
         {
-            PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+            LM_LOG_INFO("Tracing photons");
+            LM_LOG_INDENTER();
+                
+            struct Context
             {
-                // Record photon
-                if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
-                {
-                    Photon photon;
-                    photon.p = v.geom.p;
-                    photon.throughput = throughput;
-                    photon.wi = Math::Normalize(pv.geom.p - v.geom.p);
-                    photon.numVertices = numVertices;
-                    photons.push_back(photon);
-                }
+                Random rng;
+                std::vector<Photon> photons;
+            };
+            std::vector<Context> contexts(Parallel::GetNumThreads());
+            for (auto& ctx : contexts)
+            {
+                ctx.rng.SetSeed(initRng.NextUInt());
+            }
 
-                // Path termination
-                const Float rrProb = 0.5_f;
-                if (rng->Next() > rrProb)
+            Parallel::For(numPhotonTraceSamples_, [&](long long index, int threadid, bool init)
+            {
+                auto& ctx = contexts[threadid];
+                PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
                 {
-                    return false;
-                }
-                else
-                {
-                    throughput /= rrProb;
-                }
+                    // Record photon
+                    if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
+                    {
+                        Photon photon;
+                        photon.p = v.geom.p;
+                        photon.throughput = throughput;
+                        photon.wi = Math::Normalize(pv.geom.p - v.geom.p);
+                        photon.numVertices = numVertices;
+                        ctx.photons.push_back(photon);
+                    }
 
-                return true;
+                    // Path termination
+                    const Float rrProb = 0.5_f;
+                    if (ctx.rng.Next() > rrProb)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        throughput /= rrProb;
+                    }
+
+                    return true;
+                });
             });
-        });
 
+            for (auto& ctx : contexts)
+            {
+                photons.insert(photons.end(), ctx.photons.begin(), ctx.photons.end());
+            }
+        }
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Build photon map
-
         {
             LM_LOG_INFO("Building photon map");
             LM_LOG_INDENTER();
             pm_->Build(std::move(photons));
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Trace eye rays
-
         sched_->Process(scene, film, &initRng, [this](const Scene* scene, Film* film, Random* rng)
         {
             bool gatherNext = !finalgather_;
@@ -182,7 +201,6 @@ public:
                 return true;
             });
         });
-
         #pragma endregion
     };
 

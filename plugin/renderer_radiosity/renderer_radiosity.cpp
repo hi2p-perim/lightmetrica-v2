@@ -192,7 +192,6 @@ public:
 
         const int width  = film->Width();
         const int height = film->Height();
-        #pragma omp parallel for schedule(dynamic, 1)
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -237,7 +236,6 @@ public:
                 });
             }
 
-            #pragma omp master
             if (y % 10 == 0)
             {
                 const double progress = 100.0 * y / film->Height();

@@ -24,14 +24,42 @@
 
 #pragma once
 
-#include <lightmetrica/static.h>
-#include <tbb/tbb.h>
+#include <lightmetrica/macros.h>
+#include <functional>
+
+LM_NAMESPACE_BEGIN
 
 ///! Parallelization utilities.
 class Parallel
 {
 public:
 
-    
+    /*!
+        \brief Set number of threads.
+        
+        Set number of threads utilized in the parallized functions by `Parallel::For`.
+        If the given `numThreads` is not greater than zero, the number of threads is set to
+        `(number of detected cores) - numThreads`.
+    */
+    LM_PUBLIC_API static auto SetNumThreads(int numThreads) -> void;
+
+    ///! Get current number of threads
+    LM_PUBLIC_API static auto GetNumThreads() -> int;
+
+    /*!
+        \brief Parallized for-loop.
+        
+        Parallizes a for-loop indexed with 0 to `numSamples` calling the function `processFunc`.
+        The number of threads set by `SetNumThreads` function is used for this process.
+        
+        The `processFunc` function takes three parameters:
+        `index` for the current index of the loop, `threadid` for the 0-indexed thread index,
+        and `init` for specifying the initialization flag.
+        The `init` flag turns `true` if the function is called
+        only after the thread specified by `threadid` is initially created.     
+    */
+    LM_PUBLIC_API static auto For(long long numSamples, const std::function<void(long long index, int threadid, bool init)>& processFunc) -> void;
 
 };
+
+LM_NAMESPACE_END

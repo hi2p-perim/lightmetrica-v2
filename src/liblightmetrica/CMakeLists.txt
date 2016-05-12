@@ -97,6 +97,7 @@ set(
     "stringtemplate.cpp"
     "propertyutils.cpp"
 	"version.cpp"
+	"parallel.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core" FILES ${_CORE_HEADER_FILES})

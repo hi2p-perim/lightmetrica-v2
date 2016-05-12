@@ -29,6 +29,7 @@
 #include <lightmetrica/film.h>
 #include <lightmetrica/random.h>
 #include <lightmetrica/detail/stringtemplate.h>
+#include <lightmetrica/detail/parallel.h>
 #include <tbb/tbb.h>
 
 LM_NAMESPACE_BEGIN
@@ -44,24 +45,6 @@ public:
     LM_IMPL_F(Load) = [this](const PropertyNode* prop) -> void
     {
         #pragma region Load parameters
-
-        if (prop->Child("num_threads"))
-        {
-            numThreads_ = prop->Child("num_threads")->As<int>();
-        }
-        else
-        {
-            #if LM_DEBUG_MODE
-            numThreads_ = 1;
-            #else
-            numThreads_ = 0;
-            #endif
-        }
-        if (numThreads_ <= 0)
-        {
-            numThreads_ = static_cast<int>(std::thread::hardware_concurrency()) + numThreads_;
-        }
-        init.initialize(numThreads_);
 
         #if LM_DEBUG_MODE
         grainSize_ = prop->ChildAs<long long>("grain_size", 10);
@@ -102,6 +85,10 @@ public:
 
     LM_IMPL_F(Process) = [this](const Scene* scene, Film* film, Random* initRng, const std::function<void(const Scene*, Film*, Random*)>& processSampleFunc) -> long long
     {
+        tbb::task_scheduler_init init(Parallel::GetNumThreads());
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Thread local storage
 
         struct Context
@@ -335,8 +322,6 @@ private:
 
     long long numSamples_;      //!< Number of samples
     double renderTime_;         //!< Render time
-
-    tbb::task_scheduler_init init{ tbb::task_scheduler_init::deferred };
 
 };
 
