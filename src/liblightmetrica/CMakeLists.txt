@@ -114,6 +114,7 @@ set(
     _CORE_DETAIL_HEADER_FILES
 	"${_INCLUDE_DIR}/detail/stringtemplate.h"
 	"${_INCLUDE_DIR}/detail/propertyutils.h"
+	"${_INCLUDE_DIR}/detail/parallel.h"
     "${_INCLUDE_DIR}/detail/version.h"
 )
 

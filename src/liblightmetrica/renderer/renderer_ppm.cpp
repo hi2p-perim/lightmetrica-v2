@@ -141,7 +141,6 @@ public:
             {
                 std::thread::id id;
                 Random rng;
-                Film::UniquePtr film{ nullptr, nullptr };
                 std::vector<MeasurementPoint> mps;
                 long long processed = 0;
             };
@@ -159,7 +158,6 @@ public:
                     std::unique_lock<std::mutex> lock(contextInitMutex);
                     ctx.id = std::this_thread::get_id();
                     ctx.rng.SetSeed(initRng.NextUInt());
-                    ctx.film = ComponentFactory::Clone<Film>(film);
                 }
 
                 // --------------------------------------------------------------------------------
