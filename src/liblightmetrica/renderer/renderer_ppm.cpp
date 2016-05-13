@@ -44,7 +44,7 @@
 
 LM_NAMESPACE_BEGIN
 
-#define LM_PPM_DEBUG 0
+#define LM_PPM_DEBUG 1
 
 /*!
     \brief Progressive photon mapping renderer.
@@ -68,6 +68,9 @@ private:
     Float initialRadius_;                                 // Initial photon gather radius
     Float alpha_;                                         // Fraction to control photons (see paper)
     PhotonMap::UniquePtr photonmap_{ nullptr, nullptr };  // Underlying photon map implementation
+    #if LM_PPM_DEBUG
+    std::string debugOutputPath_;
+    #endif
 
 public:
 
@@ -80,6 +83,9 @@ public:
         initialRadius_         = prop->ChildAs<Float>("initial_radius", 0.1_f);
         alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
         photonmap_             = ComponentFactory::Create<PhotonMap>("photonmap::" + prop->ChildAs<std::string>("photonmap", "kdtree"));
+        #if LM_PPM_DEBUG
+        debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "sppm_%05d");
+        #endif
         return true;
     };
 
@@ -294,7 +300,11 @@ public:
                 }
                 film->Rescale((Float)(film->Width() * film->Height()) / numSamples_);
                 #if LM_PPM_DEBUG
-                film->Save(boost::str(boost::format("ppm_%05d") % pass));
+                {
+                    boost::format f(debugOutputPath_);
+                    f.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
+                    film->Save(boost::str(f % pass));
+                }
                 #endif
             }
             #pragma endregion

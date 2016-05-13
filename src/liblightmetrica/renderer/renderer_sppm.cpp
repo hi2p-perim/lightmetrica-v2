@@ -67,6 +67,9 @@ private:
     Float initialRadius_;                                 // Initial photon gather radius
     Float alpha_;                                         // Fraction to control photons (see paper)
     PhotonMap::UniquePtr photonmap_{ nullptr, nullptr };  // Underlying photon map implementation
+    #if LM_SPPM_DEBUG
+    std::string debugOutputPath_;
+    #endif
 
 public:
 
@@ -78,6 +81,9 @@ public:
         initialRadius_         = prop->ChildAs<Float>("initial_radius", 0.1_f);
         alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
         photonmap_             = ComponentFactory::Create<PhotonMap>("photonmap::" + prop->ChildAs<std::string>("photonmap", "kdtree"));
+        #if LM_SPPM_DEBUG
+        debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "sppm_%05d");
+        #endif
         return true;
     };
 
@@ -97,10 +103,10 @@ public:
         // Create measurement points shared with per pixel
         struct MeasurementPoint
         {
+            bool valid;                     // True if the measurement point is valid
             Float radius;                   // Current photon radius
             Float N;                        // Accumulated photon count
             SPD tau;                        // Sum of throughput of luminance multiplies BSDF (Eq.10 in [Hachisuka et al. 2008]
-
             Vec3 wi;                        // Direction to previous vertex
             SPD throughputE;                // Throughput of importance
             PhotonMapUtils::PathVertex v;   // Current vertex information
@@ -123,7 +129,7 @@ public:
         {
             LM_LOG_INFO("Pass " + std::to_string(pass));
             LM_LOG_INDENTER();
-
+            
             // --------------------------------------------------------------------------------
             
             #pragma region Collect measumrement points
@@ -145,6 +151,7 @@ public:
                 {
                     auto& ctx = contexts[threadid];
                     const Vec2 initRasterPos(((Float)(index % W) + ctx.rng.Next()) / W, ((Float)(index / W) + ctx.rng.Next()) / H);
+                    mps[index].valid = false;
                     PhotonMapUtils::TraceEyeSubpathFixedRasterPos(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, initRasterPos, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, const SPD& throughput) -> bool
                     {
                         // Record the measurement point and terminate the path if the surface is D or G.
@@ -152,6 +159,7 @@ public:
                         if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
                         {
                             auto& mp = mps[index];
+                            mp.valid = true;
                             mp.wi = Math::Normalize(pv.geom.p - v.geom.p);
                             mp.throughputE = throughput;
                             mp.v = v;
@@ -256,6 +264,10 @@ public:
                 Parallel::For(mps.size(), [&](long long index, int threadid, bool init)
                 {
                     auto& mp = mps[index];
+                    if (!mp.valid)
+                    {
+                        return;
+                    }
 
                     // Accumulate tau 
                     SPD deltaTau;
@@ -294,7 +306,11 @@ public:
                     film->SetPixel(i % W, i / W, C);
                 }
                 #if LM_SPPM_DEBUG
-                film->Save(boost::str(boost::format("sppm_%05d") % pass));
+                {
+                    boost::format f(debugOutputPath_);
+                    f.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
+                    film->Save(boost::str(f % pass));
+                }
                 #endif
             }
             #pragma endregion
