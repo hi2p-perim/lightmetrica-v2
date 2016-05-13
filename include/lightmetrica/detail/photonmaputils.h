@@ -56,11 +56,11 @@ public:
 
 public:
 
-    ///! Function to parallelize photon tracing
-    LM_PUBLIC_API static auto ProcessPhotonTrace(Random* initRng, long long numPhotonTraceSamples, const std::function<void(Random*, std::vector<Photon>&)>& processSampleFunc) -> std::vector<Photon>;
-
     ///! Function to trace subpath (TODO: refactor it as path sampler)
     LM_PUBLIC_API static auto TraceSubpath(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const std::function<bool(int step, const Vec2&, const PathVertex&, const PathVertex&, SPD&)>& processPathVertexFunc) -> void;
+
+    ///! Function to trace eye subpath with fixed raster position
+    LM_PUBLIC_API static auto TraceEyeSubpathFixedRasterPos(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const Vec2& rasterPos, const std::function<bool(int step, const Vec2&, const PathVertex&, const PathVertex&, SPD&)>& processPathVertexFunc) -> void;
 
 };
 

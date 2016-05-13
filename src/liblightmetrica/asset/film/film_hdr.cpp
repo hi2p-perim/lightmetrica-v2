@@ -300,6 +300,13 @@ public:
         data_.assign(width_ * height_, Vec3());
     };
 
+    LM_IMPL_F(PixelIndex) = [this](const Vec2& rasterPos) -> int
+    {
+        const int pX = Math::Clamp((int)(rasterPos.x * Float(width_)), 0, width_ - 1);
+        const int pY = Math::Clamp((int)(rasterPos.y * Float(height_)), 0, height_ - 1);
+        return pY * width_ + pX;
+    };
+
 private:
 
     int width_;

@@ -47,7 +47,7 @@ class Film : public Asset
 {
 public:
 
-    LM_INTERFACE_CLASS(Film, Asset, 8);
+    LM_INTERFACE_CLASS(Film, Asset, 9);
 
 public:
 
@@ -113,6 +113,9 @@ public:
         Fills in the pixel values to zero.
     */
     LM_INTERFACE_F(7, Clear, void());
+
+    ///! Computes pixel index from the raster position.
+    LM_INTERFACE_F(8, PixelIndex, int(const Vec2& rasterPos));
 
 };
 
