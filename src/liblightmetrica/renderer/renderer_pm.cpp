@@ -69,7 +69,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film_) -> void
     {
         Random initRng;
         #if LM_DEBUG_MODE
@@ -148,11 +148,17 @@ public:
         // --------------------------------------------------------------------------------
 
         #pragma region Trace eye rays
-        sched_->Process(scene, film, &initRng, [this](const Scene* scene, Film* film, Random* rng)
+        sched_->Process(scene, film_, &initRng, [&](Film* film, Random* rng)
         {
             bool gatherNext = !finalgather_;
             PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
             {
+                // Skip initial vertex
+                if (numVertices == 1)
+                {
+                    return true;
+                }
+
                 // Handle hit with light source
                 if ((v.primitive->surface->Type() & SurfaceInteractionType::L) > 0)
                 {

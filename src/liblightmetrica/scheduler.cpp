@@ -83,7 +83,7 @@ public:
         #pragma endregion
     };
 
-    LM_IMPL_F(Process) = [this](const Scene* scene, Film* film, Random* initRng, const std::function<void(const Scene*, Film*, Random*)>& processSampleFunc) -> long long
+    LM_IMPL_F(Process) = [this](const Scene* scene, Film* film, Random* initRng, const std::function<void(Film*, Random*)>& processSampleFunc) -> long long
     {
         tbb::task_scheduler_init init(Parallel::GetNumThreads());
 
@@ -180,7 +180,7 @@ public:
                 for (long long sample = range.begin(); sample != range.end(); sample++)
                 {
                     // Process sampleprocessedSamples
-                    processSampleFunc(scene, ctx.film.get(), &ctx.rng);
+                    processSampleFunc(ctx.film.get(), &ctx.rng);
 
                     // Report progress
                     ctx.processedSamples++;

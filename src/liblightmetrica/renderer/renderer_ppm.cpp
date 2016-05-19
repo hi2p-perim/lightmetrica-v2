@@ -136,6 +136,12 @@ public:
                 auto& ctx = contexts[threadid];
                 PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, const SPD& throughput) -> bool
                 {
+                    // Skip initial vertex
+                    if (numVertices == 1)
+                    {
+                        return true;
+                    }
+
                     // Record the measurement point and terminate the path if the surface is D or G.
                     // Otherwise, continue to trace the path.
                     if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
@@ -205,6 +211,12 @@ public:
                     auto& ctx = contexts[threadid];
                     PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
                     {
+                        // Skip initial vertex
+                        if (numVertices == 1)
+                        {
+                            return true;
+                        }
+
                         // Record photon
                         if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
                         {

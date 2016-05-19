@@ -814,12 +814,20 @@ public:
 
     LM_IMPL_CLASS(Renderer_BDPT, Renderer);
 
+private:
+
+    int maxNumVertices_;
+    int minNumVertices_;
+    Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
+    MISWeight::UniquePtr mis_{ nullptr, nullptr };
+
 public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
         sched_->Load(prop);
         maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
+        minNumVertices_ = prop->Child("min_num_vertices")->As<int>();
         mis_ = ComponentFactory::Create<MISWeight>("misweight::" + prop->ChildAs<std::string>("mis", "powerheuristics"));
         return true;
     };
@@ -852,7 +860,7 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        const auto processedSamples = sched_->Process(scene, film, &initRng, [&](const Scene* scene, Film* film, Random* rng)
+        const auto processedSamples = sched_->Process(scene, film, &initRng, [&](Film* film, Random* rng)
         {
             #if LM_COMPILER_CLANG
             auto& subpathL = subpathL_.local();
@@ -877,7 +885,7 @@ public:
             const int nE = static_cast<int>(subpathE.vertices.size());
             for (int n = 2; n <= nE + nL; n++)
             {
-                if (maxNumVertices_ != -1 && n > maxNumVertices_)
+                if (maxNumVertices_ != -1 && (n > maxNumVertices_ || n < minNumVertices_))
                 {
                     continue;
                 }
@@ -974,12 +982,6 @@ public:
         LM_UNUSED(processedSamples);
         #endif
     };
-
-private:
-
-    int maxNumVertices_;
-    Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
-    MISWeight::UniquePtr mis_{ nullptr, nullptr };
 
 };
 

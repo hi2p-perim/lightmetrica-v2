@@ -78,7 +78,13 @@ namespace
                     v.primitive->sensor->RasterPosition(initWo, v.geom, rasterPos);
                 }
 
-                // Add a vertex
+                // Process vertex
+                if (!processPathVertexFunc(1, rasterPos, PhotonMapUtils::PathVertex(), v, throughput))
+                {
+                    break;
+                }
+
+                // Update information
                 pv = v;
 
                 #pragma endregion

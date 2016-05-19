@@ -54,7 +54,7 @@ public:
 public:
 
     LM_INTERFACE_F(0, Load, void(const PropertyNode* prop));
-    LM_INTERFACE_F(1, Process, long long(const Scene* scene, Film* film, Random* initRng, const std::function<void(const Scene*, Film*, Random*)>& processSampleFunc));
+    LM_INTERFACE_F(1, Process, long long(const Scene* scene, Film* film, Random* initRng, const std::function<void(Film*, Random*)>& processSampleFunc));
     LM_INTERFACE_F(2, GetNumSamples, long long());
 
 };
