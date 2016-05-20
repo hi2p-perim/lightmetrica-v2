@@ -40,6 +40,8 @@
 #include <lightmetrica/detail/photonmap.h>
 #include <lightmetrica/detail/photonmaputils.h>
 
+#define LM_VCMREF_DEBUG 0
+
 LM_NAMESPACE_BEGIN
 
 /*!
@@ -338,7 +340,33 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        sched_->Process(scene, film, &initRng, [&](Film* film, Random* rng) -> void
+        #if LM_VCMREF_DEBUG
+        struct Strategy
+        {
+            int s;
+            int t;
+            bool operator==(const Strategy& o) const
+            {
+                return (s == o.s && t == o.t);
+            }
+        };
+        struct StrategyHash
+        {
+            const int N = 100;
+            auto operator()(const Strategy& v) const -> size_t
+            {
+                return v.s * N + v.t;
+            }
+        };
+        std::vector<Film::UniquePtr> strategyFilms1;
+        std::vector<Film::UniquePtr> strategyFilms2;
+        std::unordered_map<Strategy, size_t, StrategyHash> strategyFilmMap;
+        std::mutex strategyFilmMutex;
+        #endif
+
+        // --------------------------------------------------------------------------------
+
+        const auto processedSamples = sched_->Process(scene, film, &initRng, [&](Film* film, Random* rng) -> void
         {
             // Sample subpaths
             Subpath subpathL;
@@ -374,10 +402,44 @@ public:
                     const auto C = f * w / p;
                     film->Splat(RasterPosition(fullpath), C);
 
+                    #if LM_VCMREF_DEBUG
+                    {
+                        const auto Cstar = f / p;
+                        std::unique_lock<std::mutex> lock(strategyFilmMutex);
+                        Strategy strategy{ s, t };
+                        if (strategyFilmMap.find(strategy) == strategyFilmMap.end())
+                        {
+                            strategyFilms1.push_back(ComponentFactory::Clone<Film>(film));
+                            strategyFilms2.push_back(ComponentFactory::Clone<Film>(film));
+                            strategyFilms1.back()->Clear();
+                            strategyFilms2.back()->Clear();
+                            strategyFilmMap[strategy] = strategyFilms1.size() - 1;
+                        }
+                        strategyFilms1[strategyFilmMap[strategy]]->Splat(RasterPosition(fullpath), C);
+                        strategyFilms2[strategyFilmMap[strategy]]->Splat(RasterPosition(fullpath), Cstar);
+                    }
+                    #endif
+
                     #pragma endregion
                 }
             }
         });
+
+        // --------------------------------------------------------------------------------
+
+        #if LM_VCMREF_DEBUG
+        for (const auto& kv : strategyFilmMap)
+        {
+            const auto* f1 = strategyFilms1[kv.second].get();
+            const auto* f2 = strategyFilms2[kv.second].get();
+            f1->Rescale((Float)(f1->Width() * f1->Height()) / processedSamples);
+            f2->Rescale((Float)(f2->Width() * f2->Height()) / processedSamples);
+            f1->Save(boost::str(boost::format("vcmref_f1_n%02d_s%02d_t%02d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t));
+            f2->Save(boost::str(boost::format("vcmref_f2_n%02d_s%02d_t%02d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t));
+        }
+        #else
+        LM_UNUSED(processedSamples);
+        #endif
     };
 
 };

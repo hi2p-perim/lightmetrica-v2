@@ -975,8 +975,8 @@ public:
             const auto* f2 = strategyFilms2[kv.second].get();
             f1->Rescale((Float)(f1->Width() * f1->Height()) / processedSamples);
             f2->Rescale((Float)(f2->Width() * f2->Height()) / processedSamples);
-            f1->Save(boost::str(boost::format("f1_n%02d_s%02d_t%02d_d%d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t % kv.first.d));
-            f2->Save(boost::str(boost::format("f2_n%02d_s%02d_t%02d_d%d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t % kv.first.d));
+            f1->Save(boost::str(boost::format("bdpt_f1_n%02d_s%02d_t%02d_d%d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t % kv.first.d));
+            f2->Save(boost::str(boost::format("bdpt_f2_n%02d_s%02d_t%02d_d%d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t % kv.first.d));
         }
         #else
         LM_UNUSED(processedSamples);
