@@ -618,9 +618,9 @@ private:
             LM_LOG_INDENTER();
             const auto* sensor = static_cast<const Sensor*>(scene.get()->GetSensor()->emitter);
             auto* film = sensor->GetFilm();
-            //FPUtils::EnableFPControl();
+            FPUtils::EnableFPControl();
             renderer.get()->Render(scene.get(), film);
-            //FPUtils::DisableFPControl();
+            FPUtils::DisableFPControl();
         }
 
         #pragma endregion

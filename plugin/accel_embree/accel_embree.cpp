@@ -169,9 +169,9 @@ public:
         rtcRay.time = 0;
 
         // Intersection query
-        //FPUtils::DisableFPControl();     // TODO: push
+        FPUtils::DisableFPControl();     // TODO: push
         rtcIntersect(RtcScene, rtcRay);
-        //FPUtils::EnableFPControl();      // TODO: pop
+        FPUtils::EnableFPControl();      // TODO: pop
         if ((unsigned int)(rtcRay.geomID) == RTC_INVALID_GEOMETRY_ID)
         {
             return false;

@@ -44,7 +44,7 @@
 
 LM_NAMESPACE_BEGIN
 
-#define LM_SPPM_DEBUG 1
+#define LM_SPPM_DEBUG 0
 
 /*!
     \brief Stochastic progressive photon mapping renderer.

@@ -72,6 +72,7 @@ private:
 
     int maxNumVertices_;
     int minNumVertices_;
+    int seed_ = -1;
     Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
 
 public:
@@ -81,17 +82,20 @@ public:
         sched_->Load(prop);
         maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
         minNumVertices_ = prop->Child("min_num_vertices")->As<int>();
+        seed_ = prop->ChildAs<int>("seed", -1);
+        #if LM_DEBUG_MODE
+        if (seed_ == -1)
+        {
+            seed_ = 1008556906;
+        }
+        #endif
         return true;
     };
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
     {
         Random initRng;
-        #if LM_DEBUG_MODE
-        initRng.SetSeed(1008556906);
-        #else
-        initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
-        #endif
+        initRng.SetSeed(seed_ == -1 ? (unsigned int)(std::time(nullptr)) : seed_);
 
         // --------------------------------------------------------------------------------
 
@@ -391,6 +395,7 @@ public:
 
                     // Evaluate contribution
                     const auto f = EvaluateF(fullpath, s);
+                    if (f.Black()) { continue; }
                     
                     // Evaluate connection PDF
                     const auto p = EvaluateConnectionPDF(fullpath, s);

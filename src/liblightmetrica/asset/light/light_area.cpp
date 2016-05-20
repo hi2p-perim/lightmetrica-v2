@@ -79,7 +79,7 @@ public:
     LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         const auto localWo = geom.ToLocal * wo;
-        if (Math::LocalCos(localWo) <= 0_f) { return PDFVal(PDFMeasure::Area, 0_f); }
+        if (Math::LocalCos(localWo) <= 0_f) { return PDFVal(PDFMeasure::ProjectedSolidAngle, 0_f); }
         return Sampler::CosineSampleHemispherePDFProjSA(localWo);
     };
 

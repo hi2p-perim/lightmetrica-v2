@@ -336,7 +336,7 @@ set(
 set(
     _RENDERER_SOURCE_FILES
 	#"renderer/renderer_null.cpp"
-	#"renderer/renderer_raycast.cpp"
+	"renderer/renderer_raycast.cpp"
 	#"renderer/renderer_raycast_pixel.cpp"
 	"renderer/renderer_pt.cpp"
 	"renderer/renderer_ptdirect.cpp"

@@ -39,7 +39,7 @@
 #include <lightmetrica/renderutils.h>
 #include <tbb/tbb.h>
 
-#define LM_BDPT_DEBUG 0
+#define LM_BDPT_DEBUG 1
 
 LM_NAMESPACE_BEGIN
 

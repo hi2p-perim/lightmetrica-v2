@@ -18,6 +18,7 @@ TODO
 - [ ] PDF formatted documentation
 - [ ] Comparitibility to mitsuba's scene file
 - [ ] Wrapper for mitsuba's BSDF
+- [ ] Feature to print loaded parameters
 
 Discussions
 --------------------
