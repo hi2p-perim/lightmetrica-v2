@@ -772,7 +772,7 @@ int main(int argc, char** argv)
 	}
 	catch (const std::exception& e)
 	{
-        LM_LOG_ERROR_SIMPLE("EXCEPTION : " + std::string(e.what()));
+        LM_LOG_ERROR("EXCEPTION : " + std::string(e.what()));
 		result = EXIT_FAILURE;
 	}
 

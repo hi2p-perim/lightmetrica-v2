@@ -24,6 +24,8 @@
 
 #include <pch.h>
 #include <lightmetrica/exception.h>
+#include <lightmetrica/logger.h>
+#include <lightmetrica/debug.h>
 
 #if LM_PLATFORM_WINDOWS
 #include <Windows.h>
@@ -36,6 +38,8 @@ namespace
 {
     void SETransFunc(unsigned int code, PEXCEPTION_POINTERS data)
     {
+        Logger::Flush();
+
 	    std::string desc;
 	    switch (code)
 	    {
@@ -61,18 +65,23 @@ namespace
 		    case EXCEPTION_STACK_OVERFLOW:           { desc = "STACK_OVERFLOW";           break; }
 	    }
 
-        std::cerr << "Structured exception is detected" << std::endl;
-        std::cerr << "    Exception code    : " << boost::str(boost::format("0x%08x") % code) << std::endl;
-        std::cerr << "    Exception address : " << boost::str(boost::format("0x%08x") % data->ExceptionRecord->ExceptionAddress) << std::endl;
+        LM_LOG_ERROR("Structured exception is detected");
+        LM_LOG_INDENTER();
+        LM_LOG_ERROR("Exception code    : " + boost::str(boost::format("0x%08x") % code));
+        LM_LOG_ERROR("Exception address : " + boost::str(boost::format("0x%08x") % data->ExceptionRecord->ExceptionAddress));
 	    if (!desc.empty())
 	    {
-            std::cerr << "    Description       : " << desc << std::endl;
-	    }
+            LM_LOG_ERROR("Description       : " + desc);
+        }
+        #if 0
+        {
+            LM_LOG_ERROR("Stack trace :");
+            LM_LOG_INDENTER();
+            DebugUtils::StackTrace();
+        }
+        #endif
 
         throw std::runtime_error(desc);
-
-        //std::cerr << "Aborting..." << std::endl;
-        //exit(EXIT_FAILURE);
     }
 }
 #endif

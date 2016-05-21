@@ -68,14 +68,14 @@ auto DebugUtils_StackTrace() -> bool
     symbol->MaxNameLen = 255;
     symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
 
-    const unsigned short  MAX_CALLERS_SHOWN = 6;
+    const unsigned short MAX_CALLERS_SHOWN = 10;
     frames = frames < MAX_CALLERS_SHOWN ? frames : MAX_CALLERS_SHOWN;
 
     std::stringstream ss;
     for (unsigned int i = 0; i < frames; i++)
     {
         SymFromAddr(process, (DWORD64)(callers_stack[i]), 0, symbol);
-        ss << "*** " << i << ": " << callers_stack[i] << " " << symbol->Name << " - 0x" << symbol->Address << std::endl;
+        ss << i << ": " << callers_stack[i] << " " << symbol->Name << " - 0x" << symbol->Address << std::endl;
     }
 
     LM_LOG_ERROR(ss.str());
