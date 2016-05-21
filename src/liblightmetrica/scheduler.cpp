@@ -71,7 +71,6 @@ public:
         {
             LM_LOG_INFO("Loaded parameters");
             LM_LOG_INDENTER();
-            LM_LOG_INFO("num_threads                    = " + std::to_string(numThreads_));
             LM_LOG_INFO("grain_size                     = " + std::to_string(grainSize_));
             LM_LOG_INFO("progress_update_interval       = " + std::to_string(progressUpdateInterval_));
             LM_LOG_INFO("progress_image_update_interval = " + std::to_string(progressImageUpdateInterval_));
@@ -314,7 +313,6 @@ public:
 
 private:
 
-    int numThreads_;
     long long grainSize_;
     long long progressUpdateInterval_;
     double progressImageUpdateInterval_;

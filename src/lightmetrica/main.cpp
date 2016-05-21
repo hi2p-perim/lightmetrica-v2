@@ -37,6 +37,7 @@
 #include <lightmetrica/detail/version.h>
 #include <lightmetrica/detail/parallel.h>
 #include <lightmetrica/fp.h>
+#include <lightmetrica/random.h>
 
 #include <iostream>
 #include <fstream>
@@ -101,6 +102,7 @@ struct ProgramOption
         std::string SceneFile;
         std::string OutputPath;
         bool Verbose;
+        int Seed;
         std::unordered_map<std::string, std::string> TemplateDict;
     } Render;
 
@@ -180,6 +182,7 @@ public:
                         ("output,o", po::value<std::string>()->default_value("result"), "Output image")
                         ("num-threads,j", po::value<int>(), "Number of threads")
                         ("verbose,v", po::bool_switch()->default_value(false), "Adds detailed information on the output")
+                        ("seed", po::value<int>()->default_value(-1), "Initial seed for random number generators (-1 : default)")
                         ("template,t", po::value<std::vector<std::string>>()->multitoken()->zero_tokens()->composing(), "String templates");
 
                     auto opts = po::collect_unrecognized(parsed.options, po::include_positional);
@@ -200,6 +203,7 @@ public:
                     Render.SceneFile  = vm["scene"].as<std::string>();
                     Render.OutputPath = vm["output"].as<std::string>();
                     Render.Verbose    = vm["verbose"].as<bool>();
+                    Render.Seed       = vm["seed"].as<int>();
 
                     if (vm.count("template"))
                     {
@@ -616,10 +620,35 @@ private:
         {
             LM_LOG_INFO("Rendering");
             LM_LOG_INDENTER();
+
+            // Film
             const auto* sensor = static_cast<const Sensor*>(scene.get()->GetSensor()->emitter);
             auto* film = sensor->GetFilm();
+            
+            // Initial random number generator
+            Random initRng;
+            unsigned int seed;
+            if (opt.Render.Seed == -1)
+            {
+                #if LM_DEBUG_MODE
+                seed = 1008556906;
+                #else
+                seed = static_cast<unsigned int>(std::time(nullptr));
+                #endif
+            }
+            else
+            {
+                seed = opt.Render.Seed;
+            }
+            LM_LOG_INFO("Initial seed: " + std::to_string(seed));
+            initRng.SetSeed(seed);
+            
+            // Print thread info
+            LM_LOG_INFO("Number of threads: " + std::to_string(Parallel::GetNumThreads()));
+
+            // Dispatch renderer
             FPUtils::EnableFPControl();
-            renderer.get()->Render(scene.get(), film);
+            renderer.get()->Render(scene.get(), &initRng, film);
             FPUtils::DisableFPControl();
         }
 

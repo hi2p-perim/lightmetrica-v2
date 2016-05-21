@@ -832,15 +832,8 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
-        Random initRng;
-        #if LM_DEBUG_MODE
-        initRng.SetSeed(1008556906);
-        #else
-        initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
-        #endif
-
         #if LM_COMPILER_CLANG
         tbb::enumerable_thread_specific<Subpath> subpathL_, subpathE_;
         tbb::enumerable_thread_specific<Path> path_;
@@ -860,7 +853,7 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        const auto processedSamples = sched_->Process(scene, film, &initRng, [&](Film* film, Random* rng)
+        const auto processedSamples = sched_->Process(scene, film, initRng, [&](Film* film, Random* rng)
         {
             #if LM_COMPILER_CLANG
             auto& subpathL = subpathL_.local();

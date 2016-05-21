@@ -89,17 +89,8 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
-        Random initRng;
-        #if LM_DEBUG_MODE
-        initRng.SetSeed(1008556906);
-        #else
-        initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
-        #endif
-        
-        // --------------------------------------------------------------------------------
-
         #pragma region Collect measumrement points
         
         struct MeasurementPoint
@@ -128,7 +119,7 @@ public:
             std::vector<Context> contexts(Parallel::GetNumThreads());
             for (auto& ctx : contexts)
             {
-                ctx.rng.SetSeed(initRng.NextUInt());
+                ctx.rng.SetSeed(initRng->NextUInt());
             }
 
             Parallel::For(numSamples_, [&](long long index, int threadid, bool init)
@@ -203,7 +194,7 @@ public:
                 std::vector<Context> contexts(Parallel::GetNumThreads());
                 for (auto& ctx : contexts)
                 {
-                    ctx.rng.SetSeed(initRng.NextUInt());
+                    ctx.rng.SetSeed(initRng->NextUInt());
                 }
 
                 Parallel::For(numPhotonTraceSamples_, [&](long long index, int threadid, bool init)

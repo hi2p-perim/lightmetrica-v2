@@ -57,7 +57,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
         // Create patches
         Patches patches;

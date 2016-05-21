@@ -47,7 +47,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
         const int w = film->Width();
         const int h = film->Height();

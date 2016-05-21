@@ -30,6 +30,7 @@ LM_NAMESPACE_BEGIN
 
 class Scene;
 class Film;
+class Random;
 
 /*!
     \defgroup renderer Renderer
@@ -55,11 +56,16 @@ public:
 
     /*!
         \brief Render an image.
+
         The function starts to render the `scene` to the `film`.
+        The initial random number generator is given by 'initRng'.
+        All random number generator associated to each thread should be
+        initialized with the generator.
+        
         \retval true Succeeded to render the scene.
         \retval true Failed to render the scene.
     */
-    LM_INTERFACE_F(0, Render, void(const Scene*, Film*));
+    LM_INTERFACE_F(0, Render, void(const Scene* scene, Random* initRng, Film* film));
 
 };
 

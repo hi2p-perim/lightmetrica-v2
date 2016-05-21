@@ -60,18 +60,9 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film_) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film_) -> void
     {
-        Random initRng;
-        #if LM_DEBUG_MODE
-        initRng.SetSeed(1008556906);
-        #else
-        initRng.SetSeed(static_cast<unsigned int>(std::time(nullptr)));
-        #endif
-
-        std::atomic<bool> init(false);
-
-        sched_->Process(scene, film_, &initRng, [&](Film* film, Random* rng)
+        sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
         {
             #pragma region Sample a sensor
 

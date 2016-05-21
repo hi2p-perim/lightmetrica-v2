@@ -9,6 +9,8 @@ TODO
 - [ ] Automatic generation of entire documentation from sources. Think about the pipeline to achieve that.
 - [ ] Error handling of property inputs
 - [ ] Replace ctemplate library
+- [ ] Extend template to support default variable
+- [ ] Extend template to select debug / release mode
 - [ ] Default template parameter
 - [ ] Add explanation of parameters
 - [ ] Function to list parameters from the command line
@@ -19,6 +21,10 @@ TODO
 - [ ] Comparitibility to mitsuba's scene file
 - [ ] Wrapper for mitsuba's BSDF
 - [ ] Feature to print loaded parameters
+- [ ] Feature to output experimental information easily
+- [ ] Refactor math functions (separate files)
+- [ ] Path tracing with MIS
+- [ ] Modify interface definition to add IDs
 
 Discussions
 --------------------

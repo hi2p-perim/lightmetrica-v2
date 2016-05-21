@@ -72,7 +72,6 @@ private:
 
     int maxNumVertices_;
     int minNumVertices_;
-    int seed_ = -1;
     Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
 
 public:
@@ -82,23 +81,11 @@ public:
         sched_->Load(prop);
         maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
         minNumVertices_ = prop->Child("min_num_vertices")->As<int>();
-        seed_ = prop->ChildAs<int>("seed", -1);
-        #if LM_DEBUG_MODE
-        if (seed_ == -1)
-        {
-            seed_ = 1008556906;
-        }
-        #endif
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
-        Random initRng;
-        initRng.SetSeed(seed_ == -1 ? (unsigned int)(std::time(nullptr)) : seed_);
-
-        // --------------------------------------------------------------------------------
-
         #pragma region Helper functions
 
         struct PathVertex
@@ -370,7 +357,7 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        const auto processedSamples = sched_->Process(scene, film, &initRng, [&](Film* film, Random* rng) -> void
+        const auto processedSamples = sched_->Process(scene, film, initRng, [&](Film* film, Random* rng) -> void
         {
             // Sample subpaths
             Subpath subpathL;

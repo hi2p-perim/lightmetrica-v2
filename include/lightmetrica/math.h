@@ -636,17 +636,17 @@ struct TMat4
         ParamT v01, ParamT v11, ParamT v21, ParamT v31,
         ParamT v02, ParamT v12, ParamT v22, ParamT v32,
         ParamT v03, ParamT v13, ParamT v23, ParamT v33)
-        : v_{{v00, v10, v20, v30},
-             {v01, v11, v21, v31},
-             {v02, v12, v22, v32},
-             {v03, v13, v23, v33}}
+        : v_{VecT(v00, v10, v20, v30),
+             VecT(v01, v11, v21, v31),
+             VecT(v02, v12, v22, v32),
+             VecT(v03, v13, v23, v33)}
     {}
     LM_INLINE TMat4(std::initializer_list<VT> l)
-    {
-        for (int i = 0; i < NC; i++)
-            for (int j = 0; j < NC; j++)
-                v_[i][j] = l.begin()[i*NC+j];
-    }
+        : v_{VecT(l.begin()[ 0], l.begin()[ 1], l.begin()[ 2], l.begin()[ 3]),
+             VecT(l.begin()[ 4], l.begin()[ 5], l.begin()[ 6], l.begin()[ 7]),
+             VecT(l.begin()[ 8], l.begin()[ 9], l.begin()[10], l.begin()[11]),
+             VecT(l.begin()[12], l.begin()[13], l.begin()[14], l.begin()[15])}
+    {}
 
     static auto Identity() -> MatT { return MatT{ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 }; }
     
@@ -710,16 +710,15 @@ struct TMat3
         ParamT v00, ParamT v10, ParamT v20,
         ParamT v01, ParamT v11, ParamT v21,
         ParamT v02, ParamT v12, ParamT v22)
-        : v_{{v00, v10, v20},
-             {v01, v11, v21},
-             {v02, v12, v22}}
+        : v_{VecT(v00, v10, v20),
+             VecT(v01, v11, v21),
+             VecT(v02, v12, v22)}
     {}
     LM_INLINE TMat3(std::initializer_list<VT> l)
-    {
-        for (int i = 0; i < NC; i++)
-            for (int j = 0; j < NC; j++)
-                v_[i][j] = l.begin()[i*NC+j];
-    }
+        : v_{VecT(l.begin()[0], l.begin()[1], l.begin()[2]),
+             VecT(l.begin()[3], l.begin()[4], l.begin()[5]),
+             VecT(l.begin()[6], l.begin()[7], l.begin()[8])}
+    {}
 
     static auto Identity() -> MatT { return MatT{ 1,0,0, 0,1,0, 0,1,0 }; }
 

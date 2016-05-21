@@ -78,7 +78,7 @@ if(WIN32)
             TARGET ${_ARG_TARGET}
             PRE_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "$<$<CONFIG:release>:${_ARG_DLL_RELEASE}>$<$<CONFIG:debug>:${_ARG_DLL_DEBUG}>"
+                    "$<$<CONFIG:release>:${_ARG_DLL_RELEASE}>$<$<CONFIG:relwithdebinfo>:${_ARG_DLL_RELEASE}>$<$<CONFIG:debug>:${_ARG_DLL_DEBUG}>"
                     "$<TARGET_FILE_DIR:${_ARG_NAME}>")
     endfunction()
 
