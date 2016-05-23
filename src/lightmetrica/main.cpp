@@ -33,7 +33,6 @@
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/detail/propertyutils.h>
-#include <lightmetrica/detail/stringtemplate.h>
 #include <lightmetrica/detail/version.h>
 #include <lightmetrica/detail/parallel.h>
 #include <lightmetrica/fp.h>
@@ -102,8 +101,8 @@ struct ProgramOption
         std::string SceneFile;
         std::string OutputPath;
         bool Verbose;
+        bool Interactive;
         int Seed;
-        std::unordered_map<std::string, std::string> TemplateDict;
     } Render;
 
 public:
@@ -178,12 +177,12 @@ public:
                     po::options_description renderOpt("Options");
                     renderOpt.add_options()
                         ("help", "Display help message (this message)")
-                        ("scene,s", po::value<std::string>()->required(), "Scene configuration file")
+                        ("scene,s", po::value<std::string>(), "Scene configuration file")
                         ("output,o", po::value<std::string>()->default_value("result"), "Output image")
                         ("num-threads,j", po::value<int>(), "Number of threads")
                         ("verbose,v", po::bool_switch()->default_value(false), "Adds detailed information on the output")
-                        ("seed", po::value<int>()->default_value(-1), "Initial seed for random number generators (-1 : default)")
-                        ("template,t", po::value<std::vector<std::string>>()->multitoken()->zero_tokens()->composing(), "String templates");
+                        ("interactive,i", po::bool_switch(&Render.Interactive), "Interactive mode")
+                        ("seed", po::value<int>()->default_value(-1), "Initial seed for random number generators (-1 : default)");
 
                     auto opts = po::collect_unrecognized(parsed.options, po::include_positional);
                     opts.erase(opts.begin());
@@ -200,25 +199,22 @@ public:
 
                     po::notify(vm);
 
-                    Render.SceneFile  = vm["scene"].as<std::string>();
                     Render.OutputPath = vm["output"].as<std::string>();
                     Render.Verbose    = vm["verbose"].as<bool>();
                     Render.Seed       = vm["seed"].as<int>();
 
-                    if (vm.count("template"))
+                    if (vm.count("scene") && Render.Interactive)
                     {
-                        for (const auto& str : vm["template"].as<std::vector<std::string>>())
-                        {
-                            // Parse {key} = {value}
-                            std::regex re(R"x((\w+) *= *(.+))x");
-                            std::smatch match;
-                            if (!std::regex_match(str, match, re))
-                            {
-                                continue;
-                            }
-
-                            Render.TemplateDict[match[1]] = match[2];
-                        }
+                        LM_LOG_ERROR_SIMPLE("Conflicting arguments : 'scene' and 'interactive'");
+                        return false;
+                    }
+                    if (vm.count("scene"))
+                    {
+                        Render.SceneFile = vm["scene"].as<std::string>();
+                    }
+                    else
+                    {
+                        Render.SceneFile = "<stdin>";
                     }
 
                     if (vm.count("num-threads"))
@@ -406,29 +402,27 @@ private:
             | Lightmetrica
             |
             | A modern, research-oriented renderer
-            | Version {{version}} ({{codename}})
+            | Version %s (%s)
             |
             | Copyright (c) 2015 Hisanari Otsu
             | The software is distributed under the MIT license.
             | For detail see the LICENSE file along with the software.
             |
-            | BUILD DATE   | {{date}}
-            | PLATFORM     | {{platform}} {{arch}}
-            | FLAGS        | {{flags}}
-            | CURRENT TIME | {{time}}
+            | BUILD DATE   | %s
+            | PLATFORM     | %s %s
+            | FLAGS        | %s
+            | CURRENT TIME | %s
             |
             )x");
 
-            std::unordered_map<std::string, std::string> dict;
-            dict["version"]  = Version::Formatted();
-            dict["codename"] = Version::Codename();
-            dict["date"]     = Version::BuildDate();
-            dict["platform"] = Version::Platform();
-            dict["arch"]     = Version::Archtecture();
-            dict["flags"]    = flags;
-            dict["time"]     = currentTime;
-
-            LM_LOG_INFO(StringTemplate::Expand(message, dict));
+            LM_LOG_INFO(boost::str(boost::format(message)
+                % Version::Formatted()
+                % Version::Codename()
+                % Version::BuildDate()
+                % Version::Platform()
+                % Version::Archtecture()
+                % flags
+                % currentTime));
 
             #pragma endregion
         }
@@ -459,20 +453,34 @@ private:
             LM_LOG_INDENTER();
             LM_LOG_INFO("Loading '" + opt.Render.SceneFile + "'");
 
-            // Load from file
-            std::ifstream t(opt.Render.SceneFile);
-            if (!t.is_open())
+            // Load configuration file
+            std::string content;
+            
+            if (opt.Render.Interactive)
             {
-                LM_LOG_ERROR("Failed to open: " + opt.Render.SceneFile);
-                return false;
+                // Load from standard input
+                int c;
+                while ((c = std::getchar()) != EOF)
+                {
+                    content += (char)(c);
+                }
+            }
+            else
+            {
+                // Load from file
+                std::ifstream t(opt.Render.SceneFile);
+                if (!t.is_open())
+                {
+                    LM_LOG_ERROR("Failed to open: " + opt.Render.SceneFile);
+                    return false;
+                }
+                std::stringstream ss;
+                ss << t.rdbuf();
+                content = ss.str();
             }
 
-            std::stringstream ss;
-            ss << t.rdbuf();
-
             // Expand template & load scene file
-            const auto expanded = StringTemplate::Expand(ss.str(), opt.Render.TemplateDict);
-            if (!sceneConf->LoadFromStringWithFilename(expanded, opt.Render.SceneFile))
+            if (!sceneConf->LoadFromStringWithFilename(content, opt.Render.SceneFile))
             {
                 return false;
             }

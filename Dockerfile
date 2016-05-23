@@ -33,8 +33,8 @@ RUN git clone --depth=1 --branch v2.8.0 https://github.com/embree/embree.git emb
 RUN mkdir -p embree/build && cd embree/build && cmake -D CMAKE_BUILD_TYPE=Release -D ENABLE_ISPC_SUPPORT=OFF -D RTCORE_TASKING_SYSTEM=INTERNAL -D ENABLE_TUTORIALS=OFF .. && make -j 1 && make install && cp libembree.so /usr/local/lib
 
 # Install google-ctemplate
-RUN git clone --depth=1 https://github.com/OlafvdSpek/ctemplate.git ctemplate
-RUN cd ctemplate && ./configure --enable-shared --with-pic && make -j 1 && make install
+#RUN git clone --depth=1 https://github.com/OlafvdSpek/ctemplate.git ctemplate
+#RUN cd ctemplate && ./configure --enable-shared --with-pic && make -j 1 && make install
 
 # Install yaml-cpp
 RUN git clone --depth=1 https://github.com/jbeder/yaml-cpp.git yaml-cpp

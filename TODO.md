@@ -25,6 +25,7 @@ TODO
 - [ ] Refactor math functions (separate files)
 - [ ] Path tracing with MIS
 - [ ] Modify interface definition to add IDs
+- [ ] Feature to specify default selection of the asset if there exists several choices
 
 Discussions
 --------------------

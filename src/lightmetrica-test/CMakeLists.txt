@@ -83,7 +83,7 @@ set(
 	"test_plugin.cpp"
 
 	# Internal
-	"test_stringtemplate.cpp"
+	#"test_stringtemplate.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\core" FILES ${_CORE_SOURCE_FILES})

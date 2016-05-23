@@ -28,7 +28,6 @@
 #include <lightmetrica/logger.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/random.h>
-#include <lightmetrica/detail/stringtemplate.h>
 #include <lightmetrica/detail/parallel.h>
 #include <tbb/tbb.h>
 
@@ -54,11 +53,6 @@ public:
 
         progressUpdateInterval_ = prop->ChildAs<long long>("progress_update_interval", 100000);
         progressImageUpdateInterval_ = prop->ChildAs<double>("progress_image_update_interval", -1);
-        if (progressImageUpdateInterval_ > 0)
-        {
-            progressImageUpdateFormat_ = prop->ChildAs<std::string>("progress_image_update_format", "progress/{{count}}.png");
-        }
-
         numSamples_ = prop->ChildAs<long long>("num_samples", 10000000L);
         renderTime_ = prop->ChildAs<double>("render_time", -1);
 
@@ -74,7 +68,6 @@ public:
             LM_LOG_INFO("grain_size                     = " + std::to_string(grainSize_));
             LM_LOG_INFO("progress_update_interval       = " + std::to_string(progressUpdateInterval_));
             LM_LOG_INFO("progress_image_update_interval = " + std::to_string(progressImageUpdateInterval_));
-            LM_LOG_INFO("progress_image_update_format   = " + progressImageUpdateFormat_);
             LM_LOG_INFO("num_samples                    = " + std::to_string(numSamples_));
             LM_LOG_INFO("render_time                    = " + std::to_string(renderTime_));
         }
@@ -246,12 +239,7 @@ public:
                     std::string path;
                     {
                         std::unordered_map<std::string, std::string> dict;
-                        dict["count"] = boost::str(boost::format("%010d") % progressImageCount);
-                        path = StringTemplate::Expand(progressImageUpdateFormat_, dict);
-                        if (path.empty())
-                        {
-                            path = progressImageUpdateFormat_;
-                        }
+                        path = boost::str(boost::format("progress_%010d") % progressImageCount);
                     }
 
                     // Save image
@@ -316,7 +304,6 @@ private:
     long long grainSize_;
     long long progressUpdateInterval_;
     double progressImageUpdateInterval_;
-    std::string progressImageUpdateFormat_;
 
     long long numSamples_;      //!< Number of samples
     double renderTime_;         //!< Render time

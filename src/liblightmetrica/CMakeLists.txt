@@ -94,7 +94,6 @@ set(
 	"scheduler.cpp"
 
     # detail
-    "stringtemplate.cpp"
     "propertyutils.cpp"
 	"version.cpp"
 	"parallel.cpp"
@@ -113,7 +112,6 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 
 set(
     _CORE_DETAIL_HEADER_FILES
-	"${_INCLUDE_DIR}/detail/stringtemplate.h"
 	"${_INCLUDE_DIR}/detail/propertyutils.h"
 	"${_INCLUDE_DIR}/detail/parallel.h"
     "${_INCLUDE_DIR}/detail/version.h"
@@ -398,7 +396,7 @@ list(APPEND _SOURCE_FILES ${_GENERATED_VERSION_DEF})
 #
 
 pch_add_library(${_PROJECT_NAME} SHARED PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch.h" ${_HEADER_FILES} ${_SOURCE_FILES})
-target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${CTEMPLATE_LIBRARIES} ${FREEIMAGE_LIBRARIES})
+target_link_libraries(${_PROJECT_NAME} ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${YAMLCPP_LIBRARIES} ${FREEIMAGE_LIBRARIES})
 
 # Proprocessor definition for exporting symbols
 set_target_properties(${_PROJECT_NAME} PROPERTIES COMPILE_DEFINITIONS "LM_EXPORTS")

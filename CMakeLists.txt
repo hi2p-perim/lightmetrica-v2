@@ -126,9 +126,9 @@ find_package(YamlCpp REQUIRED)
 include_directories(${YAMLCPP_INCLUDE_DIRS})
 
 # ctemplate
-find_package(CTemplate REQUIRED)
-add_definitions(-DCTEMPLATE_DLL_DECL=)           # Use static library
-include_directories(${CTEMPLATE_INCLUDE_DIRS})
+# find_package(CTemplate REQUIRED)
+# add_definitions(-DCTEMPLATE_DLL_DECL=)           # Use static library
+# include_directories(${CTEMPLATE_INCLUDE_DIRS})
 
 # Google test
 include_directories("${PROJECT_SOURCE_DIR}/external-src/gtest-1.7.0")

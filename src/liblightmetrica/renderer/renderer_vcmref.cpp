@@ -382,7 +382,7 @@ public:
 
                     // Evaluate contribution
                     const auto f = EvaluateF(fullpath, s);
-                    //if (f.Black()) { continue; }
+                    if (f.Black()) { continue; }
                     
                     // Evaluate connection PDF
                     const auto p = EvaluateConnectionPDF(fullpath, s);
