@@ -187,15 +187,21 @@ public:
         return true;
     };
 
-    LM_IMPL_F(LoadFromStringWithFilename) = [this](const std::string& input, const std::string& path) -> bool
+    LM_IMPL_F(LoadFromStringWithFilename) = [this](const std::string& input, const std::string& path, const std::string& basepath) -> bool
     {
         path_ = path;
+        basepath_ = basepath;
         return LoadFromString(input);
     };
 
     LM_IMPL_F(Path) = [this]() -> std::string
     {
         return path_;
+    };
+
+    LM_IMPL_F(BasePath) = [this]() -> std::string
+    {
+        return basepath_;
     };
 
     LM_IMPL_F(Root) = [this]() -> const PropertyNode*
@@ -206,6 +212,7 @@ public:
 private:
 
     std::string path_;
+    std::string basepath_;
     const PropertyNode* root_;
     std::vector<PropertyNode::UniquePtr> nodes_;
 

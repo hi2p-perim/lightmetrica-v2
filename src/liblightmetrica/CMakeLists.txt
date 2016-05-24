@@ -344,7 +344,9 @@ set(
 	"renderer/renderer_pm.cpp"
 	"renderer/renderer_ppm.cpp"
 	"renderer/renderer_sppm.cpp"
-	"renderer/renderer_vcmref.cpp"
+	"renderer/renderer_vcm_bdpt.cpp"
+	"renderer/renderer_vcm_bdpm_nopathreuse.cpp"
+	"renderer/renderer_vcm_bdpm.cpp"
 	#"renderer/renderer_sampledensity.cpp"
 	#"renderer/renderer_sampledensity2.cpp"
 

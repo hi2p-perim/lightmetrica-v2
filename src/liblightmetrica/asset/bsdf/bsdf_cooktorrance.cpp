@@ -130,6 +130,11 @@ public:
         return false;
     };
 
+    LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
+    {
+        return false;
+    };
+
 private:
 
     auto EvaluateBechmannDist(const Vec3& H) const -> Float

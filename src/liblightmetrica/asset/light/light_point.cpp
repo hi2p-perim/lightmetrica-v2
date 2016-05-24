@@ -103,7 +103,7 @@ public:
         return false;
     };
 
-    LM_IMPL_F(IsDeltaPosition) = [this]() -> bool
+    LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
     {
         return true;
     };

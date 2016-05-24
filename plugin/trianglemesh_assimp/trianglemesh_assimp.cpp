@@ -99,7 +99,7 @@ public:
         //const auto postProcessNode = meshNode["postprocess"];
 
         const auto localpath = prop->Child("path")->As<std::string>();
-        const auto basepath = boost::filesystem::path(prop->Tree()->Path()).parent_path();
+        const auto basepath = boost::filesystem::path(prop->Tree()->BasePath());
         const auto path = basepath / localpath;
 
         Assimp::Importer importer;

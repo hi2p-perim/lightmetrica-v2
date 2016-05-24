@@ -42,7 +42,7 @@ public:
         #pragma region Load params
 
         const auto localpath = prop->Child("path")->As<std::string>();
-        const auto basepath = boost::filesystem::path(prop->Tree()->Path()).parent_path();
+        const auto basepath = boost::filesystem::path(prop->Tree()->BasePath());
         const auto path = (basepath / localpath).string();
 
         #pragma endregion

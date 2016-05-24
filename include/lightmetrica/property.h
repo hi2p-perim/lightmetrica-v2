@@ -194,7 +194,7 @@ class PropertyTree : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(PropertyTree, Component, 4);
+    LM_INTERFACE_CLASS(PropertyTree, Component, 5);
 
 public:
 
@@ -210,13 +210,16 @@ public:
     LM_INTERFACE_F(1, LoadFromString, bool(const std::string&));
 
     //! Load property tree from YAML sequences with filename
-    LM_INTERFACE_F(2, LoadFromStringWithFilename, bool(const std::string&, const std::string&));
+    LM_INTERFACE_F(2, LoadFromStringWithFilename, bool(const std::string& input, const std::string& path, const std::string& basepath));
 
     //! Returns file path if the tree loaded from the file, otherwise returns empty string
     LM_INTERFACE_F(3, Path, std::string());
 
+    //! Returns the base path of the asset loading
+    LM_INTERFACE_F(4, BasePath, std::string());
+
     //! Get root node
-    LM_INTERFACE_F(4, Root, const PropertyNode*());
+    LM_INTERFACE_F(5, Root, const PropertyNode*());
 
 };
 

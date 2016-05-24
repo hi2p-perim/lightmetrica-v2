@@ -122,11 +122,6 @@ public:
 
     virtual auto CollectPhotons(const Vec3& p, Float radius, const std::function<void(const Photon&)>& collectFunc) const -> void
     {
-        const auto comp = [&](const Photon& p1, const Photon& p2)
-        {
-            return Math::Length2(p1.p - p) < Math::Length2(p2.p - p);
-        };
-
         const Float radius2 = radius * radius;
         const std::function<void(int)> Collect = [&](int idx) -> void
         {

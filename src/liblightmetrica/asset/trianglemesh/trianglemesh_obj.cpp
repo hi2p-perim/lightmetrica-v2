@@ -45,7 +45,7 @@ public:
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
         const auto localpath = prop->Child("path")->As<std::string>();
-        const auto basepath = boost::filesystem::path(prop->Tree()->Path()).parent_path();
+        const auto basepath = boost::filesystem::path(prop->Tree()->BasePath());
         const auto path = basepath / localpath;
 
         std::vector<tinyobj::shape_t> shapes;

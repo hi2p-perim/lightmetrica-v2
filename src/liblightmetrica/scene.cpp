@@ -142,6 +142,21 @@ public:
         return false;
     };
 
+    LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
+    {
+        if ((type & SurfaceInteractionType::Emitter) > 0)
+        {
+            return emitter_->IsDeltaPosition(type);
+        }
+        if ((type & SurfaceInteractionType::BSDF) > 0)
+        {
+            return bsdf_->IsDeltaPosition(type);
+        }
+
+        LM_UNREACHABLE();
+        return false;
+    };
+
 private:
 
     const Emitter* emitter_ = nullptr;

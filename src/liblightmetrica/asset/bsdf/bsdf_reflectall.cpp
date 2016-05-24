@@ -104,6 +104,11 @@ public:
         return true;
     };
 
+    LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
+    {
+        return false;
+    };
+
 public:
 
     SPD R_;

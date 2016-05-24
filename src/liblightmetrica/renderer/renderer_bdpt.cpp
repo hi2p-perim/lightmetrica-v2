@@ -39,7 +39,7 @@
 #include <lightmetrica/renderutils.h>
 #include <tbb/tbb.h>
 
-#define LM_BDPT_DEBUG 1
+#define LM_BDPT_DEBUG 0
 
 LM_NAMESPACE_BEGIN
 
@@ -615,14 +615,16 @@ public:
         // Delta connection of endpoints
         if (s == 0 && t > 0)
         {
-            if (vertices[0].primitive->emitter->IsDeltaPosition())
+            const auto& v = vertices[0];
+            if (v.primitive->emitter->IsDeltaPosition(v.type))
             {
                 return false;
             }
         }
         else if (s > 0 && t == 0)
         {
-            if (vertices[n - 1].primitive->emitter->IsDeltaPosition())
+            const auto& v = vertices[n - 1];
+            if (v.primitive->emitter->IsDeltaPosition(v.type))
             {
                 return false;
             }

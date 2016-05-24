@@ -60,6 +60,11 @@ public:
         return false;
     };
 
+    LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
+    {
+        return false;
+    };
+
 };
 
 LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::null");

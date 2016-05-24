@@ -40,33 +40,14 @@
 #include <lightmetrica/detail/photonmap.h>
 #include <lightmetrica/detail/photonmaputils.h>
 
-#define LM_VCMREF_DEBUG 0
-
 LM_NAMESPACE_BEGIN
 
-/*!
-    \brief Vertex connection and merging renderer (reference version).
-
-    Implements vertex conneection and merging [Georgiev et al. 2012].
-    This implementation purposely adopts a naive way
-    to check the correctness of the implementation and
-    to be utilized as a baseline for the further modifications.
-
-    For the optimized implementation, see `renderer::vcm`,
-    which is based on the way described in the technical report [Georgiev 2012]
-    or SmallVCM renderer [Davidovic & Georgiev 2012].
-
-    References:
-      - [Georgiev et al. 2012] Light transport simulation with vertex connection and merging
-      - [Hachisuka et al. 2012] A path space extension for robust light transport simulation
-      - [Georgiev 2012] Implementing vertex connection and merging
-      - [Davidovic & Georgiev 2012] SmallVCM renderer 
-*/
-class Renderer_VCM_Reference final : public Renderer
+///! Impelments BDPM without path reusal as an intermediate implementation of VCM
+class Renderer_VCM_BDPM_NoPathReuse final : public Renderer
 {
 public:
 
-    LM_IMPL_CLASS(Renderer_VCM_Reference, Renderer);
+    LM_IMPL_CLASS(Renderer_VCM_BDPM_NoPathReuse, Renderer);
 
 private:
 
@@ -88,6 +69,8 @@ public:
     {
         #pragma region Helper functions
 
+        const auto MergeRadius = 0.1_f;
+
         struct PathVertex
         {
             int type;
@@ -97,6 +80,12 @@ public:
 
         using Subpath = std::vector<PathVertex>;
         using Path = std::vector<PathVertex>;
+
+        //struct ExtendedPath
+        //{
+        //    Path path;      // Path with the merged vertex
+        //    int index;      // Index of the merged vertex
+        //};
 
         const auto SampleSubpath = [&](Subpath& subpath, Random* rng, TransportDirection transDir) -> void
         {
@@ -115,7 +104,7 @@ public:
         {
             assert(s >= 0);
             assert(t >= 0);
-            assert(s + t >= 2);
+            assert(s + t >= minNumVertices_);
             assert(s + t <= maxNumVertices_);
             path.clear();
             if (s == 0 && t > 0)
@@ -142,7 +131,23 @@ public:
             return true;
         };
 
-        const auto EvaluateF = [&](Path& path, int s) -> SPD
+        const auto MergeSubpaths = [&](Path& path, const Subpath& subpathL, const Subpath& subpathE, int s, int t) -> bool
+        {
+            assert(s >= 1);
+            assert(t >= 1);
+            assert(s + t >= minNumVertices_);
+            assert(s + t <= maxNumVertices_);
+            path.clear();
+            const auto& vL = subpathL[s - 1];
+            const auto& vE = subpathE[t - 1];
+            if (vL.primitive->surface->IsDeltaPosition(vL.type) || vE.primitive->surface->IsDeltaPosition(vE.type)) { return false; }
+            if (vL.geom.infinite || vE.geom.infinite) { return false; }
+            path.insert(path.end(), subpathL.begin(), subpathL.begin() + s);
+            path.insert(path.end(), subpathE.rend() - t, subpathE.rend());
+            return true;
+        };
+
+        const auto EvaluateF = [&](Path& path, int s, bool merge) -> SPD
         {
             const int n = (int)(path.size());
             const int t = n - s;
@@ -222,36 +227,52 @@ public:
                 cst = fsL * G * fsE;
             }
 
+            if (merge)
+            {
+                cst /= Math::Pi() * MergeRadius * MergeRadius;
+            }
+
             // --------------------------------------------------------------------------------
 
             return fL * cst * fE;
         };
 
-        const auto EvaluateConnectionPDF = [&](const Path& path, int s) -> PDFVal
+        const auto EvaluatePathPDF = [&](const Path& path, int s, bool merge) -> PDFVal
         {
             const int n = (int)(path.size());
             const int t = n - s;
             assert(n >= 2);
             assert(n <= maxNumVertices_);
 
-            // Check if the path is samplable by vertex connection
-            if (s == 0 && t > 0)
+            if (!merge)
             {
-                if (path[0].primitive->emitter->IsDeltaPosition()) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+                // Check if the path is samplable by vertex connection
+                if (s == 0 && t > 0)
+                {
+                    const auto& v = path[0];
+                    if (v.primitive->emitter->IsDeltaPosition(v.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+                }
+                else if (s > 0 && t == 0)
+                {
+                    const auto& v = path[n - 1];
+                    if (v.primitive->emitter->IsDeltaPosition(v.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+                }
+                else if (s > 0 && t > 0)
+                {
+                    const auto& vL = path[s - 1];
+                    const auto& vE = path[s];
+                    if (vL.primitive->surface->IsDeltaDirection(vL.type) || vE.primitive->surface->IsDeltaDirection(vE.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+                }
             }
-            else if (s > 0 && t == 0)
+            else
             {
-                if (path[n - 1].primitive->emitter->IsDeltaPosition()) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
-            }
-            else if (s > 0 && t > 0)
-            {
-                const auto& vL = path[s - 1];
+                // Check if the path is samplable by vertex merging
+                if (s == 0 || t == 0) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
                 const auto& vE = path[s];
-                if (vL.primitive->surface->IsDeltaDirection(vL.type) || vE.primitive->surface->IsDeltaDirection(vE.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+                if (vE.primitive->surface->IsDeltaDirection(vE.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
             }
 
-            // Otherwise the path can be generated with the given strategy (s,t)
-            // so p_{s,t} can be safely evaluated.
+            // Otherwise the path can be generated with the given strategy (s,t,merge) so p_{s,t,merge} can be safely evaluated.
             PDFVal pdf(PDFMeasure::ProdArea, 1_f);
             if (s > 0)
             {
@@ -274,6 +295,11 @@ public:
                     const auto* vin = i + 1 < n ? &path[i + 1] : nullptr;
                     pdf *= vi->primitive->surface->EvaluateDirectionPDF(vi->geom, vi->type, vin ? Math::Normalize(vin->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vip->geom.p - vi->geom.p), false).ConvertToArea(vi->geom, vip->geom);
                 }
+            }
+
+            if (merge)
+            {
+                pdf.v /= Math::Pi() * MergeRadius * MergeRadius;
             }
 
             return pdf;
@@ -307,7 +333,7 @@ public:
             for (int s = 0; s <= n; s++)
             {
                 const auto t = n - s;
-                if (EvaluateConnectionPDF(path, s).v > 0_f)
+                if (EvaluatePathPDF(path, s, true).v > 0_f)
                 {
                     nonzero++;
                 }
@@ -327,37 +353,26 @@ public:
             return rasterPos;
         };
 
+        const auto RangeQuery = [&](const Vec3& p, const Subpath& subpathL, const std::function<void (int index)>& queryFunc) -> void
+        {
+            for (size_t i = 1; i < subpathL.size(); i++)
+            {
+                const auto& v = subpathL[i];
+                if (!v.geom.infinite && !v.primitive->surface->IsDeltaPosition(v.type) && !v.primitive->surface->IsDeltaDirection(v.type))
+                {
+                    if (Math::Length2(v.geom.p - p) < MergeRadius * MergeRadius)
+                    {
+                        queryFunc((int)(i+1));
+                    }
+                }
+            }
+        };
+
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
-        #if LM_VCMREF_DEBUG
-        struct Strategy
-        {
-            int s;
-            int t;
-            bool operator==(const Strategy& o) const
-            {
-                return (s == o.s && t == o.t);
-            }
-        };
-        struct StrategyHash
-        {
-            const int N = 100;
-            auto operator()(const Strategy& v) const -> size_t
-            {
-                return v.s * N + v.t;
-            }
-        };
-        std::vector<Film::UniquePtr> strategyFilms1;
-        std::vector<Film::UniquePtr> strategyFilms2;
-        std::unordered_map<Strategy, size_t, StrategyHash> strategyFilmMap;
-        std::mutex strategyFilmMutex;
-        #endif
-
-        // --------------------------------------------------------------------------------
-
-        const auto processedSamples = sched_->Process(scene, film, initRng, [&](Film* film, Random* rng) -> void
+        sched_->Process(scene, film, initRng, [&](Film* film, Random* rng) -> void
         {
             // Sample subpaths
             Subpath subpathL;
@@ -365,27 +380,37 @@ public:
             SampleSubpath(subpathL, rng, TransportDirection::LE);
             SampleSubpath(subpathE, rng, TransportDirection::EL);
             
+            // --------------------------------------------------------------------------------
+
             // Combine subpaths
             const int nL = (int)(subpathL.size());
             const int nE = (int)(subpathE.size());
             for (int t = 0; t <= nE; t++)
             {
-                const int minS = Math::Max(0, Math::Max(2-t, minNumVertices_-t));
-                const int maxS = Math::Min(nL, maxNumVertices_-t);
-                for (int s = minS; s <= maxS; s++)
+                if (t == 0)
                 {
-                    #pragma region Vertex conection
+                    continue;
+                }
+                const auto& vE = subpathE[t-1];
+                if (t == 0 || vE.primitive->surface->IsDeltaPosition(vE.type))
+                {
+                    continue;
+                }
+                RangeQuery(vE.geom.p, subpathL, [&](int s) -> void
+                {
+                    const int n = s + t - 1;
+                    if (n < minNumVertices_ || maxNumVertices_ < n) { return; }
 
-                    // Connect vertices and create a full path
+                    // Merge vertices and create a full path
                     Path fullpath;
-                    if (!ConnectSubpaths(fullpath, subpathL, subpathE, s, t)) { continue; }
-
-                    // Evaluate contribution
-                    const auto f = EvaluateF(fullpath, s);
-                    if (f.Black()) { continue; }
+                    if (!MergeSubpaths(fullpath, subpathL, subpathE, s - 1, t)) { return; }
                     
-                    // Evaluate connection PDF
-                    const auto p = EvaluateConnectionPDF(fullpath, s);
+                    // Evaluate contribution
+                    const auto f = EvaluateF(fullpath, s, true);
+                    if (f.Black()) { return; }
+
+                    // Evaluate path PDF
+                    const auto p = EvaluatePathPDF(fullpath, s, true);
 
                     // Evaluate MIS weight
                     const auto w = EvaluateMISWeight(fullpath, s);
@@ -393,49 +418,13 @@ public:
                     // Accumulate contribution
                     const auto C = f * w / p;
                     film->Splat(RasterPosition(fullpath), C);
-
-                    #if LM_VCMREF_DEBUG
-                    {
-                        const auto Cstar = f / p;
-                        std::unique_lock<std::mutex> lock(strategyFilmMutex);
-                        Strategy strategy{ s, t };
-                        if (strategyFilmMap.find(strategy) == strategyFilmMap.end())
-                        {
-                            strategyFilms1.push_back(ComponentFactory::Clone<Film>(film));
-                            strategyFilms2.push_back(ComponentFactory::Clone<Film>(film));
-                            strategyFilms1.back()->Clear();
-                            strategyFilms2.back()->Clear();
-                            strategyFilmMap[strategy] = strategyFilms1.size() - 1;
-                        }
-                        strategyFilms1[strategyFilmMap[strategy]]->Splat(RasterPosition(fullpath), C);
-                        strategyFilms2[strategyFilmMap[strategy]]->Splat(RasterPosition(fullpath), Cstar);
-                    }
-                    #endif
-
-                    #pragma endregion
-                }
+                });
             }
         });
-
-        // --------------------------------------------------------------------------------
-
-        #if LM_VCMREF_DEBUG
-        for (const auto& kv : strategyFilmMap)
-        {
-            const auto* f1 = strategyFilms1[kv.second].get();
-            const auto* f2 = strategyFilms2[kv.second].get();
-            f1->Rescale((Float)(f1->Width() * f1->Height()) / processedSamples);
-            f2->Rescale((Float)(f2->Width() * f2->Height()) / processedSamples);
-            f1->Save(boost::str(boost::format("vcmref_f1_n%02d_s%02d_t%02d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t));
-            f2->Save(boost::str(boost::format("vcmref_f2_n%02d_s%02d_t%02d") % (kv.first.s + kv.first.t) % kv.first.s % kv.first.t));
-        }
-        #else
-        LM_UNUSED(processedSamples);
-        #endif
     };
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_VCM_Reference, "renderer::vcmref");
+LM_COMPONENT_REGISTER_IMPL(Renderer_VCM_BDPM_NoPathReuse, "renderer::vcmbdpmnopathreuse");
 
 LM_NAMESPACE_END

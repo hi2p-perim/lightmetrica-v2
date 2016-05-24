@@ -106,6 +106,11 @@ public:
         return false;
     };
 
+    LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
+    {
+        return false;
+    };
+
     LM_IMPL_F(Reflectance) = [this]() -> SPD { return R_; };
 
 public:

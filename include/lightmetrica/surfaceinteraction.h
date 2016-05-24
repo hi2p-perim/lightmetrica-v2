@@ -260,7 +260,7 @@ public:
     LM_INTERFACE_F(8, EvaluatePosition, SPD(const SurfaceGeometry& geom, bool evalDelta));
 
     LM_INTERFACE_F(9,  IsDeltaDirection, bool(int type));
-    LM_INTERFACE_F(10, IsDeltaPosition, bool());
+    LM_INTERFACE_F(10, IsDeltaPosition, bool(int type));
 
     #pragma endregion
 

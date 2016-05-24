@@ -100,6 +100,7 @@ struct ProgramOption
         std::string HelpDetail;
         std::string SceneFile;
         std::string OutputPath;
+        std::string BasePath;
         bool Verbose;
         bool Interactive;
         int Seed;
@@ -182,6 +183,7 @@ public:
                         ("num-threads,j", po::value<int>(), "Number of threads")
                         ("verbose,v", po::bool_switch()->default_value(false), "Adds detailed information on the output")
                         ("interactive,i", po::bool_switch(&Render.Interactive), "Interactive mode")
+                        ("base,b", po::value<std::string>(), "Base path of the asset loading")
                         ("seed", po::value<int>()->default_value(-1), "Initial seed for random number generators (-1 : default)");
 
                     auto opts = po::collect_unrecognized(parsed.options, po::include_positional);
@@ -215,6 +217,24 @@ public:
                     else
                     {
                         Render.SceneFile = "<stdin>";
+                    }
+                    
+                    if (vm.count("base"))
+                    {
+                        Render.BasePath = vm["base"].as<std::string>();
+                    }
+                    else
+                    {
+                        if (Render.Interactive)
+                        {
+                            // Current directory
+                            Render.BasePath = boost::filesystem::current_path().string();
+                        }
+                        else
+                        {
+                            // Same directory as scene file
+                            Render.BasePath = boost::filesystem::path(Render.SceneFile).parent_path().string();
+                        }
                     }
 
                     if (vm.count("num-threads"))
@@ -480,7 +500,7 @@ private:
             }
 
             // Expand template & load scene file
-            if (!sceneConf->LoadFromStringWithFilename(content, opt.Render.SceneFile))
+            if (!sceneConf->LoadFromStringWithFilename(content, opt.Render.SceneFile, opt.Render.BasePath))
             {
                 return false;
             }

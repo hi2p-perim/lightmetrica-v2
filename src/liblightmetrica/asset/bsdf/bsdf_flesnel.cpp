@@ -167,6 +167,11 @@ public:
         return true;
     };
 
+    LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
+    {
+        return false;
+    };
+
 private:
 
     auto EvaluateFresnelTerm(const Vec3& localWi, Float etaI, Float etaT) const -> Float
