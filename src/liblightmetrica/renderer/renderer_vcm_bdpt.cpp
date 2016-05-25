@@ -44,24 +44,7 @@
 
 LM_NAMESPACE_BEGIN
 
-/*!
-    \brief Vertex connection and merging renderer (reference version).
-
-    Implements vertex conneection and merging [Georgiev et al. 2012].
-    This implementation purposely adopts a naive way
-    to check the correctness of the implementation and
-    to be utilized as a baseline for the further modifications.
-
-    For the optimized implementation, see `renderer::vcm`,
-    which is based on the way described in the technical report [Georgiev 2012]
-    or SmallVCM renderer [Davidovic & Georgiev 2012].
-
-    References:
-      - [Georgiev et al. 2012] Light transport simulation with vertex connection and merging
-      - [Hachisuka et al. 2012] A path space extension for robust light transport simulation
-      - [Georgiev 2012] Implementing vertex connection and merging
-      - [Davidovic & Georgiev 2012] SmallVCM renderer 
-*/
+///! Implements BDPT as an intermediate implementation of VCM
 class Renderer_VCM_BDPT final : public Renderer
 {
 public:
@@ -120,13 +103,13 @@ public:
             path.clear();
             if (s == 0 && t > 0)
             {
-                path.insert(path.end(), subpathE.rbegin(), subpathE.rend());
+                path.insert(path.end(), subpathE.rend() - t, subpathE.rend());
                 if ((path.front().primitive->surface->Type() & SurfaceInteractionType::L) == 0) { return false; }
                 path.front().type = SurfaceInteractionType::L;
             }
             else if (s > 0 && t == 0)
             {
-                path.insert(path.end(), subpathL.begin(), subpathL.end());
+                path.insert(path.end(), subpathL.begin(), subpathL.begin() + s);
                 if ((path.back().primitive->surface->Type() & SurfaceInteractionType::E) == 0) { return false; }
                 path.back().type = SurfaceInteractionType::E;
             }

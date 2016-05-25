@@ -204,7 +204,7 @@ struct KdTree
 
 // --------------------------------------------------------------------------------
 
-///! Impelments BDPM as an intermediate implementation of VCM
+///! Implements BDPM as an intermediate implementation of VCM
 class Renderer_VCM_BDPM final : public Renderer
 {
 public:
@@ -453,11 +453,6 @@ public:
                 }
             }
 
-            //if (merge)
-            //{
-            //    pdf.v /= Math::Pi() * MergeRadius * MergeRadius;
-            //}
-
             return pdf;
         };
 
@@ -479,24 +474,6 @@ public:
             }
 
             return 1_f / invw;
-
-
-
-            //const int n = (int)(path.size());
-            //long long nonzero = 0;
-
-            //for (int s = 0; s <= n; s++)
-            //{
-            //    const auto t = n - s;
-            //    if (EvaluatePathPDF(path, s, true).v > 0_f)
-            //    {
-            //        nonzero++;
-            //    }
-            //}
-
-            //assert(nonzero != 0);
-            //return 1_f / (numPhotonTraceSamples_ * nonzero);
-
         };
 
         const auto RasterPosition = [&](const Path& path) -> Vec2
