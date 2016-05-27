@@ -4,15 +4,15 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	# Install some dependencies
 	brew update
 	brew unlink cmake boost
-	brew install cmake tbb assimp freeimage boost
+	brew install cmake tbb assimp freeimage boost eigen
 
 	# Install ctemplate
-	cd $HOME
-	git clone https://github.com/OlafvdSpek/ctemplate.git
-	cd ctemplate
-	./configure
-	make -j
-	sudo make install
+	# cd $HOME
+	# git clone https://github.com/OlafvdSpek/ctemplate.git
+	# cd ctemplate
+	# ./configure
+	# make -j
+	# sudo make install
 
 	# Install yaml-cpp
 	cd $HOME

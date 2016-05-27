@@ -29,8 +29,6 @@
 #if LM_COMPILER_MSVC
 #pragma warning(disable:4714)
 #include <Eigen/Sparse>
-#elif LM_COMPILER_CLANG
-#include <Eigen/Sparse>
 #else
 #include <eigen3/Eigen/Sparse>
 #endif
