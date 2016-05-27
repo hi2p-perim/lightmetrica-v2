@@ -33,7 +33,6 @@
 #include <lightmetrica/intersection.h>
 #include <lightmetrica/scene.h>
 #include <lightmetrica/primitive.h>
-#include <tbb/tbb.h>
 
 LM_NAMESPACE_BEGIN
 

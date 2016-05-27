@@ -145,6 +145,7 @@
 	#pragma warning(disable:4324)	// Level 4. Structure was padded due to __declspec(align())
 	#pragma warning(disable:4702)	// Level 4. Unreachable code
     #pragma warning(disable:4189)   // Level 4. local variable is initialized but not referenced
+    #pragma warning(disable:4334)   // Level 3. result of 32-bit shift implicitly converted to 64 bits
 #endif
 
 #pragma endregion
