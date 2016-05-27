@@ -158,7 +158,7 @@ static	real	cl5pi6[19] =
 real
 csevl( real x, real *cs, int n )
 {
-  real b2, b1 = 0, b0 = 0, twox = 2 * x;
+  real b2 = 0, b1 = 0, b0 = 0, twox = 2 * x;
 
   while( n-- ){
     b2 = b1;

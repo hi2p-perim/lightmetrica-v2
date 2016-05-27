@@ -304,7 +304,6 @@ public:
                 for (int i = 0; i < (int)mps.size(); i++)
                 {
                     const auto& mp = mps[i];
-                    const auto p = 1_f ;
                     const auto C = mp.tau / (mp.radius * mp.radius * Math::Pi() * totalPhotonTraceSamples) + mp.emission / (Float)(pass + 1);
                     film->SetPixel(i % W, i / W, C);
                 }

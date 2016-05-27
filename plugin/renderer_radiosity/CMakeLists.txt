@@ -29,9 +29,5 @@ add_plugin(
 		"renderer_radiosity.cpp"
 		"renderer_progressiveradiosity.cpp"
 		"radiosityutils.h"
-		"ff.h"
-		"ffp.cpp"
-		"claussen.h"
-		"claussenp.cpp"
 	NO_INSTALL)
 install(FILES "renderer_radiosity.cpp" DESTINATION "lightmetrica/plugin")

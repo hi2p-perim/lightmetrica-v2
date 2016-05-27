@@ -34,7 +34,6 @@
 #include <vector>
 #include <stack>
 #include <unordered_map>
-#include "ff.h"
 
 LM_NAMESPACE_BEGIN
 
@@ -268,7 +267,7 @@ public:
 public:
 
     ///! Helper function to estimate the form factor
-    static auto EstimateFormFactor(const Scene* scene, const Patch& pi, const Patch& pj, bool analytical = false) -> Float
+    static auto EstimateFormFactor(const Scene* scene, const Patch& pi, const Patch& pj) -> Float
     {
         const auto  ci = pi.Centroid();
         const auto  cj = pj.Centroid();
@@ -289,6 +288,7 @@ public:
             return 0_f;
         }
 
+        #if 0
         if (analytical)
         {
             // Analytical solution [Schroder & Hanrahan 1993]
@@ -306,6 +306,7 @@ public:
             };
             return (Float)(FormFactor(&(p[0]), 3, &(q[0]), 3));
         }
+        #endif
 
         // Point-to-point estimate (Eq.4 in [Willmott & Heckbert 1997])
         return pj.Area() * cosThetai * cosThetaj / Math::Pi() / Math::Length2(ci - cj);

@@ -48,6 +48,7 @@ struct Photon : public SIMDAlignedType
 struct PhotonMap : public Component
 {
     LM_INTERFACE_CLASS(PhotonMap, Component, 0);
+    virtual ~PhotonMap() {}
 
     /*!
         \brief Build the photon map

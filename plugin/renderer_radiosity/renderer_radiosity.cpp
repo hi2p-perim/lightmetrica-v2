@@ -28,8 +28,10 @@
 #include <boost/format.hpp>
 #if LM_COMPILER_MSVC
 #pragma warning(disable:4714)
-#endif
 #include <Eigen/Sparse>
+#else
+#include <eigen3/Eigen/Sparse>
+#endif
 
 #define LM_RADIOSITY_DEBUG 0
 
@@ -110,7 +112,6 @@ public:
     {
         subdivLimitArea_ = prop->ChildAs<Float>("subdivlimitarea", 0.1_f);
         wireframe_ = prop->ChildAs<int>("wireframe", 0);
-        analyticalFormFactor_ = prop->ChildAs<int>("analyticalformfactor", 0);
         return true;
     };
 
@@ -151,7 +152,7 @@ public:
         {
             for (int j = 0; j < N; j++)
             {
-                const auto Fij = RadiosityUtils::EstimateFormFactor(scene, patches.At(i), patches.At(j), analyticalFormFactor_ ? true : false);
+                const auto Fij = RadiosityUtils::EstimateFormFactor(scene, patches.At(i), patches.At(j));
                 if (Fij > 0_f)
                 {
                     K.coeffRef(i, j) -= patches.At(i).primitive->bsdf->Reflectance().ToRGB() * Fij;
@@ -252,7 +253,6 @@ private:
 
     Float subdivLimitArea_;
     int wireframe_;
-    int analyticalFormFactor_;
 
 };
 
