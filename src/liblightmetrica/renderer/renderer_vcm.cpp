@@ -41,22 +41,22 @@
 
 LM_NAMESPACE_BEGIN
 
-struct PathVertex
+struct VCMPathVertex
 {
     int type;
     SurfaceGeometry geom;
     const Primitive* primitive = nullptr;
 };
 
-struct Subpath
+struct VCMSubpath
 {
-    std::vector<PathVertex> vertices;
+    std::vector<VCMPathVertex> vertices;
     auto SampleSubpath(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> void
     {
         vertices.clear();
         PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
         {
-            PathVertex v_;
+            VCMPathVertex v_;
             v_.type = v.type;
             v_.geom = v.geom;
             v_.primitive = v.primitive;
@@ -66,11 +66,11 @@ struct Subpath
     }
 };
 
-struct Path
+struct VCMPath
 {
-    std::vector<PathVertex> vertices;
+    std::vector<VCMPathVertex> vertices;
 
-    auto ConnectSubpaths(const Scene* scene, const Subpath& subpathL, const Subpath& subpathE, int s, int t) -> bool
+    auto ConnectSubpaths(const Scene* scene, const VCMSubpath& subpathL, const VCMSubpath& subpathE, int s, int t) -> bool
     {
         assert(s >= 0);
         assert(t >= 0);
@@ -99,7 +99,7 @@ struct Path
         return true;
     }
 
-    auto MergeSubpaths(const Subpath& subpathL, const Subpath& subpathE, int s, int t) -> bool
+    auto MergeSubpaths(const VCMSubpath& subpathL, const VCMSubpath& subpathE, int s, int t) -> bool
     {
         assert(s >= 1);
         assert(t >= 1);
@@ -201,7 +201,7 @@ struct Path
             const auto& v = vertices[s];
             const auto& vPrev = vertices[s - 1];
             const auto& vNext = vertices[s + 1];
-            const auto fs = v.primitive->surface->EvaluateDirection(v.geom, v.type, Math::Normalize(vNext.geom.p - v.geom.p), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::EL, false);
+            const auto fs = v.primitive->surface->EvaluateDirection(v.geom, v.type, Math::Normalize(vNext.geom.p - v.geom.p), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::EL, true);
             cst = fs;
         }
 
@@ -385,9 +385,9 @@ struct VCMKdTree
     std::vector<std::unique_ptr<Node>> nodes_;
     std::vector<int> indices_;
     std::vector<Index> vertices_;
-    const std::vector<Subpath>& subpathLs_;
+    const std::vector<VCMSubpath>& subpathLs_;
 
-    VCMKdTree(const std::vector<Subpath>& subpathLs)
+    VCMKdTree(const std::vector<VCMSubpath>& subpathLs)
         : subpathLs_(subpathLs)
     {
         // Arrange in a vector
@@ -551,11 +551,11 @@ public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
-        maxNumVertices_        = prop->Child("max_num_vertices")->As<int>();
-        minNumVertices_        = prop->Child("min_num_vertices")->As<int>();
-        numIterationPass_      = prop->ChildAs<long long>("num_iteration_pass", 1000L);
-        numPhotonTraceSamples_ = prop->ChildAs<long long>("num_photon_trace_samples", 100L);
-        numEyeTraceSamples_    = prop->ChildAs<long long>("num_eye_trace_samples", 100L);
+        maxNumVertices_        = prop->ChildAs<int>("max_num_vertices", 10);
+        minNumVertices_        = prop->ChildAs<int>("min_num_vertices", 0);
+        numIterationPass_      = prop->ChildAs<long long>("num_iteration_pass", 100L);
+        numPhotonTraceSamples_ = prop->ChildAs<long long>("num_photon_trace_samples", 10000L);
+        numEyeTraceSamples_    = prop->ChildAs<long long>("num_eye_trace_samples", 10000L);
         initialRadius_         = prop->ChildAs<Float>("initial_radius", 0.1_f);
         alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
         {
@@ -585,7 +585,7 @@ public:
             // --------------------------------------------------------------------------------
 
             #pragma region Sample light subpaths
-            std::vector<Subpath> subpathLs;
+            std::vector<VCMSubpath> subpathLs;
             {
                 LM_LOG_INFO("Sampling light subpaths");
                 LM_LOG_INDENTER();
@@ -593,7 +593,7 @@ public:
                 struct Context
                 {
                     Random rng;
-                    std::vector<Subpath> subpathLs;
+                    std::vector<VCMSubpath> subpathLs;
                 };
                 std::vector<Context> contexts(Parallel::GetNumThreads());
                 for (auto& ctx : contexts) { ctx.rng.SetSeed(initRng->NextUInt()); }
@@ -646,8 +646,8 @@ public:
                     // --------------------------------------------------------------------------------
 
                     #pragma region Sample subpaths
-                    Subpath subpathE;
-                    Subpath subpathL;
+                    VCMSubpath subpathE;
+                    VCMSubpath subpathL;
                     subpathE.SampleSubpath(scene, &ctx.rng, TransportDirection::EL, maxNumVertices_);
                     subpathL.SampleSubpath(scene, &ctx.rng, TransportDirection::LE, maxNumVertices_);
                     #pragma endregion
@@ -667,7 +667,7 @@ public:
                             for (int s = minS; s <= maxS; s++)
                             {
                                 // Connect vertices and create a full path
-                                Path fullpath;
+                                VCMPath fullpath;
                                 if (!fullpath.ConnectSubpaths(scene, subpathL, subpathE, s, t)) { continue; }
 
                                 // Evaluate contribution
@@ -706,7 +706,7 @@ public:
                                 if (n < minNumVertices_ || maxNumVertices_ < n) { return; }
 
                                 // Merge vertices and create a full path
-                                Path fullpath;
+                                VCMPath fullpath;
                                 if (!fullpath.MergeSubpaths(subpathLs[si], subpathE, s - 1, t)) { return; }
 
                                 // Evaluate contribution
@@ -715,6 +715,7 @@ public:
 
                                 // Evaluate path PDF
                                 const auto p = fullpath.EvaluatePathPDF(scene, s - 1, true, mergeRadius);
+                                assert(p.v > 0);
 
                                 // Evaluate MIS weight
                                 const auto w = mode_ == Mode::VCM

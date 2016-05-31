@@ -142,6 +142,7 @@ private:
         if (Math::LocalCos(H) <= 0_f) return 0_f;
         const Float ex = Math::LocalTan(H) / roughness_;
         const Float t1 = std::exp(-(ex * ex));
+        if (std::fpclassify(t1) == FP_SUBNORMAL) return 0_f;
         const Float t2 = (Math::Pi() * roughness_ * roughness_ * std::pow(Math::LocalCos(H), 4_f));
         return t1 / t2;
     }
