@@ -333,30 +333,22 @@ set(
 
 set(
     _RENDERER_SOURCE_FILES
-	#"renderer/renderer_null.cpp"
+	"renderer/renderer_null.cpp"
 	"renderer/renderer_raycast.cpp"
-	#"renderer/renderer_raycast_pixel.cpp"
 	"renderer/renderer_pt.cpp"
 	"renderer/renderer_ptdirect.cpp"
-	#"renderer/renderer_lt.cpp"
+	"renderer/renderer_lt.cpp"
 	"renderer/renderer_ltdirect.cpp"
 	"renderer/renderer_bdpt.cpp"
 	"renderer/renderer_pm.cpp"
 	"renderer/renderer_ppm.cpp"
 	"renderer/renderer_sppm.cpp"
-	#"renderer/renderer_vcm_bdpt.cpp"
-	#"renderer/renderer_vcm_bdpm_nopathreuse.cpp"
-	#"renderer/renderer_vcm_bdpm.cpp"
-	#"renderer/renderer_vcm_bdpm_progressive.cpp"
 	"renderer/renderer_vcm.cpp"
-	#"renderer/renderer_sampledensity.cpp"
-	#"renderer/renderer_sampledensity2.cpp"
 
 	# detail
 	"renderer/photonmap_naive.cpp"
 	"renderer/photonmap_kdtree.cpp"
 	"renderer/photonmaputils.cpp"
-	#"renderer/vcmutils.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})
@@ -374,7 +366,6 @@ set(
     _RENDERER_DETAIL_HEADER_FILES
 	"${_INCLUDE_DIR}/detail/photonmap.h"
 	"${_INCLUDE_DIR}/detail/photonmaputils.h"
-	#"${_INCLUDE_DIR}/detail/vcmutils.h"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer\\detail" FILES ${_RENDERER_DETAIL_HEADER_FILES})

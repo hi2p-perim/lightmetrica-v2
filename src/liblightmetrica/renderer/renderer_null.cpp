@@ -44,7 +44,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
         // Do nothing. Just output blank image.
         for (int y = 0; y < film->Height(); y++)
@@ -53,11 +53,7 @@ public:
             {
                 film->SetPixel(x, y, SPD::FromRGB(c_));
             }
-
-            const double progress = 100.0 * y / film->Height();
-            LM_LOG_INPLACE(boost::str(boost::format("Progress: %.1f%%") % progress));
         }
-        LM_LOG_INFO("Progress: 100.0%");
     };
 
 private:
