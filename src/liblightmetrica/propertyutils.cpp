@@ -35,11 +35,11 @@ auto PropertyUtils::PrintPrettyError(const PropertyNode* node) -> void
     const auto path = node->Tree()->Path();
     const auto filename = boost::filesystem::path(path).filename().string();
     LM_LOG_ERROR("See around line " + std::to_string(line) + " @ " + filename);
-    std::ifstream fs(path);
+    std::stringstream ss(node->Tree()->RawInput());
     for (int i = 0; i <= line + 2; i++)
     {
         std::string t;
-        std::getline(fs, t, '\n');
+        std::getline(ss, t, '\n');
         if (line - 2 <= i && i <= line + 2)
         {
             LM_LOG_ERROR(boost::str(boost::format("% 4d%c| %s") % i % (i == line ? '*' : ' ') % t));

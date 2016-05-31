@@ -194,7 +194,7 @@ class PropertyTree : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(PropertyTree, Component, 5);
+    LM_INTERFACE_CLASS(PropertyTree, Component, 7);
 
 public:
 
@@ -220,6 +220,9 @@ public:
 
     //! Get root node
     LM_INTERFACE_F(5, Root, const PropertyNode*());
+
+    //! Returns loaded file content
+    LM_INTERFACE_F(6, RawInput, std::string());
 
 };
 

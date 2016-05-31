@@ -62,6 +62,7 @@ namespace
 auto FPUtils_EnableFPControl() -> bool
 {
     #if LM_PLATFORM_WINDOWS
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
     return SetFPException((unsigned int)(~(_EM_INVALID | _EM_ZERODIVIDE)));
     #else
     return false;
@@ -71,6 +72,7 @@ auto FPUtils_EnableFPControl() -> bool
 auto FPUtils_DisableFPControl() -> bool
 {
     #if LM_PLATFORM_WINDOWS
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
     return SetFPException((unsigned int)(_EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT));
     #else
     return false;

@@ -236,7 +236,7 @@ public:
         #endif
 
         // Convert to RGB and record to data
-        data_[y * height_ + x] = v.ToRGB();
+        data_[y * width_ + x] = v.ToRGB();
     };
 
     LM_IMPL_F(Save) = [this](const std::string& path) -> bool

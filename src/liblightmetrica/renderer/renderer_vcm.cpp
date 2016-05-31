@@ -37,7 +37,7 @@
 #include <lightmetrica/detail/photonmap.h>
 #include <lightmetrica/detail/photonmaputils.h>
 
-#define LM_VCM_DEBUG 0
+#define LM_VCM_DEBUG 1
 
 LM_NAMESPACE_BEGIN
 
@@ -389,11 +389,14 @@ struct VCMKdTree
 
     VCMKdTree(const std::vector<VCMSubpath>& subpathLs)
         : subpathLs_(subpathLs)
+    {}
+
+    auto Build() -> void
     {
         // Arrange in a vector
-        for (int i = 0; i < (int)subpathLs.size(); i++)
+        for (int i = 0; i < (int)subpathLs_.size(); i++)
         {
-            const auto& subpathL = subpathLs[i];
+            const auto& subpathL = subpathLs_[i];
             for (int j = 1; j < (int)subpathL.vertices.size(); j++)
             {
                 const auto& v = subpathL.vertices[j];
@@ -416,7 +419,7 @@ struct VCMKdTree
             for (int i = begin; i < end; i++)
             {
                 const auto& v = vertices_[indices_[i]];
-                node->bound = Math::Union(node->bound, subpathLs[v.subpathIndex].vertices[v.vertexIndex].geom.p);
+                node->bound = Math::Union(node->bound, subpathLs_[v.subpathIndex].vertices[v.vertexIndex].geom.p);
             }
 
             // Create leaf node
@@ -439,7 +442,7 @@ struct VCMKdTree
             const auto it = std::partition(indices_.begin() + begin, indices_.begin() + end, [&](int i) -> bool
             {
                 const auto& v = vertices_[i];
-                return subpathLs[v.subpathIndex].vertices[v.vertexIndex].geom.p[axis] < split;
+                return subpathLs_[v.subpathIndex].vertices[v.vertexIndex].geom.p[axis] < split;
             });
 
             // Create intermediate node
@@ -546,6 +549,9 @@ private:
     Float initialRadius_;
     Float alpha_;
     Mode mode_;
+    #if LM_VCM_DEBUG
+    std::string debugOutputPath_;
+    #endif
 
 public:
 
@@ -558,6 +564,9 @@ public:
         numEyeTraceSamples_    = prop->ChildAs<long long>("num_eye_trace_samples", 10000L);
         initialRadius_         = prop->ChildAs<Float>("initial_radius", 0.1_f);
         alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
+        #if LM_VCM_DEBUG
+        debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "vcm_%05d");
+        #endif
         {
             const auto modestr = prop->ChildAs<std::string>("mode", "vcm");
             if (modestr == "vcm") { mode_ = Mode::VCM; }
@@ -586,6 +595,7 @@ public:
 
             #pragma region Sample light subpaths
             std::vector<VCMSubpath> subpathLs;
+            if (mode_ == Mode::VCM || mode_ == Mode::BDPM)
             {
                 LM_LOG_INFO("Sampling light subpaths");
                 LM_LOG_INDENTER();
@@ -615,8 +625,13 @@ public:
             // --------------------------------------------------------------------------------
 
             #pragma region Construct range query structure for vertices in light subpaths
-            LM_LOG_INFO("Constructing range query structure");
             VCMKdTree pm(subpathLs);
+            if (mode_ == Mode::VCM || mode_ == Mode::BDPM)
+            {
+                LM_LOG_INFO("Constructing range query structure");
+                LM_LOG_INDENTER();
+                pm.Build();
+            }
             #pragma endregion
 
             // --------------------------------------------------------------------------------
@@ -676,6 +691,11 @@ public:
 
                                 // Evaluate connection PDF
                                 const auto p = fullpath.EvaluatePathPDF(scene, s, false, 0_f);
+                                if (p.v == 0)
+                                {
+                                    // Due to precision issue, this can happen.
+                                    return;
+                                }
 
                                 // Evaluate MIS weight
                                 const auto w = mode_ == Mode::VCM
@@ -715,7 +735,11 @@ public:
 
                                 // Evaluate path PDF
                                 const auto p = fullpath.EvaluatePathPDF(scene, s - 1, true, mergeRadius);
-                                assert(p.v > 0);
+                                if (p.v == 0)
+                                {
+                                    // Due to precision issue, this can happen.
+                                    return;
+                                }
 
                                 // Evaluate MIS weight
                                 const auto w = mode_ == Mode::VCM
@@ -745,7 +769,7 @@ public:
 
             #if LM_VCM_DEBUG
             {
-                boost::format f("vcm_%05d");
+                boost::format f(debugOutputPath_);
                 f.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
                 film->Save(boost::str(f % pass));
             }

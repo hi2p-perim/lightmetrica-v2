@@ -173,6 +173,7 @@ public:
 
         try
         {
+            input_ = input;
             const auto root = YAML::Load(input.c_str());
             root_ = Traverse(root);
         }
@@ -209,10 +210,16 @@ public:
         return root_;
     };
 
+    LM_IMPL_F(RawInput) = [this]() -> std::string
+    {
+        return input_;
+    };
+
 private:
 
     std::string path_;
     std::string basepath_;
+    std::string input_;
     const PropertyNode* root_;
     std::vector<PropertyNode::UniquePtr> nodes_;
 

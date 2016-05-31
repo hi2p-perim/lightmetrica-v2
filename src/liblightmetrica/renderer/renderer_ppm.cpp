@@ -63,7 +63,7 @@ private:
 
     int maxNumVertices_;
     long long numSamples_;                                // Number of measurement points
-    long long numPhotonPass_;                             // Number of photon scattering passes
+    long long numIterationPass_;                          // Number of photon scattering passes
     long long numPhotonTraceSamples_;                     // Number of photon trace samples for each pass
     Float initialRadius_;                                 // Initial photon gather radius
     Float alpha_;                                         // Fraction to control photons (see paper)
@@ -78,7 +78,7 @@ public:
     {
         maxNumVertices_        = prop->Child("max_num_vertices")->As<int>();
         numSamples_            = prop->ChildAs<long long>("num_samples", 100000L);
-        numPhotonPass_         = prop->ChildAs<long long>("num_photon_pass", 1000L);
+        numIterationPass_         = prop->ChildAs<long long>("num_iteration_pass", 1000L);
         numPhotonTraceSamples_ = prop->ChildAs<long long>("num_photon_trace_samples", 100L);
         initialRadius_         = prop->ChildAs<Float>("initial_radius", 0.1_f);
         alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
@@ -173,7 +173,7 @@ public:
 
         #pragma region Photon scattering pass
         long long totalPhotonTraceSamples = 0;
-        for (long long pass = 0; pass < numPhotonPass_; pass++)
+        for (long long pass = 0; pass < numIterationPass_; pass++)
         {
             LM_LOG_INFO("Pass " + std::to_string(pass));
             LM_LOG_INDENTER();
