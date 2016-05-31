@@ -516,8 +516,10 @@ public:
                 const auto* vNext = &vertices[i + 1];
                 const auto wi = vPrev ? Math::Normalize(vPrev->geom.p - v->geom.p) : Vec3();
                 const auto wo = Math::Normalize(vNext->geom.p - v->geom.p);
+                const auto fs = v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, t == 0 && i == s - 2 && direct);
+                if (fs.Black()) return SPD();
                 alphaL *= 
-                    v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, t == 0 && i == s - 2 && direct) /
+                    fs /
                     (t == 0 && i == s - 2 && direct
                         ? vNext->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vNext->geom, v->geom, false).ConvertToProjSA(vNext->geom, v->geom) * scene->EvaluateEmitterPDF(vNext->primitive).v
                         : v->primitive->surface->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false));
@@ -555,8 +557,10 @@ public:
                 const auto* vNext = i < n - 1 ? &vertices[i + 1] : nullptr;
                 const auto wi = vNext ? Math::Normalize(vNext->geom.p - v->geom.p) : Vec3();
                 const auto wo = Math::Normalize(vPrev->geom.p - v->geom.p);
+                const auto fs = v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, s == 0 && i == 1 && direct);
+                if (fs.Black()) return SPD();
                 alphaE *= 
-                    v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, s == 0 && i == 1 && direct) /
+                    fs /
                     (s == 0 && i == 1 && direct
                         ? vPrev->primitive->surface->EvaluatePositionGivenPreviousPositionPDF(vPrev->geom, v->geom, false).ConvertToProjSA(vPrev->geom, v->geom) * scene->EvaluateEmitterPDF(vPrev->primitive).v
                         : v->primitive->surface->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false));
@@ -828,8 +832,8 @@ public:
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
         sched_->Load(prop);
-        maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
-        minNumVertices_ = prop->Child("min_num_vertices")->As<int>();
+        maxNumVertices_ = prop->ChildAs("max_num_vertices", -1);
+        minNumVertices_ = prop->ChildAs("min_num_vertices", 0);
         mis_ = ComponentFactory::Create<MISWeight>("misweight::" + prop->ChildAs<std::string>("mis", "powerheuristics"));
         return true;
     };

@@ -126,16 +126,14 @@ struct TriAccelTriangle
                 return false;
         }
 
-
-        #if LM_DEBUG_MODE
-        if (d_u * n_u + d_v * n_v + d_k == 0)
+        const auto demon = d_u * n_u + d_v * n_v + d_k;
+        if (demon == 0)
         {
             return false;
         }
-        #endif
 
         // Calculate the plane intersection
-        t = (n_d - o_u*n_u - o_v*n_v - o_k) / (d_u * n_u + d_v * n_v + d_k);
+        t = (n_d - o_u*n_u - o_v*n_v - o_k) / demon;
         if (t < mint || t > maxt)
         {
             return false;

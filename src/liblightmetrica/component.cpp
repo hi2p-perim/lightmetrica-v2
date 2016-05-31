@@ -94,7 +94,7 @@ public:
 
     auto LoadPlugin(const std::string& path) -> bool
     {
-        LM_LOG_INFO("Loading '" + path + "'");
+        LM_LOG_INFO("Loading '" + boost::filesystem::path(path).filename().string() + "'");
         LM_LOG_INDENTER();
 
         // Load plugin

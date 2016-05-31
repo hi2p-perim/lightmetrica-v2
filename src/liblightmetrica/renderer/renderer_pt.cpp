@@ -45,18 +45,19 @@ public:
 
     LM_IMPL_CLASS(Renderer_PT, Renderer);
 
-public:
+private:
 
-    Renderer_PT()
-        : sched_(ComponentFactory::Create<Scheduler>())
-    {}
+    int maxNumVertices_;
+    int minNumVertices_;
+    Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
 
 public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
         sched_->Load(prop);
-        maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
+        maxNumVertices_ = prop->ChildAs("max_num_vertices", -1);
+        minNumVertices_ = prop->ChildAs("min_num_vertices", 0);
         return true;
     };
 
@@ -180,11 +181,14 @@ public:
                 if ((isect.primitive->surface->Type() & SurfaceInteractionType::L) > 0)
                 {
                     // Accumulate to film
-                    const auto C =
-                          throughput
-                        * isect.primitive->emitter->EvaluateDirection(isect.geom, SurfaceInteractionType::L, Vec3(), -ray.d, TransportDirection::EL, false)
-                        * isect.primitive->emitter->EvaluatePosition(isect.geom, false);
-                    film->Splat(rasterPos, C);
+                    if (numVertices + 1 >= minNumVertices_)
+                    {
+                        const auto C =
+                            throughput
+                            * isect.primitive->emitter->EvaluateDirection(isect.geom, SurfaceInteractionType::L, Vec3(), -ray.d, TransportDirection::EL, false)
+                            * isect.primitive->emitter->EvaluatePosition(isect.geom, false);
+                        film->Splat(rasterPos, C);
+                    }
                 }
 
                 #pragma endregion
@@ -224,11 +228,6 @@ public:
             }
         });
     };
-
-private:
-
-    int maxNumVertices_;
-    Scheduler::UniquePtr sched_;
 
 };
 

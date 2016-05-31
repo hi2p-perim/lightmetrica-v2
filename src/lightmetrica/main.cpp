@@ -51,6 +51,12 @@
 #include <boost/optional.hpp>
 #include <boost/filesystem.hpp>
 
+#if LM_PLATFORM_LINUX
+#include <unistd.h>
+#elif LM_PLATFORM_APPLE
+#include <mach-o/dyld.h>
+#endif
+
 using namespace lightmetrica_v2;
 
 // --------------------------------------------------------------------------------
@@ -207,16 +213,21 @@ public:
 
                     if (vm.count("scene") && Render.Interactive)
                     {
-                        LM_LOG_ERROR_SIMPLE("Conflicting arguments : 'scene' and 'interactive'");
+                        LM_LOG_ERROR_SIMPLE("Conflicting arguments : '--scene,-s' and '--interactive,-i'");
                         return false;
                     }
                     if (vm.count("scene"))
                     {
                         Render.SceneFile = vm["scene"].as<std::string>();
                     }
-                    else
+                    else if (Render.Interactive)
                     {
                         Render.SceneFile = "<stdin>";
+                    }
+                    else
+                    {
+                        LM_LOG_ERROR_SIMPLE("Missing arguments : '--scene,-s' or '--interactive,-i'");
+                        return false;
                     }
                     
                     if (vm.count("base"))
@@ -455,9 +466,46 @@ private:
 
         // TODO: Make configurable plugin directory
         {
+            // Get executable path
+            // http://stackoverflow.com/questions/1528298/get-path-of-executable
+            const auto executablePath = []() -> boost::optional<boost::filesystem::path>
+            {
+                #if LM_PLATFORM_WINDOWS
+                char buf[MAX_PATH];
+                if (!GetModuleFileNameA(nullptr, buf, sizeof(buf)))
+                {
+                    LM_LOG_ERROR("Failed to get executable path");
+                    return boost::none;
+                }
+                return  boost::filesystem::path(buf);
+                #elif LM_PLATFORM_LINUX
+                char buf[1024];
+                ssize_t size = readlink("/proc/self/exe", buf, sizeof(buf));
+                if (!size)
+                {
+                    LM_LOG_ERROR("Failed to get executable path");
+                    return boost::none;
+                }
+                return boost::filesystem::path(boost::filesystem::canonical(std::string(buf, size)));
+                #elif LM_PLATFORM_APPLE
+                char buf[1024];
+                uint32_t size = sizeof(buf);
+                if (_NSGetExecutablePath(buf, &size) != 0)
+                {
+                    LM_LOG_ERROR("Failed to get executable path");
+                    return boost::none;
+                }
+                return boost::filesystem::path(boost::filesystem::canonical(buf));
+                #endif
+            }();
+            if (!executablePath)
+            {
+                return false;
+            }
+
             LM_LOG_INFO("Loading plugins");
             LM_LOG_INDENTER();
-            ComponentFactory::LoadPlugins("plugin");
+            ComponentFactory::LoadPlugins((executablePath->parent_path() / "plugin").string());
         }
 
         #pragma endregion

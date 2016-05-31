@@ -27,6 +27,7 @@ TODO
 - [ ] Modify interface definition to add IDs
 - [ ] Feature to specify default selection of the asset if there exists several choices
 - [ ] Python API
+- [ ] Define a set of scenes for verifications
 
 Discussions
 --------------------
