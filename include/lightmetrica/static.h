@@ -123,7 +123,7 @@ public:
     auto GetFuncPointer(const std::string& symbol) const -> void*
     {
         #if LM_PLATFORM_WINDOWS
-        void* address = GetProcAddress(handle, symbol.c_str());
+        void* address = (void*)GetProcAddress(handle, symbol.c_str());
         if (address == nullptr)
         {
             std::cerr << "Failed to get address of '" << symbol << "'" << std::endl;

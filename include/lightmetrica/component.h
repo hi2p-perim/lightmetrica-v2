@@ -38,6 +38,7 @@
 #include <type_traits>
 #include <memory>
 #include <string>
+#include <sstream>
 
 /*!
     \defgroup component Component system
@@ -212,7 +213,9 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
     auto operator()(ArgTypes... args) const -> ReturnType
     {
         // Convert argument types to portable types and call the functions stored in the vtable.
-        using FuncType = Portable<ReturnType>(*)(void*, Portable<ArgTypes>...);
+        // Note that return type with struct is not portable in cdecl
+        // cf. http://www.angelcode.com/dev/callconv/callconv.html
+        using FuncType = void(LM_CDECL *)(void*, Portable<ReturnType>*, Portable<ArgTypes>...);
         if (!o_->vt_[ID].f)
         {
             LM_LOG_ERROR("Missing vtable entry for");
@@ -251,7 +254,9 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
         #endif
         #endif
 
-        return reinterpret_cast<FuncType>(o_->vt_[ID].f)(o_->vt_[ID].implf, Portable<ArgTypes>(args)...).Get();
+        Portable<ReturnType> result;
+        reinterpret_cast<FuncType>(o_->vt_[ID].f)(o_->vt_[ID].implf, &result, Portable<ArgTypes>(args)...);
+        return result.Get();
     }
 };
 
@@ -316,16 +321,16 @@ struct ImplFunctionGenerator;
 template <typename ReturnType, typename ...ArgTypes>
 struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
 {
-    using PortableFunctionType = Portable<ReturnType>(*)(void*, Portable<ArgTypes>...);
+    using PortableFunctionType = void(LM_CDECL *)(void*, Portable<ReturnType>*, Portable<ArgTypes>...);
     static auto Get() -> PortableFunctionType
     {
         return static_cast<PortableFunctionType>(
-            [](void* userdata, Portable<ArgTypes>... args) -> Portable<ReturnType>
+            [](void* userdata, Portable<ReturnType>* result, Portable<ArgTypes>... args) -> void//ReturnType//Portable<ReturnType>
             {
                 // Convert user defined implementation to original type
                 using UserFunctionType = std::function<ReturnType(ArgTypes...)>;
-                auto& f = *reinterpret_cast<UserFunctionType*>(userdata);
-                return Portable<ReturnType>(f((args.Get())...));
+                const auto& f = *reinterpret_cast<UserFunctionType*>(userdata);
+                result->Set(f((args.Get())...));
             });
     }
 };
@@ -333,18 +338,17 @@ struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
 template <typename ...ArgTypes>
 struct ImplFunctionGenerator<void(ArgTypes...)>
 {
-    using PortableFunctionType = Portable<void>(*)(void*, Portable<ArgTypes>...);
+    using PortableFunctionType = void(LM_CDECL *)(void*, Portable<void>*, Portable<ArgTypes>...);
     static auto Get() -> PortableFunctionType
     {
         return static_cast<PortableFunctionType>(
-            [](void* userdata, Portable<ArgTypes>... args) -> Portable<void>
-        {
-            // Convert user defined implementation to original type
-            using UserFunctionType = std::function<void(ArgTypes...)>;
-            auto& f = *reinterpret_cast<UserFunctionType*>(userdata);
-            f((args.Get())...);
-            return Portable<void>();
-        });
+            [](void* userdata, Portable<void>*, Portable<ArgTypes>... args) -> void//Portable<void>
+            {
+                // Convert user defined implementation to original type
+                using UserFunctionType = std::function<void(ArgTypes...)>;
+                auto& f = *reinterpret_cast<UserFunctionType*>(userdata);
+                f((args.Get())...);
+            });
     }
 };
 //!< \endcond

@@ -44,7 +44,7 @@ public:
     LM_IMPL_F(Tree)      = [this]() -> const PropertyTree* { return tree_; };
     LM_IMPL_F(Type)      = [this]() -> PropertyNodeType { return type_; };
     LM_IMPL_F(Line)      = [this]() -> int { return line_; };
-    LM_IMPL_F(Scalar)    = [this]() -> std::string { return scalar_; };
+    //LM_IMPL_F(Scalar)    = [this]() -> std::string { return scalar_; };
     LM_IMPL_F(RawScalar) = [this]() -> const char* { return scalar_.c_str(); };
     LM_IMPL_F(Key)       = [this]() -> std::string { return key_; };
     LM_IMPL_F(Size)      = [this]() -> int { return (int)(sequence_.size()); };

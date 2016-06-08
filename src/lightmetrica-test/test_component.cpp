@@ -379,7 +379,7 @@ TEST(ComponentTest, PortableMemberVariable)
 {
     const auto p = ComponentFactory::Create<F>();
     ASSERT_NE(nullptr, p);
-    p->id.Reset("hello");
+    p->id.Set("hello");
     EXPECT_EQ(42, p->Func());
     EXPECT_EQ("hello", p->ID());
 }

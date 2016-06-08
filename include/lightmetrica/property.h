@@ -48,7 +48,7 @@ class PropertyNode : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(PropertyNode, Component, 10);
+    LM_INTERFACE_CLASS(PropertyNode, Component, 9);
 
 public:
 
@@ -70,22 +70,22 @@ public:
     LM_INTERFACE_F(3, Key, std::string());
 
     //! Scalar value of the node
-    LM_INTERFACE_F(4, Scalar, std::string());
+    //LM_INTERFACE_F(4, Scalar, std::string());
 
     //! Scalar value of the node (raw version)
-    LM_INTERFACE_F(5, RawScalar, const char*());
+    LM_INTERFACE_F(4, RawScalar, const char*());
 
     //! Get a number of child elements
-    LM_INTERFACE_F(6, Size, int());
+    LM_INTERFACE_F(5, Size, int());
 
     //! Find a child by name
-    LM_INTERFACE_F(7, Child, const PropertyNode*(const std::string&));
+    LM_INTERFACE_F(6, Child, const PropertyNode*(const std::string&));
 
     //! Get a child by index
-    LM_INTERFACE_F(8, At, const PropertyNode*(int));
+    LM_INTERFACE_F(7, At, const PropertyNode*(int));
 
     //! Parent node (nullptr for root node)
-    LM_INTERFACE_F(9, Parent, const PropertyNode*());
+    LM_INTERFACE_F(8, Parent, const PropertyNode*());
 
 public:
 
@@ -113,17 +113,17 @@ public:
 };
 
 template <> inline auto PropertyNode::As<const char*>() const -> const char* { return RawScalar(); }
-template <> inline auto PropertyNode::As<std::string>() const -> std::string { return Scalar(); }
-template <> inline auto PropertyNode::As<int>() const -> int { return std::stoi(Scalar()); }
-template <> inline auto PropertyNode::As<long long>() const -> long long { return std::stoll(Scalar()); }
-template <> inline auto PropertyNode::As<double>() const -> double { return std::stod(Scalar()); }
-template <> inline auto PropertyNode::As<float>() const -> float { return std::stof(Scalar()); }
+template <> inline auto PropertyNode::As<std::string>() const -> std::string { return RawScalar(); }
+template <> inline auto PropertyNode::As<int>() const -> int { return std::stoi(RawScalar()); }
+template <> inline auto PropertyNode::As<long long>() const -> long long { return std::stoll(RawScalar()); }
+template <> inline auto PropertyNode::As<double>() const -> double { return std::stod(RawScalar()); }
+template <> inline auto PropertyNode::As<float>() const -> float { return std::stof(RawScalar()); }
 
 template <>
 inline auto PropertyNode::As<Vec3>() const -> Vec3
 {
     Vec3 v;
-    std::stringstream ss(Scalar());
+    std::stringstream ss(RawScalar());
     double t;
     int i = 0;
     while (ss >> t) { v[i++] = Float(t); }
@@ -134,7 +134,7 @@ template <>
 inline auto PropertyNode::As<Vec4>() const -> Vec4
 {
     Vec4 v;
-    std::stringstream ss(Scalar());
+    std::stringstream ss(RawScalar());
     double t;
     int i = 0;
     while (ss >> t) { v[i++] = Float(t); }
@@ -145,7 +145,7 @@ template <>
 inline auto PropertyNode::As<Mat3>() const -> Mat3
 {
     Mat3 m;
-    std::stringstream ss(Scalar());
+    std::stringstream ss(RawScalar());
     double t;
     int i = 0;
     while (ss >> t) { m[i/3][i%3] = Float(t); i++; }
@@ -156,7 +156,7 @@ template <>
 inline auto PropertyNode::As<Mat4>() const -> Mat4
 {
     Mat4 m;
-    std::stringstream ss(Scalar());
+    std::stringstream ss(RawScalar());
     double t;
     int i = 0;
     while (ss >> t) { m[i/4][i%4] = Float(t); i++; }
@@ -167,7 +167,7 @@ template <>
 inline auto PropertyNode::As<std::vector<Float>>() const -> std::vector<Float>
 {
     std::vector<Float> v;
-    std::stringstream ss(Scalar());
+    std::stringstream ss(RawScalar());
     double t;
     while (ss >> t) { v.push_back(Float(t)); }
     return v;
@@ -177,7 +177,7 @@ template <>
 inline auto PropertyNode::As<std::vector<unsigned int>>() const -> std::vector<unsigned int>
 {
     std::vector<unsigned int> v;
-    std::stringstream ss(Scalar());
+    std::stringstream ss(RawScalar());
     unsigned int t;
     while (ss >> t) { v.push_back(t); }
     return v;

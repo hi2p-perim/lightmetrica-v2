@@ -41,7 +41,9 @@ template <typename T>
 struct Portable
 {
     T v;
+    Portable() {}
     Portable(T v) : v(v) {}
+    auto Set(T result) -> void { v = result; }
     auto Get() -> T const { return v; }
 };
 
@@ -57,10 +59,11 @@ struct Portable<T&>
 {
     T* v = nullptr;
     Portable(T& v) : v(&v) {}
+    auto Set(T& result) const -> void { v = &result; }
     auto Get() const -> T& { return *v; }
 };
 
-// Spefialization for unportable types
+// Specialization for unportable types
 template <typename ContainerT>
 struct Portable<std::vector<ContainerT>>
 {
@@ -70,6 +73,7 @@ struct Portable<std::vector<ContainerT>>
     size_t N;
     ContainerT* p = nullptr;
 
+    Portable() {}
     Portable(VectorT& v)
         : N(v.size())
         , p(&v[0])
@@ -83,14 +87,15 @@ struct Portable<std::vector<ContainerT>>
     }
 };
 
+// TODO: an observed bug with return value with std::string beyond dll boundary
 template <>
 struct Portable<std::string>
 {
     char* p = nullptr;
     Portable() {}
-    Portable(const std::string& s) { Reset(s); }
+    Portable(const std::string& s) { Set(s); }
     ~Portable() { LM_SAFE_DELETE_ARRAY(p); }
-    auto Reset(const std::string& s) -> void
+    auto Set(const std::string& s) -> void
     {
         LM_SAFE_DELETE_ARRAY(p);
         p = new char[s.size() + 1];
@@ -103,7 +108,9 @@ template <>
 struct Portable<const std::string&>
 {
     const char* p = nullptr;
+    Portable() {}
     Portable(const std::string& s) : p(s.c_str()) {}
+    auto Set(const std::string& s) -> void { p = s.c_str(); }
     auto Get() const -> std::string { return std::string(p); }
 };
 

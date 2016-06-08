@@ -204,6 +204,18 @@
 
 // --------------------------------------------------------------------------------
 
+#pragma region Calling convension
+
+#if LM_COMPILER_MSVC
+    #define LM_CDECL __cdecl
+#elif LM_COMPILER_GCC || LM_COMPILER_CLANG
+    #define LM_CDECL __attribute__((__cdecl__))
+#endif
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
 #pragma region Useful macros
 
 #define LM_TOKENPASTE(x, y) x ## y

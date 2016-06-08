@@ -106,7 +106,7 @@ public:
 
     //! \cond detail
     auto ID() const -> std::string { return id_.Get(); }
-    auto SetID(const std::string& id) -> void { id_.Reset(id); }
+    auto SetID(const std::string& id) -> void { id_.Set(id); }
     //! \endcond
 
 private:
