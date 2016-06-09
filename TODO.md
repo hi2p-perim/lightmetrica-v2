@@ -8,8 +8,8 @@ TODO
 - [ ] Redesign of various sampling functions for the support of mathematically consistent handling of probability distributions.
 - [ ] Automatic generation of entire documentation from sources. Think about the pipeline to achieve that.
 - [ ] Error handling of property inputs
-- [ ] Replace ctemplate library
-- [ ] Extend template to support default variable
+- [x] Replace ctemplate library
+- [x] Extend template to support default variable
 - [ ] Extend template to select debug / release mode
 - [ ] Default template parameter
 - [ ] Add explanation of parameters
@@ -28,7 +28,8 @@ TODO
 - [ ] Feature to specify default selection of the asset if there exists several choices
 - [ ] Python API
 - [ ] Define a set of scenes for verifications
-- [ ] Refactor CMakeLists.txt. Separate logical components as .cmake files
+- [x] Refactor CMakeLists.txt. Separate logical components as .cmake files
+- [ ] Optimize portable components. Remove unnecessary copies.
 
 Discussions
 --------------------
