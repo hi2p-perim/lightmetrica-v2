@@ -325,7 +325,7 @@ struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
     static auto Get() -> PortableFunctionType
     {
         return static_cast<PortableFunctionType>(
-            [](void* userdata, Portable<ReturnType>* result, Portable<ArgTypes>... args) -> void//ReturnType//Portable<ReturnType>
+            [](void* userdata, Portable<ReturnType>* result, Portable<ArgTypes>... args) -> void
             {
                 // Convert user defined implementation to original type
                 using UserFunctionType = std::function<ReturnType(ArgTypes...)>;
@@ -342,7 +342,7 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
     static auto Get() -> PortableFunctionType
     {
         return static_cast<PortableFunctionType>(
-            [](void* userdata, Portable<void>*, Portable<ArgTypes>... args) -> void//Portable<void>
+            [](void* userdata, Portable<void>*, Portable<ArgTypes>... args) -> void
             {
                 // Convert user defined implementation to original type
                 using UserFunctionType = std::function<void(ArgTypes...)>;
