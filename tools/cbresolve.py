@@ -60,7 +60,7 @@ def main():
         # Dispatch renderer
         p = sp.Popen(
             [
-                './lightmetrica',
+                'lightmetrica',
                 'render',
                 '-i',
                 '-b', os.path.dirname(filename)

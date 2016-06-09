@@ -209,7 +209,7 @@
 #if LM_COMPILER_MSVC
     #define LM_CDECL __cdecl
 #elif LM_COMPILER_GCC || LM_COMPILER_CLANG
-    #define LM_CDECL __attribute__((cdecl))
+    #define LM_CDECL [[gnu::cdecl]]
 #endif
 
 #pragma endregion
