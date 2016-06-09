@@ -28,6 +28,7 @@ TODO
 - [ ] Feature to specify default selection of the asset if there exists several choices
 - [ ] Python API
 - [ ] Define a set of scenes for verifications
+- [ ] Refactor CMakeLists.txt. Separate logical components as .cmake files
 
 Discussions
 --------------------
