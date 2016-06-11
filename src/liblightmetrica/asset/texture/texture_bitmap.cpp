@@ -41,7 +41,8 @@ public:
     {
         #pragma region Load params
 
-        const auto localpath = prop->Child("path")->As<std::string>();
+        std::string localpath;
+        if (!prop->ChildAs("path", localpath)) return false;
         const auto basepath = boost::filesystem::path(prop->Tree()->BasePath());
         const auto path = (basepath / localpath).string();
 

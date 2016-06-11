@@ -107,8 +107,10 @@ public:
 
         if (prop->Child("envmap"))
         {
-            const auto id = prop->Child("envmap")->As<std::string>();
+            std::string id;
+            prop->ChildAs("envmap", id);
             envmap_ = static_cast<const Texture*>(assets->AssetByIDAndType(id, "texture", primitive));
+            if (envmap_) return false;
         }
         else
         {

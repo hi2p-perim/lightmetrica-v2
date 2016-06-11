@@ -43,8 +43,8 @@ public:
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
         // Load parameters
-        We_  = prop->Child("We")->As<Vec3>();
-        fov_ = Math::Radians(prop->Child("fov")->As<Float>());
+        We_  = prop->ChildAs<Vec3>("We", Vec3(1_f));
+        fov_ = Math::Radians(prop->ChildAs("fov", 45_f));
 
         // Position & eye coordinates
         position_ = Vec3(primitive->transform * Vec4(0_f, 0_f, 0_f, 1_f));
@@ -53,8 +53,10 @@ public:
         vz_ = Vec3(primitive->transform[2]);
 
         // Film & aspect ratio
-        const auto filmID = prop->Child("film")->As<std::string>();
-        film_ = static_cast<Film*>(assets->AssetByIDAndType(filmID, "film", primitive));
+        std::string filmid;
+        if (!prop->ChildAs("film", filmid)) return false;
+        film_ = static_cast<Film*>(assets->AssetByIDAndType(filmid, "film", primitive));
+        if (film_ == nullptr) return false;
         aspect_ = (Float)(film_->Width()) / (Float)(film_->Height());
 
         return true;

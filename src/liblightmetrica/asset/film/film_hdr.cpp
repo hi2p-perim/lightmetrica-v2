@@ -188,15 +188,10 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        width_  = prop->Child("w")->As<int>();
-        height_ = prop->Child("h")->As<int>();
-        if (prop->Child("type"))
-        {
-            type_ = LM_STRING_TO_ENUM(HDRImageType, prop->Child("type")->As<std::string>());
-        }
-
+        if (!prop->ChildAs<int>("w", width_)) return false;
+        if (!prop->ChildAs<int>("h", height_)) return false;
+        type_ = LM_STRING_TO_ENUM(HDRImageType, prop->ChildAs<std::string>("type", "radiancehdr"));
         data_.assign(width_ * height_, Vec3());
-
         return true;
     };
 

@@ -203,7 +203,7 @@ public:
                     const auto* idNode = propNode->Child("id");
                     if (idNode)
                     {
-                        primitive->id = idNode->As<const char*>();
+                        primitive->id = idNode->RawScalar();
                         LM_LOG_INFO("ID: '" + std::string(primitive->id) + "'");
                     }
                 }
@@ -237,7 +237,11 @@ public:
                             if (matrixNode)
                             {
                                 // Parse 4x4 matrix
-                                transform = matrixNode->As<Mat4>();
+                                if (!matrixNode->As<Mat4>(transform))
+                                {
+                                    PropertyUtils::PrintPrettyError(matrixNode);
+                                    return false;
+                                }
                                 return true;
                             }
 
@@ -245,9 +249,24 @@ public:
                             const auto* lookatNode = transformNode->Child("lookat");
                             if (lookatNode)
                             {
-                                const auto eye    = lookatNode->Child("eye")->As<Vec3>();
-                                const auto center = lookatNode->Child("center")->As<Vec3>();
-                                const auto up     = lookatNode->Child("up")->As<Vec3>();
+                                Vec3 eye;
+                                if (!lookatNode->ChildAs("eye", eye))
+                                {
+                                    PropertyUtils::PrintPrettyError(lookatNode);
+                                    return false;
+                                }
+                                Vec3 center;
+                                if (!lookatNode->ChildAs("center", center))
+                                {
+                                    PropertyUtils::PrintPrettyError(lookatNode);
+                                    return false;
+                                }
+                                Vec3 up;
+                                if (!lookatNode->ChildAs("up", up))
+                                {
+                                    PropertyUtils::PrintPrettyError(lookatNode);
+                                    return false;
+                                }
 
                                 const auto vz = Math::Normalize(eye - center);
                                 const auto vx = Math::Normalize(Math::Cross(up, vz));
@@ -273,28 +292,43 @@ public:
                                 // Parse 'translate' node
                                 if (translateNode)
                                 {
-                                    transform *= Math::Translate(translateNode->As<Vec3>());
+                                    Vec3 v;
+                                    if (!translateNode->As<Vec3>(v))
+                                    {
+                                        PropertyUtils::PrintPrettyError(translateNode);
+                                        return false;
+                                    }
+                                    transform *= Math::Translate(v);
                                 }
 
                                 // Parse 'rotate' node
                                 if (rotateNode)
                                 {
-                                    const auto angleNode = rotateNode->Child("axis");
-                                    const auto axisNode  = rotateNode->Child("angle");
-                                    if (!angleNode || !axisNode)
+                                    Float angle;
+                                    if (!rotateNode->ChildAs("angle", angle))
                                     {
-                                        LM_LOG_ERROR("Missing 'angle' or 'axis' node");
                                         PropertyUtils::PrintPrettyError(rotateNode);
                                         return false;
                                     }
-
-                                    transform *= Math::Rotate(Math::Radians(axisNode->As<Float>()), angleNode->As<Vec3>());
+                                    Vec3 axis;
+                                    if (!rotateNode->ChildAs("axis", axis))
+                                    {
+                                        PropertyUtils::PrintPrettyError(rotateNode);
+                                        return false;
+                                    }
+                                    transform *= Math::Rotate(Math::Radians(angle), axis);
                                 }
 
                                 // Parse 'scale' node
                                 if (scaleNode)
                                 {
-                                    transform *= Math::Scale(scaleNode->As<Vec3>());
+                                    Vec3 v;
+                                    if (!scaleNode->As<Vec3>(v))
+                                    {
+                                        PropertyUtils::PrintPrettyError(scaleNode);
+                                        return false;
+                                    }
+                                    transform *= Math::Scale(v);
                                 }
 
                                 return true;
@@ -326,7 +360,7 @@ public:
                 const auto* meshNode = propNode->Child("mesh");
                 if (meshNode)
                 {
-                    primitive->mesh = static_cast<const TriangleMesh*>(assets->AssetByIDAndType(meshNode->As<std::string>(), "trianglemesh", primitive.get()));
+                    primitive->mesh = static_cast<const TriangleMesh*>(assets->AssetByIDAndType(meshNode->RawScalar(), "trianglemesh", primitive.get()));
                 }
 
                 #pragma endregion
@@ -338,7 +372,7 @@ public:
                 const auto* bsdfNode = propNode->Child("bsdf");
                 if (bsdfNode)
                 {
-                    primitive->bsdf = static_cast<const BSDF*>(assets->AssetByIDAndType(bsdfNode->As<std::string>(), "bsdf", primitive.get()));
+                    primitive->bsdf = static_cast<const BSDF*>(assets->AssetByIDAndType(bsdfNode->RawScalar(), "bsdf", primitive.get()));
                 }
                 else
                 {
@@ -365,13 +399,13 @@ public:
                 {
                     if (L)
                     {
-                        primitive->light   = static_cast<const Light*>(assets->AssetByIDAndType(L->As<std::string>(), "light", primitive.get()));
+                        primitive->light   = static_cast<const Light*>(assets->AssetByIDAndType(L->RawScalar(), "light", primitive.get()));
                         primitive->emitter = static_cast<const Emitter*>(primitive->light);
                         lightPrimitiveIndices_.push_back(primitives_.size());
                     }
                     else if (E)
                     {
-                        primitive->sensor  = static_cast<const Sensor*>(assets->AssetByIDAndType(E->As<std::string>(), "sensor", primitive.get()));
+                        primitive->sensor  = static_cast<const Sensor*>(assets->AssetByIDAndType(E->RawScalar(), "sensor", primitive.get()));
                         primitive->emitter = static_cast<const Emitter*>(primitive->sensor);
                     }
 
@@ -467,7 +501,7 @@ public:
                     return false;
                 }
 
-                const auto it = primitiveIDMap_.find(mainSensorNode->As<std::string>());
+                const auto it = primitiveIDMap_.find(mainSensorNode->RawScalar());
                 if (it == primitiveIDMap_.end())
                 {
                     LM_LOG_ERROR("Missing primitive ID: " + mainSensorNode->As<std::string>());

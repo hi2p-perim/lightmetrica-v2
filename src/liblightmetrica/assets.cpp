@@ -51,20 +51,17 @@ public:
     LM_IMPL_F(AssetByIDAndType) = [this](const std::string& id, const std::string& interfaceType, const Primitive* primitive) -> Asset*
     {
         #pragma region Find the registered asset by id
-
         const auto it = assetIndexMap_.find(id);
         if (it != assetIndexMap_.end())
         {
             // TODO: Add type check
             return assets_[it->second].get();
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region If not found, try to load asset
-        
         {
             LM_LOG_INFO("Loading asset '" + id + "'");
             LM_LOG_INDENTER();
@@ -86,9 +83,9 @@ public:
                 PropertyUtils::PrintPrettyError(assetNode);
                 return nullptr;
             }
-            if (!boost::iequals(interfaceType, interfaceNode->As<std::string>()))
+            if (!boost::iequals(interfaceType, interfaceNode->RawScalar()))
             {
-                LM_LOG_ERROR(boost::str(boost::format("Invalid asset type '%s' expected '%s'") % interfaceNode->As<std::string>() % interfaceType));
+                LM_LOG_ERROR(boost::str(boost::format("Invalid asset type '%s' expected '%s'") % interfaceNode->RawScalar() % interfaceType));
                 PropertyUtils::PrintPrettyError(assetNode);
                 return nullptr;
             }
@@ -98,7 +95,7 @@ public:
 
             // Create asset instance
             const auto* typeNode = assetNode->Child("type");
-            const auto implType = typeNode->As<std::string>();
+            const std::string implType = typeNode->RawScalar();
             auto asset = ComponentFactory::Create<Asset>(interfaceType + "::" + implType);   // This cannot be const (later we move it)
             if (!asset)
             {
@@ -127,7 +124,6 @@ public:
             assetIndexMap_[id] = assets_.size() - 1;
             assets_.back()->SetID(id);
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------

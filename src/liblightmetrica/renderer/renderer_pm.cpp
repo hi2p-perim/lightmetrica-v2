@@ -61,7 +61,7 @@ public:
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
         sched_->Load(prop);
-        maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
+        maxNumVertices_ = prop->ChildAs<int>("max_num_vertices", -1);
         numPhotonTraceSamples_ = prop->ChildAs<long long>("num_photon_trace_samples", 100000L);
         finalgather_ = prop->ChildAs<int>("finalgather", 1);
         radius_ = prop->ChildAs<Float>("radius", 0.01_f);
