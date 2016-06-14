@@ -555,20 +555,20 @@ private:
 
 public:
 
-    LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
+    LM_IMPL_F(Initialize) = [this](const PropertyNode* p) -> bool
     {
-        maxNumVertices_        = prop->ChildAs<int>("max_num_vertices", 10);
-        minNumVertices_        = prop->ChildAs<int>("min_num_vertices", 0);
-        numIterationPass_      = prop->ChildAs<long long>("num_iteration_pass", 100L);
-        numPhotonTraceSamples_ = prop->ChildAs<long long>("num_photon_trace_samples", 10000L);
-        numEyeTraceSamples_    = prop->ChildAs<long long>("num_eye_trace_samples", 10000L);
-        initialRadius_         = prop->ChildAs<Float>("initial_radius", 0.1_f);
-        alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
+        maxNumVertices_        = p->ChildAs<int>("max_num_vertices", 10);
+        minNumVertices_        = p->ChildAs<int>("min_num_vertices", 0);
+        numIterationPass_      = p->ChildAs<long long>("num_iteration_pass", 100L);
+        numPhotonTraceSamples_ = p->ChildAs<long long>("num_photon_trace_samples", 10000L);
+        numEyeTraceSamples_    = p->ChildAs<long long>("num_eye_trace_samples", 10000L);
+        initialRadius_         = p->ChildAs<Float>("initial_radius", 0.1_f);
+        alpha_                 = p->ChildAs<Float>("alpha", 0.7_f);
         #if LM_VCM_DEBUG
-        debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "vcm_%05d");
+        debugOutputPath_       = p->ChildAs<std::string>("debug_output_path", "vcm_%05d");
         #endif
         {
-            const auto modestr = prop->ChildAs<std::string>("mode", "vcm");
+            const auto modestr = p->ChildAs<std::string>("mode", "vcm");
             if (modestr == "vcm") { mode_ = Mode::VCM; }
             else if (modestr == "bdpt") { mode_ = Mode::BDPT; }
             else if (modestr == "bdpm") { mode_ = Mode::BDPM; }

@@ -28,197 +28,22 @@ project(lightmetrica)
 
 # --------------------------------------------------------------------------------
 
-#
-# Setup some cmake-related variables.
-# Configures module path, prefix, architecture, and build type.
-# TODO: Support the build in ARM environment.
-#
-
+# Module path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-if (CMAKE_CL_64)
-    set(CMAKE_LIBRARY_ARCHITECTURE "x64")
-else()
-    set(CMAKE_LIBRARY_ARCHITECTURE "i386")
-endif()
-
-if (MSVC)
-    if (CMAKE_GENERATOR STREQUAL "Visual Studio 14 2015 Win64")
-        set(_GENERATOR_PREFIX "vc14")
-    else()
-        message(FATAL_ERROR "Invalid generator")
-    endif()
-    set (LM_EXTERNAL_BINARY_PATH  "${CMAKE_CURRENT_SOURCE_DIR}/external/${_GENERATOR_PREFIX}/bin/${CMAKE_LIBRARY_ARCHITECTURE}")
-	set (LM_EXTERNAL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/${_GENERATOR_PREFIX}/lib/${CMAKE_LIBRARY_ARCHITECTURE}")
-    list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external")
-    list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/${_GENERATOR_PREFIX}")
-endif()
-
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-        "Choose build type (Debug, Release, RelWithDebInfo, or MinSizeRel)" FORCED)
-endif()
-
-# --------------------------------------------------------------------------------
-
-#
 # Build options
-#
+include(LMBuildOptions)
 
-#include(CMakeDependentOption)
+# External dependencies
+include(LMExternalDependencies)
 
+# Platform-specific options
+include(LMPlatformOptions)
 
-
-# --------------------------------------------------------------------------------
-
-#
-# Setup external dependencies.
-# Basically all libraries should use static libraries.
-#
-
-# Boost
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-add_definitions(-DBOOST_ALL_NO_LIB)
-find_package(Boost 1.59 REQUIRED COMPONENTS program_options filesystem system regex coroutine context)
-include_directories(${Boost_INCLUDE_DIRS})
-
-# Qt
-# list(APPEND CMAKE_PREFIX_PATH $ENV{QTDIR})
-# if (MSVC)
-#     list(APPEND CMAKE_LIBRARY_PATH "C:\\Program Files (x86)\\Windows Kits\\8.0\\Lib\\win8\\um\\x64")
-# endif()
-# set(CMAKE_INCLUDE_CURRENT_DIR ON)
-# find_package(Qt5Widgets REQUIRED)
-# find_package(Qt5UiTools REQUIRED)
-# find_package(Qt5Gui REQUIRED)
-# find_package(Qt5Svg REQUIRED)
-# set(QT_BINARY_FILES_RELEASE "icudt53" "icuin53" "icuuc53" "Qt5Core" "Qt5Gui" "Qt5Widgets" "Qt5Svg")
-# set(QT_BINARY_FILES_DEBUG   "icudt53" "icuin53" "icuuc53" "Qt5Cored" "Qt5Guid" "Qt5Widgetsd" "Qt5Svgd")
-
-# GLEW
-# set(GLEW_USE_STATIC_LIBS ON)
-# find_package(GLEW)
-# if (GLEW_FOUND)
-#     include_directories(${GLEW_INCLUDE_DIRS})
-#     add_definitions(${GLEW_DEFINITIONS})
-# endif()
-
-# TBB
-find_package(TBB REQUIRED)
-include_directories(${TBB_INCLUDE_DIRS})
-
-# OpenMP
-find_package(OpenMP)
-if (OpenMP_FOUND)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-
-# FreeImage
-find_package(FreeImage REQUIRED)
-include_directories(${FREEIMAGE_INCLUDE_DIRS})
-
-# yaml-cpp
-find_package(YamlCpp REQUIRED)
-include_directories(${YAMLCPP_INCLUDE_DIRS})
-
-# ctemplate
-# find_package(CTemplate REQUIRED)
-# add_definitions(-DCTEMPLATE_DLL_DECL=)           # Use static library
-# include_directories(${CTEMPLATE_INCLUDE_DIRS})
-
-# Google test
-include_directories("${PROJECT_SOURCE_DIR}/external-src/gtest-1.7.0")
-include_directories("${PROJECT_SOURCE_DIR}/external-src/gtest-1.7.0/include")
-# if (MSVC AND MSVC_VERSION EQUAL 1700)
-#     # Workaround for VS2012
-#     add_definitions(-D_VARIADIC_MAX=10)
-# endif()
-
-# dSFMT
-include_directories("${PROJECT_SOURCE_DIR}/external-src/dSFMT-src-2.2.3")
-add_definitions(-DDSFMT_MEXP=19937)
+# Version
+include(LMVersion)
 
 # --------------------------------------------------------------------------------
-
-#
-# Platform-specifc options
-# Configures platform-dependent compiler options etc.
-#
-
-# MSVC
-if (MSVC)
-    # Ignore linker warnings in VS
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
-	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
-    add_definitions(-D_SCL_SECURE_NO_WARNINGS)
-
-    # Increase stack size to 10MB
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:10000000")
-	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /STACK:10000000")
-
-    # Warning level 4, treat warning as errors
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX")
-
-    # Add floating-point flag
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:strict")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHa")
-
-	# Parallel build
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-
-    # Platform flag (required for boost)
-    # cf. http://stackoverflow.com/questions/9742003/platform-detection-in-cmake
-    set(_VERSION ${CMAKE_SYSTEM_VERSION})
-    string(REPLACE "." "" _VERSION ${_VERSION})
-    string(REGEX REPLACE "([0-9])" "0\\1" _VERSION ${_VERSION})
-    add_definitions(-D_WIN32_WINNT=0x${_VERSION})
-
-	# SIMD support
-	# TODO: Make it configurable
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
-endif()
-
-# GCC
-if (CMAKE_COMPILER_IS_GNUCXX)
-    # Enabling C++11 for gcc
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
-
-    # If the build type is Debug, define macro
-    if (CMAKE_BUILD_TYPE STREQUAL Debug)
-        add_definitions(-D_DEBUG)
-    endif()
-
-    # Enable all warnings, treat warning as errors
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
-
-    # Ignore unknown pragma
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-function")
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-
-	# Handle a linker error
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fPIC")
-
-	set(COMMON_LIBRARIES "dl")
-endif()
-
-# Clang
-if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -stdlib=libc++")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-function")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-endif()
-
-# --------------------------------------------------------------------------------
-
-#
-# Include and output directories
-#
 
 # Include directory for generated headers
 include_directories(${PROJECT_BINARY_DIR})
@@ -230,71 +55,27 @@ include_directories("include")
 include_directories("pch")
 
 # Output directories 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/lib/RelWithDebInfo")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/lib/RelWithDebInfo")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin/RelWithDebInfo")
-
-# --------------------------------------------------------------------------------
-
-#
-# Project version etc.
-#
-
-# Version number and codename
-# 2.0.0 - cocoa
-# 2.0.1 - sansha-sanyou
-set(LM_VERSION_MAJOR "2")
-set(LM_VERSION_MINOR "0")
-set(LM_VERSION_PATCH "1")
-set(LM_VERSION_CODENAME "sansha-sanyou")
-
-# Execute git command in the project root and check revision number
-find_package(Git REQUIRED)
-execute_process(
-	COMMAND "${GIT_EXECUTABLE}" "rev-parse" "--short" "HEAD"
-	OUTPUT_VARIABLE LM_VERSION_REVISION
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Current date
-if (WIN32)
-	execute_process(COMMAND "cmd" "/C date /T" OUTPUT_VARIABLE LM_CURRENT_DATE)
-else()
-	execute_process(COMMAND "date" "+%Y/%m/%d" OUTPUT_VARIABLE LM_CURRENT_DATE)
-endif()
-string(REGEX REPLACE "([0-9]+)/([0-9]+)/([0-9]+) *.*(\n|\r)$" "\\1.\\2.\\3" LM_CURRENT_DATE ${LM_CURRENT_DATE})
-
-# --------------------------------------------------------------------------------
-
-# rpath settings
-# https://cmake.org/Wiki/CMake_RPATH_handling
-if (APPLE)
-    # Relative to the main executable
-    set(CMAKE_INSTALL_RPATH "@executable_path")
-endif()
-
-# --------------------------------------------------------------------------------
-
-#
-# Project definitions
-#
+set(_OUTPUT_ROOT "${CMAKE_SOURCE_DIR}/dist")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${_OUTPUT_ROOT}/lib/Debug")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${_OUTPUT_ROOT}/lib/Debug")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${_OUTPUT_ROOT}/bin/Debug")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${_OUTPUT_ROOT}/lib/Release")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${_OUTPUT_ROOT}/lib/Release")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${_OUTPUT_ROOT}/bin/Release")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${_OUTPUT_ROOT}/lib/RelWithDebInfo")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${_OUTPUT_ROOT}/lib/RelWithDebInfo")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${_OUTPUT_ROOT}/bin/RelWithDebInfo")
 
 # Specify to use solution directories
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# --------------------------------------------------------------------------------
+
 # Add projects
 add_subdirectory("src/liblightmetrica")
-#add_subdirectory("src/liblightmetrica-test")
-
 add_subdirectory("src/lightmetrica")
 add_subdirectory("src/lightmetrica-test")
 
@@ -303,48 +84,5 @@ add_subdirectory("plugin")
 
 # --------------------------------------------------------------------------------
 
-#
-# Install
-#
-
-# Include files
-FILE(GLOB _INCLUDE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/lightmetrica/*.h")
-install(FILES ${_INCLUDE_FILES} DESTINATION "lightmetrica/include/lightmetrica")
-
-# Example scenes
-get_filename_component(_EXAMPLE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/example" REALPATH)
-install(DIRECTORY "${_EXAMPLE_PATH}/" DESTINATION "lightmetrica/example")
-
-# --------------------------------------------------------------------------------
-
-#
-# Packaging with CPack
-#
-
-# Package version
-set(CPACK_PACKAGE_VERSION       "${LM_VERSION_MAJOR}.${LM_VERSION_MINOR}.${LM_VERSION_PATCH}.${LM_VERSION_REVISION}")
-set(CPACK_PACKAGE_VERSION_MAJOR ${LM_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${LM_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${LM_VERSION_PATCH})
-
-# Package name, etc.
-set(CPACK_PACKAGE_NAME "lightmetrica")
-set(CPACK_PACKAGE_VENDOR "Hisanari Otsu")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A modern, research-oriented renderer")
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-
-# Platform specific configuration
-if (WIN32)
-    set(CPACK_SYSTEM_NAME "win-x86_64")
-elseif(APPLE)
-    set(CPACK_SYSTEM_NAME "osx-x86_64")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(CPACK_SYSTEM_NAME "linux-x86_64")
-endif()
-
-# Configuration for DragNDrop installer for OSX
-set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
-set(CPACK_DMG_FORMAT "UDBZ")
-
-include(CPack)
+# Packaging
+include(LMPackaging)

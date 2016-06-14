@@ -40,7 +40,7 @@ public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
-        c_ = prop->Child("c")->As<Vec3>();
+        c_ = prop->ChildAs("c", Vec3(1_f));
         return true;
     };
 

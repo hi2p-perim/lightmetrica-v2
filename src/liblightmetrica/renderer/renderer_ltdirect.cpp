@@ -58,7 +58,7 @@ public:
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
         sched_->Load(prop);
-        maxNumVertices_ = prop->Child("max_num_vertices")->As<int>();
+        maxNumVertices_ = prop->ChildAs<int>("max_num_vertices", -1);
         return true;
     };
 

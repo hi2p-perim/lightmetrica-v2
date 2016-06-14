@@ -215,7 +215,7 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
         // Convert argument types to portable types and call the functions stored in the vtable.
         // Note that return type with struct is not portable in cdecl
         // cf. http://www.angelcode.com/dev/callconv/callconv.html
-        using FuncType = void(LM_CDECL *)(void*, Portable<ReturnType>*, Portable<ArgTypes>...);
+        using FuncType = void(*)(void*, Portable<ReturnType>*, Portable<ArgTypes>...);
         if (!o_->vt_[ID].f)
         {
             LM_LOG_ERROR("Missing vtable entry for");
@@ -321,11 +321,11 @@ struct ImplFunctionGenerator;
 template <typename ReturnType, typename ...ArgTypes>
 struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
 {
-    using PortableFunctionType = void(LM_CDECL *)(void*, Portable<ReturnType>*, Portable<ArgTypes>...);
+    using PortableFunctionType = void(*)(void*, Portable<ReturnType>*, Portable<ArgTypes>...);
     static auto Get() -> PortableFunctionType
     {
         return static_cast<PortableFunctionType>(
-            [](void* userdata, Portable<ReturnType>* result, Portable<ArgTypes>... args) -> void//ReturnType//Portable<ReturnType>
+            [](void* userdata, Portable<ReturnType>* result, Portable<ArgTypes>... args) -> void
             {
                 // Convert user defined implementation to original type
                 using UserFunctionType = std::function<ReturnType(ArgTypes...)>;
@@ -338,11 +338,11 @@ struct ImplFunctionGenerator<ReturnType(ArgTypes...)>
 template <typename ...ArgTypes>
 struct ImplFunctionGenerator<void(ArgTypes...)>
 {
-    using PortableFunctionType = void(LM_CDECL *)(void*, Portable<void>*, Portable<ArgTypes>...);
+    using PortableFunctionType = void(*)(void*, Portable<void>*, Portable<ArgTypes>...);
     static auto Get() -> PortableFunctionType
     {
         return static_cast<PortableFunctionType>(
-            [](void* userdata, Portable<void>*, Portable<ArgTypes>... args) -> void//Portable<void>
+            [](void* userdata, Portable<void>*, Portable<ArgTypes>... args) -> void
             {
                 // Convert user defined implementation to original type
                 using UserFunctionType = std::function<void(ArgTypes...)>;

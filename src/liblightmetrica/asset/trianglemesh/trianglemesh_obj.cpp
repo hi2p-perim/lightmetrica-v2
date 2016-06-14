@@ -44,7 +44,8 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        const auto localpath = prop->Child("path")->As<std::string>();
+        std::string localpath;
+        if (!prop->ChildAs("path", localpath)) return false;
         const auto basepath = boost::filesystem::path(prop->Tree()->BasePath());
         const auto path = basepath / localpath;
 

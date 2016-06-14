@@ -69,9 +69,6 @@ public:
     //! Key of the node
     LM_INTERFACE_F(3, Key, std::string());
 
-    //! Scalar value of the node
-    //LM_INTERFACE_F(4, Scalar, std::string());
-
     //! Scalar value of the node (raw version)
     LM_INTERFACE_F(4, RawScalar, const char*());
 
@@ -89,22 +86,61 @@ public:
 
 public:
 
+    #pragma region Type conversion functions
+
     template <typename T>
-    auto ChildAs(const std::string& name, const T& def) const -> T
+    auto ChildAs(const std::string& name, const T& def) const noexcept -> T
     {
+        LM_LOG_INFO("Loading parameter '" + name + "'");
+        LM_LOG_INDENTER();
+        const auto* child = Child(name);
+        T ret;
+        if (!child)
+        {
+            LM_LOG_WARN("Missing '" + name + "' element; using default value");
+            return def;
+        }
+        if (!child->As<T>(ret))
+        {
+            LM_LOG_WARN("Failed to load '" + name + "' element; using default value");
+            return def;
+        }
+        return ret;
+    };
+
+    template <typename T>
+    auto ChildAs(const std::string& name, T& ret) const noexcept -> bool
+    {
+        LM_LOG_INFO("Loading parameter '" + name + "'");
+        LM_LOG_INDENTER();
         const auto* child = Child(name);
         if (!child)
         {
-            LM_LOG_WARN("Missing '" + name + "' element. Using default value.");
-            return def;
+            LM_LOG_WARN("Missing '" + name + "' element");
+            return false;
         }
+        if (!child->As<T>(ret))
+        {
+            LM_LOG_WARN("Failed to load '" + name + "' element");
+            return false;
+        }
+        return true;
+    }
 
-        return child->As<T>();
-    };
-
-public:
-
-    #pragma region Type conversion functions
+    template <typename T>
+    auto As(T& ret) const noexcept -> bool
+    {
+        try
+        {
+            ret = As<T>();
+        }
+        catch (const std::invalid_argument& e)
+        {
+            LM_LOG_ERROR("Invalid parameter: " + std::string(e.what()));
+            return false;
+        }
+        return true;
+    }
 
     template <typename T> auto As() const -> T;
 

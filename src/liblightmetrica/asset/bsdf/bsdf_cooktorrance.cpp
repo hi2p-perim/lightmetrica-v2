@@ -46,7 +46,8 @@ public:
     {
         if (prop->Child("TexR"))
         {
-            const auto id = prop->Child("TexR")->As<std::string>();
+            const std::string id;
+            prop->ChildAs("TexR", id);
             texR_  = static_cast<const Texture*>(assets->AssetByIDAndType(id, "texture", primitive));
         }
         else

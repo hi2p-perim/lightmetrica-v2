@@ -39,7 +39,7 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        ps_ = prop->Child("positions")->As<std::vector<Float>>();
+        if (!prop->ChildAs("positions", ps_)) return false;
         if (ps_.size() % 3 != 0)
         {
             LM_LOG_ERROR("Invalid number of elements in 'positions': " + std::to_string(ps_.size()));
@@ -49,7 +49,7 @@ public:
 
         if (prop->Child("normals"))
         {
-            ns_ = prop->Child("normals")->As<std::vector<Float>>();
+            prop->ChildAs("normals", ns_);
             if (ns_.size() != ps_.size())
             {
                 LM_LOG_ERROR("Invalid number of elements in 'normals': " + std::to_string(ns_.size()));
@@ -60,7 +60,7 @@ public:
 
         if (prop->Child("texcoords"))
         {
-            ts_ = prop->Child("texcoords")->As<std::vector<Float>>();
+            prop->ChildAs("texcoords", ts_);
             if (ts_.size() != ps_.size() / 3 * 2)
             {
                 LM_LOG_ERROR("Invalid number of elements in 'normals': " + std::to_string(ts_.size()));
@@ -69,7 +69,7 @@ public:
             }
         }
 
-        fs_ = prop->Child("faces")->As<std::vector<unsigned int>>();
+        prop->ChildAs("faces", fs_);
         if (fs_.size() % 3 != 0)
         {
             LM_LOG_ERROR("Invalid number of elements in 'faces': " + std::to_string(fs_.size()));
