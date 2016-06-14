@@ -22,11 +22,11 @@
 #  THE SOFTWARE.
 #
 
-add_subdirectory("texture_checker")
-add_subdirectory("texture_white")
-add_subdirectory("renderer_normal")
-add_subdirectory("texture_binary_op")
-add_subdirectory("accel_embree")
-add_subdirectory("trianglemesh_assimp")
-add_subdirectory("renderer_radiosity")
-add_subdirectory("inversemap")
+include(AddPlugin)
+add_plugin(
+	NAME "inversemap"
+	SOURCE
+        "renderer_pssmltfixed.cpp"
+        "renderer_mltfixed.cpp"
+        "renderer_mltinvmapfixed.cpp"
+	NO_INSTALL)
