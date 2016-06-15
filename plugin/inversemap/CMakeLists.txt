@@ -26,6 +26,7 @@ include(AddPlugin)
 add_plugin(
 	NAME "inversemap"
 	SOURCE
+		"inversemaputils.h"
         "renderer_pssmltfixed.cpp"
         "renderer_mltfixed.cpp"
         "renderer_mltinvmapfixed.cpp"
