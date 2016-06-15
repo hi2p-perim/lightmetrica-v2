@@ -295,6 +295,45 @@ public:
 
     static auto MapPath2PS(const Path& inputPath) const -> std::vector<Float>
     {
+        //region Helper function
+        const auto UniformConcentricDiskSample_Inverse = [](const Vec2& s) -> Vec2
+        {
+            const auto r = std::sqrt(s.x*s.x + s.y*s.y);
+            auto theta = std::atan2(s.y, s.x);
+            Vec2 u;
+            if (s.x > -s.y)
+            {
+                if (s.x > s.y)
+                {
+                    u.x = r;
+                    u.y = 4_f * theta * r * Math::InvPi();
+                }
+                else
+                {
+                    u.y = r;
+                    u.x = (1_f - 4_f * theta * Math::InvPi()) * r;
+                }
+            }
+            else
+            {
+                theta = theta < 0_f ? theta + 2_f * Math::Pi() : theta;
+                if (s.x < s.y)
+                {
+                    u.x = -r;
+                    u.y = (4_f - 4_f * theta * Math::InvPi()) * r;
+                }
+                else
+                {
+                    u.y = -r;
+                    u.x = (-6_f + 4_f * theta * Math::InvPi()) * r;
+                }
+            }
+            return u;
+        };
+        //endregion
+
+        // --------------------------------------------------------------------------------
+
         std::vector<Float> ps;
         auto path = inputPath;
         std::reverse(path.vertices.begin(), path.vertices.end());

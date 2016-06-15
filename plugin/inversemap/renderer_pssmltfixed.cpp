@@ -201,6 +201,6 @@ public:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_PSSMLTFixed, "renderer::vcm");
+LM_COMPONENT_REGISTER_IMPL(Renderer_PSSMLTFixed, "renderer::pssmltfixed");
 
 LM_NAMESPACE_END
