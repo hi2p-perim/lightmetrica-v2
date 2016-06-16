@@ -30,6 +30,9 @@ TODO
 - [ ] Define a set of scenes for verifications
 - [x] Refactor CMakeLists.txt. Separate logical components as .cmake files
 - [ ] Optimize portable components. Remove unnecessary copies.
+- [ ] Design and implement path sampler
+- [ ] Improve the versionining of the scene file
+- [ ] Versioning of the interfaces. Introduce a feature to detect a change in APIs
 
 Discussions
 --------------------
