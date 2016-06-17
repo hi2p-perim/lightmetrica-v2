@@ -27,7 +27,8 @@ add_plugin(
 	NAME "inversemap"
 	SOURCE
 		"inversemaputils.h"
-        "renderer_pssmltfixed.cpp"
-        "renderer_mltfixed.cpp"
-        "renderer_mltinvmapfixed.cpp"
+        "renderer_invmap_pssmltfixed.cpp"
+        "renderer_invmap_mltfixed.cpp"
+        "renderer_invmap_mltinvmapfixed.cpp"
+        "renderer_invmap_ptfixed.cpp"
 	NO_INSTALL)

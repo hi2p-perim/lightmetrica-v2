@@ -198,7 +198,7 @@ public:
 
 public:
 
-    static auto MapPS2Path(const Scene& scene, const std::vector<Float>& primarySample) const -> Path
+    static auto MapPS2Path(const Scene* scene, const std::vector<Float>& primarySample) -> Path
     {
         Vec3 initWo;
         PathVertex pv, ppv;
@@ -214,14 +214,16 @@ public:
                 PathVertex v;
 
                 // Emitter is fixed (initial one is used)
-                v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
-                v.primitive = scene.GetSensor();
+                v.type = SurfaceInteractionType::E;
+                v.primitive = scene->GetSensor();
 
                 // Assume the sensor is pinhole camera
                 assert(std::strcmp(v.primitive->emitter->implName, "Sensor_Pinhole") == 0);
 
                 // Sample a position on the emitter and initial ray direction
-                v.primitive->emitter->SamplePositionAndDirection(rng->Next2D(), Vec2(), v.geom, initWo);
+                v.primitive->emitter->SamplePositionAndDirection(
+                    Vec2(primarySample[samplerIndex++], primarySample[samplerIndex++]),
+                    Vec2(), v.geom, initWo);
 
                 // Create a vertex
                 path.vertices.push_back(v);
@@ -246,7 +248,9 @@ public:
                 else
                 {
                     wi = Math::Normalize(ppv.geom.p - pv.geom.p);
-                    pv.primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), pv.type, pv.geom, wi, wo);
+                    pv.primitive->surface->SampleDirection(
+                        Vec2(primarySample[samplerIndex++], primarySample[samplerIndex++]),
+                        0_f, pv.type, pv.geom, wi, wo);
                 }
 
                 // Intersection query
@@ -281,9 +285,9 @@ public:
             }
         }
 
-        if ((path.vertices.back().primitive->type & PrimitiveType::L) > 0)
+        if ((path.vertices.back().primitive->surface->Type() & SurfaceInteractionType::L) > 0)
         {
-            path.vertices.back().type = PrimitiveType::L;
+            path.vertices.back().type = SurfaceInteractionType::L;
         }
 
         std::reverse(path.vertices.begin(), path.vertices.end());
@@ -293,7 +297,7 @@ public:
         return path;
     }
 
-    static auto MapPath2PS(const Path& inputPath) const -> std::vector<Float>
+    static auto MapPath2PS(const Path& inputPath) -> std::vector<Float>
     {
         //region Helper function
         const auto UniformConcentricDiskSample_Inverse = [](const Vec2& s) -> Vec2
@@ -351,15 +355,18 @@ public:
 
             if (vn)
             {
+                const auto wo = Math::Normalize(vn->geom.p - v->geom.p);
                 assert(v->type == SurfaceInteractionType::E || v->type == SurfaceInteractionType::D);
                 if (v->type == SurfaceInteractionType::E)
                 {
-                    //
-                    
+                    Vec2 inv;
+                    v->primitive->sensor->RasterPosition(wo, v->geom, inv);
+                    inv = (inv + Vec2(1_f)) * 0.5_f;
+                    ps.push_back(inv.x);
+                    ps.push_back(inv.y);
                 }
                 else if (v->type == SurfaceInteractionType::D)
                 {
-                    const auto wo = Math::Normalize(vn->geom.p - v->geom.p);
                     const auto localWo = v->geom.ToLocal * wo;
                     const auto inv = UniformConcentricDiskSample_Inverse(Vec2(localWo.x, localWo.y));
                     ps.push_back(inv.x);
