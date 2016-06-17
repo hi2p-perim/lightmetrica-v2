@@ -1586,6 +1586,12 @@ namespace Math
     #pragma region Shading coordinates
 
     template <typename T, SIMD Opt>
+    LM_INLINE auto LocalSin(const TVec3<T, Opt>& v) -> T
+    {
+        return Math::Sqrt(Math::Max(T(0), T(1) - v.z * v.z));
+    }
+
+    template <typename T, SIMD Opt>
     LM_INLINE auto LocalCos(const TVec3<T, Opt>& v) -> T
     {
         return v.z;

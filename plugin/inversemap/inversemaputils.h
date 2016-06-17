@@ -311,7 +311,7 @@ public:
                 else
                 {
                     u.y = r;
-                    u.x = (1_f - 4_f * theta * Math::InvPi()) * r;
+                    u.x = (2_f - 4_f * theta * Math::InvPi()) * r;
                 }
             }
             else
@@ -328,7 +328,7 @@ public:
                     u.x = (-6_f + 4_f * theta * Math::InvPi()) * r;
                 }
             }
-            return u;
+            return (u + Vec2(1_f)) * 0.5_f;
         };
         //endregion
 
@@ -355,12 +355,15 @@ public:
                 if (v->type == SurfaceInteractionType::E)
                 {
                     //
-
+                    
                 }
                 else if (v->type == SurfaceInteractionType::D)
                 {
-                    const auto wo = glm::normalize(vn->geom.p - v->geom.p);
-                    const auto localWo = v->geom.toLocal * wo;
+                    const auto wo = Math::Normalize(vn->geom.p - v->geom.p);
+                    const auto localWo = v->geom.ToLocal * wo;
+                    const auto inv = UniformConcentricDiskSample_Inverse(Vec2(localWo.x, localWo.y));
+                    ps.push_back(inv.x);
+                    ps.push_back(inv.y);
                 }
             }
         }
