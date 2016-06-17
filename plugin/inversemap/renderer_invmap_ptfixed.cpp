@@ -68,8 +68,31 @@ public:
         {
             auto& ctx = contexts[threadid];
 
+            // Generate primary sample
+            std::vector<Float> primarySample;
+            for (int i = 0; i < numVertices_; i++)
+            {
+                primarySample.push_back(ctx.rng.Next());
+            }
 
-        };
+            // Map to path
+            const auto path = InversemapUtils::MapPS2Path(scene, primarySample);
+            if (path.vertices.size() == numVertices_)
+            {
+                // Record contribution
+                const SPD F = path.EvaluateF(0);
+                if (!F.Black())
+                {
+                    // Path probability
+                    const auto p = path.EvaluatePathPDF(scene, 0);
+                    assert(p > 0);
+
+                    // Accumulate the contribution
+                    const auto C = F / p;
+                    ctx.film->Splat(path.RasterPosition(), C);
+                }
+            }
+        });
 
         // --------------------------------------------------------------------------------
 
