@@ -23,8 +23,9 @@
 #
 
 include(AddPlugin)
+set(_PROJECT_NAME "inversemap")
 add_plugin(
-	NAME "inversemap"
+	NAME ${_PROJECT_NAME}
 	SOURCE
 		"inversemaputils.h"
         "renderer_invmap_pssmltfixed.cpp"
@@ -32,3 +33,5 @@ add_plugin(
         "renderer_invmap_mltinvmapfixed.cpp"
         "renderer_invmap_ptfixed.cpp"
 	NO_INSTALL)
+target_link_libraries(${_PROJECT_NAME} liblightmetrica)
+add_dependencies(${_PROJECT_NAME} liblightmetrica)

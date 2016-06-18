@@ -74,7 +74,7 @@ public:
                 }
 
                 const auto p = InversemapUtils::MapPS2Path(scene, ps);
-                if ((int)(p.vertices.size()) != numVertices_ || p.EvaluateF() == 0.0)
+                if ((int)(p.vertices.size()) != numVertices_ || p.EvaluateF(0).Black())
                 {
                     continue;
                 }
@@ -98,7 +98,7 @@ public:
                 //region Mutate
                 const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
                 {
-                    assert(currPS.size() == Params.NumVertices);
+                    assert(currPS.size() == numVertices_);
                     std::vector<Float> propPS;
                     for (int i = 0; i < numVertices_; i++)
                     {
@@ -113,17 +113,17 @@ public:
                     {
                         Float result;
                         Float r = rng.Next();
-                        if (r < 0.5)
+                        if (r < 0.5_f)
                         {
-                            r = r * 2.0;
+                            r = r * 2_f;
                             result = u + s2 * std::exp(-std::log(s2 / s1) * r);
-                            if (result > 1.0) result -= 1.0;
+                            if (result > 1_f) result -= 1_f;
                         }
                         else
                         {
-                            r = (r - 0.5) * 2.0;
+                            r = (r - 0.5_f) * 2_f;
                             result = u - s2 * std::exp(-std::log(s2 / s1) * r);
-                            if (result < 0.0) result += 1.0;
+                            if (result < 0_f) result += 1_f;
                         }
                         return result;
                     };
@@ -131,7 +131,7 @@ public:
                     std::vector<Float> propPS;
                     for (const Float u : ps)
                     {
-                        propPS.push_back(Perturb(rng, u, 1.0 / 1024.0, 1.0 / 64.0));
+                        propPS.push_back(Perturb(rng, u, 1_f / 1024_f, 1_f / 64_f));
                     }
 
                     return propPS;
@@ -148,8 +148,8 @@ public:
                 const auto PathContrb = [&](const Path& path) -> SPD
                 {
                     const auto F = path.EvaluateF(0);
-                    assert(F >= 0);
-                    assert(!glm::isnan(F));
+                    assert(!F.Black());
+                    //assert(!glm::isnan(F));
                     SPD C;
                     if (!F.Black())
                     {
@@ -172,7 +172,7 @@ public:
                     const Float propC = PathContrb(propP).Luminance();
 
                     // Acceptance ratio
-                    const Float A = currC == 0 ? 1 : Math::Min(1_f, propC) / currC);
+                    const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
 
                     // Accept or reject?
                     if (ctx.rng.Next() < A)
@@ -197,7 +197,7 @@ public:
                 }
             }
             //endregion
-        };
+        });
     };
 
 };

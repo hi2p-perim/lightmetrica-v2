@@ -221,8 +221,9 @@ public:
                 assert(std::strcmp(v.primitive->emitter->implName, "Sensor_Pinhole") == 0);
 
                 // Sample a position on the emitter and initial ray direction
+                const auto u = Vec2(primarySample[samplerIndex++], primarySample[samplerIndex++]);
                 v.primitive->emitter->SamplePositionAndDirection(
-                    Vec2(primarySample[samplerIndex++], primarySample[samplerIndex++]),
+                    u,
                     Vec2(), v.geom, initWo);
 
                 // Create a vertex
@@ -292,7 +293,11 @@ public:
 
         std::reverse(path.vertices.begin(), path.vertices.end());
 
-        assert(path.vertices.size() == primarySample.size());
+        //assert(path.vertices.size() * 2 == primarySample.size());
+        //if (path.vertices.size() * 2 != primarySample.size())
+        //{
+        //    __debugbreak();
+        //}
 
         return path;
     }

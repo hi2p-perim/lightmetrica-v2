@@ -59,6 +59,7 @@ public:
         {
             ctx.rng.SetSeed(initRng->NextUInt());
             ctx.film = ComponentFactory::Clone<Film>(film);
+            ctx.film->Clear();
         }
         //endregion
 
@@ -72,6 +73,7 @@ public:
             std::vector<Float> primarySample;
             for (int i = 0; i < numVertices_; i++)
             {
+                primarySample.push_back(ctx.rng.Next());
                 primarySample.push_back(ctx.rng.Next());
             }
 
@@ -89,7 +91,8 @@ public:
 
                     // Accumulate the contribution
                     const auto C = F / p;
-                    ctx.film->Splat(path.RasterPosition(), C);
+                    const auto rasterPos = path.RasterPosition();
+                    ctx.film->Splat(rasterPos, C);
                 }
             }
         });

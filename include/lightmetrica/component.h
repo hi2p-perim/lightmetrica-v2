@@ -39,6 +39,7 @@
 #include <memory>
 #include <string>
 #include <sstream>
+#include <cassert>
 
 /*!
     \defgroup component Component system
