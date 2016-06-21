@@ -104,6 +104,8 @@ public:
             LM_LOG_INFO("Rendering");
             LM_LOG_INDENTER();
 
+            // --------------------------------------------------------------------------------
+
             // Thread-specific context
             struct Context
             {
@@ -144,6 +146,8 @@ public:
             Parallel::For(numMutations_, [&](long long index, int threadid, bool init) -> void
             {
                 auto& ctx = contexts[threadid];
+
+                // --------------------------------------------------------------------------------
 
                 #pragma region Small step mutation in primary sample space
                 [&]() -> void
@@ -205,7 +209,7 @@ public:
                     {
                         const auto F = path.EvaluateF(0);
                         assert(!F.Black());
-                        //assert(!glm::isnan(F));
+                        assert(!std::isnan(F));
                         SPD C;
                         if (!F.Black())
                         {
@@ -248,7 +252,7 @@ public:
                 #pragma region Accumulate contribution
                 {
                     auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
-                    const SPD currF = currP->EvaluateF(0);
+                    const auto currF = currP->EvaluateF(0);
                     if (!currF.Black())
                     {
                         const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
