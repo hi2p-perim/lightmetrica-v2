@@ -23,6 +23,7 @@
 */
 
 #include "inversemaputils.h"
+#include <boost/format.hpp>
 
 LM_NAMESPACE_BEGIN
 
@@ -37,6 +38,7 @@ public:
 
     int numVertices_;
     long long numMutations_;
+    long long numSeedSamples_;
 
 public:
 
@@ -44,176 +46,229 @@ public:
     {
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
+        if (!prop->ChildAs<long long>("num_seed_samples", numSeedSamples_)) return false;
         return true;
     };
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
-        #pragma region Thread-specific context
-        struct Context
+        #pragma region Compute normalization factor
+        const auto b = [&]() -> Float
         {
-            Random rng;
-            Film::UniquePtr film{nullptr, nullptr};
-            std::vector<Float> currPS;
-        };
-        std::vector<Context> contexts(Parallel::GetNumThreads());
-        for (auto& ctx : contexts)
-        {
-            ctx.rng.SetSeed(initRng->NextUInt());
-            ctx.film = ComponentFactory::Clone<Film>(film);
-
-            #pragma region Initial state
-            while (true)
+            LM_LOG_INFO("Computing normalization factor");
+            LM_LOG_INDENTER();
+            
+            struct Context
             {
-                // Generate initial sample with positive contribution with path tracing
-                // Ignore start-up bias here
+                Random rng;
+                Float b = 0_f;
+            };
+            std::vector<Context> contexts(Parallel::GetNumThreads());
+            for (auto& ctx : contexts) { ctx.rng.SetSeed(initRng->NextUInt()); }
+            
+            Parallel::For(numSeedSamples_, [&](long long index, int threadid, bool init)
+            {
+                auto& ctx = contexts[threadid];
+                
+                // Generate primary sample
                 std::vector<Float> ps;
                 for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
                 {
-                    ps.push_back(initRng->Next());
+                    ps.push_back(ctx.rng.Next());
                 }
 
-                const auto path = InversemapUtils::MapPS2Path(scene, ps);
-                if (!path || path->vertices.size() != numVertices_ || path->EvaluateF(0).Black())
-                {
-                    continue;
-                }
-
-                ctx.currPS = ps;
-                break;
-            }
-            #pragma endregion
-        }
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        Parallel::For(numMutations_, [&](long long index, int threadid, bool init) -> void
-        {
-            auto& ctx = contexts[threadid];
-
-            #pragma region Small step mutation in primary sample space
-            [&]() -> void
-            {
-                #pragma region Mutate
-
-                const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
-                {
-                    assert(currPS.size() == numVertices_);
-                    std::vector<Float> propPS;
-                    for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
-                    {
-                        propPS.push_back(rng.Next());
-                    }
-                    return propPS;
-                };
-
-                const auto SmallStep = [this](const std::vector<Float>& ps, Random& rng) -> std::vector<Float>
-                {
-                    const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
-                    {
-                        Float result;
-                        Float r = rng.Next();
-                        if (r < 0.5_f)
-                        {
-                            r = r * 2_f;
-                            result = u + s2 * std::exp(-std::log(s2 / s1) * r);
-                            if (result > 1_f) result -= 1_f;
-                        }
-                        else
-                        {
-                            r = (r - 0.5_f) * 2_f;
-                            result = u - s2 * std::exp(-std::log(s2 / s1) * r);
-                            if (result < 0_f) result += 1_f;
-                        }
-                        return result;
-                    };
-
-                    std::vector<Float> propPS;
-                    for (const Float u : ps)
-                    {
-                        propPS.push_back(Perturb(rng, u, 1_f / 1024_f, 1_f / 64_f));
-                    }
-
-                    return propPS;
-                };
-
-                //propPS = SmallStep(ctx.currPS, ctx.rng);
-                auto propPS = LargeStep(ctx.currPS, ctx.rng);
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region MH update
-
-                // Function to compute path contribution
-                const auto PathContrb = [&](const Path& path) -> SPD
-                {
-                    const auto F = path.EvaluateF(0);
-                    assert(!F.Black());
-                    //assert(!glm::isnan(F));
-                    SPD C;
-                    if (!F.Black())
-                    {
-                        const auto P = path.EvaluatePathPDF(scene, 0);
-                        assert(P > 0);
-                        C = F / P;
-                    }
-                    return C;
-                };
-
-                // Map primary samples to paths
-                const auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
-                const auto propP = InversemapUtils::MapPS2Path(scene, propPS);
-
-                // Immediately rejects if the proposed path is invalid or the dimension changes
-                if (!propP || currP->vertices.size() != propP->vertices.size())
+                // Map to path
+                const auto p = InversemapUtils::MapPS2Path(scene, ps);
+                if (!p || p->vertices.size() != numVertices_)
                 {
                     return;
                 }
 
-                // Evaluate contributions
-                const Float currC = PathContrb(*currP).Luminance();
-                const Float propC = PathContrb(*propP).Luminance();
+                // Accumulate contribution
+                ctx.b += (p->EvaluateF(0) / p->EvaluatePathPDF(scene, 0)).Luminance();
+            });
 
-                // Acceptance ratio
-                const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
+            Float b = 0_f;
+            for (auto& ctx : contexts) { b += ctx.b; }
+            b /= numSeedSamples_;
 
-                // Accept or reject?
-                if (ctx.rng.Next() < A)
-                {
-                    ctx.currPS.swap(propPS);
-                }
-
-                #pragma endregion
-            }();
-            #pragma endregion
-
-            // --------------------------------------------------------------------------------
-
-            //region Accumulate contribution
-            {
-                auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
-                const SPD currF = currP->EvaluateF(0);
-                if (!currF.Black())
-                {
-                    // We ignored norm factor here, because we compare result offset with same normalization factors.
-                    ctx.film->Splat(currP->RasterPosition(), SPD(1_f));
-                }
-            }
-            //endregion
-        });
+            LM_LOG_INFO(boost::str(boost::format("Normalization factor: %.10f") % b));
+            return b;
+        }();
+        #pragma endregion
 
         // --------------------------------------------------------------------------------
 
-        // Gather & Rescale
-        film->Clear();
-        for (auto& ctx : contexts)
+        #pragma region Rendering
         {
-            film->Accumulate(ctx.film.get());
+            LM_LOG_INFO("Rendering");
+            LM_LOG_INDENTER();
+
+            // Thread-specific context
+            struct Context
+            {
+                Random rng;
+                Film::UniquePtr film{nullptr, nullptr};
+                std::vector<Float> currPS;
+            };
+            std::vector<Context> contexts(Parallel::GetNumThreads());
+            for (auto& ctx : contexts)
+            {
+                ctx.rng.SetSeed(initRng->NextUInt());
+                ctx.film = ComponentFactory::Clone<Film>(film);
+
+                // Initial state
+                while (true)
+                {
+                    // Generate initial sample with positive contribution with path tracing
+                    // Ignore start-up bias here
+                    std::vector<Float> ps;
+                    for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
+                    {
+                        ps.push_back(initRng->Next());
+                    }
+
+                    const auto path = InversemapUtils::MapPS2Path(scene, ps);
+                    if (!path || path->vertices.size() != numVertices_ || path->EvaluateF(0).Black())
+                    {
+                        continue;
+                    }
+
+                    ctx.currPS = ps;
+                    break;
+                }
+            }
+
+            // --------------------------------------------------------------------------------
+
+            Parallel::For(numMutations_, [&](long long index, int threadid, bool init) -> void
+            {
+                auto& ctx = contexts[threadid];
+
+                #pragma region Small step mutation in primary sample space
+                [&]() -> void
+                {
+                    #pragma region Mutate
+
+                    const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
+                    {
+                        assert(currPS.size() == numVertices_);
+                        std::vector<Float> propPS;
+                        for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
+                        {
+                            propPS.push_back(rng.Next());
+                        }
+                        return propPS;
+                    };
+
+                    const auto SmallStep = [this](const std::vector<Float>& ps, Random& rng) -> std::vector<Float>
+                    {
+                        const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
+                        {
+                            Float result;
+                            Float r = rng.Next();
+                            if (r < 0.5_f)
+                            {
+                                r = r * 2_f;
+                                result = u + s2 * std::exp(-std::log(s2 / s1) * r);
+                                if (result > 1_f) result -= 1_f;
+                            }
+                            else
+                            {
+                                r = (r - 0.5_f) * 2_f;
+                                result = u - s2 * std::exp(-std::log(s2 / s1) * r);
+                                if (result < 0_f) result += 1_f;
+                            }
+                            return result;
+                        };
+
+                        std::vector<Float> propPS;
+                        for (const Float u : ps)
+                        {
+                            propPS.push_back(Perturb(rng, u, 1_f / 1024_f, 1_f / 64_f));
+                        }
+
+                        return propPS;
+                    };
+
+                    auto propPS = SmallStep(ctx.currPS, ctx.rng);
+                    //auto propPS = LargeStep(ctx.currPS, ctx.rng);
+
+                    #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    #pragma region MH update
+
+                    // Function to compute path contribution
+                    const auto PathContrb = [&](const Path& path) -> SPD
+                    {
+                        const auto F = path.EvaluateF(0);
+                        assert(!F.Black());
+                        //assert(!glm::isnan(F));
+                        SPD C;
+                        if (!F.Black())
+                        {
+                            const auto P = path.EvaluatePathPDF(scene, 0);
+                            assert(P > 0);
+                            C = F / P;
+                        }
+                        return C;
+                    };
+
+                    // Map primary samples to paths
+                    const auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                    const auto propP = InversemapUtils::MapPS2Path(scene, propPS);
+
+                    // Immediately rejects if the proposed path is invalid or the dimension changes
+                    if (!propP || currP->vertices.size() != propP->vertices.size())
+                    {
+                        return;
+                    }
+
+                    // Evaluate contributions
+                    const Float currC = PathContrb(*currP).Luminance();
+                    const Float propC = PathContrb(*propP).Luminance();
+
+                    // Acceptance ratio
+                    const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
+
+                    // Accept or reject?
+                    if (ctx.rng.Next() < A)
+                    {
+                        ctx.currPS.swap(propPS);
+                    }
+
+                    #pragma endregion
+                }();
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Accumulate contribution
+                {
+                    auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                    const SPD currF = currP->EvaluateF(0);
+                    if (!currF.Black())
+                    {
+                        const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
+                        ctx.film->Splat(currP->RasterPosition(), b / I);
+                    }
+                }
+                #pragma endregion
+            });
+
+            // --------------------------------------------------------------------------------
+
+            // Gather & Rescale
+            film->Clear();
+            for (auto& ctx : contexts)
+            {
+                film->Accumulate(ctx.film.get());
+            }
+            film->Rescale((Float)(film->Width() * film->Height()) / numMutations_);
         }
-        film->Rescale((Float)(film->Width() * film->Height()) / numMutations_);
+        #pragma endregion
     };
 
 };
