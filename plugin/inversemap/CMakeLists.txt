@@ -33,5 +33,5 @@ add_plugin(
         "renderer_invmap_mltinvmapfixed.cpp"
         "renderer_invmap_ptfixed.cpp"
 	NO_INSTALL)
-target_link_libraries(${_PROJECT_NAME} liblightmetrica)
+target_link_libraries(${_PROJECT_NAME} liblightmetrica ${Boost_LIBRARIES})
 add_dependencies(${_PROJECT_NAME} liblightmetrica)

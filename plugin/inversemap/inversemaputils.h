@@ -26,6 +26,7 @@
 
 #include <lightmetrica/lightmetrica.h>
 #include <lightmetrica/detail/parallel.h>
+#include <boost/optional.hpp>
 
 LM_NAMESPACE_BEGIN
 
@@ -198,7 +199,8 @@ public:
 
 public:
 
-    static auto MapPS2Path(const Scene* scene, const std::vector<Float>& primarySample) -> Path
+    ///! Returns boost::none for invalid paths for early rejection.
+    static auto MapPS2Path(const Scene* scene, const std::vector<Float>& primarySample) -> boost::optional<Path>
     {
         Vec3 initWo;
         PathVertex pv, ppv;
@@ -221,10 +223,10 @@ public:
                 assert(std::strcmp(v.primitive->emitter->implName, "Sensor_Pinhole") == 0);
 
                 // Sample a position on the emitter and initial ray direction
-                const auto u = Vec2(primarySample[samplerIndex++], primarySample[samplerIndex++]);
-                v.primitive->emitter->SamplePositionAndDirection(
-                    u,
-                    Vec2(), v.geom, initWo);
+                //const auto u = Vec2(primarySample[samplerIndex++], primarySample[samplerIndex++]);
+                const auto u1 = primarySample[samplerIndex++];
+                const auto u2 = primarySample[samplerIndex++];
+                v.primitive->emitter->SamplePositionAndDirection(Vec2(u1, u2), Vec2(), v.geom, initWo);
 
                 // Create a vertex
                 path.vertices.push_back(v);
@@ -249,9 +251,16 @@ public:
                 else
                 {
                     wi = Math::Normalize(ppv.geom.p - pv.geom.p);
-                    pv.primitive->surface->SampleDirection(
-                        Vec2(primarySample[samplerIndex++], primarySample[samplerIndex++]),
-                        0_f, pv.type, pv.geom, wi, wo);
+                    const auto u1 = primarySample[samplerIndex++];
+                    const auto u2 = primarySample[samplerIndex++];
+                    pv.primitive->surface->SampleDirection(Vec2(u1, u2), 0_f, pv.type, pv.geom, wi, wo);
+                }
+
+                // Evaluate direction
+                const auto fs = pv.primitive->surface->EvaluateDirection(pv.geom, pv.type, wi, wo, TransportDirection::EL, false);
+                if (fs.Black())
+                {
+                    break;
                 }
 
                 // Intersection query
@@ -286,18 +295,13 @@ public:
             }
         }
 
-        if ((path.vertices.back().primitive->surface->Type() & SurfaceInteractionType::L) > 0)
+        if ((path.vertices.back().primitive->surface->Type() & SurfaceInteractionType::L) == 0)
         {
-            path.vertices.back().type = SurfaceInteractionType::L;
+            return boost::none;
         }
+        path.vertices.back().type = SurfaceInteractionType::L;
 
         std::reverse(path.vertices.begin(), path.vertices.end());
-
-        //assert(path.vertices.size() * 2 == primarySample.size());
-        //if (path.vertices.size() * 2 != primarySample.size())
-        //{
-        //    __debugbreak();
-        //}
 
         return path;
     }
@@ -366,7 +370,7 @@ public:
                 {
                     Vec2 inv;
                     v->primitive->sensor->RasterPosition(wo, v->geom, inv);
-                    inv = (inv + Vec2(1_f)) * 0.5_f;
+                    //inv = (inv + Vec2(1_f)) * 0.5_f;
                     ps.push_back(inv.x);
                     ps.push_back(inv.y);
                 }

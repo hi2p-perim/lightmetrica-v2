@@ -73,8 +73,8 @@ public:
                     ps.push_back(initRng->Next());
                 }
 
-                const auto p = InversemapUtils::MapPS2Path(scene, ps);
-                if ((int)(p.vertices.size()) != numVertices_ || p.EvaluateF(0).Black())
+                const auto path = InversemapUtils::MapPS2Path(scene, ps);
+                if (!path || path->vertices.size() != numVertices_ || path->EvaluateF(0).Black())
                 {
                     continue;
                 }
@@ -88,14 +88,15 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        Parallel::For(numMutations_, [&](long long index, int threadid, bool init)
+        Parallel::For(numMutations_, [&](long long index, int threadid, bool init) -> void
         {
             auto& ctx = contexts[threadid];
 
-            //region Small step mutation in primary sample space
-            std::vector<Float> propPS;
+            #pragma region Small step mutation in primary sample space
+            [&]() -> void
             {
-                //region Mutate
+                #pragma region Mutate
+
                 const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
                 {
                     assert(currPS.size() == numVertices_);
@@ -138,12 +139,14 @@ public:
                 };
 
                 //propPS = SmallStep(ctx.currPS, ctx.rng);
-                propPS = LargeStep(ctx.currPS, ctx.rng);
-                //endregion
+                auto propPS = LargeStep(ctx.currPS, ctx.rng);
+
+                #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
-                //region MH update
+                #pragma region MH update
+
                 // Function to compute path contribution
                 const auto PathContrb = [&](const Path& path) -> SPD
                 {
@@ -164,36 +167,39 @@ public:
                 const auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
                 const auto propP = InversemapUtils::MapPS2Path(scene, propPS);
 
-                // Immediately rejects if the dimension changes
-                if (currP.vertices.size() == propP.vertices.size())
+                // Immediately rejects if the proposed path is invalid or the dimension changes
+                if (!propP || currP->vertices.size() != propP->vertices.size())
                 {
-                    // Evaluate contributions
-                    const Float currC = PathContrb(currP).Luminance();
-                    const Float propC = PathContrb(propP).Luminance();
-
-                    // Acceptance ratio
-                    const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
-
-                    // Accept or reject?
-                    if (ctx.rng.Next() < A)
-                    {
-                        ctx.currPS.swap(propPS);
-                    }
+                    return;
                 }
-                //endregion
-            }
-            //endregion
+
+                // Evaluate contributions
+                const Float currC = PathContrb(*currP).Luminance();
+                const Float propC = PathContrb(*propP).Luminance();
+
+                // Acceptance ratio
+                const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
+
+                // Accept or reject?
+                if (ctx.rng.Next() < A)
+                {
+                    ctx.currPS.swap(propPS);
+                }
+
+                #pragma endregion
+            }();
+            #pragma endregion
 
             // --------------------------------------------------------------------------------
 
             //region Accumulate contribution
             {
                 auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
-                const SPD currF = currP.EvaluateF(0);
+                const SPD currF = currP->EvaluateF(0);
                 if (!currF.Black())
                 {
                     // We ignored norm factor here, because we compare result offset with same normalization factors.
-                    ctx.film->Splat(currP.RasterPosition(), SPD(1_f));
+                    ctx.film->Splat(currP->RasterPosition(), SPD(1_f));
                 }
             }
             //endregion
@@ -202,6 +208,6 @@ public:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_Invmap_PSSMLTFixed, "renderer::invmap::pssmltfixed");
+LM_COMPONENT_REGISTER_IMPL(Renderer_Invmap_PSSMLTFixed, "renderer::invmap_pssmltfixed");
 
 LM_NAMESPACE_END
