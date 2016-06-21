@@ -106,10 +106,8 @@ public:
 
             // Generate primary sample
             std::vector<Float> primarySample;
-            const int NumSamples = (numVertices_ - 1) * 2;
-            for (int i = 0; i < NumSamples; i++)
+            for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
             {
-                primarySample.push_back(ctx.rng.Next());
                 primarySample.push_back(ctx.rng.Next());
             }
 
@@ -136,7 +134,7 @@ public:
                 // Check inverse mapping
                 #if 0
                 const auto ps = InversemapUtils::MapPath2PS(*path);
-                for (int i = 0; i < NumSamples; i++)
+                for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
                 {
                     if (Math::Abs(ps[i] - primarySample[i]) > Math::EpsLarge())
                     {

@@ -206,7 +206,7 @@ public:
         PathVertex pv, ppv;
         Path path;
         int samplerIndex = 0;
-        const int maxNumVertices = (int)(primarySample.size()) / 2;
+        const int maxNumVertices = (int)primarySample.size() / 2 + 1;
         for (int step = 0; step < maxNumVertices; step++)
         {
             if (step == 0)
@@ -385,6 +385,12 @@ public:
         }
 
         return ps;
+    }
+
+    ///! Number of samples required for the underlying path sampler.
+    static auto NumSamples(int numVertices) -> int
+    {
+        return (numVertices - 1) * 2;
     }
 
 };

@@ -49,7 +49,7 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
-        //region Thread-specific context
+        #pragma region Thread-specific context
         struct Context
         {
             Random rng;
@@ -62,13 +62,13 @@ public:
             ctx.rng.SetSeed(initRng->NextUInt());
             ctx.film = ComponentFactory::Clone<Film>(film);
 
-            //region Initial state
+            #pragma region Initial state
             while (true)
             {
                 // Generate initial sample with positive contribution with path tracing
                 // Ignore start-up bias here
                 std::vector<Float> ps;
-                for (int i = 0; i < numVertices_; i++)
+                for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
                 {
                     ps.push_back(initRng->Next());
                 }
@@ -82,9 +82,9 @@ public:
                 ctx.currPS = ps;
                 break;
             }
-            //endregion
+            #pragma endregion
         }
-        //endregion
+        #pragma endregion
 
         // --------------------------------------------------------------------------------
 
@@ -101,7 +101,7 @@ public:
                 {
                     assert(currPS.size() == numVertices_);
                     std::vector<Float> propPS;
-                    for (int i = 0; i < numVertices_; i++)
+                    for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
                     {
                         propPS.push_back(rng.Next());
                     }
@@ -204,6 +204,16 @@ public:
             }
             //endregion
         });
+
+        // --------------------------------------------------------------------------------
+
+        // Gather & Rescale
+        film->Clear();
+        for (auto& ctx : contexts)
+        {
+            film->Accumulate(ctx.film.get());
+        }
+        film->Rescale((Float)(film->Width() * film->Height()) / numMutations_);
     };
 
 };
