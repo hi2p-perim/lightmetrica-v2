@@ -26,7 +26,6 @@
 
 #include <lightmetrica/lightmetrica.h>
 #include <lightmetrica/detail/parallel.h>
-#include <lightmetrica/detail/photonmaputils.h>
 #include <boost/optional.hpp>
 
 LM_NAMESPACE_BEGIN
@@ -41,19 +40,113 @@ struct PathVertex
 struct Subpath
 {
     std::vector<PathVertex> vertices;
-    auto SampleSubpath(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> void
+    auto SampleSubpathFromEndpoint(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> int
     {
-        // Replace it with general path sampler
-        vertices.clear();
-        PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+        Vec3 initWo;
+        PathVertex pv, ppv;
+        SPD throughput;
+        Vec2 rasterPos;
+        int step;
+        for (step = 0; step < maxNumVertices; step++)
         {
-            PathVertex v_;
-            v_.type = v.type;
-            v_.geom = v.geom;
-            v_.primitive = v.primitive;
-            vertices.emplace_back(v_);
-            return true;
-        });
+            const int n = (int)(vertices.size());
+            if (n == 0)
+            {
+                #pragma region Sample initial vertex
+                PathVertex v;
+
+                // Sample an emitter
+                v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
+                v.primitive = scene->SampleEmitter(v.type, rng->Next());
+
+                // Sample a position on the emitter and initial ray direction
+                v.primitive->emitter->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), v.geom, initWo);
+
+                // Initial throughput
+                throughput =
+                    v.primitive->emitter->EvaluatePosition(v.geom, false) /
+                    v.primitive->emitter->EvaluatePositionGivenDirectionPDF(v.geom, initWo, false) /
+                    scene->EvaluateEmitterPDF(v.primitive);
+
+                // Raster position
+                if (transDir == TransportDirection::EL)
+                {
+                    v.primitive->sensor->RasterPosition(initWo, v.geom, rasterPos);
+                }
+
+                // Process vertex
+                vertices.emplace_back(v);
+
+                // Update information
+                pv = v;
+                #pragma endregion
+            }
+            else
+            {
+                #pragma region Sample a vertex with PDF with BSDF
+                // Sample a next direction
+                Vec3 wi;
+                Vec3 wo;
+                if (step == 1)
+                {
+                    wi = Vec3();
+                    wo = initWo;
+                }
+                else
+                {
+                    wi = Math::Normalize(ppv.geom.p - pv.geom.p);
+                    pv.primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), pv.type, pv.geom, wi, wo);
+                }
+
+                // Evaluate direction
+                const auto fs = pv.primitive->surface->EvaluateDirection(pv.geom, pv.type, wi, wo, transDir, false);
+                if (fs.Black())
+                {
+                    break;
+                }
+                const auto pdfD = pv.primitive->surface->EvaluateDirectionPDF(pv.geom, pv.type, wi, wo, false);
+                assert(pdfD > 0_f);
+
+                // Update throughput
+                throughput *= fs / pdfD;
+
+                // Intersection query
+                Ray ray = { pv.geom.p, wo };
+                Intersection isect;
+                if (!scene->Intersect(ray, isect))
+                {
+                    break;
+                }
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Process path vertex
+                PathVertex v;
+                v.geom = isect.geom;
+                v.primitive = isect.primitive;
+                v.type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
+                vertices.push_back(v);
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Path termiantion
+                if (isect.geom.infinite)
+                {
+                    break;
+                }
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Update information
+                ppv = pv;
+                pv = v;
+                #pragma endregion
+            }
+        }
+        return step;
     }
 };
 

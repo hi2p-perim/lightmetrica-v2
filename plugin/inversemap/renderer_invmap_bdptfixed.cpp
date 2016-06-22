@@ -75,8 +75,8 @@ public:
             #pragma region Sample subpaths
             Subpath subpathE;
             Subpath subpathL;
-            subpathE.SampleSubpath(scene, &ctx.rng, TransportDirection::EL, numVertices_);
-            subpathL.SampleSubpath(scene, &ctx.rng, TransportDirection::LE, numVertices_);
+            subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, numVertices_);
+            subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, numVertices_);
             #pragma endregion
 
             // --------------------------------------------------------------------------------

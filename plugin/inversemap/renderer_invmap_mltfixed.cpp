@@ -27,56 +27,58 @@
 
 LM_NAMESPACE_BEGIN
 
-struct TwoTailedGeometricDist
+class TwoTailedGeometricDist
 {
-    Float base;
-    Float invLogBase;
-    Float baseNormalization;
+private:
 
-    int center, start, end;
-    Float offset;
-    Float normalization;
+    Float base_;
+    Float invLogBase_;
+    Float baseNormalization_;
+
+    int center_, start_, end_;
+    Float offset_;
+    Float normalization_;
 
 public:
 
     TwoTailedGeometricDist(Float base)
-        : base(base)
+        : base_(base)
     {
-        baseNormalization = 1_f / (base + 1_f);
-        invLogBase = 1_f / std::log(base);
+        baseNormalization_ = 1_f / (base + 1_f);
+        invLogBase_ = 1_f / std::log(base);
     }
 
 public:
 
     auto Configure(int center, int start, int end) -> void
     {
-        this->center = center;
-        this->start = start - center;
-        this->end = end - center;
-        offset = R(this->start - 1);
-        normalization = R(this->end) - offset;
+        center_        = center;
+        start_         = start - center;
+        end_           = end - center;
+        offset_        = R(this->start_ - 1);
+        normalization_ = R(this->end_) - offset_;
     }
 
     auto EvaluatePDF(int i) const -> Float
     {
-        i -= center;
-        if (i < start || i > end) { return 0_f; }
-        return r(i) / normalization;
+        i -= center_;
+        if (i < start_ || i > end_) { return 0_f; }
+        return r(i) / normalization_;
     }
 
     auto EvaluateCDF(int i) const -> Float
     {
-        i -= center;
-        if (i < start) { return 0_f; }
-        else if (i > end) { i = end; }
-        return (R(i) - offset) / normalization;
+        i -= center_;
+        if (i < start_) { return 0_f; }
+        else if (i > end_) { i = end_; }
+        return (R(i) - offset_) / normalization_;
     }
 
     auto Sample(Float u) const -> int
     {
         // For rare case u=1 generates divide by zero exception
         u = Math::Clamp(u, 0_f, 1_f - Math::Eps());
-        return Math::Max(start, Rinv(u * normalization + offset)) + center;
+        return Math::Max(start_, Rinv(u * normalization_ + offset_)) + center_;
     }
 
 private:
@@ -84,7 +86,7 @@ private:
     auto r(int i) const -> Float
     {
         //RF_DISABLE_FP_EXCEPTION();
-        const Float t = (base - 1_f) * baseNormalization * std::pow(base, -std::abs((Float)(i)));
+        const Float t = (base_ - 1_f) * baseNormalization_ * std::pow(base_, -std::abs((Float)(i)));
         //RF_ENABLE_FP_EXCEPTION();
         return t;
     }
@@ -92,7 +94,7 @@ private:
     auto R(int i) const -> Float
     {
         //RF_DISABLE_FP_EXCEPTION();
-        const Float t = i <= 0 ? std::pow(base, (Float)(i + 1)) * baseNormalization : 1_f - std::pow(base, -(Float)(i)) * baseNormalization;
+        const Float t = i <= 0 ? std::pow(base_, (Float)(i + 1)) * baseNormalization_ : 1_f - std::pow(base_, -(Float)(i)) * baseNormalization_;
         //RF_ENABLE_FP_EXCEPTION();
         return t;
     }
@@ -100,13 +102,13 @@ private:
     auto Rinv(Float x) const -> int
     {
         Float result;
-        if (x < base * baseNormalization)
+        if (x < base_ * baseNormalization_)
         {
-            result = std::log((1_f + base) * x) * invLogBase - 1_f;
+            result = std::log((1_f + base_) * x) * invLogBase_ - 1_f;
         }
         else
         {
-            result = -std::log((1_f + base) * (1_f - x)) * invLogBase;
+            result = -std::log((1_f + base_) * (1_f - x)) * invLogBase_;
         }
         return static_cast<int>(std::ceil(result));
     }
@@ -222,7 +224,7 @@ public:
                         continue;
                     }
 
-                    ctx.currP = path;
+                    ctx.currP = *path;
                     break;
                 }
             }
@@ -252,7 +254,7 @@ public:
                     // Some simplification
                     //   - Mutation within the same path length
                 
-                    const int n = (int)(ctx.curr.vertices.size());
+                    const int n = (int)(ctx.currP.vertices.size());
 
                     // Choose # of path vertices to be deleted
                     TwoTailedGeometricDist removedPathVertexNumDist(2);
@@ -263,34 +265,34 @@ public:
                     const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
                     const int dM = dL + kd - 1;
 
-                    // Choose # of verticed added from each endpoint
+                    // Choose # of vertices added from each endpoint
                     const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
                     const int aM = kd - aL;
 
                     // Sample subpaths
-                    Path subpathL;
+                    Subpath subpathL;
                     for (int s = 0; s < dL; s++)
                     {
-                        subpathL.vertices.push_back(ctx.curr.vertices[s]);
+                        subpathL.vertices.push_back(ctx.currP.vertices[s]);
                     }
-                    if (subpathL.SampleVerticesFromEndpoint(scene, ctx.rng, PrimitiveType::L, aL) != aL)
+                    if (subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, aL) != aL)
                     {
                         return boost::none;
                     }
 
-                    Path subpathE;
+                    Subpath subpathE;
                     for (int t = n - 1; t > dM; t--)
                     {
-                        subpathE.vertices.push_back(ctx.curr.vertices[t]);
+                        subpathE.vertices.push_back(ctx.currP.vertices[t]);
                     }
-                    if (subpathE.SampleVerticesFromEndpoint(scene, ctx.rng, PrimitiveType::E, aM) != aM)
+                    if (subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, aM) != aM)
                     {
                         return boost::none;
                     }
 
                     // Create proposed path
                     Prop prop;
-                    if (!prop.p.Connect(scene, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size()), subpathL, subpathE))
+                    if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
                     {
                         return boost::none;
                     }
@@ -300,17 +302,20 @@ public:
                     return prop;
                 }();
 
-                const auto Q = [](const Path& x, const Path& y, int kd, int dL) -> SPD
+                const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
                 {
-                    SPD sum = 0;
+                    SPD sum;
                     for (int i = 0; i <= kd; i++)
                     {
-                        const auto C = y.EvaluateF(dL + i) / y.EvaluatePathPDF(scene, dL + i);
-                        if (C.Black())
+                        const auto f = y.EvaluateF(dL + i);
+                        if (f.Black())
                         {
                             continue;
                         }
-                        sum += 1.0 / C;
+                        const auto p = y.EvaluatePathPDF(scene, dL + i);
+                        assert(p.v > 0_f);
+                        const auto C = f / p;
+                        sum += 1_f / C;
                     }
                     if (sum.Black())
                     {
@@ -324,50 +329,24 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region MH update
-
-                #if 0
                 if (prop)
                 {
-                    // Proposal distribution is symmetric
-                    const double Fx = ctx.curr.EvaluateF();
-                    const double Fy = prop->p.EvaluateF();
-
-                    double A = 0;
-                    if (Fx <= 0 || Fy <= 0 || glm::isnan(Fx) || glm::isnan(Fy))
+                    const auto Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL).Luminance();
+                    const auto Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL).Luminance();
+                    Float A = 0_f;
+                    if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                     {
-                        A = 0;
+                        A = 0_f;
                     }
                     else
                     {
-                        A = std::min(1.0, Fy / Fx);
-                    }
-
-                    if (ctx.rng.Next() < A)
-                    {
-                        ctx.curr = *prop;
-                    }
-                }
-                #endif
-
-                if (prop)
-                {
-                    const double Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL);
-                    const double Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL);
-                    double A = 0;
-                    if (Qxy <= 0 || Qyx <= 0 || std::isnan(Qxy) || std::isnan(Qyx))
-                    {
-                        A = 0;
-                    }
-                    else
-                    {
-                        A = std::min(1.0, Qyx / Qxy);
+                        A = Math::Min(1_f, Qyx / Qxy);
                     }
                     if (ctx.rng.Next() < A)
                     {
                         ctx.currP = prop->p;
                     }
                 }
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------

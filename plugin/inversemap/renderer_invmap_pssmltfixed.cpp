@@ -209,7 +209,6 @@ public:
                     {
                         const auto F = path.EvaluateF(0);
                         assert(!F.Black());
-                        assert(!std::isnan(F));
                         SPD C;
                         if (!F.Black())
                         {
