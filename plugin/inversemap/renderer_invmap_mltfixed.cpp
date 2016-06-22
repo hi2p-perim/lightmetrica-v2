@@ -23,7 +23,11 @@
 */
 
 #include "inversemaputils.h"
+#include <fstream>
 #include <boost/format.hpp>
+#include <boost/filesystem.hpp>
+
+#define INVERSEMAP_MLTFIXED_DEBUG 0
 
 LM_NAMESPACE_BEGIN
 
@@ -140,7 +144,40 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
+        #if INVERSEMAP_MLTFIXED_DEBUG
+        // Output triangles
+        {
+            std::ofstream out("tris.out", std::ios::out | std::ios::trunc);
+            for (int i = 0; i < scene->NumPrimitives(); i++)
+            {
+                const auto* primitive = scene->PrimitiveAt(i);
+                const auto* mesh = primitive->mesh;
+                if (!mesh) { continue; }
+                const auto* ps = mesh->Positions();
+                const auto* faces = mesh->Faces();
+                for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
+                {
+                    unsigned int vi1 = faces[3 * fi];
+                    unsigned int vi2 = faces[3 * fi + 1];
+                    unsigned int vi3 = faces[3 * fi + 2];
+                    Vec3 p1(primitive->transform * Vec4(ps[3 * vi1], ps[3 * vi1 + 1], ps[3 * vi1 + 2], 1_f));
+                    Vec3 p2(primitive->transform * Vec4(ps[3 * vi2], ps[3 * vi2 + 1], ps[3 * vi2 + 2], 1_f));
+                    Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
+                    out << p1.x << " " << p1.y << " " << p1.z << " "
+                        << p2.x << " " << p2.y << " " << p2.z << " "
+                        << p3.x << " " << p3.y << " " << p3.z << " " 
+                        << p1.x << " " << p1.y << " " << p1.z << std::endl;
+                }
+            }
+        }
+        #endif
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Compute normalization factor
+        #if INVERSEMAP_OMIT_NORMALIZATION
+        const auto b = 1_f;
+        #else
         const auto b = [&]() -> Float
         {
             LM_LOG_INFO("Computing normalization factor");
@@ -183,6 +220,7 @@ public:
             LM_LOG_INFO(boost::str(boost::format("Normalization factor: %.10f") % b));
             return b;
         }();
+        #endif
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -269,6 +307,13 @@ public:
                     const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
                     const int aM = kd - aL;
 
+                    //if (ctx.currP.vertices[1].type == SurfaceInteractionType::S &&
+                    //    std::strcmp(ctx.currP.vertices[1].primitive->id, "n5") == 0 &&
+                    //    kd == 1 && dL == 0 && dM == 0 && aL == 1 && aM == 0)
+                    //{
+                    //    __debugbreak();
+                    //}
+
                     // Sample subpaths
                     Subpath subpathL;
                     for (int s = 0; s < dL; s++)
@@ -310,16 +355,12 @@ public:
                         const auto f = y.EvaluateF(dL + i);
                         if (f.Black())
                         {
-                            continue;
+                            return SPD();
                         }
                         const auto p = y.EvaluatePathPDF(scene, dL + i);
                         assert(p.v > 0_f);
                         const auto C = f / p;
                         sum += 1_f / C;
-                    }
-                    if (sum.Black())
-                    {
-                        return SPD();
                     }
                     return sum;
                 };
@@ -361,6 +402,27 @@ public:
                     }
                 }
                 #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #if INVERSEMAP_MLTFIXED_DEBUG
+                // Output sampled path
+                static long long count = 0;
+                if (count == 0)
+                {
+                    boost::filesystem::remove("dirs.out");
+                }
+                if (count < 500)
+                {
+                    count++;
+                    std::ofstream out("dirs.out", std::ios::out | std::ios::app);
+                    for (const auto& v : ctx.currP.vertices)
+                    {
+                        out << boost::str(boost::format("%.10f %.10f %.10f ") % v.geom.p.x % v.geom.p.y % v.geom.p.z);
+                    }
+                    out << std::endl;
+                }
+                #endif
             });
 
             // --------------------------------------------------------------------------------

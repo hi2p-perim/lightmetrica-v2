@@ -26,7 +26,12 @@
 
 #include <lightmetrica/lightmetrica.h>
 #include <lightmetrica/detail/parallel.h>
+#include <fstream>
+#include <boost/format.hpp>
 #include <boost/optional.hpp>
+#include <boost/filesystem.hpp>
+
+#define INVERSEMAP_OMIT_NORMALIZATION 0
 
 LM_NAMESPACE_BEGIN
 
@@ -43,9 +48,7 @@ struct Subpath
     auto SampleSubpathFromEndpoint(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> int
     {
         Vec3 initWo;
-        PathVertex pv, ppv;
         SPD throughput;
-        Vec2 rasterPos;
         int step;
         for (step = 0; step < maxNumVertices; step++)
         {
@@ -53,6 +56,7 @@ struct Subpath
             if (n == 0)
             {
                 #pragma region Sample initial vertex
+
                 PathVertex v;
 
                 // Sample an emitter
@@ -68,50 +72,64 @@ struct Subpath
                     v.primitive->emitter->EvaluatePositionGivenDirectionPDF(v.geom, initWo, false) /
                     scene->EvaluateEmitterPDF(v.primitive);
 
-                // Raster position
-                if (transDir == TransportDirection::EL)
-                {
-                    v.primitive->sensor->RasterPosition(initWo, v.geom, rasterPos);
-                }
-
                 // Process vertex
                 vertices.emplace_back(v);
 
-                // Update information
-                pv = v;
                 #pragma endregion
             }
             else
             {
                 #pragma region Sample a vertex with PDF with BSDF
+
+                // Previous & two before vertex
+                const auto* pv = &vertices[n - 1];
+                const auto* ppv = n > 1 ? &vertices[n - 2] : nullptr;
+
                 // Sample a next direction
                 Vec3 wi;
                 Vec3 wo;
-                if (step == 1)
+                if (n == 1)
                 {
-                    wi = Vec3();
-                    wo = initWo;
+                    assert(step == 0 || step == 1);
+                    if (step == 1)
+                    {
+                        // Initial direction is sampled from joint distribution
+                        wi = Vec3();
+                        wo = initWo;
+                    }
+                    else
+                    {
+                        // Sample if the surface support sampling from $p_{\sigma^\perp}(\omega_o | \mathbf{x})$
+                        assert(pv->primitive->emitter);
+                        if (!pv->primitive->emitter->SampleDirection.Implemented()) { break; }
+                        pv->primitive->emitter->SampleDirection(rng->Next2D(), rng->Next(), pv->type, pv->geom, Vec3(), wo);
+                    }
                 }
                 else
                 {
-                    wi = Math::Normalize(ppv.geom.p - pv.geom.p);
-                    pv.primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), pv.type, pv.geom, wi, wo);
+                    assert(ppv);
+                    wi = Math::Normalize(ppv->geom.p - pv->geom.p);
+                    pv->primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), pv->type, pv->geom, wi, wo);
                 }
 
                 // Evaluate direction
-                const auto fs = pv.primitive->surface->EvaluateDirection(pv.geom, pv.type, wi, wo, transDir, false);
+                const auto fs = pv->primitive->surface->EvaluateDirection(pv->geom, pv->type, wi, wo, transDir, false);
                 if (fs.Black())
                 {
                     break;
                 }
-                const auto pdfD = pv.primitive->surface->EvaluateDirectionPDF(pv.geom, pv.type, wi, wo, false);
+                const auto pdfD = pv->primitive->surface->EvaluateDirectionPDF(pv->geom, pv->type, wi, wo, false);
                 assert(pdfD > 0_f);
 
                 // Update throughput
                 throughput *= fs / pdfD;
 
-                // Intersection query
-                Ray ray = { pv.geom.p, wo };
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #pragma region Intersection query
+                Ray ray = { pv->geom.p, wo };
                 Intersection isect;
                 if (!scene->Intersect(ray, isect))
                 {
@@ -136,13 +154,6 @@ struct Subpath
                 {
                     break;
                 }
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Update information
-                ppv = pv;
-                pv = v;
                 #pragma endregion
             }
         }
@@ -425,6 +436,27 @@ public:
                     break;
                 }
 
+                #if 0
+                if (std::strcmp(pv.primitive->id, "n5") == 0)
+                {
+                    static long long count = 0;
+                    if (count == 0)
+                    {
+                        boost::filesystem::remove("dirs.out");
+                    }
+                    if (count < 100)
+                    {
+                        count++;
+                        std::ofstream out("dirs.out", std::ios::out | std::ios::app);
+                        out << boost::str(boost::format("%.10f %.10f %.10f ") % pv.geom.p.x % pv.geom.p.y % pv.geom.p.z);
+                        const auto p = pv.geom.p + wo;
+                        out << boost::str(boost::format("%.10f %.10f %.10f ") % p.x % p.y % p.z);
+                        out << std::endl;
+                    }
+
+                }
+                #endif
+
                 // Intersection query
                 Ray ray = { pv.geom.p, wo };
                 Intersection isect;
@@ -434,7 +466,7 @@ public:
                 }
 
                 // Assume all surface is diffuse
-                assert(std::strcmp(isect.primitive->bsdf->implName, "BSDF_Diffuse") == 0);
+                //assert(std::strcmp(isect.primitive->bsdf->implName, "BSDF_Diffuse") == 0);
 
                 // Add a vertex
                 PathVertex v;
