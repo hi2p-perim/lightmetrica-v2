@@ -83,7 +83,7 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        //region Thread-specific context
+        #pragma region Thread-specific context
         struct Context
         {
             Random rng;
@@ -96,7 +96,7 @@ public:
             ctx.film = ComponentFactory::Clone<Film>(film);
             ctx.film->Clear();
         }
-        //endregion
+        #pragma endregion
 
         // --------------------------------------------------------------------------------
 

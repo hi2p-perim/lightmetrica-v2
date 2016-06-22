@@ -26,6 +26,7 @@
 
 #include <lightmetrica/lightmetrica.h>
 #include <lightmetrica/detail/parallel.h>
+#include <lightmetrica/detail/photonmaputils.h>
 #include <boost/optional.hpp>
 
 LM_NAMESPACE_BEGIN
@@ -37,9 +38,57 @@ struct PathVertex
     const Primitive* primitive = nullptr;
 };
 
+struct Subpath
+{
+    std::vector<PathVertex> vertices;
+    auto SampleSubpath(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> void
+    {
+        // Replace it with general path sampler
+        vertices.clear();
+        PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+        {
+            PathVertex v_;
+            v_.type = v.type;
+            v_.geom = v.geom;
+            v_.primitive = v.primitive;
+            vertices.emplace_back(v_);
+            return true;
+        });
+    }
+};
+
 struct Path
 {
     std::vector<PathVertex> vertices;
+
+    auto ConnectSubpaths(const Scene* scene, const Subpath& subpathL, const Subpath& subpathE, int s, int t) -> bool
+    {
+        assert(s >= 0);
+        assert(t >= 0);
+        vertices.clear();
+        if (s == 0 && t > 0)
+        {
+            vertices.insert(vertices.end(), subpathE.vertices.rend() - t, subpathE.vertices.rend());
+            if ((vertices.front().primitive->surface->Type() & SurfaceInteractionType::L) == 0) { return false; }
+            vertices.front().type = SurfaceInteractionType::L;
+        }
+        else if (s > 0 && t == 0)
+        {
+            vertices.insert(vertices.end(), subpathL.vertices.begin(), subpathL.vertices.begin() + s);
+            if ((vertices.back().primitive->surface->Type() & SurfaceInteractionType::E) == 0) { return false; }
+            vertices.back().type = SurfaceInteractionType::E;
+        }
+        else
+        {
+            const auto& vL = subpathL.vertices[s - 1];
+            const auto& vE = subpathE.vertices[t - 1];
+            if (vL.geom.infinite || vE.geom.infinite) { return false; }
+            if (!scene->Visible(vL.geom.p, vE.geom.p)) { return false; }
+            vertices.insert(vertices.end(), subpathL.vertices.begin(), subpathL.vertices.begin() + s);
+            vertices.insert(vertices.end(), subpathE.vertices.rend() - t, subpathE.vertices.rend());
+        }
+        return true;
+    }
 
     auto EvaluateF(int s) const -> SPD
     {
@@ -175,6 +224,26 @@ struct Path
         }
 
         return pdf;
+    }
+
+    auto EvaluateMISWeight(const Scene* scene, int s_) const -> Float
+    {
+        const int n = static_cast<int>(vertices.size());
+        const auto ps = EvaluatePathPDF(scene, s_);
+        assert(ps > 0_f);
+
+        Float invw = 0_f;
+        for (int s = 0; s <= n; s++)
+        {
+            const auto pi = EvaluatePathPDF(scene, s);
+            if (pi > 0_f)
+            {
+                const auto r = pi.v / ps.v;
+                invw += r*r;
+            }
+        }
+
+        return 1_f / invw;
     }
 
     auto RasterPosition() const -> Vec2
