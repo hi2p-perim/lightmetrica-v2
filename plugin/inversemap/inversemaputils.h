@@ -423,6 +423,7 @@ public:
                 }
                 else
                 {
+                    // Random number for the component selection is fixed to zero, meaning no support for this kind of materials
                     wi = Math::Normalize(ppv.geom.p - pv.geom.p);
                     const auto u1 = primarySample[samplerIndex++];
                     const auto u2 = primarySample[samplerIndex++];
@@ -466,7 +467,7 @@ public:
                 }
 
                 // Assume all surface is diffuse
-                //assert(std::strcmp(isect.primitive->bsdf->implName, "BSDF_Diffuse") == 0);
+                assert(std::strcmp(isect.primitive->bsdf->implName, "BSDF_Diffuse") == 0);
 
                 // Add a vertex
                 PathVertex v;
