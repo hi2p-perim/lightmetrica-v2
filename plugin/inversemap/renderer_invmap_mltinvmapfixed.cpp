@@ -24,6 +24,8 @@
 
 #include "inversemaputils.h"
 
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG 0
+
 LM_NAMESPACE_BEGIN
 
 ///! Combining PSSMLT and MLT via inversemap (fixed path length)
@@ -51,6 +53,36 @@ public:
     
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
+        #if INVERSEMAP_MLTINVMAPFIXED_DEBUG
+        // Output triangles
+        {
+            std::ofstream out("tris.out", std::ios::out | std::ios::trunc);
+            for (int i = 0; i < scene->NumPrimitives(); i++)
+            {
+                const auto* primitive = scene->PrimitiveAt(i);
+                const auto* mesh = primitive->mesh;
+                if (!mesh) { continue; }
+                const auto* ps = mesh->Positions();
+                const auto* faces = mesh->Faces();
+                for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
+                {
+                    unsigned int vi1 = faces[3 * fi];
+                    unsigned int vi2 = faces[3 * fi + 1];
+                    unsigned int vi3 = faces[3 * fi + 2];
+                    Vec3 p1(primitive->transform * Vec4(ps[3 * vi1], ps[3 * vi1 + 1], ps[3 * vi1 + 2], 1_f));
+                    Vec3 p2(primitive->transform * Vec4(ps[3 * vi2], ps[3 * vi2 + 1], ps[3 * vi2 + 2], 1_f));
+                    Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
+                    out << p1.x << " " << p1.y << " " << p1.z << " "
+                        << p2.x << " " << p2.y << " " << p2.z << " "
+                        << p3.x << " " << p3.y << " " << p3.z << " " 
+                        << p1.x << " " << p1.y << " " << p1.z << std::endl;
+                }
+            }
+        }
+        #endif
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Compute normalization factor
         #if INVERSEMAP_OMIT_NORMALIZATION
         const auto b = 1_f;
@@ -370,13 +402,44 @@ public:
                             {
                                 currP = prop->p;
                             }
+                            else
+                            {
+                                // This is critical
+                                return;
+                            }
                         }
                         #pragma endregion
 
                         // --------------------------------------------------------------------------------
 
+
                         #pragma region Map to primary sample space
-                        ctx.currPS = InversemapUtils::MapPath2PS(currP);
+                        const auto ps = InversemapUtils::MapPath2PS(currP);
+                        const auto currP2 = InversemapUtils::MapPS2Path(scene, ps);
+                        if (!currP2)
+                        {
+                            // This sometimes happens due to numerical problem
+                            #if 0
+                            LM_LOG_INFO("!currP2");
+                            static long long count = 0;
+                            if (count == 0)
+                            {
+                                boost::filesystem::remove("dirs.out");
+                            }
+                            if (count < 10)
+                            {
+                                count++;
+                                std::ofstream out("dirs.out", std::ios::out | std::ios::app);
+                                for (const auto& v : currP.vertices)
+                                {
+                                    out << boost::str(boost::format("%.10f %.10f %.10f ") % v.geom.p.x % v.geom.p.y % v.geom.p.z);
+                                }
+                                out << std::endl;
+                            }
+                            #endif
+                            return;
+                        }
+                        ctx.currPS = ps;
                         #pragma endregion
                     }();
                     #pragma endregion
@@ -394,6 +457,15 @@ public:
                         ctx.film->Splat(currP->RasterPosition(), b / I);
                     }
                 }
+                //{
+                //    auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                //    const auto currF = currP->EvaluateF(0);
+                //    if (!currF.Black())
+                //    {
+                //        const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
+                //        ctx.film->Splat(currP->RasterPosition(), b / I);
+                //    }
+                //}
                 #pragma endregion
             });
 

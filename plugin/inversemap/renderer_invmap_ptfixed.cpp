@@ -109,11 +109,24 @@ public:
             }
 
             // Map to path
-            const auto path = InversemapUtils::MapPS2Path(scene, primarySample);
+            auto path = InversemapUtils::MapPS2Path(scene, primarySample);
             if (!path || path->vertices.size() != numVertices_)
             {
                 return;
             }
+
+            #if 0
+            // Running wheel!
+            for (int i = 0; i < 100; i++)
+            {
+                const auto ps = InversemapUtils::MapPath2PS(*path);
+                path = InversemapUtils::MapPS2Path(scene, primarySample);
+                if (!path || path->vertices.size() != numVertices_)
+                {
+                    return;
+                }
+            }
+            #endif
 
             // Record contribution
             const SPD F = path->EvaluateF(0);
