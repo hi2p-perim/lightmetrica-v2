@@ -363,6 +363,96 @@ struct Path
 
 // --------------------------------------------------------------------------------
 
+class TwoTailedGeometricDist
+{
+private:
+
+    Float base_;
+    Float invLogBase_;
+    Float baseNormalization_;
+
+    int center_, start_, end_;
+    Float offset_;
+    Float normalization_;
+
+public:
+
+    TwoTailedGeometricDist(Float base)
+        : base_(base)
+    {
+        baseNormalization_ = 1_f / (base + 1_f);
+        invLogBase_ = 1_f / std::log(base);
+    }
+
+public:
+
+    auto Configure(int center, int start, int end) -> void
+    {
+        center_ = center;
+        start_ = start - center;
+        end_ = end - center;
+        offset_ = R(this->start_ - 1);
+        normalization_ = R(this->end_) - offset_;
+    }
+
+    auto EvaluatePDF(int i) const -> Float
+    {
+        i -= center_;
+        if (i < start_ || i > end_) { return 0_f; }
+        return r(i) / normalization_;
+    }
+
+    auto EvaluateCDF(int i) const -> Float
+    {
+        i -= center_;
+        if (i < start_) { return 0_f; }
+        else if (i > end_) { i = end_; }
+        return (R(i) - offset_) / normalization_;
+    }
+
+    auto Sample(Float u) const -> int
+    {
+        // For rare case u=1 generates divide by zero exception
+        u = Math::Clamp(u, 0_f, 1_f - Math::Eps());
+        return Math::Max(start_, Rinv(u * normalization_ + offset_)) + center_;
+    }
+
+private:
+
+    auto r(int i) const -> Float
+    {
+        //RF_DISABLE_FP_EXCEPTION();
+        const Float t = (base_ - 1_f) * baseNormalization_ * std::pow(base_, -std::abs((Float)(i)));
+        //RF_ENABLE_FP_EXCEPTION();
+        return t;
+    }
+
+    auto R(int i) const -> Float
+    {
+        //RF_DISABLE_FP_EXCEPTION();
+        const Float t = i <= 0 ? std::pow(base_, (Float)(i + 1)) * baseNormalization_ : 1_f - std::pow(base_, -(Float)(i)) * baseNormalization_;
+        //RF_ENABLE_FP_EXCEPTION();
+        return t;
+    }
+
+    auto Rinv(Float x) const -> int
+    {
+        Float result;
+        if (x < base_ * baseNormalization_)
+        {
+            result = std::log((1_f + base_) * x) * invLogBase_ - 1_f;
+        }
+        else
+        {
+            result = -std::log((1_f + base_) * (1_f - x)) * invLogBase_;
+        }
+        return static_cast<int>(std::ceil(result));
+    }
+
+};
+
+// --------------------------------------------------------------------------------
+
 ///! Utility class for inversemap project
 class InversemapUtils
 {

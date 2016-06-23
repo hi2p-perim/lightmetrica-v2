@@ -23,101 +23,10 @@
 */
 
 #include "inversemaputils.h"
-#include <fstream>
-#include <boost/format.hpp>
-#include <boost/filesystem.hpp>
 
 #define INVERSEMAP_MLTFIXED_DEBUG 0
 
 LM_NAMESPACE_BEGIN
-
-class TwoTailedGeometricDist
-{
-private:
-
-    Float base_;
-    Float invLogBase_;
-    Float baseNormalization_;
-
-    int center_, start_, end_;
-    Float offset_;
-    Float normalization_;
-
-public:
-
-    TwoTailedGeometricDist(Float base)
-        : base_(base)
-    {
-        baseNormalization_ = 1_f / (base + 1_f);
-        invLogBase_ = 1_f / std::log(base);
-    }
-
-public:
-
-    auto Configure(int center, int start, int end) -> void
-    {
-        center_        = center;
-        start_         = start - center;
-        end_           = end - center;
-        offset_        = R(this->start_ - 1);
-        normalization_ = R(this->end_) - offset_;
-    }
-
-    auto EvaluatePDF(int i) const -> Float
-    {
-        i -= center_;
-        if (i < start_ || i > end_) { return 0_f; }
-        return r(i) / normalization_;
-    }
-
-    auto EvaluateCDF(int i) const -> Float
-    {
-        i -= center_;
-        if (i < start_) { return 0_f; }
-        else if (i > end_) { i = end_; }
-        return (R(i) - offset_) / normalization_;
-    }
-
-    auto Sample(Float u) const -> int
-    {
-        // For rare case u=1 generates divide by zero exception
-        u = Math::Clamp(u, 0_f, 1_f - Math::Eps());
-        return Math::Max(start_, Rinv(u * normalization_ + offset_)) + center_;
-    }
-
-private:
-
-    auto r(int i) const -> Float
-    {
-        //RF_DISABLE_FP_EXCEPTION();
-        const Float t = (base_ - 1_f) * baseNormalization_ * std::pow(base_, -std::abs((Float)(i)));
-        //RF_ENABLE_FP_EXCEPTION();
-        return t;
-    }
-
-    auto R(int i) const -> Float
-    {
-        //RF_DISABLE_FP_EXCEPTION();
-        const Float t = i <= 0 ? std::pow(base_, (Float)(i + 1)) * baseNormalization_ : 1_f - std::pow(base_, -(Float)(i)) * baseNormalization_;
-        //RF_ENABLE_FP_EXCEPTION();
-        return t;
-    }
-
-    auto Rinv(Float x) const -> int
-    {
-        Float result;
-        if (x < base_ * baseNormalization_)
-        {
-            result = std::log((1_f + base_) * x) * invLogBase_ - 1_f;
-        }
-        else
-        {
-            result = -std::log((1_f + base_) * (1_f - x)) * invLogBase_;
-        }
-        return static_cast<int>(std::ceil(result));
-    }
-
-};
 
 ///! Metropolis light transport (fixed path length)
 class Renderer_Invmap_MLTFixed final : public Renderer
@@ -306,13 +215,6 @@ public:
                     // Choose # of vertices added from each endpoint
                     const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
                     const int aM = kd - aL;
-
-                    //if (ctx.currP.vertices[1].type == SurfaceInteractionType::S &&
-                    //    std::strcmp(ctx.currP.vertices[1].primitive->id, "n5") == 0 &&
-                    //    kd == 1 && dL == 0 && dM == 0 && aL == 1 && aM == 0)
-                    //{
-                    //    __debugbreak();
-                    //}
 
                     // Sample subpaths
                     Subpath subpathL;
