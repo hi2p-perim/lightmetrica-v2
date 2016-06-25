@@ -78,13 +78,13 @@ struct VCMPath
         if (s == 0 && t > 0)
         {
             vertices.insert(vertices.end(), subpathE.vertices.rend() - t, subpathE.vertices.rend());
-            if ((vertices.front().primitive->surface->Type() & SurfaceInteractionType::L) == 0) { return false; }
+            if ((vertices.front().primitive->Type() & SurfaceInteractionType::L) == 0) { return false; }
             vertices.front().type = SurfaceInteractionType::L;
         }
         else if (s > 0 && t == 0)
         {
             vertices.insert(vertices.end(), subpathL.vertices.begin(), subpathL.vertices.begin() + s);
-            if ((vertices.back().primitive->surface->Type() & SurfaceInteractionType::E) == 0) { return false; }
+            if ((vertices.back().primitive->Type() & SurfaceInteractionType::E) == 0) { return false; }
             vertices.back().type = SurfaceInteractionType::E;
         }
         else
@@ -106,7 +106,7 @@ struct VCMPath
         vertices.clear();
         const auto& vL = subpathL.vertices[s - 1];
         const auto& vE = subpathE.vertices[t - 1];
-        if (vL.primitive->surface->IsDeltaPosition(vL.type) || vE.primitive->surface->IsDeltaPosition(vE.type)) { return false; }
+        if (vL.primitive->IsDeltaPosition(vL.type) || vE.primitive->IsDeltaPosition(vE.type)) { return false; }
         if (vL.geom.infinite || vE.geom.infinite) { return false; }
         vertices.insert(vertices.end(), subpathL.vertices.begin(), subpathL.vertices.begin() + s);
         vertices.insert(vertices.end(), subpathE.vertices.rend() - t, subpathE.vertices.rend());
@@ -127,7 +127,7 @@ struct VCMPath
         {
             {
                 const auto* vL = &vertices[0];
-                fL = vL->primitive->emitter->EvaluatePosition(vL->geom, false);
+                fL = vL->primitive->EvaluatePosition(vL->geom, false);
             }
             for (int i = 0; i < (merge ? s : s - 1); i++)
             {
@@ -136,7 +136,7 @@ struct VCMPath
                 const auto* vNext = &vertices[i + 1];
                 const auto wi = vPrev ? Math::Normalize(vPrev->geom.p - v->geom.p) : Vec3();
                 const auto wo = Math::Normalize(vNext->geom.p - v->geom.p);
-                fL *= v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, false);
+                fL *= v->primitive->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, false);
                 fL *= RenderUtils::GeometryTerm(v->geom, vNext->geom);
             }
         }
@@ -150,7 +150,7 @@ struct VCMPath
         {
             {
                 const auto* vE = &vertices[n - 1];
-                fE = vE->primitive->emitter->EvaluatePosition(vE->geom, false);
+                fE = vE->primitive->EvaluatePosition(vE->geom, false);
             }
             for (int i = n - 1; i > s; i--)
             {
@@ -159,7 +159,7 @@ struct VCMPath
                 const auto* vNext = i < n - 1 ? &vertices[i + 1] : nullptr;
                 const auto wi = vNext ? Math::Normalize(vNext->geom.p - v->geom.p) : Vec3();
                 const auto wo = Math::Normalize(vPrev->geom.p - v->geom.p);
-                fE *= v->primitive->surface->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, false);
+                fE *= v->primitive->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, false);
                 fE *= RenderUtils::GeometryTerm(v->geom, vPrev->geom);
             }
         }
@@ -174,13 +174,13 @@ struct VCMPath
             {
                 const auto& v = vertices[0];
                 const auto& vNext = vertices[1];
-                cst = v.primitive->emitter->EvaluatePosition(v.geom, true) * v.primitive->emitter->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vNext.geom.p - v.geom.p), TransportDirection::EL, false);
+                cst = v.primitive->EvaluatePosition(v.geom, true) * v.primitive->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vNext.geom.p - v.geom.p), TransportDirection::EL, false);
             }
             else if (s > 0 && t == 0)
             {
                 const auto& v = vertices[n - 1];
                 const auto& vPrev = vertices[n - 2];
-                cst = v.primitive->emitter->EvaluatePosition(v.geom, true) * v.primitive->emitter->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::LE, false);
+                cst = v.primitive->EvaluatePosition(v.geom, true) * v.primitive->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::LE, false);
             }
             else if (s > 0 && t > 0)
             {
@@ -188,8 +188,8 @@ struct VCMPath
                 const auto* vE = &vertices[s];
                 const auto* vLPrev = s - 2 >= 0 ? &vertices[s - 2] : nullptr;
                 const auto* vENext = s + 1 < n ? &vertices[s + 1] : nullptr;
-                const auto fsL = vL->primitive->surface->EvaluateDirection(vL->geom, vL->type, vLPrev ? Math::Normalize(vLPrev->geom.p - vL->geom.p) : Vec3(), Math::Normalize(vE->geom.p - vL->geom.p), TransportDirection::LE, true);
-                const auto fsE = vE->primitive->surface->EvaluateDirection(vE->geom, vE->type, vENext ? Math::Normalize(vENext->geom.p - vE->geom.p) : Vec3(), Math::Normalize(vL->geom.p - vE->geom.p), TransportDirection::EL, true);
+                const auto fsL = vL->primitive->EvaluateDirection(vL->geom, vL->type, vLPrev ? Math::Normalize(vLPrev->geom.p - vL->geom.p) : Vec3(), Math::Normalize(vE->geom.p - vL->geom.p), TransportDirection::LE, true);
+                const auto fsE = vE->primitive->EvaluateDirection(vE->geom, vE->type, vENext ? Math::Normalize(vENext->geom.p - vE->geom.p) : Vec3(), Math::Normalize(vL->geom.p - vE->geom.p), TransportDirection::EL, true);
                 const Float G = RenderUtils::GeometryTerm(vL->geom, vE->geom);
                 cst = fsL * G * fsE;
             }
@@ -201,7 +201,7 @@ struct VCMPath
             const auto& v = vertices[s];
             const auto& vPrev = vertices[s - 1];
             const auto& vNext = vertices[s + 1];
-            const auto fs = v.primitive->surface->EvaluateDirection(v.geom, v.type, Math::Normalize(vNext.geom.p - v.geom.p), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::EL, true);
+            const auto fs = v.primitive->EvaluateDirection(v.geom, v.type, Math::Normalize(vNext.geom.p - v.geom.p), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::EL, true);
             cst = fs;
         }
 
@@ -222,18 +222,18 @@ struct VCMPath
             if (s == 0 && t > 0)
             {
                 const auto& v = vertices[0];
-                if (v.primitive->emitter->IsDeltaPosition(v.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+                if (v.primitive->IsDeltaPosition(v.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
             }
             else if (s > 0 && t == 0)
             {
                 const auto& v = vertices[n - 1];
-                if (v.primitive->emitter->IsDeltaPosition(v.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+                if (v.primitive->IsDeltaPosition(v.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
             }
             else if (s > 0 && t > 0)
             {
                 const auto& vL = vertices[s - 1];
                 const auto& vE = vertices[s];
-                if (vL.primitive->surface->IsDeltaDirection(vL.type) || vE.primitive->surface->IsDeltaDirection(vE.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+                if (vL.primitive->IsDeltaDirection(vL.type) || vE.primitive->IsDeltaDirection(vE.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
             }
         }
         else
@@ -241,31 +241,31 @@ struct VCMPath
             // Check if the path is samplable by vertex merging
             if (s == 0 || t == 0) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
             const auto& vE = vertices[s];
-            if (vE.primitive->surface->IsDeltaPosition(vE.type) || vE.primitive->surface->IsDeltaDirection(vE.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
+            if (vE.primitive->IsDeltaPosition(vE.type) || vE.primitive->IsDeltaDirection(vE.type)) { return PDFVal(PDFMeasure::ProdArea, 0_f); }
         }
 
         // Otherwise the path can be generated with the given strategy (s,t,merge) so p_{s,t,merge} can be safely evaluated.
         PDFVal pdf(PDFMeasure::ProdArea, 1_f);
         if (s > 0)
         {
-            pdf *= vertices[0].primitive->emitter->EvaluatePositionGivenDirectionPDF(vertices[0].geom, Math::Normalize(vertices[1].geom.p - vertices[0].geom.p), false) * scene->EvaluateEmitterPDF(vertices[0].primitive).v;
+            pdf *= vertices[0].primitive->EvaluatePositionGivenDirectionPDF(vertices[0].geom, Math::Normalize(vertices[1].geom.p - vertices[0].geom.p), false) * scene->EvaluateEmitterPDF(vertices[0].primitive).v;
             for (int i = 0; i < (merge ? s : s - 1); i++)
             {
                 const auto* vi = &vertices[i];
                 const auto* vip = i - 1 >= 0 ? &vertices[i - 1] : nullptr;
                 const auto* vin = &vertices[i + 1];
-                pdf *= vi->primitive->surface->EvaluateDirectionPDF(vi->geom, vi->type, vip ? Math::Normalize(vip->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vin->geom.p - vi->geom.p), false).ConvertToArea(vi->geom, vin->geom);
+                pdf *= vi->primitive->EvaluateDirectionPDF(vi->geom, vi->type, vip ? Math::Normalize(vip->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vin->geom.p - vi->geom.p), false).ConvertToArea(vi->geom, vin->geom);
             }
         }
         if (t > 0)
         {
-            pdf *= vertices[n - 1].primitive->emitter->EvaluatePositionGivenDirectionPDF(vertices[n - 1].geom, Math::Normalize(vertices[n - 2].geom.p - vertices[n - 1].geom.p), false) * scene->EvaluateEmitterPDF(vertices[n - 1].primitive).v;
+            pdf *= vertices[n - 1].primitive->EvaluatePositionGivenDirectionPDF(vertices[n - 1].geom, Math::Normalize(vertices[n - 2].geom.p - vertices[n - 1].geom.p), false) * scene->EvaluateEmitterPDF(vertices[n - 1].primitive).v;
             for (int i = n - 1; i >= s + 1; i--)
             {
                 const auto* vi = &vertices[i];
                 const auto* vip = &vertices[i - 1];
                 const auto* vin = i + 1 < n ? &vertices[i + 1] : nullptr;
-                pdf *= vi->primitive->surface->EvaluateDirectionPDF(vi->geom, vi->type, vin ? Math::Normalize(vin->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vip->geom.p - vi->geom.p), false).ConvertToArea(vi->geom, vip->geom);
+                pdf *= vi->primitive->EvaluateDirectionPDF(vi->geom, vi->type, vin ? Math::Normalize(vin->geom.p - vi->geom.p) : Vec3(), Math::Normalize(vip->geom.p - vi->geom.p), false).ConvertToArea(vi->geom, vip->geom);
             }
         }
 
@@ -400,7 +400,7 @@ struct VCMKdTree
             for (int j = 1; j < (int)subpathL.vertices.size(); j++)
             {
                 const auto& v = subpathL.vertices[j];
-                if (!v.geom.infinite && !v.primitive->surface->IsDeltaPosition(v.type) && !v.primitive->surface->IsDeltaDirection(v.type))
+                if (!v.geom.infinite && !v.primitive->IsDeltaPosition(v.type) && !v.primitive->IsDeltaDirection(v.type))
                 {
                     vertices_.push_back({ i, j });
                 }
@@ -715,7 +715,7 @@ public:
                         if (mode_ == Mode::VCM || mode_ == Mode::BDPM)
                         {
                             const auto& vE = subpathE.vertices[t - 1];
-                            if (vE.primitive->surface->IsDeltaPosition(vE.type))
+                            if (vE.primitive->IsDeltaPosition(vE.type))
                             {
                                 continue;
                             }

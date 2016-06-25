@@ -163,12 +163,12 @@ public:
                             mp.numVertices = numVertices;
 
                             // Handle hit with light source
-                            if ((v.primitive->surface->Type() & SurfaceInteractionType::L) > 0)
+                            if ((v.primitive->Type() & SurfaceInteractionType::L) > 0)
                             {
                                 const auto C =
                                     throughput
-                                    * v.primitive->emitter->EvaluateDirection(v.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(pv.geom.p - v.geom.p), TransportDirection::EL, false)
-                                    * v.primitive->emitter->EvaluatePosition(v.geom, false);
+                                    * v.primitive->EvaluateDirection(v.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(pv.geom.p - v.geom.p), TransportDirection::EL, false)
+                                    * v.primitive->EvaluatePosition(v.geom, false);
                                 mp.emission += C;
                             }
 
@@ -281,7 +281,7 @@ public:
                         {
                             return;
                         }
-                        const auto f = mp.v.primitive->surface->EvaluateDirection(mp.v.geom, SurfaceInteractionType::BSDF, mp.wi, photon.wi, TransportDirection::EL, true);
+                        const auto f = mp.v.primitive->EvaluateDirection(mp.v.geom, SurfaceInteractionType::BSDF, mp.wi, photon.wi, TransportDirection::EL, true);
                         deltaTau += f * photon.throughput;
                         M += 1_f;
                     });

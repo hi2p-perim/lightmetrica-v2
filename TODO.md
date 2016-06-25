@@ -33,6 +33,7 @@ TODO
 - [ ] Design and implement path sampler
 - [ ] Improve the versionining of the scene file
 - [ ] Versioning of the interfaces. Introduce a feature to detect a change in APIs
+- [ ] Define flags based on the environment in .travis.yml
 
 Discussions
 --------------------

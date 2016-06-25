@@ -79,8 +79,8 @@ public:
 
             SurfaceGeometry geomL;
             Vec3 initWo;
-            L->light->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), geomL, initWo);
-            const auto pdfPL = L->light->EvaluatePositionGivenDirectionPDF(geomL, initWo, false);
+            L->SamplePositionAndDirection(rng->Next2D(), rng->Next2D(), geomL, initWo);
+            const auto pdfPL = L->EvaluatePositionGivenDirectionPDF(geomL, initWo, false);
             assert(pdfPL.v > 0);
 
             #pragma endregion
@@ -89,7 +89,7 @@ public:
 
             #pragma region Temporary variables
 
-            auto throughput = L->light->EvaluatePosition(geomL, false) / pdfPL / pdfL;
+            auto throughput = L->EvaluatePosition(geomL, false) / pdfPL / pdfL;
             const auto* primitive = L;
             int type = SurfaceInteractionType::L;
             auto geom = geomL;
@@ -118,9 +118,9 @@ public:
                 }
                 else
                 {
-                    primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                    primitive->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
                 }
-                const auto pdfD = primitive->surface->EvaluateDirectionPDF(geom, type, wi, wo, false);
+                const auto pdfD = primitive->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
@@ -128,7 +128,7 @@ public:
 
                 #pragma region Evaluate direction
 
-                const auto fs = primitive->surface->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
+                const auto fs = primitive->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
                 if (fs.Black())
                 {
                     break;
@@ -165,7 +165,7 @@ public:
 
                 #pragma region Handle hit with sensor
 
-                if ((isect.primitive->surface->Type() & SurfaceInteractionType::E) > 0)
+                if ((isect.primitive->Type() & SurfaceInteractionType::E) > 0)
                 {
                     #pragma region Calculate raster position
 
@@ -183,8 +183,8 @@ public:
 
                     const auto C =
                         throughput
-                        * isect.primitive->emitter->EvaluateDirection(isect.geom, SurfaceInteractionType::E, Vec3(), -ray.d, TransportDirection::LE, true)
-                        * isect.primitive->emitter->EvaluatePosition(isect.geom, true);
+                        * isect.primitive->EvaluateDirection(isect.geom, SurfaceInteractionType::E, Vec3(), -ray.d, TransportDirection::LE, true)
+                        * isect.primitive->EvaluatePosition(isect.geom, true);
                     film->Splat(rasterPos, C);
 
                     #pragma endregion
@@ -219,7 +219,7 @@ public:
 
                 geom = isect.geom;
                 primitive = isect.primitive;
-                type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
+                type = isect.primitive->Type() & ~SurfaceInteractionType::Emitter;
                 wi = -ray.d;
                 numVertices++;
 

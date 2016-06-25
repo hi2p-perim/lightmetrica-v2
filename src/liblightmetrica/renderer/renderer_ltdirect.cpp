@@ -126,8 +126,8 @@ public:
                     #pragma region Sample a position on the sensor
 
                     SurfaceGeometry geomE;
-                    E->sensor->SamplePositionGivenPreviousPosition(rng->Next2D(), geom, geomE);
-                    const auto pdfPE = E->sensor->EvaluatePositionGivenPreviousPositionPDF(geomE, geom, false);
+                    E->SamplePositionGivenPreviousPosition(rng->Next2D(), geom, geomE);
+                    const auto pdfPE = E->EvaluatePositionGivenPreviousPositionPDF(geomE, geom, false);
                     assert(pdfPE > 0_f);
 
                     #pragma endregion
@@ -137,11 +137,11 @@ public:
                     #pragma region Evaluate contribution
 
                     const auto ppE = Math::Normalize(geomE.p - geom.p);
-                    const auto fsL = primitive->surface->EvaluateDirection(geom, type, wi, ppE, TransportDirection::LE, true);
-                    const auto fsE = E->sensor->EvaluateDirection(geomE, SurfaceInteractionType::E, Vec3(), -ppE, TransportDirection::EL, false);
+                    const auto fsL = primitive->EvaluateDirection(geom, type, wi, ppE, TransportDirection::LE, true);
+                    const auto fsE = E->EvaluateDirection(geomE, SurfaceInteractionType::E, Vec3(), -ppE, TransportDirection::EL, false);
                     const auto G = RenderUtils::GeometryTerm(geom, geomE);
                     const auto V = scene->Visible(geom.p, geomE.p) ? 1_f : 0_f;
-                    const auto WeP = E->sensor->EvaluatePosition(geomE, false);
+                    const auto WeP = E->EvaluatePosition(geomE, false);
                     const auto C = throughput * fsL * G * V * fsE * WeP / pdfE / pdfPE;
 
                     #pragma endregion
@@ -154,7 +154,7 @@ public:
                     {
                         // Pixel index
                         Vec2 rasterPos;
-                        E->sensor->RasterPosition(-ppE, geomE, rasterPos);
+                        E->RasterPosition(-ppE, geomE, rasterPos);
 
                         // Accumulate to film
                         film->Splat(rasterPos, C);
@@ -176,9 +176,9 @@ public:
                 }
                 else
                 {
-                    primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                    primitive->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
                 }
-                const auto pdfD = primitive->surface->EvaluateDirectionPDF(geom, type, wi, wo, false);
+                const auto pdfD = primitive->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
@@ -186,7 +186,7 @@ public:
 
                 #pragma region Evaluate direction
 
-                const auto fs = primitive->surface->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
+                const auto fs = primitive->EvaluateDirection(geom, type, wi, wo, TransportDirection::LE, false);
                 if (fs.Black())
                 {
                     break;
@@ -246,7 +246,7 @@ public:
 
                 geom = isect.geom;
                 primitive = isect.primitive;
-                type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
+                type = isect.primitive->Type() & ~SurfaceInteractionType::Emitter;
                 wi = -ray.d;
                 numVertices++;
 
