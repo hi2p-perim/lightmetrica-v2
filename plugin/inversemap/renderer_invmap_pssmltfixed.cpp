@@ -79,7 +79,7 @@ public:
 
                 // Map to path
                 const auto p = InversemapUtils::MapPS2Path(scene, ps);
-                if (!p || p->vertices.size() != numVertices_)
+                if (!p || (int)p->vertices.size() != numVertices_)
                 {
                     return;
                 }
@@ -131,7 +131,7 @@ public:
                     }
 
                     const auto path = InversemapUtils::MapPS2Path(scene, ps);
-                    if (!path || path->vertices.size() != numVertices_ || path->EvaluateF(0).Black())
+                    if (!path || (int)path->vertices.size() != numVertices_ || path->EvaluateF(0).Black())
                     {
                         continue;
                     }
@@ -154,6 +154,7 @@ public:
                 {
                     #pragma region Mutate
 
+#if 0
                     const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
                     {
                         assert(currPS.size() == numVertices_);
@@ -165,6 +166,7 @@ public:
                         return propPS;
                     };
 
+#endif
                     const auto SmallStep = [this](const std::vector<Float>& ps, Random& rng) -> std::vector<Float>
                     {
                         const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)

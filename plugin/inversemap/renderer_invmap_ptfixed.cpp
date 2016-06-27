@@ -113,7 +113,7 @@ public:
 
             // Map to path
             const auto path = InversemapUtils::MapPS2Path(scene, primarySample);
-            if (!path || path->vertices.size() != numVertices_)
+            if (!path || (int)path->vertices.size() != numVertices_)
             {
                 return;
             }
