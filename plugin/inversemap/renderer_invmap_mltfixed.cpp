@@ -299,8 +299,7 @@ public:
                     const auto currF = ctx.currP.EvaluateF(0);
                     if (!currF.Black())
                     {
-                        const auto I = (currF / ctx.currP.EvaluatePathPDF(scene, 0)).Luminance();
-                        ctx.film->Splat(ctx.currP.RasterPosition(), b / I);
+                        ctx.film->Splat(ctx.currP.RasterPosition(), currF * (b / currF.Luminance()));
                     }
                 }
                 #pragma endregion

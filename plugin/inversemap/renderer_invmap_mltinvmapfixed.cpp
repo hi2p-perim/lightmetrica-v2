@@ -255,6 +255,7 @@ public:
 
                         // Mutate
                         auto propPS = SmallStep(ctx.currPS, ctx.rng);
+                        //auto propPS = LargeStep(ctx.currPS, ctx.rng);
 
                         // Map primary samples to paths
                         const auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
@@ -455,19 +456,9 @@ public:
                     const auto currF = currP->EvaluateF(0);
                     if (!currF.Black())
                     {
-                        const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
-                        ctx.film->Splat(currP->RasterPosition(), b / I);
+                        ctx.film->Splat(currP->RasterPosition(), currF * (b / currF.Luminance()));
                     }
                 }
-                //{
-                //    auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
-                //    const auto currF = currP->EvaluateF(0);
-                //    if (!currF.Black())
-                //    {
-                //        const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
-                //        ctx.film->Splat(currP->RasterPosition(), b / I);
-                //    }
-                //}
                 #pragma endregion
             });
 

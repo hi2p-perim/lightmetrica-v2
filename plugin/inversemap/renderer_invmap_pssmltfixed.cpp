@@ -257,8 +257,7 @@ public:
                     const auto currF = currP->EvaluateF(0);
                     if (!currF.Black())
                     {
-                        const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
-                        ctx.film->Splat(currP->RasterPosition(), b / I);
+                        ctx.film->Splat(currP->RasterPosition(), currF * (b / currF.Luminance()));
                     }
                 }
                 #pragma endregion
