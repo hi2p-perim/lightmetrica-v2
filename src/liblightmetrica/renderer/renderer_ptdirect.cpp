@@ -127,8 +127,8 @@ public:
                     #pragma region Sample a position on the light
 
                     SurfaceGeometry geomL;
-                    L->light->SamplePositionGivenPreviousPosition(rng->Next2D(), geom, geomL);
-                    const auto pdfPL = L->light->EvaluatePositionGivenPreviousPositionPDF(geomL, geom, false);
+                    L->SamplePositionGivenPreviousPosition(rng->Next2D(), geom, geomL);
+                    const auto pdfPL = L->EvaluatePositionGivenPreviousPositionPDF(geomL, geom, false);
                     assert(pdfPL > 0_f);
 
                     #pragma endregion
@@ -138,11 +138,11 @@ public:
                     #pragma region Evaluate contribution
 
                     const auto ppL = Math::Normalize(geomL.p - geom.p);
-                    const auto fsE = primitive->surface->EvaluateDirection(geom, type, wi, ppL, TransportDirection::EL, true);
-                    const auto fsL = L->light->EvaluateDirection(geomL, SurfaceInteractionType::L, Vec3(), -ppL, TransportDirection::LE, false);
+                    const auto fsE = primitive->EvaluateDirection(geom, type, wi, ppL, TransportDirection::EL, true);
+                    const auto fsL = L->EvaluateDirection(geomL, SurfaceInteractionType::L, Vec3(), -ppL, TransportDirection::LE, false);
                     const auto G = RenderUtils::GeometryTerm(geom, geomL);
                     const auto V = scene->Visible(geom.p, geomL.p) ? 1_f : 0_f;
-                    const auto LeP = L->light->EvaluatePosition(geomL, false);
+                    const auto LeP = L->EvaluatePosition(geomL, false);
                     const auto C = throughput * fsE * G * V * fsL * LeP / pdfL / pdfPL;
 
                     #pragma endregion
@@ -180,9 +180,9 @@ public:
                 }
                 else
                 {
-                    primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
+                    primitive->SampleDirection(rng->Next2D(), rng->Next(), type, geom, wi, wo);
                 }
-                const auto pdfD = primitive->surface->EvaluateDirectionPDF(geom, type, wi, wo, false);
+                const auto pdfD = primitive->EvaluateDirectionPDF(geom, type, wi, wo, false);
 
                 #pragma endregion
 
@@ -204,7 +204,7 @@ public:
 
                 #pragma region Evaluate direction
 
-                const auto fs = primitive->surface->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, false);
+                const auto fs = primitive->EvaluateDirection(geom, type, wi, wo, TransportDirection::EL, false);
                 if (fs.Black())
                 {
                     break;
@@ -264,7 +264,7 @@ public:
 
                 geom = isect.geom;
                 primitive = isect.primitive;
-                type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
+                type = isect.primitive->Type() & ~SurfaceInteractionType::Emitter;
                 wi = -ray.d;
                 numVertices++;
 
