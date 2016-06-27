@@ -23,95 +23,10 @@
 */
 
 #include "inversemaputils.h"
-#include <boost/format.hpp>
+
+#define INVERSEMAP_MLTFIXED_DEBUG 0
 
 LM_NAMESPACE_BEGIN
-
-struct TwoTailedGeometricDist
-{
-    Float base;
-    Float invLogBase;
-    Float baseNormalization;
-
-    int center, start, end;
-    Float offset;
-    Float normalization;
-
-public:
-
-    TwoTailedGeometricDist(Float base)
-        : base(base)
-    {
-        baseNormalization = 1_f / (base + 1_f);
-        invLogBase = 1_f / std::log(base);
-    }
-
-public:
-
-    auto Configure(int center, int start, int end) -> void
-    {
-        this->center = center;
-        this->start = start - center;
-        this->end = end - center;
-        offset = R(this->start - 1);
-        normalization = R(this->end) - offset;
-    }
-
-    auto EvaluatePDF(int i) const -> Float
-    {
-        i -= center;
-        if (i < start || i > end) { return 0_f; }
-        return r(i) / normalization;
-    }
-
-    auto EvaluateCDF(int i) const -> Float
-    {
-        i -= center;
-        if (i < start) { return 0_f; }
-        else if (i > end) { i = end; }
-        return (R(i) - offset) / normalization;
-    }
-
-    auto Sample(Float u) const -> int
-    {
-        // For rare case u=1 generates divide by zero exception
-        u = Math::Clamp(u, 0_f, 1_f - Math::Eps());
-        return Math::Max(start, Rinv(u * normalization + offset)) + center;
-    }
-
-private:
-
-    auto r(int i) const -> Float
-    {
-        //RF_DISABLE_FP_EXCEPTION();
-        const Float t = (base - 1_f) * baseNormalization * std::pow(base, -std::abs((Float)(i)));
-        //RF_ENABLE_FP_EXCEPTION();
-        return t;
-    }
-
-    auto R(int i) const -> Float
-    {
-        //RF_DISABLE_FP_EXCEPTION();
-        const Float t = i <= 0 ? std::pow(base, (Float)(i + 1)) * baseNormalization : 1_f - std::pow(base, -(Float)(i)) * baseNormalization;
-        //RF_ENABLE_FP_EXCEPTION();
-        return t;
-    }
-
-    auto Rinv(Float x) const -> int
-    {
-        Float result;
-        if (x < base * baseNormalization)
-        {
-            result = std::log((1_f + base) * x) * invLogBase - 1_f;
-        }
-        else
-        {
-            result = -std::log((1_f + base) * (1_f - x)) * invLogBase;
-        }
-        return static_cast<int>(std::ceil(result));
-    }
-
-};
 
 ///! Metropolis light transport (fixed path length)
 class Renderer_Invmap_MLTFixed final : public Renderer
@@ -138,7 +53,40 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
+        #if INVERSEMAP_MLTFIXED_DEBUG
+        // Output triangles
+        {
+            std::ofstream out("tris.out", std::ios::out | std::ios::trunc);
+            for (int i = 0; i < scene->NumPrimitives(); i++)
+            {
+                const auto* primitive = scene->PrimitiveAt(i);
+                const auto* mesh = primitive->mesh;
+                if (!mesh) { continue; }
+                const auto* ps = mesh->Positions();
+                const auto* faces = mesh->Faces();
+                for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
+                {
+                    unsigned int vi1 = faces[3 * fi];
+                    unsigned int vi2 = faces[3 * fi + 1];
+                    unsigned int vi3 = faces[3 * fi + 2];
+                    Vec3 p1(primitive->transform * Vec4(ps[3 * vi1], ps[3 * vi1 + 1], ps[3 * vi1 + 2], 1_f));
+                    Vec3 p2(primitive->transform * Vec4(ps[3 * vi2], ps[3 * vi2 + 1], ps[3 * vi2 + 2], 1_f));
+                    Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
+                    out << p1.x << " " << p1.y << " " << p1.z << " "
+                        << p2.x << " " << p2.y << " " << p2.z << " "
+                        << p3.x << " " << p3.y << " " << p3.z << " " 
+                        << p1.x << " " << p1.y << " " << p1.z << std::endl;
+                }
+            }
+        }
+        #endif
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Compute normalization factor
+        #if INVERSEMAP_OMIT_NORMALIZATION
+        const auto b = 1_f;
+        #else
         const auto b = [&]() -> Float
         {
             LM_LOG_INFO("Computing normalization factor");
@@ -181,6 +129,7 @@ public:
             LM_LOG_INFO(boost::str(boost::format("Normalization factor: %.10f") % b));
             return b;
         }();
+        #endif
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -222,7 +171,7 @@ public:
                         continue;
                     }
 
-                    ctx.currP = path;
+                    ctx.currP = *path;
                     break;
                 }
             }
@@ -252,7 +201,7 @@ public:
                     // Some simplification
                     //   - Mutation within the same path length
                 
-                    const int n = (int)(ctx.curr.vertices.size());
+                    const int n = (int)(ctx.currP.vertices.size());
 
                     // Choose # of path vertices to be deleted
                     TwoTailedGeometricDist removedPathVertexNumDist(2);
@@ -263,34 +212,34 @@ public:
                     const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
                     const int dM = dL + kd - 1;
 
-                    // Choose # of verticed added from each endpoint
+                    // Choose # of vertices added from each endpoint
                     const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
                     const int aM = kd - aL;
 
                     // Sample subpaths
-                    Path subpathL;
+                    Subpath subpathL;
                     for (int s = 0; s < dL; s++)
                     {
-                        subpathL.vertices.push_back(ctx.curr.vertices[s]);
+                        subpathL.vertices.push_back(ctx.currP.vertices[s]);
                     }
-                    if (subpathL.SampleVerticesFromEndpoint(scene, ctx.rng, PrimitiveType::L, aL) != aL)
+                    if (subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, aL) != aL)
                     {
                         return boost::none;
                     }
 
-                    Path subpathE;
+                    Subpath subpathE;
                     for (int t = n - 1; t > dM; t--)
                     {
-                        subpathE.vertices.push_back(ctx.curr.vertices[t]);
+                        subpathE.vertices.push_back(ctx.currP.vertices[t]);
                     }
-                    if (subpathE.SampleVerticesFromEndpoint(scene, ctx.rng, PrimitiveType::E, aM) != aM)
+                    if (subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, aM) != aM)
                     {
                         return boost::none;
                     }
 
                     // Create proposed path
                     Prop prop;
-                    if (!prop.p.Connect(scene, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size()), subpathL, subpathE))
+                    if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
                     {
                         return boost::none;
                     }
@@ -300,21 +249,20 @@ public:
                     return prop;
                 }();
 
-                const auto Q = [](const Path& x, const Path& y, int kd, int dL) -> SPD
+                const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
                 {
-                    SPD sum = 0;
+                    SPD sum;
                     for (int i = 0; i <= kd; i++)
                     {
-                        const auto C = y.EvaluateF(dL + i) / y.EvaluatePathPDF(scene, dL + i);
-                        if (C.Black())
+                        const auto f = y.EvaluateF(dL + i);
+                        if (f.Black())
                         {
-                            continue;
+                            return SPD();
                         }
-                        sum += 1.0 / C;
-                    }
-                    if (sum.Black())
-                    {
-                        return SPD();
+                        const auto p = y.EvaluatePathPDF(scene, dL + i);
+                        assert(p.v > 0_f);
+                        const auto C = f / p;
+                        sum += 1_f / C;
                     }
                     return sum;
                 };
@@ -324,50 +272,24 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region MH update
-
-                #if 0
                 if (prop)
                 {
-                    // Proposal distribution is symmetric
-                    const double Fx = ctx.curr.EvaluateF();
-                    const double Fy = prop->p.EvaluateF();
-
-                    double A = 0;
-                    if (Fx <= 0 || Fy <= 0 || glm::isnan(Fx) || glm::isnan(Fy))
+                    const auto Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL).Luminance();
+                    const auto Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL).Luminance();
+                    Float A = 0_f;
+                    if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                     {
-                        A = 0;
+                        A = 0_f;
                     }
                     else
                     {
-                        A = std::min(1.0, Fy / Fx);
-                    }
-
-                    if (ctx.rng.Next() < A)
-                    {
-                        ctx.curr = *prop;
-                    }
-                }
-                #endif
-
-                if (prop)
-                {
-                    const double Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL);
-                    const double Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL);
-                    double A = 0;
-                    if (Qxy <= 0 || Qyx <= 0 || std::isnan(Qxy) || std::isnan(Qyx))
-                    {
-                        A = 0;
-                    }
-                    else
-                    {
-                        A = std::min(1.0, Qyx / Qxy);
+                        A = Math::Min(1_f, Qyx / Qxy);
                     }
                     if (ctx.rng.Next() < A)
                     {
                         ctx.currP = prop->p;
                     }
                 }
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
@@ -382,6 +304,27 @@ public:
                     }
                 }
                 #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #if INVERSEMAP_MLTFIXED_DEBUG
+                // Output sampled path
+                static long long count = 0;
+                if (count == 0)
+                {
+                    boost::filesystem::remove("dirs.out");
+                }
+                if (count < 500)
+                {
+                    count++;
+                    std::ofstream out("dirs.out", std::ios::out | std::ios::app);
+                    for (const auto& v : ctx.currP.vertices)
+                    {
+                        out << boost::str(boost::format("%.10f %.10f %.10f ") % v.geom.p.x % v.geom.p.y % v.geom.p.z);
+                    }
+                    out << std::endl;
+                }
+                #endif
             });
 
             // --------------------------------------------------------------------------------

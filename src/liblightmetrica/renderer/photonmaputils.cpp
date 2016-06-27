@@ -63,12 +63,12 @@ namespace
                 v.primitive = scene->SampleEmitter(v.type, rng->Next());
 
                 // Sample a position on the emitter and initial ray direction
-                v.primitive->emitter->SamplePositionAndDirection(initRasterPos ? *initRasterPos : rng->Next2D(), rng->Next2D(), v.geom, initWo);
+                v.primitive->SamplePositionAndDirection(initRasterPos ? *initRasterPos : rng->Next2D(), rng->Next2D(), v.geom, initWo);
 
                 // Initial throughput
                 throughput =
-                    v.primitive->emitter->EvaluatePosition(v.geom, false) /
-                    v.primitive->emitter->EvaluatePositionGivenDirectionPDF(v.geom, initWo, false) /
+                    v.primitive->EvaluatePosition(v.geom, false) /
+                    v.primitive->EvaluatePositionGivenDirectionPDF(v.geom, initWo, false) /
                     scene->EvaluateEmitterPDF(v.primitive);
 
                 // Raster position
@@ -103,16 +103,16 @@ namespace
                 else
                 {
                     wi = Math::Normalize(ppv.geom.p - pv.geom.p);
-                    pv.primitive->surface->SampleDirection(rng->Next2D(), rng->Next(), pv.type, pv.geom, wi, wo);
+                    pv.primitive->SampleDirection(rng->Next2D(), rng->Next(), pv.type, pv.geom, wi, wo);
                 }
 
                 // Evaluate direction
-                const auto fs = pv.primitive->surface->EvaluateDirection(pv.geom, pv.type, wi, wo, transDir, false);
+                const auto fs = pv.primitive->EvaluateDirection(pv.geom, pv.type, wi, wo, transDir, false);
                 if (fs.Black())
                 {
                     break;
                 }
-                const auto pdfD = pv.primitive->surface->EvaluateDirectionPDF(pv.geom, pv.type, wi, wo, false);
+                const auto pdfD = pv.primitive->EvaluateDirectionPDF(pv.geom, pv.type, wi, wo, false);
                 assert(pdfD > 0_f);
 
                 // Update throughput
@@ -135,7 +135,7 @@ namespace
                 PhotonMapUtils::PathVertex v;
                 v.geom = isect.geom;
                 v.primitive = isect.primitive;
-                v.type = isect.primitive->surface->Type() & ~SurfaceInteractionType::Emitter;
+                v.type = isect.primitive->Type() & ~SurfaceInteractionType::Emitter;
                 if (!processPathVertexFunc(step + 1, rasterPos, pv, v, throughput))
                 {
                     break;

@@ -39,133 +39,6 @@
 
 LM_NAMESPACE_BEGIN
 
-class SurfaceInteractionSelector : public SurfaceInteraction
-{
-    friend class Scene_;
-
-public:
-
-    LM_IMPL_CLASS(SurfaceInteractionSelector, SurfaceInteraction);
-
-public:
-
-    LM_IMPL_F(Type) = [this]() -> int
-    {
-        return (emitter_ ? emitter_->Type() : 0) | (bsdf_ ? bsdf_->Type() : 0);
-    };
-
-    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float u2, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
-    {
-        if ((queryType & SurfaceInteractionType::Emitter) > 0)
-        {
-            emitter_->SampleDirection(u, u2, queryType, geom, wi, wo);
-            return;
-        }
-        if ((queryType & SurfaceInteractionType::BSDF) > 0)
-        {
-            bsdf_->SampleDirection(u, u2, queryType, geom, wi, wo);
-            return;
-        }
-        LM_UNREACHABLE();
-    };
-
-    LM_IMPL_F(SamplePositionGivenPreviousPosition) = [this](const Vec2& u, const SurfaceGeometry& geomPrev, SurfaceGeometry& geom) -> void
-    {
-        assert(emitter_ != nullptr);
-        emitter_->SamplePositionGivenPreviousPosition(u, geomPrev, geom);
-    };
-
-    LM_IMPL_F(SamplePositionAndDirection) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom, Vec3& wo) -> void
-    {
-        assert(emitter_ != nullptr);
-        emitter_->SamplePositionAndDirection(u, u2, geom, wo);
-    };
-
-    LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
-    {
-        if ((queryType & SurfaceInteractionType::Emitter) > 0)
-        {
-            return emitter_->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
-        }
-        if ((queryType & SurfaceInteractionType::BSDF) > 0)
-        {
-            return bsdf_->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
-        }
-        LM_UNREACHABLE();
-        return PDFVal();
-    };
-
-    LM_IMPL_F(EvaluatePositionGivenDirectionPDF) = [this](const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) -> PDFVal
-    {
-        assert(emitter_ != nullptr);
-        return emitter_->EvaluatePositionGivenDirectionPDF(geom, wo, evalDelta);
-    };
-
-    LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> PDFVal
-    {
-        assert(emitter_ != nullptr);
-        return emitter_->EvaluatePositionGivenPreviousPositionPDF(geom, geomPrev, evalDelta);
-    };
-
-    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
-    {
-        if ((types & SurfaceInteractionType::Emitter) > 0)
-        {
-            return emitter_->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
-        }
-        if ((types & SurfaceInteractionType::BSDF) > 0)
-        {
-            return bsdf_->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
-        }
-        LM_UNREACHABLE();
-        return SPD();
-    };
-
-    LM_IMPL_F(EvaluatePosition) = [this](const SurfaceGeometry& geom, bool evalDelta) -> SPD
-    {
-        assert(emitter_ != nullptr);
-        return emitter_->EvaluatePosition(geom, evalDelta);
-    };
-
-    LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
-    {
-        if ((type & SurfaceInteractionType::Emitter) > 0)
-        {
-            return emitter_->IsDeltaDirection(type);
-        }
-        if ((type & SurfaceInteractionType::BSDF) > 0)
-        {
-            return bsdf_->IsDeltaDirection(type);
-        }
-
-        LM_UNREACHABLE();
-        return false;
-    };
-
-    LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
-    {
-        if ((type & SurfaceInteractionType::Emitter) > 0)
-        {
-            return emitter_->IsDeltaPosition(type);
-        }
-        if ((type & SurfaceInteractionType::BSDF) > 0)
-        {
-            return bsdf_->IsDeltaPosition(type);
-        }
-
-        LM_UNREACHABLE();
-        return false;
-    };
-
-private:
-
-    const Emitter* emitter_ = nullptr;
-    const BSDF* bsdf_ = nullptr;
-
-};
-
-// --------------------------------------------------------------------------------
-
 class Scene_ final : public Scene
 {
 public:
@@ -416,18 +289,6 @@ public:
                         return false;
                     }
                 }
-
-                #pragma endregion
-
-                // --------------------------------------------------------------------------------
-
-                #pragma region Combined surface interaction type
-
-                std::unique_ptr<SurfaceInteractionSelector> csi(new SurfaceInteractionSelector);
-                csi->emitter_ = primitive->emitter;
-                csi->bsdf_ = primitive->bsdf;
-                primitive->surface = csi.get();
-                csis_.push_back(std::move(csi));
 
                 #pragma endregion
 
@@ -692,7 +553,6 @@ public:
 private:
 
     std::vector<std::unique_ptr<Primitive>> primitives_;                // Primitives
-    std::vector<std::unique_ptr<SurfaceInteractionSelector>> csis_;     // Combined surface interaction (emitter + bsdf) created per primitive
     std::unordered_map<std::string, Primitive*> primitiveIDMap_;        // Mapping from ID to primitive pointer
     Primitive* sensorPrimitive_;                                        // Pointer to sensor primitive
     std::vector<size_t> lightPrimitiveIndices_;                         // Pointers to light primitives

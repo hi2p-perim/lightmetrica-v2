@@ -23,9 +23,6 @@
 */
 
 #include "inversemaputils.h"
-#include <fstream>
-#include <boost/format.hpp>
-#include <boost/filesystem.hpp>
 
 #define INVERSEMAP_PTFIXED_DEBUG 0
 
@@ -112,11 +109,24 @@ public:
             }
 
             // Map to path
-            const auto path = InversemapUtils::MapPS2Path(scene, primarySample);
+            auto path = InversemapUtils::MapPS2Path(scene, primarySample);
             if (!path || (int)path->vertices.size() != numVertices_)
             {
                 return;
             }
+
+            #if 0
+            // Running wheel!
+            for (int i = 0; i < 100; i++)
+            {
+                const auto ps = InversemapUtils::MapPath2PS(*path);
+                path = InversemapUtils::MapPS2Path(scene, primarySample);
+                if (!path || path->vertices.size() != numVertices_)
+                {
+                    return;
+                }
+            }
+            #endif
 
             // Record contribution
             const SPD F = path->EvaluateF(0);
@@ -151,11 +161,11 @@ public:
             {
                 boost::filesystem::remove("dirs.out");
             }
-            if (count < 100)
+            if (count < 500)
             {
                 count++;
                 std::ofstream out("dirs.out", std::ios::out | std::ios::app);
-                for (const auto& v : path.vertices)
+                for (const auto& v : path->vertices)
                 {
                     out << boost::str(boost::format("%.10f %.10f %.10f ") % v.geom.p.x % v.geom.p.y % v.geom.p.z);
                 }

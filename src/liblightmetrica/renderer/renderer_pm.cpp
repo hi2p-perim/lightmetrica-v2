@@ -151,13 +151,13 @@ public:
                 }
 
                 // Handle hit with light source
-                if ((v.primitive->surface->Type() & SurfaceInteractionType::L) > 0)
+                if ((v.primitive->Type() & SurfaceInteractionType::L) > 0)
                 {
                     // Accumulate to film
                     const auto C =
                         throughput
-                        * v.primitive->emitter->EvaluateDirection(v.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(pv.geom.p - v.geom.p), TransportDirection::EL, false)
-                        * v.primitive->emitter->EvaluatePosition(v.geom, false);
+                        * v.primitive->EvaluateDirection(v.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(pv.geom.p - v.geom.p), TransportDirection::EL, false)
+                        * v.primitive->EvaluatePosition(v.geom, false);
                     film->Splat(rasterPos, C);
                 }
 
@@ -180,7 +180,7 @@ public:
                             }
                             auto k = Kernel(v.geom.p, photon, radius_);
                             auto p = k / (radius_ * radius_ * numPhotonTraceSamples_);
-                            const auto f = v.primitive->surface->EvaluateDirection(v.geom, SurfaceInteractionType::BSDF, Math::Normalize(pv.geom.p - v.geom.p), photon.wi, TransportDirection::EL, true);
+                            const auto f = v.primitive->EvaluateDirection(v.geom, SurfaceInteractionType::BSDF, Math::Normalize(pv.geom.p - v.geom.p), photon.wi, TransportDirection::EL, true);
                             const auto C = throughput * p * f * photon.throughput;
                             film->Splat(rasterPos, C);
                         });

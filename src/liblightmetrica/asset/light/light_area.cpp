@@ -76,6 +76,12 @@ public:
         wo = geom.ToWorld * localWo;
     };
 
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    {
+        const auto localWo = Sampler::CosineSampleHemisphere(u);
+        wo = geom.ToWorld * localWo;
+    };
+
     LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         const auto localWo = geom.ToLocal * wo;

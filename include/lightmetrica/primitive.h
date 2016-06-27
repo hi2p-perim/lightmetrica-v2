@@ -28,6 +28,8 @@
 #include <lightmetrica/math.h>
 #include <lightmetrica/bsdf.h>
 #include <lightmetrica/emitter.h>
+#include <lightmetrica/light.h>
+#include <lightmetrica/sensor.h>
 #include <lightmetrica/align.h>
 #include <lightmetrica/bound.h>
 #include <string>
@@ -68,49 +70,130 @@ struct Primitive : public SIMDAlignedType
     const TriangleMesh* mesh = nullptr;
 
     // Surface interactions
-    const SurfaceInteraction* surface = nullptr;
-    const BSDF*    bsdf               = nullptr;
-    const Emitter* emitter            = nullptr;
-    const Light*   light              = nullptr;
-    const Sensor*  sensor             = nullptr;
+    const BSDF* bsdf       = nullptr;
+    const Emitter* emitter = nullptr;
+    const Light*  light    = nullptr;
+    const Sensor* sensor   = nullptr;
 
-    /*!
-        Get underlying surface interaction types.
-        \return Surface interaction types.
-    */
-    //auto Type() const -> int
-    //{
-    //    int type = 0;
-    //    if (emitter)
-    //    {
-    //        type |= emitter->Type();
-    //    }
-    //    if (bsdf)
-    //    {
-    //        type |= bsdf->Type();
-    //    }
-    //    return type;
-    //}
+public:
 
-    /*!
-        Select the underlying surface interaction as given type.
-        \param queryType Surface interaction type.
-        \return          Selected surface interaction.
-    */
-    //auto As(int queryType) const -> const SurfaceInteraction*
-    //{
-    //    assert((queryType & SurfaceInteractionType::Emitter) == 0 || (queryType & SurfaceInteractionType::BSDF) == 0);
-    //    if ((queryType & SurfaceInteractionType::Emitter) > 0)
-    //    {
-    //        return emitter;
-    //    }
-    //    if ((queryType & SurfaceInteractionType::BSDF) > 0)
-    //    {
-    //        return bsdf;
-    //    }
-    //    LM_UNREACHABLE();
-    //    return nullptr;
-    //}
+    ///! Get underlying surface interaction types
+    auto Type() const -> int
+    {
+        int type = 0;
+        if (bsdf)    { type |= bsdf->Type(); }
+        if (emitter) { type |= emitter->Type(); }
+        return type;
+    }
+
+    auto SampleDirection(const Vec2& u, Float u2, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) const -> void
+    {
+        if ((queryType & SurfaceInteractionType::BSDF) > 0)
+        {
+            bsdf->SampleDirection(u, u2, queryType, geom, wi, wo);
+            return;
+        }
+        if ((queryType & SurfaceInteractionType::Emitter) > 0)
+        {
+            emitter->SampleDirection(u, u2, queryType, geom, wi, wo);
+            return;
+        }
+        LM_UNREACHABLE();
+    };
+
+    auto SamplePositionGivenPreviousPosition(const Vec2& u, const SurfaceGeometry& geomPrev, SurfaceGeometry& geom) const -> void
+    {
+        assert(emitter != nullptr);
+        emitter->SamplePositionGivenPreviousPosition(u, geomPrev, geom);
+    };
+
+    auto SamplePositionAndDirection(const Vec2& u, const Vec2& u2, SurfaceGeometry& geom, Vec3& wo) const -> void
+    {
+        assert(emitter != nullptr);
+        emitter->SamplePositionAndDirection(u, u2, geom, wo);
+    };
+
+    auto EvaluateDirectionPDF(const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) const -> PDFVal
+    {
+        if ((queryType & SurfaceInteractionType::Emitter) > 0)
+        {
+            return emitter->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
+        }
+        if ((queryType & SurfaceInteractionType::BSDF) > 0)
+        {
+            return bsdf->EvaluateDirectionPDF(geom, queryType, wi, wo, evalDelta);
+        }
+        LM_UNREACHABLE();
+        return PDFVal();
+    };
+
+    auto EvaluatePositionGivenDirectionPDF(const SurfaceGeometry& geom, const Vec3& wo, bool evalDelta) const -> PDFVal
+    {
+        assert(emitter != nullptr);
+        return emitter->EvaluatePositionGivenDirectionPDF(geom, wo, evalDelta);
+    };
+
+    auto EvaluatePositionGivenPreviousPositionPDF(const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) const -> PDFVal
+    {
+        assert(emitter != nullptr);
+        return emitter->EvaluatePositionGivenPreviousPositionPDF(geom, geomPrev, evalDelta);
+    };
+
+    auto EvaluateDirection(const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) const -> SPD
+    {
+        if ((types & SurfaceInteractionType::Emitter) > 0)
+        {
+            return emitter->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
+        }
+        if ((types & SurfaceInteractionType::BSDF) > 0)
+        {
+            return bsdf->EvaluateDirection(geom, types, wi, wo, transDir, evalDelta);
+        }
+        LM_UNREACHABLE();
+        return SPD();
+    };
+
+    auto EvaluatePosition(const SurfaceGeometry& geom, bool evalDelta) const -> SPD
+    {
+        assert(emitter != nullptr);
+        return emitter->EvaluatePosition(geom, evalDelta);
+    };
+
+    auto IsDeltaDirection(int type) const -> bool
+    {
+        if ((type & SurfaceInteractionType::Emitter) > 0)
+        {
+            return emitter->IsDeltaDirection(type);
+        }
+        if ((type & SurfaceInteractionType::BSDF) > 0)
+        {
+            return bsdf->IsDeltaDirection(type);
+        }
+        LM_UNREACHABLE();
+        return false;
+    };
+
+    auto IsDeltaPosition(int type) const -> bool
+    {
+        if ((type & SurfaceInteractionType::Emitter) > 0)
+        {
+            return emitter->IsDeltaPosition(type);
+        }
+        if ((type & SurfaceInteractionType::BSDF) > 0)
+        {
+            return bsdf->IsDeltaPosition(type);
+        }
+        LM_UNREACHABLE();
+        return false;
+    };
+
+public:
+
+    auto RasterPosition(const Vec3& wo, const SurfaceGeometry& geom, Vec2& rasterPos) const -> bool
+    {
+        assert(sensor != nullptr);
+        return sensor->RasterPosition(wo, geom, rasterPos);
+    }
 
 };
 
