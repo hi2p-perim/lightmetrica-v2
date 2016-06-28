@@ -484,6 +484,8 @@ public:
                     {
                         __debugbreak();
                     }
+                    #else
+                    LM_UNUSED(accept);
                     #endif
                 }
 

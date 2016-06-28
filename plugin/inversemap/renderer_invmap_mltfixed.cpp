@@ -25,7 +25,7 @@
 #include "inversemaputils.h"
 
 #define INVERSEMAP_MLTFIXED_DEBUG 0
-#define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 1
+#define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 0
 
 LM_NAMESPACE_BEGIN
 
@@ -338,6 +338,8 @@ public:
                         }
                     }
                 }
+                #else
+                LM_UNUSED(accept);
                 #endif
 
                 // --------------------------------------------------------------------------------
