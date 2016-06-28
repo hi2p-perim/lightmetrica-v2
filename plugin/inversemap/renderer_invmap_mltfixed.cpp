@@ -282,24 +282,26 @@ public:
                     // --------------------------------------------------------------------------------
 
                     #pragma region MH update
-                    const auto Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL).Luminance();
-                    const auto Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL).Luminance();
-                    Float A = 0_f;
-                    if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                     {
-                        A = 0_f;
-                    }
-                    else
-                    {
-                        A = Math::Min(1_f, Qyx / Qxy);
-                    }
-                    if (ctx.rng.Next() < A)
-                    {
-                        ctx.currP = prop->p;
-                    }
-                    else
-                    {
-                        return false;
+                        const auto Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL).Luminance();
+                        const auto Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL).Luminance();
+                        Float A = 0_f;
+                        if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
+                        {
+                            A = 0_f;
+                        }
+                        else
+                        {
+                            A = Math::Min(1_f, Qyx / Qxy);
+                        }
+                        if (ctx.rng.Next() < A)
+                        {
+                            ctx.currP = prop->p;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     }
                     #pragma endregion
 

@@ -26,7 +26,8 @@
 
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE 0
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT 0
-#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION 1
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_COUNT_OCCURRENCES 0
 
 LM_NAMESPACE_BEGIN
 
@@ -42,6 +43,7 @@ public:
     int numVertices_;
     long long numMutations_;
     long long numSeedSamples_;
+    Float largeStepProb_;
 
 public:
 
@@ -50,6 +52,7 @@ public:
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
         if (!prop->ChildAs<long long>("num_seed_samples", numSeedSamples_)) return false;
+        largeStepProb_ = prop->ChildAs<Float>("large_step_prob", 0.5_f);
         return true;
     };
     
@@ -190,26 +193,11 @@ public:
 
                 // --------------------------------------------------------------------------------
 
-                const Float SelectPSProb = 0_f;
-                if (ctx.rng.Next() < SelectPSProb)
+                if (ctx.rng.Next() < largeStepProb_)
                 {
                     #pragma region Small step mutation in primary sample space
                     [&]() -> void
                     {
-                        // Large step mutation
-                        #if 0
-                        const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
-                        {
-                            assert(currPS.size() == numVertices_);
-                            std::vector<Float> propPS;
-                            for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
-                            {
-                                propPS.push_back(rng.Next());
-                            }
-                            return propPS;
-                        };
-                        #endif
-
                         // Small step mutation
                         const auto SmallStep = [this](const std::vector<Float>& ps, Random& rng) -> std::vector<Float>
                         {
@@ -260,7 +248,6 @@ public:
 
                         // Mutate
                         auto propPS = SmallStep(ctx.currPS, ctx.rng);
-                        //auto propPS = LargeStep(ctx.currPS, ctx.rng);
 
                         // Map primary samples to paths
                         const auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
@@ -371,11 +358,6 @@ public:
                         {
                             return false;
                         }
-                        //{
-                        //    // Immediately reject if the proposed path is not mappable to the primary sample space
-                        //    const auto ps = InversemapUtils::MapPath2PS(currP);
-                        //    
-                        //}
 
                         const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
                         {
@@ -438,7 +420,7 @@ public:
                         #pragma region Map to primary sample space
                         const auto ps = InversemapUtils::MapPath2PS(currP);
                         const auto currP2 = InversemapUtils::MapPS2Path(scene, ps);
-                        if (!currP2)
+                        if (!currP2 || currP2->EvaluateF(0).Black())
                         {
                             // This sometimes happens due to numerical problem
                             #if 0
@@ -462,8 +444,11 @@ public:
                             return false;
                         }
                         ctx.currPS = ps;
-                        return true;
                         #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        return true;
                     }();
                     #pragma endregion
 
@@ -495,6 +480,10 @@ public:
                             }
                         }
                     }
+                    if (maxReject > 10000)
+                    {
+                        __debugbreak();
+                    }
                     #endif
                 }
 
@@ -503,11 +492,15 @@ public:
                 #pragma region Accumulate contribution
                 {
                     auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                    #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_COUNT_OCCURRENCES
+                    ctx.film->Splat(currP->RasterPosition(), SPD(1_f));
+                    #else
                     const auto currF = currP->EvaluateF(0);
                     if (!currF.Black())
                     {
-                        ctx.film->Splat(currP->RasterPosition(), currF * (b / currF.Luminance()));
+                        ctx.film->Splat(currP->RasterPosition(), currF * (b / currF.Luminance()));   
                     }
+                    #endif
                 }
                 #pragma endregion
 
