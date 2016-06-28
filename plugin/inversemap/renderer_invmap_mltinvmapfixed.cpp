@@ -24,7 +24,10 @@
 
 #include "inversemaputils.h"
 
-#define INVERSEMAP_MLTINVMAPFIXED_DEBUG 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_COUNT_OCCURRENCES 0
 
 LM_NAMESPACE_BEGIN
 
@@ -40,6 +43,7 @@ public:
     int numVertices_;
     long long numMutations_;
     long long numSeedSamples_;
+    Float largeStepProb_;
 
 public:
 
@@ -48,12 +52,13 @@ public:
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
         if (!prop->ChildAs<long long>("num_seed_samples", numSeedSamples_)) return false;
+        largeStepProb_ = prop->ChildAs<Float>("large_step_prob", 0.5_f);
         return true;
     };
     
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
-        #if INVERSEMAP_MLTINVMAPFIXED_DEBUG
+        #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE
         // Output triangles
         {
             std::ofstream out("tris.out", std::ios::out | std::ios::trunc);
@@ -179,32 +184,20 @@ public:
 
             // --------------------------------------------------------------------------------
 
+            #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
+            static long long maxReject = 0;
+            #endif
             Parallel::For(numMutations_, [&](long long index, int threadid, bool init) -> void
             {
                 auto& ctx = contexts[threadid];
 
                 // --------------------------------------------------------------------------------
 
-                const Float SelectPSProb = 0_f;
-                if (ctx.rng.Next() < SelectPSProb)
+                if (ctx.rng.Next() < largeStepProb_)
                 {
                     #pragma region Small step mutation in primary sample space
                     [&]() -> void
                     {
-                        // Large step mutation
-                        #if 0
-                        const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
-                        {
-                            assert(currPS.size() == numVertices_);
-                            std::vector<Float> propPS;
-                            for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
-                            {
-                                propPS.push_back(rng.Next());
-                            }
-                            return propPS;
-                        };
-                        #endif
-
                         // Small step mutation
                         const auto SmallStep = [this](const std::vector<Float>& ps, Random& rng) -> std::vector<Float>
                         {
@@ -284,7 +277,7 @@ public:
                 else
                 {
                     #pragma region Bidirectional mutation in path space
-                    [&]() -> void
+                    const bool accept = [&]() -> bool
                     {
                         #pragma region Map to path space
                         auto currP = [&]() -> Path
@@ -363,7 +356,7 @@ public:
                         }();
                         if (!prop)
                         {
-                            return;
+                            return false;
                         }
 
                         const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
@@ -407,18 +400,27 @@ public:
                             else
                             {
                                 // This is critical
-                                return;
+                                return false;
                             }
                         }
                         #pragma endregion
 
                         // --------------------------------------------------------------------------------
 
+                        //{
+                        //    const auto currF = currP.EvaluateF(0);
+                        //    if (!currF.Black())
+                        //    {
+                        //        ctx.film->Splat(currP.RasterPosition(), currF * (b / currF.Luminance()));
+                        //    }
+                        //}
+
+                        // --------------------------------------------------------------------------------
 
                         #pragma region Map to primary sample space
                         const auto ps = InversemapUtils::MapPath2PS(currP);
                         const auto currP2 = InversemapUtils::MapPS2Path(scene, ps);
-                        if (!currP2)
+                        if (!currP2 || currP2->EvaluateF(0).Black())
                         {
                             // This sometimes happens due to numerical problem
                             #if 0
@@ -439,12 +441,50 @@ public:
                                 out << std::endl;
                             }
                             #endif
-                            return;
+                            return false;
                         }
                         ctx.currPS = ps;
                         #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        return true;
                     }();
                     #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
+                    {
+                        assert(Parallel::GetNumThreads() == 1);
+                        static bool prevIsReject = false;
+                        static long long sequencialtReject = 0;
+                        if (accept)
+                        {
+                            prevIsReject = false;
+                        }
+                        else
+                        {
+                            if (prevIsReject)
+                            {
+                                sequencialtReject++;
+                            }
+                            else
+                            {
+                                sequencialtReject = 1;
+                            }
+                            prevIsReject = true;
+                            if (sequencialtReject > maxReject)
+                            {
+                                maxReject = sequencialtReject;
+                            }
+                        }
+                    }
+                    if (maxReject > 10000)
+                    {
+                        __debugbreak();
+                    }
+                    #endif
                 }
 
                 // --------------------------------------------------------------------------------
@@ -452,24 +492,49 @@ public:
                 #pragma region Accumulate contribution
                 {
                     auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                    #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_COUNT_OCCURRENCES
+                    ctx.film->Splat(currP->RasterPosition(), SPD(1_f));
+                    #else
                     const auto currF = currP->EvaluateF(0);
                     if (!currF.Black())
                     {
-                        const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
-                        ctx.film->Splat(currP->RasterPosition(), b / I);
+                        ctx.film->Splat(currP->RasterPosition(), currF * (b / currF.Luminance()));   
+                    }
+                    #endif
+                }
+                #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT
+                {
+                    assert(Parallel::GetNumThreads() == 1);
+                    static long long count = 0;
+                    if (count == 0)
+                    {
+                        boost::filesystem::remove("traceplot.out");
+                    }
+                    if (count < 1000)
+                    {
+                        count++;
+                        std::ofstream out("traceplot.out", std::ios::out | std::ios::app);
+                        for (const auto& v : ctx.currPS)
+                        {
+                            out << v << " ";
+                        }
+                        out << std::endl;
                     }
                 }
-                //{
-                //    auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
-                //    const auto currF = currP->EvaluateF(0);
-                //    if (!currF.Black())
-                //    {
-                //        const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
-                //        ctx.film->Splat(currP->RasterPosition(), b / I);
-                //    }
-                //}
-                #pragma endregion
+                #endif
             });
+
+            // --------------------------------------------------------------------------------
+
+            #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
+            {
+                LM_LOG_INFO("Maximum # of rejection: " + std::to_string(maxReject));
+            }
+            #endif
 
             // --------------------------------------------------------------------------------
 

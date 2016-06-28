@@ -483,7 +483,7 @@ public:
                 v.primitive = scene->GetSensor();
 
                 // Assume the sensor is pinhole camera
-                assert(std::strcmp(v.primitive->implName, "Sensor_Pinhole") == 0);
+                assert(std::strcmp(v.primitive->emitter->implName, "Sensor_Pinhole") == 0);
 
                 // Sample a position on the emitter and initial ray direction
                 //const auto u = Vec2(primarySample[samplerIndex++], primarySample[samplerIndex++]);
@@ -644,7 +644,7 @@ public:
             if (i == 0)
             {
                 // No sample is needed for the pinhole camera
-                assert(std::strcmp(v->primitive->implName, "Sensor_Pinhole") == 0);
+                assert(std::strcmp(v->primitive->emitter->implName, "Sensor_Pinhole") == 0);
             }
 
             if (vn)

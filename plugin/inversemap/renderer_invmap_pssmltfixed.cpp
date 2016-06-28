@@ -39,6 +39,7 @@ public:
     int numVertices_;
     long long numMutations_;
     long long numSeedSamples_;
+    Float largeStepProb_;
 
 public:
 
@@ -47,6 +48,7 @@ public:
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
         if (!prop->ChildAs<long long>("num_seed_samples", numSeedSamples_)) return false;
+        largeStepProb_ = prop->ChildAs<Float>("large_step_prob", 0.5_f);
         return true;
     };
 
@@ -154,7 +156,6 @@ public:
                 {
                     #pragma region Mutate
 
-#if 0
                     const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
                     {
                         assert(currPS.size() == numVertices_);
@@ -166,7 +167,6 @@ public:
                         return propPS;
                     };
 
-#endif
                     const auto SmallStep = [this](const std::vector<Float>& ps, Random& rng) -> std::vector<Float>
                     {
                         const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
@@ -198,8 +198,9 @@ public:
                         return propPS;
                     };
 
-                    auto propPS = SmallStep(ctx.currPS, ctx.rng);
-                    //auto propPS = LargeStep(ctx.currPS, ctx.rng);
+                    auto propPS = ctx.rng.Next() < largeStepProb_
+                        ? LargeStep(ctx.currPS, ctx.rng)
+                        : SmallStep(ctx.currPS, ctx.rng);
 
                     #pragma endregion
 
@@ -257,8 +258,7 @@ public:
                     const auto currF = currP->EvaluateF(0);
                     if (!currF.Black())
                     {
-                        const auto I = (currF / currP->EvaluatePathPDF(scene, 0)).Luminance();
-                        ctx.film->Splat(currP->RasterPosition(), b / I);
+                        ctx.film->Splat(currP->RasterPosition(), currF * (b / currF.Luminance()));
                     }
                 }
                 #pragma endregion
