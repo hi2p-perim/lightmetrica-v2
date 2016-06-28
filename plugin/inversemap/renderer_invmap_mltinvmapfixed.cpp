@@ -24,7 +24,9 @@
 
 #include "inversemaputils.h"
 
-#define INVERSEMAP_MLTINVMAPFIXED_DEBUG 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION 1
 
 LM_NAMESPACE_BEGIN
 
@@ -53,7 +55,7 @@ public:
     
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
-        #if INVERSEMAP_MLTINVMAPFIXED_DEBUG
+        #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE
         // Output triangles
         {
             std::ofstream out("tris.out", std::ios::out | std::ios::trunc);
@@ -179,6 +181,9 @@ public:
 
             // --------------------------------------------------------------------------------
 
+            #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
+            static long long maxReject = 0;
+            #endif
             Parallel::For(numMutations_, [&](long long index, int threadid, bool init) -> void
             {
                 auto& ctx = contexts[threadid];
@@ -285,7 +290,7 @@ public:
                 else
                 {
                     #pragma region Bidirectional mutation in path space
-                    [&]() -> void
+                    const bool accept = [&]() -> bool
                     {
                         #pragma region Map to path space
                         auto currP = [&]() -> Path
@@ -364,8 +369,13 @@ public:
                         }();
                         if (!prop)
                         {
-                            return;
+                            return false;
                         }
+                        //{
+                        //    // Immediately reject if the proposed path is not mappable to the primary sample space
+                        //    const auto ps = InversemapUtils::MapPath2PS(currP);
+                        //    
+                        //}
 
                         const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
                         {
@@ -408,13 +418,22 @@ public:
                             else
                             {
                                 // This is critical
-                                return;
+                                return false;
                             }
                         }
                         #pragma endregion
 
                         // --------------------------------------------------------------------------------
 
+                        //{
+                        //    const auto currF = currP.EvaluateF(0);
+                        //    if (!currF.Black())
+                        //    {
+                        //        ctx.film->Splat(currP.RasterPosition(), currF * (b / currF.Luminance()));
+                        //    }
+                        //}
+
+                        // --------------------------------------------------------------------------------
 
                         #pragma region Map to primary sample space
                         const auto ps = InversemapUtils::MapPath2PS(currP);
@@ -440,12 +459,43 @@ public:
                                 out << std::endl;
                             }
                             #endif
-                            return;
+                            return false;
                         }
                         ctx.currPS = ps;
+                        return true;
                         #pragma endregion
                     }();
                     #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
+                    {
+                        assert(Parallel::GetNumThreads() == 1);
+                        static bool prevIsReject = false;
+                        static long long sequencialtReject = 0;
+                        if (accept)
+                        {
+                            prevIsReject = false;
+                        }
+                        else
+                        {
+                            if (prevIsReject)
+                            {
+                                sequencialtReject++;
+                            }
+                            else
+                            {
+                                sequencialtReject = 1;
+                            }
+                            prevIsReject = true;
+                            if (sequencialtReject > maxReject)
+                            {
+                                maxReject = sequencialtReject;
+                            }
+                        }
+                    }
+                    #endif
                 }
 
                 // --------------------------------------------------------------------------------
@@ -460,7 +510,38 @@ public:
                     }
                 }
                 #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT
+                {
+                    assert(Parallel::GetNumThreads() == 1);
+                    static long long count = 0;
+                    if (count == 0)
+                    {
+                        boost::filesystem::remove("traceplot.out");
+                    }
+                    if (count < 1000)
+                    {
+                        count++;
+                        std::ofstream out("traceplot.out", std::ios::out | std::ios::app);
+                        for (const auto& v : ctx.currPS)
+                        {
+                            out << v << " ";
+                        }
+                        out << std::endl;
+                    }
+                }
+                #endif
             });
+
+            // --------------------------------------------------------------------------------
+
+            #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
+            {
+                LM_LOG_INFO("Maximum # of rejection: " + std::to_string(maxReject));
+            }
+            #endif
 
             // --------------------------------------------------------------------------------
 

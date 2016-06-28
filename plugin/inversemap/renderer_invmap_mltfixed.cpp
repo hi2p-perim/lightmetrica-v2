@@ -25,6 +25,7 @@
 #include "inversemaputils.h"
 
 #define INVERSEMAP_MLTFIXED_DEBUG 0
+#define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 1
 
 LM_NAMESPACE_BEGIN
 
@@ -178,102 +179,109 @@ public:
 
             // --------------------------------------------------------------------------------
 
+            #if INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION
+            static long long maxReject = 0;
+            #endif
             Parallel::For(numMutations_, [&](long long index, int threadid, bool init) -> void
             {
                 auto& ctx = contexts[threadid];
 
                 // --------------------------------------------------------------------------------
 
-                #pragma region Mutate the current path
-
-                // Bidirectional mutation first narrows the mutation space by limiting the deleted range
-                // in the current path, so it requires some additional information other than proposed path itself.
-                struct Prop
+                const auto accept = [&]() -> bool
                 {
-                    Path p;
-                    int kd;
-                    int dL;
-                };
+                    #pragma region Mutate the current path
 
-                const auto prop = [&]() -> boost::optional<Prop>
-                {
-                    // Implements bidirectional mutation within same path length
-                    // Some simplification
-                    //   - Mutation within the same path length
+                    // Bidirectional mutation first narrows the mutation space by limiting the deleted range
+                    // in the current path, so it requires some additional information other than proposed path itself.
+                    struct Prop
+                    {
+                        Path p;
+                        int kd;
+                        int dL;
+                    };
+
+                    const auto prop = [&]() -> boost::optional<Prop>
+                    {
+                        // Implements bidirectional mutation within same path length
+                        // Some simplification
+                        //   - Mutation within the same path length
                 
-                    const int n = (int)(ctx.currP.vertices.size());
+                        const int n = (int)(ctx.currP.vertices.size());
 
-                    // Choose # of path vertices to be deleted
-                    TwoTailedGeometricDist removedPathVertexNumDist(2);
-                    removedPathVertexNumDist.Configure(1, 1, n);
-                    const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
+                        // Choose # of path vertices to be deleted
+                        TwoTailedGeometricDist removedPathVertexNumDist(2);
+                        removedPathVertexNumDist.Configure(1, 1, n);
+                        const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
 
-                    // Choose range of deleted vertices [dL,dM]
-                    const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
-                    const int dM = dL + kd - 1;
+                        // Choose range of deleted vertices [dL,dM]
+                        const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
+                        const int dM = dL + kd - 1;
 
-                    // Choose # of vertices added from each endpoint
-                    const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
-                    const int aM = kd - aL;
+                        // Choose # of vertices added from each endpoint
+                        const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
+                        const int aM = kd - aL;
 
-                    // Sample subpaths
-                    Subpath subpathL;
-                    for (int s = 0; s < dL; s++)
-                    {
-                        subpathL.vertices.push_back(ctx.currP.vertices[s]);
-                    }
-                    if (subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, aL) != aL)
-                    {
-                        return boost::none;
-                    }
-
-                    Subpath subpathE;
-                    for (int t = n - 1; t > dM; t--)
-                    {
-                        subpathE.vertices.push_back(ctx.currP.vertices[t]);
-                    }
-                    if (subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, aM) != aM)
-                    {
-                        return boost::none;
-                    }
-
-                    // Create proposed path
-                    Prop prop;
-                    if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
-                    {
-                        return boost::none;
-                    }
-
-                    prop.kd = kd;
-                    prop.dL = dL;
-                    return prop;
-                }();
-
-                const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
-                {
-                    SPD sum;
-                    for (int i = 0; i <= kd; i++)
-                    {
-                        const auto f = y.EvaluateF(dL + i);
-                        if (f.Black())
+                        // Sample subpaths
+                        Subpath subpathL;
+                        for (int s = 0; s < dL; s++)
                         {
-                            return SPD();
+                            subpathL.vertices.push_back(ctx.currP.vertices[s]);
                         }
-                        const auto p = y.EvaluatePathPDF(scene, dL + i);
-                        assert(p.v > 0_f);
-                        const auto C = f / p;
-                        sum += 1_f / C;
+                        if (subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, aL) != aL)
+                        {
+                            return boost::none;
+                        }
+
+                        Subpath subpathE;
+                        for (int t = n - 1; t > dM; t--)
+                        {
+                            subpathE.vertices.push_back(ctx.currP.vertices[t]);
+                        }
+                        if (subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, aM) != aM)
+                        {
+                            return boost::none;
+                        }
+
+                        // Create proposed path
+                        Prop prop;
+                        if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
+                        {
+                            return boost::none;
+                        }
+
+                        prop.kd = kd;
+                        prop.dL = dL;
+                        return prop;
+                    }();
+                    if (!prop)
+                    {
+                        return false;
                     }
-                    return sum;
-                };
 
-                #pragma endregion
+                    const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
+                    {
+                        SPD sum;
+                        for (int i = 0; i <= kd; i++)
+                        {
+                            const auto f = y.EvaluateF(dL + i);
+                            if (f.Black())
+                            {
+                                return SPD();
+                            }
+                            const auto p = y.EvaluatePathPDF(scene, dL + i);
+                            assert(p.v > 0_f);
+                            const auto C = f / p;
+                            sum += 1_f / C;
+                        }
+                        return sum;
+                    };
 
-                // --------------------------------------------------------------------------------
+                    #pragma endregion
 
-                #pragma region MH update
-                if (prop)
-                {
+                    // --------------------------------------------------------------------------------
+
+                    #pragma region MH update
                     const auto Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL).Luminance();
                     const auto Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL).Luminance();
                     Float A = 0_f;
@@ -289,8 +297,46 @@ public:
                     {
                         ctx.currP = prop->p;
                     }
+                    else
+                    {
+                        return false;
+                    }
+                    #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    return true;
+                }();
+
+                // --------------------------------------------------------------------------------
+
+                #if INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION
+                {
+                    assert(Parallel::GetNumThreads() == 1);
+                    static bool prevIsReject = false;
+                    static long long sequencialtReject = 0;
+                    if (accept)
+                    {
+                        prevIsReject = false;
+                    }
+                    else
+                    {
+                        if (prevIsReject)
+                        {
+                            sequencialtReject++;
+                        }
+                        else
+                        {
+                            sequencialtReject = 1;
+                        }
+                        prevIsReject = true;
+                        if (sequencialtReject > maxReject)
+                        {
+                            maxReject = sequencialtReject;
+                        }
+                    }
                 }
-                #pragma endregion
+                #endif
 
                 // --------------------------------------------------------------------------------
 
@@ -326,15 +372,25 @@ public:
                 #endif
             });
 
+            
             // --------------------------------------------------------------------------------
 
-            // Gather & Rescale
+            #if INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION
+            {
+                LM_LOG_INFO("Maximum # of rejection: " + std::to_string(maxReject));
+            }
+            #endif
+
+            // --------------------------------------------------------------------------------
+
+            #pragma region Gather & Rescale
             film->Clear();
             for (auto& ctx : contexts)
             {
                 film->Accumulate(ctx.film.get());
             }
             film->Rescale((Float)(film->Width() * film->Height()) / numMutations_);
+            #pragma endregion
         }
         #pragma endregion
 
