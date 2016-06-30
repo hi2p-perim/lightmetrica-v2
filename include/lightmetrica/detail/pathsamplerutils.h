@@ -38,8 +38,8 @@ class Random;
 struct Photon;
 struct Primitive;
 
-///! Utility class for photon density based techniques.
-class PhotonMapUtils
+///! Utility class for renderers based on subpath sampling.
+class PathSamplerUtils
 {
 public:
 
@@ -52,7 +52,7 @@ public:
 
 public:
 
-    LM_DISABLE_CONSTRUCT(PhotonMapUtils);
+    LM_DISABLE_CONSTRUCT(PathSamplerUtils);
 
 public:
 

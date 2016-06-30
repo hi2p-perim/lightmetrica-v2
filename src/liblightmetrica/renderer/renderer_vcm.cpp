@@ -35,7 +35,7 @@
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/detail/parallel.h>
 #include <lightmetrica/detail/photonmap.h>
-#include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/pathsamplerutils.h>
 
 #define LM_VCM_DEBUG 1
 
@@ -54,7 +54,7 @@ struct VCMSubpath
     auto SampleSubpath(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> void
     {
         vertices.clear();
-        PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+        PathSamplerUtils::TraceSubpath(scene, rng, maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const PathSamplerUtils::PathVertex& pv, const PathSamplerUtils::PathVertex& v, SPD& throughput) -> bool
         {
             VCMPathVertex v_;
             v_.type = v.type;

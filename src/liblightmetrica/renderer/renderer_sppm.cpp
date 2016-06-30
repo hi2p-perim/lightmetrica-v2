@@ -38,7 +38,7 @@
 #include <lightmetrica/scheduler.h>
 #include <lightmetrica/renderutils.h>
 #include <lightmetrica/detail/photonmap.h>
-#include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/pathsamplerutils.h>
 #include <lightmetrica/detail/parallel.h>
 #include <tbb/tbb.h>
 
@@ -100,7 +100,7 @@ public:
             SPD tau;                        // Sum of throughput of luminance multiplies BSDF (Eq.10 in [Hachisuka et al. 2008]
             Vec3 wi;                        // Direction to previous vertex
             SPD throughputE;                // Throughput of importance
-            PhotonMapUtils::PathVertex v;   // Current vertex information
+            PathSamplerUtils::PathVertex v; // Current vertex information
             SPD emission;                   // Contribution of LS*E
             int numVertices;                // Number of vertices needed to generate the measurement point 
         };
@@ -143,7 +143,7 @@ public:
                     auto& ctx = contexts[threadid];
                     const Vec2 initRasterPos(((Float)(index % W) + ctx.rng.Next()) / W, ((Float)(index / W) + ctx.rng.Next()) / H);
                     mps[index].valid = false;
-                    PhotonMapUtils::TraceEyeSubpathFixedRasterPos(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, initRasterPos, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, const SPD& throughput) -> bool
+                    PathSamplerUtils::TraceEyeSubpathFixedRasterPos(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, initRasterPos, [&](int numVertices, const Vec2& rasterPos, const PathSamplerUtils::PathVertex& pv, const PathSamplerUtils::PathVertex& v, const SPD& throughput) -> bool
                     {
                         // Skip initial vertex
                         if (numVertices == 1)
@@ -202,7 +202,7 @@ public:
                 Parallel::For(numPhotonTraceSamples_, [&](long long index, int threadid, bool init)
                 {
                     auto& ctx = contexts[threadid];
-                    PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+                    PathSamplerUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PathSamplerUtils::PathVertex& pv, const PathSamplerUtils::PathVertex& v, SPD& throughput) -> bool
                     {
                         // Skip initial vertex
                         if (numVertices == 1)

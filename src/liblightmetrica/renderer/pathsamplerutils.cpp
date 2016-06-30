@@ -23,7 +23,7 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/PathSamplerUtils.h>
 #include <lightmetrica/detail/photonmap.h>
 #include <lightmetrica/logger.h>
 #include <lightmetrica/random.h>
@@ -39,15 +39,15 @@ LM_NAMESPACE_BEGIN
 namespace
 {
     auto TraceSubpath_(
-        const Scene* scene,
-        Random* rng,
-        int maxNumVertices,
-        TransportDirection transDir,
-        boost::optional<Vec2> initRasterPos,
-        const std::function<bool(int step, const Vec2&, const PhotonMapUtils::PathVertex&, const PhotonMapUtils::PathVertex&, SPD&)>& processPathVertexFunc) -> void
+            const Scene* scene,
+            Random* rng,
+            int maxNumVertices,
+            TransportDirection transDir,
+            boost::optional<Vec2> initRasterPos,
+            const std::function<bool(int step, const Vec2&, const PathSamplerUtils::PathVertex&, const PathSamplerUtils::PathVertex&, SPD&)>& processPathVertexFunc) -> void
     {
         Vec3 initWo;
-        PhotonMapUtils::PathVertex pv, ppv;
+        PathSamplerUtils::PathVertex pv, ppv;
         SPD throughput;
         Vec2 rasterPos;
         for (int step = 0; maxNumVertices == -1 || step < maxNumVertices; step++)
@@ -56,7 +56,7 @@ namespace
             {
                 #pragma region Sample initial vertex
 
-                PhotonMapUtils::PathVertex v;
+                PathSamplerUtils::PathVertex v;
 
                 // Sample an emitter
                 v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
@@ -67,9 +67,9 @@ namespace
 
                 // Initial throughput
                 throughput =
-                    v.primitive->EvaluatePosition(v.geom, false) /
-                    v.primitive->EvaluatePositionGivenDirectionPDF(v.geom, initWo, false) /
-                    scene->EvaluateEmitterPDF(v.primitive);
+                        v.primitive->EvaluatePosition(v.geom, false) /
+                        v.primitive->EvaluatePositionGivenDirectionPDF(v.geom, initWo, false) /
+                        scene->EvaluateEmitterPDF(v.primitive);
 
                 // Raster position
                 if (transDir == TransportDirection::EL)
@@ -78,7 +78,7 @@ namespace
                 }
 
                 // Process vertex
-                if (!processPathVertexFunc(1, rasterPos, PhotonMapUtils::PathVertex(), v, throughput))
+                if (!processPathVertexFunc(1, rasterPos, PathSamplerUtils::PathVertex(), v, throughput))
                 {
                     break;
                 }
@@ -90,7 +90,7 @@ namespace
             }
             else
             {
-                #pragma region Sample a vertex with PDF with BSDF
+            #pragma region Sample a vertex with PDF with BSDF
 
                 // Sample a next direction
                 Vec3 wi;
@@ -132,7 +132,7 @@ namespace
 
                 #pragma region Process path vertex
 
-                PhotonMapUtils::PathVertex v;
+                PathSamplerUtils::PathVertex v;
                 v.geom = isect.geom;
                 v.primitive = isect.primitive;
                 v.type = isect.primitive->Type() & ~SurfaceInteractionType::Emitter;
@@ -145,8 +145,8 @@ namespace
 
                 // --------------------------------------------------------------------------------
 
-                #pragma region Path termiantion
-                
+                #pragma region Path termination
+
                 if (isect.geom.infinite)
                 {
                     break;
@@ -167,12 +167,12 @@ namespace
     }
 }
 
-auto PhotonMapUtils::TraceSubpath(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const std::function<bool(int step, const Vec2&, const PhotonMapUtils::PathVertex&, const PhotonMapUtils::PathVertex&, SPD&)>& processPathVertexFunc) -> void
+auto PathSamplerUtils::TraceSubpath(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const std::function<bool(int step, const Vec2&, const PathSamplerUtils::PathVertex&, const PathSamplerUtils::PathVertex&, SPD&)>& processPathVertexFunc) -> void
 {
     TraceSubpath_(scene, rng, maxNumVertices, transDir, boost::none, processPathVertexFunc);
 }
 
-auto PhotonMapUtils::TraceEyeSubpathFixedRasterPos(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const Vec2& rasterPos, const std::function<bool(int step, const Vec2&, const PhotonMapUtils::PathVertex&, const PhotonMapUtils::PathVertex&, SPD&)>& processPathVertexFunc) -> void
+auto PathSamplerUtils::TraceEyeSubpathFixedRasterPos(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const Vec2& rasterPos, const std::function<bool(int step, const Vec2&, const PathSamplerUtils::PathVertex&, const PathSamplerUtils::PathVertex&, SPD&)>& processPathVertexFunc) -> void
 {
     assert(transDir == TransportDirection::EL);
     TraceSubpath_(scene, rng, maxNumVertices, transDir, rasterPos, processPathVertexFunc);
