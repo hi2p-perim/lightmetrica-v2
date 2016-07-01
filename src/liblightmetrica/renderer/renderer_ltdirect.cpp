@@ -47,6 +47,11 @@ public:
 
     LM_IMPL_CLASS(Renderer_LTDirect, Renderer);
 
+private:
+
+    int maxNumVertices_;
+    Scheduler::UniquePtr sched_;
+
 public:
 
     Renderer_LTDirect()
@@ -254,11 +259,6 @@ public:
             }
         });
     };
-
-private:
-
-    int maxNumVertices_;
-    Scheduler::UniquePtr sched_;
 
 };
 

@@ -56,6 +56,15 @@ public:
 
     LM_IMPL_CLASS(Renderer_PM, Renderer);
 
+private:
+
+    int maxNumVertices_;
+    long long numPhotonTraceSamples_;
+    int finalgather_;
+    Float radius_;
+    Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
+    PhotonMap::UniquePtr pm_{ nullptr, nullptr };
+
 public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
@@ -200,15 +209,6 @@ public:
         });
         #pragma endregion
     };
-
-private:
-
-    int maxNumVertices_;
-    long long numPhotonTraceSamples_;
-    int finalgather_;
-    Float radius_;
-    Scheduler::UniquePtr sched_ = ComponentFactory::Create<Scheduler>();
-    PhotonMap::UniquePtr pm_{ nullptr, nullptr };
 
 };
 

@@ -24,8 +24,6 @@
 
 #include <pch.h>
 #include <lightmetrica/detail/PathSamplerUtils.h>
-#include <lightmetrica/detail/photonmap.h>
-#include <lightmetrica/logger.h>
 #include <lightmetrica/random.h>
 #include <lightmetrica/light.h>
 #include <lightmetrica/sensor.h>
