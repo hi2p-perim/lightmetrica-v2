@@ -36,3 +36,22 @@ add_plugin(
 	NO_INSTALL)
 target_link_libraries(${_PROJECT_NAME} liblightmetrica ${Boost_LIBRARIES})
 add_dependencies(${_PROJECT_NAME} liblightmetrica)
+
+
+# Test
+include (PCHTargets)
+set(_PROJECT_NAME "inversemap-test")
+set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica-test")
+set(_GTEST_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external-src/gtest-1.7.0")
+pch_add_executable(
+    ${_PROJECT_NAME}
+    PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h"
+    "${_INCLUDE_DIR}/macros.h"
+    "${_INCLUDE_DIR}/utils.h"
+    "${_INCLUDE_DIR}/mathutils.h"
+    "${PROJECT_SOURCE_DIR}/src/lightmetrica-test/main.cpp"
+    "inversemap_test.cpp"
+    "${_GTEST_SOURCE_DIR}/src/gtest-all.cc")
+target_link_libraries(${_PROJECT_NAME} ${COMMON_LIBRARIES} liblightmetrica)
+add_dependencies(${_PROJECT_NAME} liblightmetrica)
+set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "test")

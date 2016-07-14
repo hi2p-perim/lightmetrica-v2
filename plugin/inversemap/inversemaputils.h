@@ -593,7 +593,7 @@ public:
 
     static auto MapPath2PS(const Path& inputPath) -> std::vector<Float>
     {
-        //region Helper function
+        #pragma region Helper function
         const auto UniformConcentricDiskSample_Inverse = [](const Vec2& s) -> Vec2
         {
             const auto r = std::sqrt(s.x*s.x + s.y*s.y);
@@ -628,7 +628,7 @@ public:
             }
             return (u + Vec2(1_f)) * 0.5_f;
         };
-        //endregion
+        #pragma endregion
 
         // --------------------------------------------------------------------------------
 
