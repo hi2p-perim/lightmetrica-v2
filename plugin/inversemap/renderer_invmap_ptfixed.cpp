@@ -25,6 +25,7 @@
 #include "inversemaputils.h"
 
 #define INVERSEMAP_PTFIXED_DEBUG 0
+#define INVERSEMAP_PTFIXED_DEBUG_CONSISTENCY 1
 
 LM_NAMESPACE_BEGIN
 
@@ -142,13 +143,16 @@ public:
                 ctx.film->Splat(rasterPos, C);
 
                 // Check inverse mapping
-                #if 0
+                #if INVERSEMAP_PTFIXED_DEBUG_CONSISTENCY
                 const auto ps = InversemapUtils::MapPath2PS(*path);
                 for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
                 {
                     if (Math::Abs(ps[i] - primarySample[i]) > Math::EpsLarge())
                     {
+                        LM_LOG_INFO("Inconsistency found");
+                        #if LM_DEBUG_MODE
                         __debugbreak();
+                        #endif
                     }
                 }
                 #endif

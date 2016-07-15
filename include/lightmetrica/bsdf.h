@@ -54,6 +54,9 @@ public:
     ///! Get reflectance if available.
     LM_INTERFACE_F(0, Reflectance, SPD());
 
+    ///! Get glossiness if available.
+    LM_INTERFACE_F(1, Glossiness, Float());
+
 };
 
 LM_NAMESPACE_END

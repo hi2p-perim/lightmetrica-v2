@@ -75,6 +75,7 @@ public:
             return;
         }
 
+#if 0
         const auto SampleBechmannDist = [this](const Vec2& u) -> Vec3
         {
             const Float tanThetaHSqr = -roughness_ * roughness_ * std::log(1_f - u[0]);
@@ -84,6 +85,22 @@ public:
             Float phiH = 2_f * Math::Pi() * u[1];
             return Vec3(sinThetaH * Math::Cos(phiH), sinThetaH * Math::Sin(phiH), cosThetaH);
         };
+#else
+        const auto SampleBechmannDist = [this](const Vec2& u) -> Vec3
+        {
+            const Float cosThetaH = [&]() -> Float
+            {
+                // Handling nasty numerical error
+                if (1_f - u[0] < Math::Eps()) return 0_f;
+                const Float tanThetaHSqr = -roughness_ * roughness_ * std::log(1_f - u[0]);
+                return 1_f / Math::Sqrt(1_f + tanThetaHSqr);
+            }();
+            const Float cosThetaH2 = cosThetaH * cosThetaH;
+            Float sinThetaH = Math::Sqrt(Math::Max(0_f, 1_f - cosThetaH2));
+            Float phiH = 2_f * Math::Pi() * u[1];
+            return Vec3(sinThetaH * Math::Cos(phiH), sinThetaH * Math::Sin(phiH), cosThetaH);
+        };
+#endif
 
         const auto H = SampleBechmannDist(u);
         const auto localWo = -localWi - 2_f * Math::Dot(-localWi, H) * H;
@@ -134,6 +151,11 @@ public:
     LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
     {
         return false;
+    };
+
+    LM_IMPL_F(Glossiness) = [this]() -> Float
+    {
+        return roughness_;
     };
 
 private:

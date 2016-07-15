@@ -556,8 +556,9 @@ public:
                     break;
                 }
 
-                // Assume all surface is diffuse
-                assert(std::strcmp(isect.primitive->bsdf->implName, "BSDF_Diffuse") == 0);
+                // Assume all surface is diffuse or glossy
+                assert(std::strcmp(isect.primitive->bsdf->implName, "BSDF_Diffuse") == 0 ||
+                       std::strcmp(isect.primitive->bsdf->implName, "BSDF_CookTorrance") == 0);
 
                 // Add a vertex
                 PathVertex v;
@@ -628,6 +629,29 @@ public:
             }
             return (u + Vec2(1_f)) * 0.5_f;
         };
+
+        const auto SampleBechmannDist_Inverse = [](const Vec3& H, Float roughness) -> Vec2
+        {
+            const auto u0 = [&]() -> Float
+            {
+                const auto cosThetaH = Math::LocalCos(H);
+                if (cosThetaH * cosThetaH < Math::Eps()) return 1_f;
+                const auto tanThetaHSqr = 1_f / (cosThetaH * cosThetaH) - 1_f;
+                const auto exp = std::exp(-tanThetaHSqr / (roughness * roughness));
+                return 1_f - exp;
+            }();
+
+            const auto sinThetaH = Math::LocalSin(H);
+            const auto cosPhiH = H.x / sinThetaH;
+            const auto sinPhiH = H.y / sinThetaH;
+            const auto phiH = [&]() {
+                const auto t = std::atan2(sinPhiH, cosPhiH);
+                return t < 0_f ? t + 2_f * Math::Pi() : t;
+            }();
+            const auto u1 = phiH * 0.5_f * Math::InvPi();
+
+            return Vec2(u0, u1);
+        };
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -640,6 +664,7 @@ public:
         {
             const auto* v = &path.vertices[i];
             const auto* vn = i + 1 < path.vertices.size() ? &path.vertices[i + 1] : nullptr;
+            const auto* vp = i > 0 ? &path.vertices[i - 1] : nullptr;
 
             if (i == 0)
             {
@@ -650,7 +675,7 @@ public:
             if (vn)
             {
                 const auto wo = Math::Normalize(vn->geom.p - v->geom.p);
-                assert(v->type == SurfaceInteractionType::E || v->type == SurfaceInteractionType::D);
+                assert(v->type == SurfaceInteractionType::E || v->type == SurfaceInteractionType::D || v->type == SurfaceInteractionType::G);
                 if (v->type == SurfaceInteractionType::E)
                 {
                     Vec2 inv;
@@ -659,12 +684,27 @@ public:
                     ps.push_back(inv.x);
                     ps.push_back(inv.y);
                 }
-                else if (v->type == SurfaceInteractionType::D)
+                else
                 {
-                    const auto localWo = v->geom.ToLocal * wo;
-                    const auto inv = UniformConcentricDiskSample_Inverse(Vec2(localWo.x, localWo.y));
-                    ps.push_back(inv.x);
-                    ps.push_back(inv.y);
+                    assert(vp != nullptr);
+                    const auto wi = Math::Normalize(vp->geom.p - v->geom.p);
+                    if (v->type == SurfaceInteractionType::D)
+                    {
+                        const auto localWo = v->geom.ToLocal * wo;
+                        const auto inv = UniformConcentricDiskSample_Inverse(Vec2(localWo.x, localWo.y));
+                        ps.push_back(inv.x);
+                        ps.push_back(inv.y);
+                    }
+                    else if (v->type == SurfaceInteractionType::G)
+                    {
+                        const auto localWi = v->geom.ToLocal * wi;
+                        const auto localWo = v->geom.ToLocal * wo;
+                        const auto H = Math::Normalize(localWi + localWo);
+                        const auto roughness = v->primitive->bsdf->Glossiness();
+                        const auto inv = SampleBechmannDist_Inverse(H, roughness);
+                        ps.push_back(inv.x);
+                        ps.push_back(inv.y);
+                    }
                 }
             }
         }
