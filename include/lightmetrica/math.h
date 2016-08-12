@@ -63,7 +63,7 @@
 
 //! \cond
 // TODO. Make configurable from cmake file 
-#define LM_USE_SINGLE_PRECISION
+//#define LM_USE_SINGLE_PRECISION
 //#define LM_USE_DOUBLE_PRECISION
 #define LM_USE_SSE
 //#define LM_USE_AVX

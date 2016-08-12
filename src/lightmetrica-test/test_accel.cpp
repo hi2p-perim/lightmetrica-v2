@@ -40,12 +40,18 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
     virtual auto SetUp() -> void override
     {
         Logger::SetVerboseLevel(2); Logger::Run();
-        ComponentFactory::LoadPlugin("./plugin/accel_embree");
+        if (std::strcmp(GetParam(), "accel::embree") == 0)
+        {
+            ComponentFactory::LoadPlugin("./plugin/accel_embree");
+        }
     }
 
     virtual auto TearDown() -> void override
     {
-        ComponentFactory::UnloadPlugins();
+        if (std::strcmp(GetParam(), "accel::embree") == 0)
+        {
+            ComponentFactory::UnloadPlugins();
+        }
         Logger::Stop();
     }
 };

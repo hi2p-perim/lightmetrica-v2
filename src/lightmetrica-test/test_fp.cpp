@@ -27,7 +27,7 @@
 #include <lightmetrica/fp.h>
 #include <lightmetrica-test/utils.h>
 
-#if LM_COMPIER_MSVC
+#if LM_COMPILER_MSVC
 #pragma warning(push)
 #pragma warning(disable:4723)   // C4723: potential divide by 0
 #endif
@@ -39,7 +39,7 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
-#if LM_COMPIER_MSVC
+#if LM_COMPILER_MSVC
 
 TEST(FPTest, SupportedExceptions)
 {
@@ -88,13 +88,14 @@ TEST(FPTest, SupportedExceptions)
         LM_UNUSED(t);
     });
 
-    SCOPED_TRACE("T3");
-    Trial("FLT_INVALID_OPERATION", [&]()
-    {
-        const volatile double one = 1.0;
-        const volatile double t = one * std::numeric_limits<double>::signaling_NaN();
-        LM_UNUSED(t);
-    });
+    //SCOPED_TRACE("T3");
+    //Trial("FLT_INVALID_OPERATION", [&]()
+    //{
+    //    const volatile double one = 1.0;
+    //    const volatile double nan = std::numeric_limits<double>::signaling_NaN();
+    //    const volatile double t = one * nan;
+    //    LM_UNUSED(t);
+    //});
 
     SCOPED_TRACE("T4");
     Trial("FLT_DIVIDE_BY_ZERO", [&]()
@@ -105,6 +106,7 @@ TEST(FPTest, SupportedExceptions)
     });
 }
 
+#if 0
 TEST(FPTest, UnsupportedExceptions)
 {
     // _EM_DENORMAL
@@ -165,41 +167,42 @@ TEST(FPTest, DisabledBehavior)
     EXPECT_NO_THROW(
     {
         const double t = std::numeric_limits<double>::infinity() * 0;
-        EXPECT_TRUE(glm::isnan(t));
+        EXPECT_TRUE(std::isnan(t));
     });
 
     EXPECT_NO_THROW(
     {
         double z = 0;
         const double t = 0 / z;
-        EXPECT_TRUE(glm::isnan(t));
+        EXPECT_TRUE(std::isnan(t));
     });
 
     EXPECT_NO_THROW(
     {
         const double t = std::sqrt(-1);
-        EXPECT_TRUE(glm::isnan(t));
+        EXPECT_TRUE(std::isnan(t));
     });
 
     EXPECT_NO_THROW(
     {
         const double t = 1.0 * std::numeric_limits<double>::signaling_NaN();
-        EXPECT_TRUE(glm::isnan(t));
+        EXPECT_TRUE(std::isnan(t));
     });
 
     EXPECT_NO_THROW(
     {
         double z = 0;
         const double t = 1.0 / z;
-        EXPECT_TRUE(glm::isinf(t));
+        EXPECT_TRUE(std::isinf(t));
     });
 }
+#endif
 
 #endif
 
 LM_TEST_NAMESPACE_END
 
-#if LM_COMPIER_MSVC
+#if LM_COMPILER_MSVC
 #pragma warning(pop)
 #endif
 

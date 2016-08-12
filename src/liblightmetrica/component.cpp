@@ -72,6 +72,11 @@ public:
         funcMap[key] = CreateAndReleaseFuncs{createFunc, releaseFunc};
     }
 
+    auto Unregister(const std::string& key) -> void
+    {
+        funcMap.erase(key);
+    }
+
     auto Create(const char* key) -> Component*
     {
         auto it = funcMap.find(key);
@@ -163,7 +168,6 @@ public:
         {
             plugin->Unload();
         }
-
         plugins.clear();
     }
 
@@ -179,6 +183,7 @@ private:
 };
 
 auto ComponentFactory_Register(const char* key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { ComponentFactoryImpl::Instance().Register(key, createFunc, releaseFunc); }
+auto ComponentFactory_Unregister(const char* key) -> void { ComponentFactoryImpl::Instance().Unregister(key); }
 auto ComponentFactory_Create(const char* key) -> Component* { return ComponentFactoryImpl::Instance().Create(key); }
 auto ComponentFactory_ReleaseFunc(const char* key) -> ReleaseFuncPointerType { return ComponentFactoryImpl::Instance().ReleaseFunc(key); }
 auto ComponentFactory_LoadPlugin(const char* path) -> bool { return ComponentFactoryImpl::Instance().LoadPlugin(path); }
