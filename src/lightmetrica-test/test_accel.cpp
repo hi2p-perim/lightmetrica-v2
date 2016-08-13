@@ -29,6 +29,7 @@
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>
+#include <lightmetrica/exception.h>
 #include <lightmetrica-test/mathutils.h>
 
 LM_TEST_NAMESPACE_BEGIN
@@ -39,6 +40,7 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
 {
     virtual auto SetUp() -> void override
     {
+        SEHUtils::EnableStructuralException();
         Logger::SetVerboseLevel(2); Logger::Run();
         if (std::strcmp(GetParam(), "accel::embree") == 0)
         {
@@ -53,6 +55,7 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
             ComponentFactory::UnloadPlugins();
         }
         Logger::Stop();
+        SEHUtils::DisableStructuralException();
     }
 };
 
@@ -267,7 +270,8 @@ TEST_P(AccelTest, Simple)
     StubTriangleMesh_Simple mesh;
     Stub_Scene scene(mesh);
 
-    const auto accel = ComponentFactory::Create<Accel>(GetParam());
+    const auto param = GetParam();
+    const auto accel = ComponentFactory::Create<Accel>(param);
     ASSERT_NE(nullptr, accel);
     EXPECT_TRUE(accel->Initialize(nullptr));
     EXPECT_TRUE(accel->Build(&scene));

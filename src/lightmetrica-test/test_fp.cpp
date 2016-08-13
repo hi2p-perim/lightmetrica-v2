@@ -106,7 +106,6 @@ TEST(FPTest, SupportedExceptions)
     });
 }
 
-#if 0
 TEST(FPTest, UnsupportedExceptions)
 {
     // _EM_DENORMAL
@@ -196,7 +195,6 @@ TEST(FPTest, DisabledBehavior)
         EXPECT_TRUE(std::isinf(t));
     });
 }
-#endif
 
 #endif
 

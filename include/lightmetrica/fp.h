@@ -29,8 +29,10 @@
 LM_NAMESPACE_BEGIN
 
 //! \cond
-extern "C" LM_PUBLIC_API auto FPUtils_EnableFPControl() -> bool;
-extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
+extern "C" LM_PUBLIC_API auto FPUtils_EnableFPControl() -> void;
+extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> void;
+extern "C" LM_PUBLIC_API auto FPUtils_PushFPControl() -> void;
+extern "C" LM_PUBLIC_API auto FPUtils_PopFPControl() -> void;
 //! \endcond
 
 /*
@@ -62,6 +64,11 @@ extern "C" LM_PUBLIC_API auto FPUtils_DisableFPControl() -> bool;
     each operation generates different results,
     e.g., invalid operation returns qNaN.
 
+    Thread safety:
+    Internally the functions utilizes _controlfp_s function
+    and this function is reported to be thread-safe:
+    https://social.msdn.microsoft.com/Forums/vstudio/en-US/c5f645fc-4f1e-4641-b968-2988ea4a19d9/problem-with-controlfp-and-thread-context-openmp?forum=vclanguage#4018a853-fe25-4499-ad7e-f4fe57a5cb83
+
     TODO:
       - GCC support
       - Linux environment support
@@ -77,17 +84,17 @@ public:
 
 public:
 
-    /*!
-        \brief Enable floating point exceptions.
-        \return `true` if succeed, otherwise `false`.
-    */
-    static auto EnableFPControl()  -> bool { return LM_EXPORTED_F(FPUtils_EnableFPControl); }
+    ///! Enable floating point exceptions
+    static auto EnableFPControl()  -> void { LM_EXPORTED_F(FPUtils_EnableFPControl); }
 
-    /*!
-        \brief Disables floating point exceptions.
-        \return `true` if succeed, otherwise `false`.
-    */
-    static auto DisableFPControl() -> bool { return LM_EXPORTED_F(FPUtils_DisableFPControl); }
+    ///! Disable floating point exceptions
+    static auto DisableFPControl() -> void { LM_EXPORTED_F(FPUtils_DisableFPControl); }
+
+    ///! Push the current state for floating point exceptions
+    static auto PushFPControl() -> void { LM_EXPORTED_F(FPUtils_PushFPControl); }
+
+    ///! Pop the previous state for floating point exceptions
+    static auto PopFPControl() -> void { LM_EXPORTED_F(FPUtils_PopFPControl); }
 
 };
 
