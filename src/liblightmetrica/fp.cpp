@@ -38,6 +38,7 @@ class FPUtilsImpl
 {
 public:
 
+    // Thread local singleton
     static FPUtilsImpl* Instance()
     {
         thread_local FPUtilsImpl instance;

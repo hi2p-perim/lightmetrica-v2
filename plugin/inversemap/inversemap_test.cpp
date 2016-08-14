@@ -51,6 +51,7 @@ struct InversemapTest : public ::testing::Test
         SEHUtils::DisableStructuralException();
     }
 
+public:
 
     const Float roughness_ = 0.1_f;
     const long long NumSamples = 10000;
@@ -114,26 +115,51 @@ struct InversemapTest : public ::testing::Test
 
     auto SampleGGX(const Vec2& u) const -> Vec3
     {
+        //const auto cosTheta = [&]() -> Float {
+        //    if (1_f - u[0] < Math::Eps()) return 0_f;
+        //    const auto tanThetaSq = roughness_ * roughness_ * (u[0] / (1_f - u[0]));
+        //    return 1_f / Math::Sqrt(1_f + tanThetaSq);
+        //}();
+        // Robust way of computation
         const auto cosTheta = [&]() -> Float {
-            if (1_f - u[0] < Math::Eps()) return 0_f;
-            const auto tanThetaSq = roughness_ * roughness_ * (u[0] / (1_f - u[0]));
-            return 1_f / Math::Sqrt(1_f + tanThetaSq);
+            const auto v1 = Math::Sqrt(1_f - u[0]);
+            const auto v2 = Math::Sqrt(1_f - (1_f - roughness_ * roughness_) * u[0]);
+            return v1 / v2;
         }();
-        const auto sinTheta   = Math::Sqrt(Math::Max(0_f, 1_f - cosTheta * cosTheta));
-        const auto phi        = 2_f * Math::Pi() * u[1];
+        //const auto sinTheta   = Math::Sqrt(Math::Max(0_f, 1_f - cosTheta * cosTheta));
+        const auto sinTheta = [&]() -> Float {
+            const auto v1 = Math::Sqrt(u[0]);
+            const auto v2 = Math::Sqrt(1_f - (1_f - roughness_ * roughness_) * u[0]);
+            return roughness_ * (v1 / v2);
+        }();
+        const auto phi = 2_f * Math::Pi() * u[1];
         return Vec3(sinTheta * Math::Cos(phi), sinTheta * Math::Sin(phi), cosTheta);
     }
 
     auto SampleGGX_Inverse(const Vec3& H) const -> Vec2
     {
-        const auto tanTheta = Math::LocalTan(H);
-        const auto u0 = tanTheta * tanTheta / (roughness_ * roughness_ + tanTheta * tanTheta);
-        
-        const auto sinThetaH = Math::LocalSin(H);
-        const auto cosPhiH = H.x / sinThetaH;
-        const auto sinPhiH = H.y / sinThetaH;
+        //const auto tanTheta = Math::LocalTan(H);
+        //const auto u0 = 1_f / (1_f + (roughness_ / tanTheta) * (roughness_ / tanTheta));
+        //const auto u0 = tanTheta * tanTheta / (roughness_ * roughness_ + tanTheta * tanTheta);
+        //const auto u0 = [&]() {
+        //    const auto x0 = roughness_ / tanTheta;
+        //    const auto x1 = 1_f - x0 * x0;
+        //    const auto x2 = 1_f - x0 * x0 * x1;
+        //    const auto x3 = 1_f - x0 * x0 * x2;
+        //    const auto x4 = 1_f - x0 * x0 * x3;
+        //    const auto x5 = 1_f - x0 * x0 * x4;
+        //    const auto x6 = 1_f - x0 * x0 * x5;
+        //    return x6;
+        //}();
+
+        const auto tanTheta2 = Math::LocalTan2(H);
+        const auto u0 = 1_f / (1_f + roughness_ * roughness_ / tanTheta2);
+
+        //const auto sinThetaH = Math::LocalSin(H);
+        //const auto cosPhiH = H.x / sinThetaH;
+        //const auto sinPhiH = H.y / sinThetaH;
         const auto phiH = [&]() {
-            const auto t = std::atan2(sinPhiH, cosPhiH);
+            const auto t = std::atan2(H.y, H.x);
             return t < 0_f ? t + 2_f * Math::Pi() : t;
         }();
         const auto u1 = phiH * 0.5_f * Math::InvPi();
@@ -236,22 +262,34 @@ TEST_F(InversemapTest, BeckmannDistInverseConsistencyInv)
 // Tests if CDF(CDF^-1(u)) = u for GGX
 TEST_F(InversemapTest, GGXInverseConsistency)
 {
-    Random rng;
-    rng.SetSeed(42);
-
-    for (long long i = 0; i < NumSamples; i++)
+    try
     {
-        SCOPED_TRACE("Sample: " + std::to_string(i));
+        Random rng;
+        rng.SetSeed(42);
 
-        const auto u = rng.Next2D();
+        for (long long i = 0; i < NumSamples; i++)
+        {
+            SCOPED_TRACE("Sample: " + std::to_string(i));
 
-        // H := CDF^-1(u)
-        const auto H = SampleGGX(u);
+            const auto u = rng.Next2D();
 
-        // u2 := CDF(H)
-        const auto u2 = SampleGGX_Inverse(H);
+            // H := CDF^-1(u)
+            const auto H = SampleGGX(u);
 
-        EXPECT_TRUE(ExpectVecNear(u, u2, Math::Eps()));
+            // u2 := CDF(H)
+            const auto u2 = SampleGGX_Inverse(H);
+
+            const auto result = ExpectVecNear(u, u2, Math::Eps());
+            EXPECT_TRUE(result);
+            if (!result)
+            {
+                __debugbreak();
+            }
+        }
+    }
+    catch (const std::exception)
+    {
+        __debugbreak();
     }
 }
 
@@ -281,6 +319,9 @@ TEST_F(InversemapTest, GGXInverseConsistencyInv)
             EXPECT_TRUE(result);
             if (!result)
             {
+                // u2 := CDF(H2)
+                const auto u2 = SampleGGX_Inverse(H2);
+                LM_UNUSED(u2);
                 __debugbreak();
             }
         }
