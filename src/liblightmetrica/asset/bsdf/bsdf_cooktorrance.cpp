@@ -32,6 +32,8 @@
 #include <lightmetrica/texture.h>
 #include <lightmetrica/assets.h>
 
+#define LM_COOKTORRANCE_USE_GGX 1
+
 LM_NAMESPACE_BEGIN
 
 class BSDF_CookTorrance final : public BSDF
@@ -75,34 +77,7 @@ public:
             return;
         }
 
-#if 0
-        const auto SampleBechmannDist = [this](const Vec2& u) -> Vec3
-        {
-            const Float tanThetaHSqr = -roughness_ * roughness_ * std::log(1_f - u[0]);
-            const Float cosThetaH = 1_f / Math::Sqrt(1_f + tanThetaHSqr);
-            const Float cosThetaH2 = cosThetaH * cosThetaH;
-            Float sinThetaH = Math::Sqrt(Math::Max(0_f, 1_f - cosThetaH2));
-            Float phiH = 2_f * Math::Pi() * u[1];
-            return Vec3(sinThetaH * Math::Cos(phiH), sinThetaH * Math::Sin(phiH), cosThetaH);
-        };
-#else
-        const auto SampleBechmannDist = [this](const Vec2& u) -> Vec3
-        {
-            const Float cosThetaH = [&]() -> Float
-            {
-                // Handling nasty numerical error
-                if (1_f - u[0] < Math::Eps()) return 0_f;
-                const Float tanThetaHSqr = -roughness_ * roughness_ * std::log(1_f - u[0]);
-                return 1_f / Math::Sqrt(1_f + tanThetaHSqr);
-            }();
-            const Float cosThetaH2 = cosThetaH * cosThetaH;
-            Float sinThetaH = Math::Sqrt(Math::Max(0_f, 1_f - cosThetaH2));
-            Float phiH = 2_f * Math::Pi() * u[1];
-            return Vec3(sinThetaH * Math::Cos(phiH), sinThetaH * Math::Sin(phiH), cosThetaH);
-        };
-#endif
-
-        const auto H = SampleBechmannDist(u);
+        const auto H = SampleNormalDist(u);
         const auto localWo = -localWi - 2_f * Math::Dot(-localWi, H) * H;
         if (Math::LocalCos(localWo) <= 0_f)
         {
@@ -122,7 +97,7 @@ public:
         }
 
         const auto H = Math::Normalize(localWi + localWo);
-        const Float D = EvaluateBechmannDist(H);
+        const Float D = EvaluateNormalDist(H);
         return PDFVal(PDFMeasure::ProjectedSolidAngle, D * Math::LocalCos(H) / (4_f * Math::Dot(localWo, H)) / Math::LocalCos(localWo));
     };
 
@@ -136,7 +111,7 @@ public:
         }
 
         const auto  H = Math::Normalize(localWi + localWo);
-        const Float D = EvaluateBechmannDist(H);
+        const Float D = EvaluateNormalDist(H);
         const Float G = EvalauteShadowMaskingFunc(localWi, localWo, H);
         const auto  F = EvaluateFrConductor(Math::Dot(localWi, H));
         const auto  R = texR_ ? SPD::FromRGB(texR_->Evaluate(geom.uv)) : R_;
@@ -160,6 +135,78 @@ public:
 
 private:
 
+    auto EvaluateNormalDist(const Vec3& H) const -> Float
+    {
+        #if LM_COOKTORRANCE_USE_GGX
+        return EvaluateGGX(H);
+        #else
+        return EvaluateBechmannDist(H);
+        #endif
+    }
+
+    auto SampleNormalDist(const Vec2& u) const -> Vec3
+    {
+        #if LM_COOKTORRANCE_USE_GGX
+        return SampleGGX(u);
+        #else
+        return SampleBechmannDist(u);
+        #endif
+    }
+
+private:
+
+    auto EvaluateGGX(const Vec3& H) const -> Float
+    {
+        const auto cosH = Math::LocalCos(H);
+        const auto tanH = Math::LocalTan(H);
+        if (cosH <= 0_f) return 0_f;
+        const Float t1 = roughness_ * roughness_;
+        const Float t2 = [&]() {
+            const Float t = roughness_ * roughness_ + tanH * tanH;
+            return Math::Pi() * cosH * cosH * cosH * cosH * t * t;
+        }();
+        return t1 / t2;
+    }
+
+    auto SampleGGX(const Vec2& u) const -> Vec3
+    {
+        // Input u \in [0,1]^2
+        const auto ToOpenOpen = [](Float u) -> Float { return (1_f - 2_f * Math::Eps()) * u + Math::Eps(); };
+        const auto ToClosedOpen = [](Float u) -> Float { return (1_f - Math::Eps()) * u; };
+        const auto ToOpenClosed = [](Float u) -> Float { return (1_f - Math::Eps()) * u + Math::Eps(); };
+
+        // u0 \in (0,1]
+        // u1 \in (0,1)
+        const auto u0 = ToOpenClosed(u[0]);
+        const auto u1 = ToOpenOpen(u[1]);
+
+        // Robust way of computation
+        const auto cosTheta = [&]() -> Float {
+            const auto v1 = Math::Sqrt(1_f - u0);
+            const auto v2 = Math::Sqrt(1_f - (1_f - roughness_ * roughness_) * u0);
+            return v1 / v2;
+        }();
+        const auto sinTheta = [&]() -> Float {
+            const auto v1 = Math::Sqrt(u0);
+            const auto v2 = Math::Sqrt(1_f - (1_f - roughness_ * roughness_) * u0);
+            return roughness_ * (v1 / v2);
+        }();
+        const auto phi = Math::Pi() * (2_f * u1 - 1_f);
+        return Vec3(sinTheta * Math::Cos(phi), sinTheta * Math::Sin(phi), cosTheta);
+    }
+
+private:
+
+    //const auto SampleBechmannDist = [this](const Vec2& u) -> Vec3
+    //{
+    //    const Float tanThetaHSqr = -roughness_ * roughness_ * std::log(1_f - u[0]);
+    //    const Float cosThetaH = 1_f / Math::Sqrt(1_f + tanThetaHSqr);
+    //    const Float cosThetaH2 = cosThetaH * cosThetaH;
+    //    Float sinThetaH = Math::Sqrt(Math::Max(0_f, 1_f - cosThetaH2));
+    //    Float phiH = 2_f * Math::Pi() * u[1];
+    //    return Vec3(sinThetaH * Math::Cos(phiH), sinThetaH * Math::Sin(phiH), cosThetaH);
+    //};
+
     auto EvaluateBechmannDist(const Vec3& H) const -> Float
     {
         if (Math::LocalCos(H) <= 0_f) return 0_f;
@@ -169,12 +216,33 @@ private:
         return t1 / t2;
     }
 
+    auto SampleBechmannDist(const Vec2& u) const -> Vec3
+    {
+        const Float cosThetaH = [&]() -> Float
+        {
+            // Handling nasty numerical error
+            if (1_f - u[0] < Math::Eps()) return 0_f;
+            const Float tanThetaHSqr = -roughness_ * roughness_ * std::log(1_f - u[0]);
+            return 1_f / Math::Sqrt(1_f + tanThetaHSqr);
+        }();
+        const Float cosThetaH2 = cosThetaH * cosThetaH;
+        Float sinThetaH = Math::Sqrt(Math::Max(0_f, 1_f - cosThetaH2));
+        Float phiH = 2_f * Math::Pi() * u[1];
+        return Vec3(sinThetaH * Math::Cos(phiH), sinThetaH * Math::Sin(phiH), cosThetaH);
+    };
+
+private:
+
+    #if 0
     auto EvaluatePhongDist(const Vec3& H) const -> Float
     {
         const Float Coeff = std::tgamma((roughness_ + 3_f) * .5_f) / std::tgamma((roughness_ + 2_f) * .5_f) / std::sqrt(Math::Pi());
         if (Math::LocalCos(H) <= 0_f) return 0_f;
         return std::pow(Math::LocalCos(H), roughness_) * Coeff;
     }
+    #endif
+
+private:
 
     auto EvalauteShadowMaskingFunc(const Vec3& wi, const Vec3& wo, const Vec3& H) const -> Float
     {

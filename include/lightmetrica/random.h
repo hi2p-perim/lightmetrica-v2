@@ -63,10 +63,10 @@ public:
     //! Generate an uniform random number as unsigned int type.
     auto NextUInt() -> unsigned int { return LM_EXPORTED_F(Random_NextUInt, this); }
 
-    //! Generate an uniform random number in [0,1].
+    //! Generate an uniform random number in [0,1).
     auto Next() -> Float { return Float(LM_EXPORTED_F(Random_Next, this)); }
 
-    //! Generate uniform random numbers in [0,1]^2.
+    //! Generate uniform random numbers in [0,1)^2.
     LM_INLINE auto Next2D() -> Vec2
     {
         // Note : according to C++ standard, evaluation order of the arguments are undefined

@@ -595,6 +595,7 @@ public:
     static auto MapPath2PS(const Path& inputPath) -> std::vector<Float>
     {
         #pragma region Helper function
+
         const auto UniformConcentricDiskSample_Inverse = [](const Vec2& s) -> Vec2
         {
             const auto r = std::sqrt(s.x*s.x + s.y*s.y);
@@ -630,6 +631,7 @@ public:
             return (u + Vec2(1_f)) * 0.5_f;
         };
 
+        #if 0
         const auto SampleBechmannDist_Inverse = [](const Vec3& H, Float roughness) -> Vec2
         {
             const auto u0 = [&]() -> Float
@@ -652,6 +654,24 @@ public:
 
             return Vec2(u0, u1);
         };
+        #endif
+
+        const auto SampleGGX_Inverse = [](Float roughness_, const Vec3& H) -> Vec2
+        {
+            const auto tanTheta2 = Math::LocalTan2(H);
+            const auto u0 = 1_f / (1_f + roughness_ * roughness_ / tanTheta2);
+
+            const auto phiH = [&]() {
+                const auto t = std::atan2(H.y, H.x);
+                return t;
+                //return t < 0_f ? t + 2_f * Math::Pi() : t;
+            }();
+            //const auto u1 = phiH * 0.5_f * Math::InvPi();
+            const auto u1 = (phiH * Math::InvPi() + 1_f) * 0.5_f;
+
+            return Vec2(u0, u1);
+        };
+
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -701,7 +721,8 @@ public:
                         const auto localWo = v->geom.ToLocal * wo;
                         const auto H = Math::Normalize(localWi + localWo);
                         const auto roughness = v->primitive->bsdf->Glossiness();
-                        const auto inv = SampleBechmannDist_Inverse(H, roughness);
+                        //const auto inv = SampleBechmannDist_Inverse(H, roughness);
+                        const auto inv = SampleGGX_Inverse(roughness, H);
                         ps.push_back(inv.x);
                         ps.push_back(inv.y);
                     }
