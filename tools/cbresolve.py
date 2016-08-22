@@ -16,6 +16,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--infile', '-s', type=str, help='Input scene file')
     parser.add_argument('--entry', '-t', type=str, action='append', help='Add an entry for template dictionary')
+    parser.add_argument('--export', '-e', dest='export', action='store_true')
 
     args, unknown = parser.parse_known_args()
 
@@ -30,6 +31,7 @@ def main():
         )
 
     # Generate possible combinations 
+    count = 0
     for entry in itertools.product(*entries):
         # Create a dict
         context = {}
@@ -48,6 +50,12 @@ def main():
 
         # Resolve template
         resolved_scene_template = scene_template.render(context)
+
+        # Output resolved template
+        if args.export:
+            with open('resolved_%d.yml' % count, 'w') as f:
+                f.write(resolved_scene_template)
+
 
         # Resolve template in the additional arguments
         resolved_args = [jinja2.Template(arg).render(context) for arg in unknown]
@@ -70,6 +78,7 @@ def main():
         print('Finished')
         
         print('----------------------------------------------------------------------')
+        count += 1
 
 if __name__ == '__main__':
     main()

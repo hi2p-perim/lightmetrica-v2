@@ -658,15 +658,16 @@ public:
 
         const auto SampleGGX_Inverse = [](Float roughness_, const Vec3& H) -> Vec2
         {
-            const auto tanTheta2 = Math::LocalTan2(H);
-            const auto u0 = 1_f / (1_f + roughness_ * roughness_ / tanTheta2);
+            const auto u0 = [&]() {
+                const auto tanTheta2 = Math::LocalTan2(H);
+                if (tanTheta2 == Math::Inf()) return 1_f;
+                return tanTheta2 / (tanTheta2 + roughness_ * roughness_);
+            }();
 
             const auto phiH = [&]() {
                 const auto t = std::atan2(H.y, H.x);
                 return t;
-                //return t < 0_f ? t + 2_f * Math::Pi() : t;
             }();
-            //const auto u1 = phiH * 0.5_f * Math::InvPi();
             const auto u1 = (phiH * Math::InvPi() + 1_f) * 0.5_f;
 
             return Vec2(u0, u1);

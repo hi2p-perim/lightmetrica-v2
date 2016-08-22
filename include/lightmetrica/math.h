@@ -29,6 +29,7 @@
 #include <string>
 #include <initializer_list>
 #include <algorithm>
+#include <cassert>
 
 /*!
     \defgroup math Math library
@@ -1607,9 +1608,10 @@ namespace Math
     template <typename T, SIMD Opt>
     LM_INLINE auto LocalTan2(const TVec3<T, Opt>& v) -> T
     {
-        const T t1 = v.z * v.z;
-        const T t2 = T(1) - t1;
-        return t2 <= T(0) ? T(0) : t2 / t1;
+        if (v.z == 0_f) return Math::Inf();    // Infinity
+        const T cos2 = v.z * v.z;
+        const T sin2 = T(1) - cos2;
+        return sin2 <= T(0) ? T(0) : sin2 / cos2;
     }
 
     #pragma endregion
