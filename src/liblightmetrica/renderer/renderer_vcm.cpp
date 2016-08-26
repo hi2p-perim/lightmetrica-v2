@@ -661,8 +661,8 @@ public:
                     // --------------------------------------------------------------------------------
 
                     #pragma region Sample subpaths
-                    VCMSubpath subpathE;
-                    VCMSubpath subpathL;
+                    static thread_local VCMSubpath subpathE;
+                    static thread_local VCMSubpath subpathL;
                     subpathE.SampleSubpath(scene, &ctx.rng, TransportDirection::EL, maxNumVertices_);
                     subpathL.SampleSubpath(scene, &ctx.rng, TransportDirection::LE, maxNumVertices_);
                     #pragma endregion
@@ -682,7 +682,7 @@ public:
                             for (int s = minS; s <= maxS; s++)
                             {
                                 // Connect vertices and create a full path
-                                VCMPath fullpath;
+                                static thread_local VCMPath fullpath;
                                 if (!fullpath.ConnectSubpaths(scene, subpathL, subpathE, s, t)) { continue; }
 
                                 // Evaluate contribution
@@ -726,7 +726,7 @@ public:
                                 if (n < minNumVertices_ || maxNumVertices_ < n) { return; }
 
                                 // Merge vertices and create a full path
-                                VCMPath fullpath;
+                                static thread_local VCMPath fullpath;
                                 if (!fullpath.MergeSubpaths(subpathLs[si], subpathE, s - 1, t)) { return; }
 
                                 // Evaluate contribution

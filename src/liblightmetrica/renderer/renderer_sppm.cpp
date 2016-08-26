@@ -44,7 +44,9 @@
 
 LM_NAMESPACE_BEGIN
 
-#define LM_SPPM_DEBUG 1
+#define LM_SPPM_DEBUG 0
+#define LM_SPPM_DEBUG_OUTPUT_PER_30_SEC 1
+#define LM_SPPM_RENDER_WITH_TIME 1
 
 /*!
     \brief Stochastic progressive photon mapping renderer.
@@ -70,6 +72,9 @@ private:
     #if LM_SPPM_DEBUG
     std::string debugOutputPath_;
     #endif
+    #if LM_SPPM_RENDER_WITH_TIME
+    double renderTime_;
+    #endif
 
 public:
 
@@ -83,6 +88,9 @@ public:
         photonmap_             = ComponentFactory::Create<PhotonMap>("photonmap::" + prop->ChildAs<std::string>("photonmap", "kdtree"));
         #if LM_SPPM_DEBUG
         debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "sppm_%05d");
+        #endif
+        #if LM_SPPM_RENDER_WITH_TIME
+        renderTime_            = prop->ChildAs("render_time", 10.0);
         #endif
         return true;
     };
@@ -116,7 +124,12 @@ public:
 
         long long totalPhotonTraceSamples = 0;
 
+        #if LM_SPPM_RENDER_WITH_TIME
+        const auto renderStartTime = std::chrono::high_resolution_clock::now();
+        for (long long pass = 0; ; pass++)
+        #else
         for (long long pass = 0; pass < numIterationPass_; pass++)
+        #endif
         {
             LM_LOG_INFO("Pass " + std::to_string(pass));
             LM_LOG_INDENTER();
@@ -314,8 +327,37 @@ public:
                     film->Save(boost::str(f % pass));
                 }
                 #endif
+                #if LM_SPPM_DEBUG_OUTPUT_PER_30_SEC
+                {
+                    static auto prevOutputTime = std::chrono::high_resolution_clock::now();
+                    const auto currentTime = std::chrono::high_resolution_clock::now();
+                    const double elapsed = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - prevOutputTime).count()) / 1000.0;
+                    if (elapsed > 30.0)
+                    {
+                        static long long outN = 0;
+                        boost::format f("%03d");
+                        f.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
+                        film->Save(boost::str(f % outN));
+                        outN++;
+                        prevOutputTime = currentTime;
+                    }
+                }
+                #endif
             }
             #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #if LM_SPPM_RENDER_WITH_TIME
+            {
+                const auto currentTime = std::chrono::high_resolution_clock::now();
+                const double elapsed = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - renderStartTime).count()) / 1000.0;
+                if (elapsed > renderTime_)
+                {
+                    break;
+                }
+            }
+            #endif
         }
         #pragma endregion
     };

@@ -84,7 +84,7 @@ public:
         alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
         photonmap_             = ComponentFactory::Create<PhotonMap>("photonmap::" + prop->ChildAs<std::string>("photonmap", "kdtree"));
         #if LM_PPM_DEBUG
-        debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "sppm_%05d");
+        debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "ppm_%05d");
         #endif
         return true;
     };
