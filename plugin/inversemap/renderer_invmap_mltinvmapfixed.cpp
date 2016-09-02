@@ -285,6 +285,7 @@ public:
                             const auto path = InversemapUtils::MapPS2Path(scene, ctx.currPS);
                             assert(path);
                             assert(!path->EvaluateF(0).Black());
+                            assert(path->vertices.size() == numVertices_);
                             return *path;
                         }();
                         #pragma endregion
@@ -420,7 +421,7 @@ public:
                         #pragma region Map to primary sample space
                         const auto ps = InversemapUtils::MapPath2PS(currP);
                         const auto currP2 = InversemapUtils::MapPS2Path(scene, ps);
-                        if (!currP2 || currP2->EvaluateF(0).Black())
+                        if (!currP2 || currP.vertices.size() != currP2->vertices.size() || currP2->EvaluateF(0).Black())
                         {
                             // This sometimes happens due to numerical problem
                             #if 0

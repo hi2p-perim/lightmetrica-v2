@@ -193,7 +193,10 @@ public:
 					    }
 				    }
 				    #endif
-				    std::cout << std::string(consoleWidth, ' ') << "\r";
+                    std::cout << std::string(consoleWidth, ' ');
+                    std::cout.flush();
+                    std::cout << "\r";
+                    std::cout.flush();
 			    }
 
 			    // Print message
@@ -201,7 +204,9 @@ public:
 			    const auto text = simple ? messageLine : GenerateMessage(type, messageLine, boost::filesystem::path(filename).filename().string(), line, threadId);
 			    if (inplace)
 			    {
-				    std::cout << text << "\r";
+                    std::cout << text;
+                    std::cout.flush();
+                    std::cout << "\r";
 				    std::cout.flush();
 				    prevMessageIsInplace_ = true;
 			    }
