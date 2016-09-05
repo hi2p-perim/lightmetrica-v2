@@ -204,8 +204,10 @@ public:
                         static thread_local const auto StrategyDist = [&]() -> Distribution1D
                         {
                             const Float StrategyWeights[] = {
-                                0.2_f,
-                                0.8_f,
+                                //0.2_f,
+                                //0.8_f,
+                                1_f,
+                                0_f,
                             };
                             Distribution1D dist;
                             for (int i = 0; i < NumStrategies; i++) dist.Add(StrategyWeights[i]);
@@ -292,9 +294,12 @@ public:
                             #pragma region Lens
                             
                             
-
+                            return Prop();
                             #pragma endregion
                         }
+
+                        LM_UNREACHABLE();
+                        return Prop();
                     }();
                     if (!prop)
                     {
@@ -325,9 +330,12 @@ public:
                         else if (strategy == Strategy::Lens)
                         {
                             #pragma region Lens
-                            
+                            return SPD();
                             #pragma endregion
                         }
+
+                        LM_UNREACHABLE();
+                        return SPD();
                     };
 
                     #pragma endregion

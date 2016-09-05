@@ -59,4 +59,15 @@ auto Random_Next(Random* p) -> double
     return dsfmt_genrand_close_open(&p->p_->dsfmt);
 }
 
+auto Random_GetInternalState(Random* p, unsigned char** state, size_t* size) -> void
+{
+    *state = reinterpret_cast<unsigned char*>(&p->p_->dsfmt);
+    *size  = sizeof(dsfmt_t);
+}
+
+auto Random_SetInternalState(Random* p, const unsigned char* state) -> void
+{
+    std::memcpy(&p->p_->dsfmt, state, sizeof(dsfmt_t));
+}
+
 LM_NAMESPACE_END

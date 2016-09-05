@@ -36,7 +36,7 @@
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/detail/photonmap.h>
-#include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/subpathsampler.h>
 #include <lightmetrica/detail/parallel.h>
 
 LM_NAMESPACE_BEGIN
@@ -91,7 +91,7 @@ public:
             Parallel::For(numPhotonTraceSamples_, [&](long long index, int threadid, bool init)
             {
                 auto& ctx = contexts[threadid];
-                PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+                SubpathSampler::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                 {
                     // Record photon
                     if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
@@ -142,7 +142,7 @@ public:
         sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
         {
             bool gatherNext = !finalgather_;
-            PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+            SubpathSampler::TraceSubpath(scene, rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, SPD& throughput) -> bool
             {
                 // Skip initial vertex
                 if (numVertices == 1)

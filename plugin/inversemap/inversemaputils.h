@@ -26,26 +26,70 @@
 
 #include <lightmetrica/lightmetrica.h>
 #include <lightmetrica/detail/parallel.h>
+#include <lightmetrica/detail/subpathsampler.h>
 #include <fstream>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/filesystem.hpp> 
 
 #define INVERSEMAP_OMIT_NORMALIZATION 0
 
 LM_NAMESPACE_BEGIN
 
-struct PathVertex
-{
-    int type;
-    SurfaceGeometry geom;
-    const Primitive* primitive = nullptr;
-};
-
 struct Subpath
 {
-    std::vector<PathVertex> vertices;
+    std::vector<SubpathSampler::PathVertex> vertices;
+
+#if 0
     auto SampleSubpathFromEndpoint(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> int
+    {
+        const auto orig = vertices;
+
+        const auto state = rng->GetInternalState();
+        rng->SetInternalState(state);
+        vertices = orig;
+
+        const auto  n   = (int)(vertices.size());
+        const auto* pv  = n > 0 ? &vertices[n - 1] : nullptr;
+        const auto* ppv = n > 1 ? &vertices[n - 2] : nullptr;
+        SubpathSampler::TraceSubpathFromEndpoint(scene, rng, pv, ppv, n, n + maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+        {
+            vertices.emplace_back(v);
+            return true;
+        });
+
+        const auto vs1 = vertices;
+        const auto nv1 = (int)(vertices.size()) - n;
+
+        rng->SetInternalState(state);
+        vertices = orig;
+
+        const auto nv2 = SampleSubpathFromEndpoint_(scene, rng, transDir, maxNumVertices);
+        if (nv1 != nv2)
+        {
+            __debugbreak();
+        }
+
+        return nv2;
+
+        //return (int)(vertices.size());
+    }
+#else
+    auto SampleSubpathFromEndpoint(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> int
+    {
+        const auto  n = (int)(vertices.size());
+        const auto* pv = n > 0 ? &vertices[n - 1] : nullptr;
+        const auto* ppv = n > 1 ? &vertices[n - 2] : nullptr;
+        SubpathSampler::TraceSubpathFromEndpoint(scene, rng, pv, ppv, n, n + maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+        {
+            vertices.emplace_back(v);
+            return true;
+        });
+        return (int)(vertices.size()) - n;
+    }
+#endif
+
+    auto SampleSubpathFromEndpoint_(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> int
     {
         Vec3 initWo;
         SPD throughput;
@@ -57,7 +101,7 @@ struct Subpath
             {
                 #pragma region Sample initial vertex
 
-                PathVertex v;
+                SubpathSampler::PathVertex v;
 
                 // Sample an emitter
                 v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
@@ -140,7 +184,7 @@ struct Subpath
                 // --------------------------------------------------------------------------------
 
                 #pragma region Process path vertex
-                PathVertex v;
+                SubpathSampler::PathVertex v;
                 v.geom = isect.geom;
                 v.primitive = isect.primitive;
                 v.type = isect.primitive->Type() & ~SurfaceInteractionType::Emitter;
@@ -163,7 +207,7 @@ struct Subpath
 
 struct Path
 {
-    std::vector<PathVertex> vertices;
+    std::vector<SubpathSampler::PathVertex> vertices;
 
     auto ConnectSubpaths(const Scene* scene, const Subpath& subpathL, const Subpath& subpathE, int s, int t) -> bool
     {
@@ -466,7 +510,7 @@ public:
     static auto MapPS2Path(const Scene* scene, const std::vector<Float>& primarySample) -> boost::optional<Path>
     {
         Vec3 initWo;
-        PathVertex pv, ppv;
+        SubpathSampler::PathVertex pv, ppv;
         Path path;
         int samplerIndex = 0;
         const int maxNumVertices = (int)primarySample.size() / 2 + 1;
@@ -476,7 +520,7 @@ public:
             {
                 //region Sample initial vertex
 
-                PathVertex v;
+                SubpathSampler::PathVertex v;
 
                 // Emitter is fixed (initial one is used)
                 v.type = SurfaceInteractionType::E;
@@ -561,7 +605,7 @@ public:
                        std::strcmp(isect.primitive->bsdf->implName, "BSDF_CookTorrance") == 0);
 
                 // Add a vertex
-                PathVertex v;
+                SubpathSampler::PathVertex v;
                 v.geom = isect.geom;
                 v.primitive = isect.primitive;
                 v.type = isect.primitive->Type() & ~SurfaceInteractionType::Emitter;
