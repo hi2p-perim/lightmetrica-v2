@@ -23,6 +23,7 @@
 */
 
 #include "inversemaputils.h"
+#include <mutex>
 
 #define INVERSEMAP_MLTFIXED_DEBUG 0
 #define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 0
@@ -190,6 +191,34 @@ public:
 
                 const auto accept = [&]() -> bool
                 {
+                    #pragma region Select mutation strategy
+
+                    const int NumStrategies = 2;
+                    enum class Strategy
+                    {
+                        Bidir,
+                        Lens,
+                    };
+                    const auto strategy = [&]() -> Strategy
+                    {
+                        static thread_local const auto StrategyDist = [&]() -> Distribution1D
+                        {
+                            const Float StrategyWeights[] = {
+                                0.2_f,
+                                0.8_f,
+                            };
+                            Distribution1D dist;
+                            for (int i = 0; i < NumStrategies; i++) dist.Add(StrategyWeights[i]);
+                            dist.Normalize();
+                            return dist;
+                        }();
+                        return (Strategy)(StrategyDist.Sample(ctx.rng.Next()));
+                    }();
+
+                    #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
                     #pragma region Mutate the current path
 
                     // Bidirectional mutation first narrows the mutation space by limiting the deleted range
@@ -203,56 +232,69 @@ public:
 
                     const auto prop = [&]() -> boost::optional<Prop>
                     {
-                        // Implements bidirectional mutation within same path length
-                        // Some simplification
-                        //   - Mutation within the same path length
-                
-                        const int n = (int)(ctx.currP.vertices.size());
-
-                        // Choose # of path vertices to be deleted
-                        TwoTailedGeometricDist removedPathVertexNumDist(2);
-                        removedPathVertexNumDist.Configure(1, 1, n);
-                        const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
-
-                        // Choose range of deleted vertices [dL,dM]
-                        const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
-                        const int dM = dL + kd - 1;
-
-                        // Choose # of vertices added from each endpoint
-                        const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
-                        const int aM = kd - aL;
-
-                        // Sample subpaths
-                        Subpath subpathL;
-                        for (int s = 0; s < dL; s++)
+                        if (strategy == Strategy::Bidir)
                         {
-                            subpathL.vertices.push_back(ctx.currP.vertices[s]);
-                        }
-                        if (subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, aL) != aL)
-                        {
-                            return boost::none;
-                        }
+                            #pragma region Bidir
+                            // Implements bidirectional mutation within same path length
+                            // Some simplification
+                            //   - Mutation within the same path length
 
-                        Subpath subpathE;
-                        for (int t = n - 1; t > dM; t--)
-                        {
-                            subpathE.vertices.push_back(ctx.currP.vertices[t]);
-                        }
-                        if (subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, aM) != aM)
-                        {
-                            return boost::none;
-                        }
+                            const int n = (int)(ctx.currP.vertices.size());
 
-                        // Create proposed path
-                        Prop prop;
-                        if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
-                        {
-                            return boost::none;
-                        }
+                            // Choose # of path vertices to be deleted
+                            TwoTailedGeometricDist removedPathVertexNumDist(2);
+                            removedPathVertexNumDist.Configure(1, 1, n);
+                            const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
 
-                        prop.kd = kd;
-                        prop.dL = dL;
-                        return prop;
+                            // Choose range of deleted vertices [dL,dM]
+                            const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
+                            const int dM = dL + kd - 1;
+
+                            // Choose # of vertices added from each endpoint
+                            const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
+                            const int aM = kd - aL;
+
+                            // Sample subpaths
+                            Subpath subpathL;
+                            for (int s = 0; s < dL; s++)
+                            {
+                                subpathL.vertices.push_back(ctx.currP.vertices[s]);
+                            }
+                            if (subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, aL) != aL)
+                            {
+                                return boost::none;
+                            }
+
+                            Subpath subpathE;
+                            for (int t = n - 1; t > dM; t--)
+                            {
+                                subpathE.vertices.push_back(ctx.currP.vertices[t]);
+                            }
+                            if (subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, aM) != aM)
+                            {
+                                return boost::none;
+                            }
+
+                            // Create proposed path
+                            Prop prop;
+                            if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
+                            {
+                                return boost::none;
+                            }
+
+                            prop.kd = kd;
+                            prop.dL = dL;
+                            return prop;
+                            #pragma endregion
+                        }
+                        else if (strategy == Strategy::Lens)
+                        {
+                            #pragma region Lens
+                            
+                            
+
+                            #pragma endregion
+                        }
                     }();
                     if (!prop)
                     {
@@ -261,20 +303,31 @@ public:
 
                     const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
                     {
-                        SPD sum;
-                        for (int i = 0; i <= kd; i++)
+                        if (strategy == Strategy::Bidir)
                         {
-                            const auto f = y.EvaluateF(dL + i);
-                            if (f.Black())
+                            #pragma region Bidir
+                            SPD sum;
+                            for (int i = 0; i <= kd; i++)
                             {
-                                return SPD();
+                                const auto f = y.EvaluateF(dL + i);
+                                if (f.Black())
+                                {
+                                    return SPD();
+                                }
+                                const auto p = y.EvaluatePathPDF(scene, dL + i);
+                                assert(p.v > 0_f);
+                                const auto C = f / p;
+                                sum += 1_f / C;
                             }
-                            const auto p = y.EvaluatePathPDF(scene, dL + i);
-                            assert(p.v > 0_f);
-                            const auto C = f / p;
-                            sum += 1_f / C;
+                            return sum;
+                            #pragma endregion
                         }
-                        return sum;
+                        else if (strategy == Strategy::Lens)
+                        {
+                            #pragma region Lens
+                            
+                            #pragma endregion
+                        }
                     };
 
                     #pragma endregion

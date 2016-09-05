@@ -39,7 +39,6 @@ class Distribution1D
 public:
 
     Distribution1D() { Clear(); }
-    LM_DISABLE_COPY_AND_MOVE(Distribution1D);
 
 public:
 
