@@ -234,6 +234,7 @@ public:
 
                     const auto prop = [&]() -> boost::optional<Prop>
                     {
+                        const int n = (int)(ctx.currP.vertices.size());
                         if (strategy == Strategy::Bidir)
                         {
                             #pragma region Bidir
@@ -241,13 +242,11 @@ public:
                             // Some simplification
                             //   - Mutation within the same path length
 
-                            const int n = (int)(ctx.currP.vertices.size());
-
                             // Choose # of path vertices to be deleted
-                            //TwoTailedGeometricDist removedPathVertexNumDist(2);
-                            //removedPathVertexNumDist.Configure(1, 1, n);
-                            //const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
-                            const int kd = 3;
+                            TwoTailedGeometricDist removedPathVertexNumDist(2);
+                            removedPathVertexNumDist.Configure(1, 1, n);
+                            const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
+                            //const int kd = 3;
 
                             // Choose range of deleted vertices [dL,dM]
                             const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
@@ -288,6 +287,7 @@ public:
                             }
 
                             // Reject paths with zero-contribution
+                            // Note that Q function is assumed to accept paths with positive contribution
                             if (prop.p.EvaluateF(dL + aL).Black())
                             {
                                 return boost::none;
@@ -302,8 +302,56 @@ public:
                         {
                             #pragma region Lens
                             
+                            // Eye subpath
+                            const auto subpathE = [&]() -> Subpath
+                            {
+                                Subpath subpathE;
+                                subpathE.vertices.push_back(ctx.currP.vertices[n - 1]);
+                                SubpathSampler::TraceSubpathFromEndpoint(scene, &ctx.rng, &subpathE.vertices[0], nullptr, 1, n - 1, TransportDirection::EL, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+                                {
+                                    if (numVertices == 1)
+                                    {
+                                        return true;
+                                    }
+                                    if ((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0)
+                                    {
+                                        subpathE.vertices.emplace_back(v);
+                                        return false;
+                                    }
+                                    assert((v.primitive->Type() & SurfaceInteractionType::S) > 0);
+                                    return true;
+                                });
+                                return subpathE;
+                            }();
                             
-                            return Prop();
+                            // Light subpath
+                            const auto subpathL = [&]() -> Subpath
+                            {
+                                Subpath subpathL;
+                                int nL = n - (int)(subpathE.vertices.size());
+                                for (int s = 0; s < nL; s++)
+                                {
+                                    subpathL.vertices.push_back(ctx.currP.vertices[s]);
+                                }
+                                return subpathL;
+                            }();
+
+                            assert(subpathL.vertices.size() + subpathE.vertices.size() == n);
+
+                            // Connect subpaths and create a proposed path
+                            Prop prop;
+                            if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
+                            {
+                                return boost::none;
+                            }
+                            
+                            // Reject paths with zero-contribution
+                            if (prop.p.EvaluateF((int)(subpathL.vertices.size())).Black())
+                            {
+                                return boost::none;
+                            }
+
+                            return prop;
                             #pragma endregion
                         }
 
@@ -339,6 +387,23 @@ public:
                         else if (strategy == Strategy::Lens)
                         {
                             #pragma region Lens
+
+                            const int n = (int)(x.vertices.size());
+                            assert(n == (int)(y.vertices.size()));
+
+                            // Find first S from E
+                            const auto s = n - 2 - std::distance(y.vertices.rbegin(), std::find_if(y.vertices.rbegin(), y.vertices.rend(), [](const SubpathSampler::PathVertex& v) -> bool
+                            {
+                                return (v.primitive->Type() & SurfaceInteractionType::E) == 0 && (v.primitive->Type() & SurfaceInteractionType::S) == 0;
+                            }));
+
+                            // Evaluate quantities
+                            const auto& vE  = y.vertices[n-1];
+                            const auto& vpE = y.vertices[n-2];
+                            const auto WeD = vE.primitive->EvaluateDirection(vE.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(vpE.geom.p - vE.geom.p), TransportDirection::EL, false);
+                            const auto cst = ;
+                            const auto pDE = vE.primitive->EvaluateDirectionPDF(vE.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(vpE.geom.p - vE.geom.p), false);
+
                             return SPD();
                             #pragma endregion
                         }
