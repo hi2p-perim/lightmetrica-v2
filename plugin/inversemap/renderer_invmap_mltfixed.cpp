@@ -26,7 +26,7 @@
 #include <mutex>
 
 #define INVERSEMAP_MLTFIXED_DEBUG 0
-#define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 0
+#define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 1
 
 LM_NAMESPACE_BEGIN
 
@@ -244,13 +244,16 @@ public:
                             const int n = (int)(ctx.currP.vertices.size());
 
                             // Choose # of path vertices to be deleted
-                            TwoTailedGeometricDist removedPathVertexNumDist(2);
-                            removedPathVertexNumDist.Configure(1, 1, n);
-                            const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
+                            //TwoTailedGeometricDist removedPathVertexNumDist(2);
+                            //removedPathVertexNumDist.Configure(1, 1, n);
+                            //const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
+                            const int kd = 3;
 
                             // Choose range of deleted vertices [dL,dM]
                             const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
                             const int dM = dL + kd - 1;
+                            //const int dL = 0;
+                            //const int dM = dL + kd - 1;
 
                             // Choose # of vertices added from each endpoint
                             const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
@@ -280,6 +283,12 @@ public:
                             // Create proposed path
                             Prop prop;
                             if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
+                            {
+                                return boost::none;
+                            }
+
+                            // Reject paths with zero-contribution
+                            if (prop.p.EvaluateF(dL + aL).Black())
                             {
                                 return boost::none;
                             }
@@ -317,7 +326,7 @@ public:
                                 const auto f = y.EvaluateF(dL + i);
                                 if (f.Black())
                                 {
-                                    return SPD();
+                                    continue;
                                 }
                                 const auto p = y.EvaluatePathPDF(scene, dL + i);
                                 assert(p.v > 0_f);

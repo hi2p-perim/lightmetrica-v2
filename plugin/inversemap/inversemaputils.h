@@ -518,7 +518,7 @@ public:
         {
             if (step == 0)
             {
-                //region Sample initial vertex
+                #pragma region Sample initial vertex
 
                 SubpathSampler::PathVertex v;
 
@@ -541,11 +541,11 @@ public:
                 // Update information
                 pv = v;
 
-                //endregion
+                #pragma endregion
             }
             else
             {
-                //region Sample intermediate vertex
+                #pragma region Sample intermediate vertex
 
                 // Sample a next direction
                 Vec3 wi;
@@ -601,8 +601,8 @@ public:
                 }
 
                 // Assume all surface is diffuse or glossy
-                assert(std::strcmp(isect.primitive->bsdf->implName, "BSDF_Diffuse") == 0 ||
-                       std::strcmp(isect.primitive->bsdf->implName, "BSDF_CookTorrance") == 0);
+                //assert(std::strcmp(isect.primitive->bsdf->implName, "BSDF_Diffuse") == 0 ||
+                //       std::strcmp(isect.primitive->bsdf->implName, "BSDF_CookTorrance") == 0);
 
                 // Add a vertex
                 SubpathSampler::PathVertex v;
@@ -621,7 +621,7 @@ public:
                 ppv = pv;
                 pv = v;
 
-                //endregion
+                #pragma endregion
             }
         }
 
