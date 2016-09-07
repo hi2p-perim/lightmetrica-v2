@@ -170,6 +170,40 @@ struct Path
         return fL * cst * fE;
     }
 
+    auto EvaluateCst(int s) const -> SPD
+    {
+        const int n = (int)(vertices.size());
+        const int t = n - s;
+        assert(n >= 2);
+
+        SPD cst;
+        if (s == 0 && t > 0)
+        {
+            const auto& v = vertices[0];
+            const auto& vNext = vertices[1];
+            cst = v.primitive->EvaluatePosition(v.geom, true) * v.primitive->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vNext.geom.p - v.geom.p), TransportDirection::EL, false);
+        }
+        else if (s > 0 && t == 0)
+        {
+            const auto& v = vertices[n - 1];
+            const auto& vPrev = vertices[n - 2];
+            cst = v.primitive->EvaluatePosition(v.geom, true) * v.primitive->EvaluateDirection(v.geom, v.type, Vec3(), Math::Normalize(vPrev.geom.p - v.geom.p), TransportDirection::LE, false);
+        }
+        else if (s > 0 && t > 0)
+        {
+            const auto* vL = &vertices[s - 1];
+            const auto* vE = &vertices[s];
+            const auto* vLPrev = s - 2 >= 0 ? &vertices[s - 2] : nullptr;
+            const auto* vENext = s + 1 < n ? &vertices[s + 1] : nullptr;
+            const auto fsL = vL->primitive->EvaluateDirection(vL->geom, vL->type, vLPrev ? Math::Normalize(vLPrev->geom.p - vL->geom.p) : Vec3(), Math::Normalize(vE->geom.p - vL->geom.p), TransportDirection::LE, true);
+            const auto fsE = vE->primitive->EvaluateDirection(vE->geom, vE->type, vENext ? Math::Normalize(vENext->geom.p - vE->geom.p) : Vec3(), Math::Normalize(vL->geom.p - vE->geom.p), TransportDirection::EL, true);
+            const Float G = RenderUtils::GeometryTerm(vL->geom, vE->geom);
+            cst = fsL * G * fsE;
+        }
+
+        return cst;
+    }
+
     auto EvaluatePathPDF(const Scene* scene, int s) const -> PDFVal
     {
         const int n = (int)(vertices.size());

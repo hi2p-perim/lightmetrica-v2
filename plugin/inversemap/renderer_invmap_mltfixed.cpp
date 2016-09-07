@@ -25,7 +25,8 @@
 #include "inversemaputils.h"
 #include <mutex>
 
-#define INVERSEMAP_MLTFIXED_DEBUG 0
+#define INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_TRIANGLES 1
+#define INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_SAMPLED_PATHS 1
 #define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 1
 
 LM_NAMESPACE_BEGIN
@@ -55,7 +56,7 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
-        #if INVERSEMAP_MLTFIXED_DEBUG
+        #if INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_TRIANGLES
         // Output triangles
         {
             std::ofstream out("tris.out", std::ios::out | std::ios::trunc);
@@ -206,8 +207,8 @@ public:
                             const Float StrategyWeights[] = {
                                 //0.2_f,
                                 //0.8_f,
-                                1_f,
                                 0_f,
+                                1_f,
                             };
                             Distribution1D dist;
                             for (int i = 0; i < NumStrategies; i++) dist.Add(StrategyWeights[i]);
@@ -392,7 +393,7 @@ public:
                             assert(n == (int)(y.vertices.size()));
 
                             // Find first S from E
-                            const auto s = n - 2 - std::distance(y.vertices.rbegin(), std::find_if(y.vertices.rbegin(), y.vertices.rend(), [](const SubpathSampler::PathVertex& v) -> bool
+                            const int s = n - 1 - (int)std::distance(y.vertices.rbegin(), std::find_if(y.vertices.rbegin(), y.vertices.rend(), [](const SubpathSampler::PathVertex& v) -> bool
                             {
                                 return (v.primitive->Type() & SurfaceInteractionType::E) == 0 && (v.primitive->Type() & SurfaceInteractionType::S) == 0;
                             }));
@@ -401,10 +402,10 @@ public:
                             const auto& vE  = y.vertices[n-1];
                             const auto& vpE = y.vertices[n-2];
                             const auto WeD = vE.primitive->EvaluateDirection(vE.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(vpE.geom.p - vE.geom.p), TransportDirection::EL, false);
-                            const auto cst = ;
+                            const auto cst = y.EvaluateCst(s);
                             const auto pDE = vE.primitive->EvaluateDirectionPDF(vE.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(vpE.geom.p - vE.geom.p), false);
 
-                            return SPD();
+                            return pDE.v / (WeD * cst);
                             #pragma endregion
                         }
 
@@ -448,8 +449,8 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #if INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION
+                if (threadid == 1)
                 {
-                    assert(Parallel::GetNumThreads() == 1);
                     static bool prevIsReject = false;
                     static long long sequencialtReject = 0;
                     if (accept)
@@ -491,22 +492,25 @@ public:
 
                 // --------------------------------------------------------------------------------
 
-                #if INVERSEMAP_MLTFIXED_DEBUG
-                // Output sampled path
-                static long long count = 0;
-                if (count == 0)
+                #if INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_SAMPLED_PATHS
+                if (threadid == 1)
                 {
-                    boost::filesystem::remove("dirs.out");
-                }
-                if (count < 500)
-                {
-                    count++;
-                    std::ofstream out("dirs.out", std::ios::out | std::ios::app);
-                    for (const auto& v : ctx.currP.vertices)
+                    // Output sampled path
+                    static long long count = 0;
+                    if (count == 0)
                     {
-                        out << boost::str(boost::format("%.10f %.10f %.10f ") % v.geom.p.x % v.geom.p.y % v.geom.p.z);
+                        boost::filesystem::remove("dirs.out");
                     }
-                    out << std::endl;
+                    if (count < 100)
+                    {
+                        count++;
+                        std::ofstream out("dirs.out", std::ios::out | std::ios::app);
+                        for (const auto& v : ctx.currP.vertices)
+                        {
+                            out << boost::str(boost::format("%.10f %.10f %.10f ") % v.geom.p.x % v.geom.p.y % v.geom.p.z);
+                        }
+                        out << std::endl;
+                    }
                 }
                 #endif
             });
