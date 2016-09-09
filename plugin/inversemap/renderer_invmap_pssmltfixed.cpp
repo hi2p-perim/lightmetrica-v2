@@ -87,7 +87,7 @@ public:
                 }
 
                 // Accumulate contribution
-                ctx.b += (p->EvaluateF(0) / p->EvaluatePathPDF(scene, 0)).Luminance();
+                ctx.b += InversemapUtils::ScalarContrb(p->EvaluateF(0) / p->EvaluatePathPDF(scene, 0));
             });
 
             Float b = 0_f;
@@ -234,8 +234,8 @@ public:
                     }
 
                     // Evaluate contributions
-                    const Float currC = PathContrb(*currP).Luminance();
-                    const Float propC = PathContrb(*propP).Luminance();
+                    const Float currC = InversemapUtils::ScalarContrb(PathContrb(*currP));
+                    const Float propC = InversemapUtils::ScalarContrb(PathContrb(*propP));
 
                     // Acceptance ratio
                     const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
@@ -258,7 +258,8 @@ public:
                     const auto currF = currP->EvaluateF(0);
                     if (!currF.Black())
                     {
-                        ctx.film->Splat(currP->RasterPosition(), currF * (b / currF.Luminance()));
+                        ctx.film->Splat(currP->RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
+                        //ctx.film->Splat(currP->RasterPosition(), SPD(b));
                     }
                 }
                 #pragma endregion

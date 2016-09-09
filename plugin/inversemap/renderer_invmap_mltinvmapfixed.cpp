@@ -124,7 +124,7 @@ public:
                 }
 
                 // Accumulate contribution
-                ctx.b += (p->EvaluateF(0) / p->EvaluatePathPDF(scene, 0)).Luminance();
+                ctx.b += InversemapUtils::ScalarContrb(p->EvaluateF(0) / p->EvaluatePathPDF(scene, 0));
             });
 
             Float b = 0_f;
@@ -260,8 +260,8 @@ public:
                         }
 
                         // Evaluate contributions
-                        const Float currC = PathContrb(*currP).Luminance();
-                        const Float propC = PathContrb(*propP).Luminance();
+                        const Float currC = InversemapUtils::ScalarContrb(PathContrb(*currP));
+                        const Float propC = InversemapUtils::ScalarContrb(PathContrb(*propP));
 
                         // Acceptance ratio
                         const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
@@ -383,8 +383,8 @@ public:
 
                         #pragma region MH update
                         {
-                            const auto Qxy = Q(currP, prop->p, prop->kd, prop->dL).Luminance();
-                            const auto Qyx = Q(prop->p, currP, prop->kd, prop->dL).Luminance();
+                            const auto Qxy = InversemapUtils::ScalarContrb(Q(currP, prop->p, prop->kd, prop->dL));
+                            const auto Qyx = InversemapUtils::ScalarContrb(Q(prop->p, currP, prop->kd, prop->dL));
                             Float A = 0_f;
                             if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                             {
@@ -501,7 +501,7 @@ public:
                     const auto currF = currP->EvaluateF(0);
                     if (!currF.Black())
                     {
-                        ctx.film->Splat(currP->RasterPosition(), currF * (b / currF.Luminance()));   
+                        ctx.film->Splat(currP->RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
                     }
                     #endif
                 }

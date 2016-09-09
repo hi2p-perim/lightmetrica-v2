@@ -32,13 +32,18 @@
 #include <boost/optional.hpp>
 #include <boost/filesystem.hpp> 
 
+#if LM_DEBUG_MODE
+#define INVERSEMAP_OMIT_NORMALIZATION 1
+#else
 #define INVERSEMAP_OMIT_NORMALIZATION 0
+#endif
 
 LM_NAMESPACE_BEGIN
 
 struct Subpath
 {
     std::vector<SubpathSampler::PathVertex> vertices;
+
     auto SampleSubpathFromEndpoint(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> int
     {
         const auto  n = (int)(vertices.size());
@@ -51,6 +56,35 @@ struct Subpath
         });
         return (int)(vertices.size()) - n;
     }
+
+    auto BeginWith(const std::string& types) const -> bool
+    {
+        const auto PathType = [](const SubpathSampler::PathVertex& v) -> char
+        {
+            switch (v.type)
+            {
+                case SurfaceInteractionType::D: return 'D';
+                case SurfaceInteractionType::G: return 'G';
+                case SurfaceInteractionType::S: return 'S';
+                case SurfaceInteractionType::L: return 'L';
+                case SurfaceInteractionType::E: return 'E';
+                default: return 'X';
+            }
+        };
+        if (types.size() > vertices.size())
+        {
+            return false;
+        }
+        for (size_t i = 0; i < vertices.size(); i++)
+        {
+            if (types[i] != PathType(vertices[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
 };
 
 struct Path
@@ -664,6 +698,19 @@ public:
     static auto NumSamples(int numVertices) -> int
     {
         return (numVertices - 1) * 2;
+    }
+
+    ///! Scalar contirbution function
+    static auto ScalarContrb(const SPD& w) -> Float
+    {
+        // OK
+        //return w.v.z;
+        //return w.v.x;
+        // Wrong
+        //return Math::Max(w.v.x, Math::Max(w.v.y, w.v.z));
+        return w.Luminance();
+        //return w.v.x + w.v.y + w.v.z;
+        //return Math::Max(w.v.x, w.v.y);
     }
 
 };

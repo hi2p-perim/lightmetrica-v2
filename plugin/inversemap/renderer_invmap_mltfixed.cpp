@@ -28,8 +28,19 @@
 #define INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_TRIANGLES 1
 #define INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_SAMPLED_PATHS 1
 #define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 1
+#define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_DELETE_ALL 0
+#define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_PT 0
 
 LM_NAMESPACE_BEGIN
+
+namespace
+{
+    enum class Strategy : int
+    {
+        Bidir,
+        Lens,
+    };
+}
 
 ///! Metropolis light transport (fixed path length)
 class Renderer_Invmap_MLTFixed final : public Renderer
@@ -43,6 +54,7 @@ public:
     int numVertices_;
     long long numMutations_;
     long long numSeedSamples_;
+    std::vector<Float> strategyWeights_{ 1_f, 1_f };
 
 public:
 
@@ -51,6 +63,18 @@ public:
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
         if (!prop->ChildAs<long long>("num_seed_samples", numSeedSamples_)) return false;
+        {
+            LM_LOG_INFO("Loading mutation strategy weights");
+            LM_LOG_INDENTER();
+            const auto* child = prop->Child("mutation_strategy_weights");
+            if (!child)
+            {
+                LM_LOG_ERROR("Missing 'mutation_strategy_weights'");
+                return false;
+            }
+            strategyWeights_[(int)(Strategy::Bidir)] = child->ChildAs<Float>("bidir", 1_f);
+            strategyWeights_[(int)(Strategy::Lens)]  = child->ChildAs<Float>("lens", 1_f);
+        }
         return true;
     };
 
@@ -122,7 +146,7 @@ public:
                 }
 
                 // Accumulate contribution
-                ctx.b += (p->EvaluateF(0) / p->EvaluatePathPDF(scene, 0)).Luminance();
+                ctx.b += InversemapUtils::ScalarContrb(p->EvaluateF(0) / p->EvaluatePathPDF(scene, 0));
             });
 
             Float b = 0_f;
@@ -194,24 +218,12 @@ public:
                 {
                     #pragma region Select mutation strategy
 
-                    const int NumStrategies = 2;
-                    enum class Strategy
-                    {
-                        Bidir,
-                        Lens,
-                    };
                     const auto strategy = [&]() -> Strategy
                     {
                         static thread_local const auto StrategyDist = [&]() -> Distribution1D
                         {
-                            const Float StrategyWeights[] = {
-                                //0.2_f,
-                                //0.8_f,
-                                0_f,
-                                1_f,
-                            };
                             Distribution1D dist;
-                            for (int i = 0; i < NumStrategies; i++) dist.Add(StrategyWeights[i]);
+                            for (Float w : strategyWeights_) dist.Add(w);
                             dist.Normalize();
                             return dist;
                         }();
@@ -233,6 +245,9 @@ public:
                         int dL;
                     };
 
+                    //const auto _ = ctx.rng.GetInternalState();
+                    //ctx.rng.SetInternalState(_);
+
                     const auto prop = [&]() -> boost::optional<Prop>
                     {
                         const int n = (int)(ctx.currP.vertices.size());
@@ -244,20 +259,26 @@ public:
                             //   - Mutation within the same path length
 
                             // Choose # of path vertices to be deleted
+                            #if INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_DELETE_ALL
+                            const int kd = n;
+                            #else
                             TwoTailedGeometricDist removedPathVertexNumDist(2);
                             removedPathVertexNumDist.Configure(1, 1, n);
                             const int kd = removedPathVertexNumDist.Sample(ctx.rng.Next());
-                            //const int kd = 3;
+                            #endif
 
                             // Choose range of deleted vertices [dL,dM]
                             const int dL = Math::Clamp((int)(ctx.rng.Next() * (n - kd + 1)), 0, n - kd);
                             const int dM = dL + kd - 1;
-                            //const int dL = 0;
-                            //const int dM = dL + kd - 1;
 
                             // Choose # of vertices added from each endpoint
+                            #if INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_PT
+                            const int aL = 0;
+                            const int aM = kd - aL;
+                            #else
                             const int aL = Math::Clamp((int)(ctx.rng.Next() * (kd + 1)), 0, kd);
                             const int aM = kd - aL;
+                            #endif
 
                             // Sample subpaths
                             Subpath subpathL;
@@ -287,6 +308,11 @@ public:
                                 return boost::none;
                             }
 
+                            //if (subpathL.vertices.size() == 0 && subpathE.vertices.size() == 3)
+                            //{
+                            //    __debugbreak();
+                            //}
+
                             // Reject paths with zero-contribution
                             // Note that Q function is assumed to accept paths with positive contribution
                             if (prop.p.EvaluateF(dL + aL).Black())
@@ -302,21 +328,21 @@ public:
                         else if (strategy == Strategy::Lens)
                         {
                             #pragma region Lens
-                            
+
                             // Eye subpath
                             const auto subpathE = [&]() -> Subpath
                             {
                                 Subpath subpathE;
                                 subpathE.vertices.push_back(ctx.currP.vertices[n - 1]);
-                                SubpathSampler::TraceSubpathFromEndpoint(scene, &ctx.rng, &subpathE.vertices[0], nullptr, 1, n - 1, TransportDirection::EL, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+                                SubpathSampler::TraceSubpathFromEndpoint(scene, &ctx.rng, &subpathE.vertices[0], nullptr, 1, n, TransportDirection::EL, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                                 {
                                     if (numVertices == 1)
                                     {
                                         return true;
                                     }
+                                    subpathE.vertices.emplace_back(v);
                                     if ((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0)
                                     {
-                                        subpathE.vertices.emplace_back(v);
                                         return false;
                                     }
                                     assert((v.primitive->Type() & SurfaceInteractionType::S) > 0);
@@ -324,7 +350,22 @@ public:
                                 });
                                 return subpathE;
                             }();
-                            
+
+                            // Sampling is failed if the last vertex is S or E or point at infinity
+                            {
+                                const auto& vE = subpathE.vertices.back();
+                                if (vE.geom.infinite || (vE.primitive->Type() & SurfaceInteractionType::E) > 0 || (vE.primitive->Type() & SurfaceInteractionType::S) > 0)
+                                {
+                                    return boost::none;
+                                }
+                            }
+
+                            // Empty light subpaths (s=0) changes position of L and might break ergodicity
+                            if (n == (int)(subpathE.vertices.size()))
+                            {
+                                return boost::none;
+                            }
+
                             // Light subpath
                             const auto subpathL = [&]() -> Subpath
                             {
@@ -364,22 +405,26 @@ public:
                         return false;
                     }
 
-                    const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> SPD
+                    const auto Q = [&](const Path& x, const Path& y, int kd, int dL) -> Float
                     {
                         if (strategy == Strategy::Bidir)
                         {
                             #pragma region Bidir
-                            SPD sum;
+                            Float sum = 0_f;
+                            #if INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_PT
+                            for (int i = 0; i <= 0; i++)
+                            #else
                             for (int i = 0; i <= kd; i++)
+                            #endif
                             {
-                                const auto f = y.EvaluateF(dL + i);
-                                if (f.Black())
+                                const auto f = InversemapUtils::ScalarContrb(y.EvaluateF(dL + i));
+                                if (f == 0_f)
                                 {
                                     continue;
                                 }
                                 const auto p = y.EvaluatePathPDF(scene, dL + i);
                                 assert(p.v > 0_f);
-                                const auto C = f / p;
+                                const auto C = f / p.v;
                                 sum += 1_f / C;
                             }
                             return sum;
@@ -404,13 +449,18 @@ public:
                             const auto WeD = vE.primitive->EvaluateDirection(vE.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(vpE.geom.p - vE.geom.p), TransportDirection::EL, false);
                             const auto cst = y.EvaluateCst(s);
                             const auto pDE = vE.primitive->EvaluateDirectionPDF(vE.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(vpE.geom.p - vE.geom.p), false);
+                            assert(!WeD.Black());
+                            if (cst.Black())
+                            {
+                                return 0_f;
+                            }
 
-                            return pDE.v / (WeD * cst);
+                            return pDE.v / InversemapUtils::ScalarContrb(WeD * cst);
                             #pragma endregion
                         }
 
                         LM_UNREACHABLE();
-                        return SPD();
+                        return 0_f;
                     };
 
                     #pragma endregion
@@ -419,8 +469,8 @@ public:
 
                     #pragma region MH update
                     {
-                        const auto Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL).Luminance();
-                        const auto Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL).Luminance();
+                        const auto Qxy = Q(ctx.currP, prop->p, prop->kd, prop->dL);
+                        const auto Qyx = Q(prop->p, ctx.currP, prop->kd, prop->dL);
                         Float A = 0_f;
                         if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                         {
@@ -449,7 +499,7 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #if INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION
-                if (threadid == 1)
+                if (threadid == 0)
                 {
                     static bool prevIsReject = false;
                     static long long sequencialtReject = 0;
@@ -485,7 +535,8 @@ public:
                     const auto currF = ctx.currP.EvaluateF(0);
                     if (!currF.Black())
                     {
-                        ctx.film->Splat(ctx.currP.RasterPosition(), currF * (b / currF.Luminance()));
+                        ctx.film->Splat(ctx.currP.RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
+                        //ctx.film->Splat(ctx.currP.RasterPosition(), SPD(b));
                     }
                 }
                 #pragma endregion
@@ -493,7 +544,7 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #if INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_SAMPLED_PATHS
-                if (threadid == 1)
+                if (threadid == 0)
                 {
                     // Output sampled path
                     static long long count = 0;
@@ -501,7 +552,7 @@ public:
                     {
                         boost::filesystem::remove("dirs.out");
                     }
-                    if (count < 100)
+                    if (count < 100 && accept)
                     {
                         count++;
                         std::ofstream out("dirs.out", std::ios::out | std::ios::app);
