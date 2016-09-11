@@ -38,17 +38,24 @@ LM_NAMESPACE_BEGIN
 
 namespace
 {
+    
     auto TraceSubpath_(
         const Scene* scene,
-        Random* rng,
         const SubpathSampler::PathVertex* initPV,
         const SubpathSampler::PathVertex* initPPV,
         boost::optional<int> initNV,
         int maxNumVertices,
         TransportDirection transDir,
-        boost::optional<Vec2> initRasterPos,
-        const std::function<bool(int step, const Vec2&, const SubpathSampler::PathVertex&, const SubpathSampler::PathVertex&, SPD&)>& processPathVertexFunc) -> void
+        const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc,
+        const SubpathSampler::SamplerFunc& sampleNext) -> void
     {
+        const auto sampleNext2D = [&](const Primitive* primitive, SubpathSampler::SampleUsage usage) -> Vec2
+        {
+            const auto u1 = sampleNext(primitive, usage, 0);
+            const auto u2 = sampleNext(primitive, usage, 1);
+            return Vec2(u1, u2);
+        };
+
         Vec3 initWo;
         SubpathSampler::PathVertex pv  = initPV  ? *initPV  : SubpathSampler::PathVertex();
         SubpathSampler::PathVertex ppv = initPPV ? *initPPV : SubpathSampler::PathVertex();
@@ -64,10 +71,10 @@ namespace
 
                 // Sample an emitter
                 v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
-                v.primitive = scene->SampleEmitter(v.type, rng->Next());
+                v.primitive = scene->SampleEmitter(v.type, sampleNext(nullptr, SubpathSampler::SampleUsage::EmitterSelection, 0));
 
                 // Sample a position on the emitter and initial ray direction
-                v.primitive->SamplePositionAndDirection(initRasterPos ? *initRasterPos : rng->Next2D(), rng->Next2D(), v.geom, initWo);
+                v.primitive->SamplePositionAndDirection(sampleNext2D(v.primitive, SubpathSampler::SampleUsage::Direction), sampleNext2D(v.primitive, SubpathSampler::SampleUsage::Position), v.geom, initWo);
 
                 // Initial throughput
                 throughput =
@@ -106,7 +113,7 @@ namespace
                         // Sample if the surface support sampling from $p_{\sigma^\perp}(\omega_o | \mathbf{x})$
                         assert(pv.primitive->emitter);
                         if (!pv.primitive->emitter->SampleDirection.Implemented()) { break; }
-                        pv.primitive->SampleDirection(rng->Next2D(), rng->Next(), pv.type, pv.geom, Vec3(), wo);
+                        pv.primitive->SampleDirection(sampleNext2D(pv.primitive, SubpathSampler::SampleUsage::Direction), sampleNext(pv.primitive, SubpathSampler::SampleUsage::ComponentSelection, 0), pv.type, pv.geom, Vec3(), wo);
                     }
                     else
                     {
@@ -118,7 +125,7 @@ namespace
                 else
                 {
                     wi = Math::Normalize(ppv.geom.p - pv.geom.p);
-                    pv.primitive->SampleDirection(rng->Next2D(), rng->Next(), pv.type, pv.geom, wi, wo);
+                    pv.primitive->SampleDirection(sampleNext2D(pv.primitive, SubpathSampler::SampleUsage::Direction), sampleNext(pv.primitive, SubpathSampler::SampleUsage::ComponentSelection, 0), pv.type, pv.geom, wi, wo);
                 }
 
                 // Evaluate direction
@@ -184,18 +191,30 @@ namespace
 
 auto SubpathSampler::TraceSubpath(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
 {
-    TraceSubpath_(scene, rng, nullptr, nullptr, boost::none, maxNumVertices, transDir, boost::none, processPathVertexFunc);
+    TraceSubpath_(scene, nullptr, nullptr, boost::none, maxNumVertices, transDir, processPathVertexFunc, [&](const Primitive* primitive, SampleUsage usage, int index) -> Float { return rng->Next(); });
 }
 
 auto SubpathSampler::TraceEyeSubpathFixedRasterPos(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const Vec2& rasterPos, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
 {
     assert(transDir == TransportDirection::EL);
-    TraceSubpath_(scene, rng, nullptr, nullptr, boost::none, maxNumVertices, transDir, rasterPos, processPathVertexFunc);
+    TraceSubpath_(scene, nullptr, nullptr, boost::none, maxNumVertices, transDir, processPathVertexFunc, [&](const Primitive* primitive, SampleUsage usage, int index) -> Float
+    {
+        if (primitive && (primitive->Type() & SurfaceInteractionType::E) > 0 && usage == SampleUsage::Direction)
+        {
+            return rasterPos[index];
+        }
+        return rng->Next();
+    });
 }
 
 auto SubpathSampler::TraceSubpathFromEndpoint(const Scene* scene, Random* rng, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
 {
-    TraceSubpath_(scene, rng, pv, ppv, nv, maxNumVertices, transDir, boost::none, processPathVertexFunc);
+    TraceSubpath_(scene, pv, ppv, nv, maxNumVertices, transDir, processPathVertexFunc, [&](const Primitive* primitive, SampleUsage usage, int index) -> Float { return rng->Next(); });
+}
+
+auto SubpathSampler::TraceSubpathFromEndpointWithSampler(const Scene* scene, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SubpathSampler::SamplerFunc& sampleNext, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
+{
+    TraceSubpath_(scene, pv, ppv, nv, maxNumVertices, transDir, processPathVertexFunc, sampleNext);
 }
 
 LM_NAMESPACE_END

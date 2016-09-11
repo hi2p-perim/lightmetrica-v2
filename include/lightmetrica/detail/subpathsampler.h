@@ -42,6 +42,14 @@ class SubpathSampler
 {
 public:
 
+    enum class SampleUsage
+    {
+        EmitterSelection,
+        Position,
+        Direction,
+        ComponentSelection,
+    };
+
     struct PathVertex
     {
         int type;
@@ -54,6 +62,13 @@ public:
     LM_DISABLE_CONSTRUCT(SubpathSampler);
 
 public:
+
+    /*!
+        Sampler function type for determining the next sample
+        this function is called when the sampler requiest a sample for the primitive and 
+        the specified usage.
+    */
+    using SamplerFunc = std::function<Float(const Primitive* primitive, SubpathSampler::SampleUsage usage, int index)>;
 
     /*!
         Callback function type for processing path vertices.
@@ -106,6 +121,20 @@ public:
         \param processPathVertexFunc Callback function to process vertices.
     */
     LM_PUBLIC_API static auto TraceSubpathFromEndpoint(const Scene* scene, Random* rng, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+
+    /*!
+        Function to trance subpath from current endpoint with given sampler.
+
+        \param scene                 Scene.
+        \param pv                    Last vertex. Specify nullptr if not available.
+        \param ppv                   Second last vertex. Specify nullptr if not available.
+        \param nv                    Current number of vertices.
+        \param maxNumVertices        Maximum number of vertices in the subpath.
+        \param transDir              Transport direction of the subpath.
+        \param sampleNext            Sampler function.
+        \param processPathVertexFunc Callback function to process vertices.
+    */
+    LM_PUBLIC_API static auto TraceSubpathFromEndpointWithSampler(const Scene* scene, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SamplerFunc& sampleNext, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
 
 };
 

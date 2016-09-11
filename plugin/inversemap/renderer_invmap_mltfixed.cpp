@@ -329,48 +329,103 @@ public:
                         {
                             #pragma region Lens
 
+                            const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
+                            {
+                                Float result;
+                                Float r = rng.Next();
+                                if (r < 0.5_f)
+                                {
+                                    r = r * 2_f;
+                                    result = u + s2 * std::exp(-std::log(s2 / s1) * r);
+                                    if (result > 1_f) result -= 1_f;
+                                }
+                                else
+                                {
+                                    r = (r - 0.5_f) * 2_f;
+                                    result = u - s2 * std::exp(-std::log(s2 / s1) * r);
+                                    if (result < 0_f) result += 1_f;
+                                }
+                                return result;
+                            };
+
                             // Eye subpath
-                            const auto subpathE = [&]() -> Subpath
+                            const auto subpathE = [&]() -> boost::optional<Subpath>
                             {
                                 Subpath subpathE;
                                 subpathE.vertices.push_back(ctx.currP.vertices[n - 1]);
-                                SubpathSampler::TraceSubpathFromEndpoint(scene, &ctx.rng, &subpathE.vertices[0], nullptr, 1, n, TransportDirection::EL, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
-                                {
-                                    if (numVertices == 1)
+                                bool failed = false;
+                                SubpathSampler::TraceSubpathFromEndpointWithSampler(scene, &subpathE.vertices[0], nullptr, 1, n, TransportDirection::EL,
+                                    [&](const Primitive* primitive, SubpathSampler::SampleUsage usage, int index) -> Float
                                     {
-                                        return true;
-                                    }
-                                    subpathE.vertices.emplace_back(v);
-                                    if ((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0)
+                                        // Perturb sample used for sampling direction
+                                        if (primitive && (primitive->Type() & SurfaceInteractionType::E) > 0 && usage == SubpathSampler::SampleUsage::Direction)
+                                        {
+                                            const auto rasterPos = ctx.currP.RasterPosition();
+                                            return Perturb(ctx.rng, rasterPos[index], 1_f / 512_f, 1_f / 32_f);
+                                            //return ctx.rng.Next();
+                                        }
+                                        // Other samples are not used.
+                                        // TODO: This will not work for multi-component materials.
+                                        // Introduce a feature to fix the component type in evaluation.
+                                        return 0_f;
+                                    },
+                                    [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                                     {
+                                        if (numVertices == 1)
+                                        {
+                                            return true;
+                                        }
+                                        subpathE.vertices.emplace_back(v);
+
+                                        // Reject if the corresponding vertex in the current path is not S
+                                        {
+                                            const auto propVT = (v.primitive->Type() & SurfaceInteractionType::S) > 0;
+                                            const auto currVT = (ctx.currP.vertices[n - numVertices].primitive->Type() & SurfaceInteractionType::S) > 0;
+                                            if (propVT != currVT)
+                                            {
+                                                failed = true;
+                                                return false;
+                                            }
+                                        }
+                                    
+                                        // Continue to trace if intersected vertex is S
+                                        if ((v.primitive->Type() & SurfaceInteractionType::S) > 0)
+                                        {
+                                            return true;
+                                        }
+
+                                        assert((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0);
                                         return false;
                                     }
-                                    assert((v.primitive->Type() & SurfaceInteractionType::S) > 0);
-                                    return true;
-                                });
+                                );
+                                if (failed)
+                                {
+                                    return boost::none;
+                                }
                                 return subpathE;
                             }();
+                            if (!subpathE)
+                            {
+                                return boost::none;
+                            }
 
                             // Sampling is failed if the last vertex is S or E or point at infinity
                             {
-                                const auto& vE = subpathE.vertices.back();
+                                const auto& vE = subpathE->vertices.back();
                                 if (vE.geom.infinite || (vE.primitive->Type() & SurfaceInteractionType::E) > 0 || (vE.primitive->Type() & SurfaceInteractionType::S) > 0)
                                 {
                                     return boost::none;
                                 }
                             }
 
-                            // Empty light subpaths (s=0) changes position of L and might break ergodicity
-                            if (n == (int)(subpathE.vertices.size()))
-                            {
-                                return boost::none;
-                            }
+                            // Number of vertices in each subpath
+                            const int nE = (int)(subpathE->vertices.size());
+                            const int nL = n - nE;
 
                             // Light subpath
                             const auto subpathL = [&]() -> Subpath
                             {
                                 Subpath subpathL;
-                                int nL = n - (int)(subpathE.vertices.size());
                                 for (int s = 0; s < nL; s++)
                                 {
                                     subpathL.vertices.push_back(ctx.currP.vertices[s]);
@@ -378,17 +433,15 @@ public:
                                 return subpathL;
                             }();
 
-                            assert(subpathL.vertices.size() + subpathE.vertices.size() == n);
-
                             // Connect subpaths and create a proposed path
                             Prop prop;
-                            if (!prop.p.ConnectSubpaths(scene, subpathL, subpathE, (int)(subpathL.vertices.size()), (int)(subpathE.vertices.size())))
+                            if (!prop.p.ConnectSubpaths(scene, subpathL, *subpathE, nL, nE))
                             {
                                 return boost::none;
                             }
                             
-                            // Reject paths with zero-contribution
-                            if (prop.p.EvaluateF((int)(subpathL.vertices.size())).Black())
+                            // Reject paths with zero-contribution (reject e.g., S + DS paths)
+                            if (prop.p.EvaluateF(nL).Black())
                             {
                                 return boost::none;
                             }
@@ -436,6 +489,21 @@ public:
 
                             const int n = (int)(x.vertices.size());
                             assert(n == (int)(y.vertices.size()));
+
+                            #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LENS_PERTURB_SUBSPACE_CONSISTENCY
+                            // Check if x and y is in the same subspace
+                            for (int i = 0; i < n; i++)
+                            {
+                                const auto& vx = x.vertices[i];
+                                const auto& vy = y.vertices[i];
+                                const auto tx = (vx.type & SurfaceInteractionType::S) > 0;
+                                const auto ty = (vy.type & SurfaceInteractionType::S) > 0;
+                                if (tx != ty)
+                                {
+                                    __debugbreak();
+                                }
+                            }
+                            #endif
 
                             // Find first S from E
                             const int s = n - 1 - (int)std::distance(y.vertices.rbegin(), std::find_if(y.vertices.rbegin(), y.vertices.rend(), [](const SubpathSampler::PathVertex& v) -> bool
