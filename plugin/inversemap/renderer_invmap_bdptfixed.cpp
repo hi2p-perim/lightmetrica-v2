@@ -96,6 +96,7 @@ public:
                     Path fullpath;
                     if (!fullpath.ConnectSubpaths(scene, subpathL, subpathE, s, t)) { continue; }
 
+                    #if 0
                     // Evaluate contribution
                     const auto f = fullpath.EvaluateF(s);
                     if (f.Black()) { continue; }
@@ -105,14 +106,22 @@ public:
                     if (p.v == 0)
                     {
                         // Due to precision issue, this can happen.
-                        return;
+                        continue;
                     }
+                    const auto Cstar = f / p;
+                    #else
+                    const auto Cstar = fullpath.EvaluateUnweightContribution(scene, s);
+                    if (Cstar.Black())
+                    {
+                        continue;
+                    }
+                    #endif
 
                     // Evaluate MIS weight
                     const auto w = fullpath.EvaluateMISWeight(scene, s);
 
                     // Accumulate contribution
-                    const auto C = f * w / p;
+                    const auto C = Cstar * w;
                     ctx.film->Splat(fullpath.RasterPosition(), C);
                 }
             }

@@ -192,7 +192,8 @@ public:
                         for (const Float u : ps)
                         {
                             //propPS.push_back(Perturb(rng, u, 1_f / 64_f, 1_f / 4_f));
-                            propPS.push_back(Perturb(rng, u, 1_f / 1024_f, 1_f / 64_f));
+                            //propPS.push_back(Perturb(rng, u, 1_f / 1024_f, 1_f / 64_f));
+                            propPS.push_back(Perturb(rng, u, 1_f / 256_f, 1_f / 16_f));
                         }
 
                         return propPS;

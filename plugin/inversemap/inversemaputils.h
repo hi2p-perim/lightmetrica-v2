@@ -120,6 +120,161 @@ struct Path
         return true;
     }
 
+    auto EvaluateUnweightContribution(const Scene* scene, int s) const -> SPD
+    {
+        const int n = (int)(vertices.size());
+        const int t = n - s;
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Compute alphaL
+
+        #if 0
+        SPD alphaL;
+        if (s == 0)
+        {
+            alphaL = SPD(1_f);
+        }
+        else
+        {
+            {
+                const auto* v = &vertices[0];
+                const auto* vNext = &vertices[1];
+                alphaL =
+                    v->primitive->EvaluatePosition(v->geom, false) /
+                    v->primitive->EvaluatePositionGivenDirectionPDF(v->geom, Math::Normalize(vNext->geom.p - v->geom.p), false) / scene->EvaluateEmitterPDF(v->primitive).v;
+            }
+            for (int i = 0; i < s - 1; i++)
+            {
+                const auto* v     = &vertices[i];
+                const auto* vPrev = i >= 1 ? &vertices[i - 1] : nullptr;
+                const auto* vNext = &vertices[i + 1];
+                const auto wi = vPrev ? Math::Normalize(vPrev->geom.p - v->geom.p) : Vec3();
+                const auto wo = Math::Normalize(vNext->geom.p - v->geom.p);
+                const auto fs = v->primitive->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::LE, false);
+                if (fs.Black()) return SPD();
+                alphaL *= fs / v->primitive->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false);
+            }
+        }
+        if (alphaL.Black())
+        {
+            return SPD();
+        }
+        #else
+        const auto alphaL = EvaluateAlpha(scene, s, TransportDirection::LE);
+        if (alphaL.Black())
+        {
+            return SPD();
+        }
+        #endif
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Compute alphaE
+
+        #if 0
+        SPD alphaE;
+        if (t == 0)
+        {
+            alphaE = SPD(1_f);
+        }
+        else
+        {
+            {
+                const auto* v = &vertices[n - 1];
+                const auto* vPrev = &vertices[n - 2];
+                alphaE =
+                    v->primitive->EvaluatePosition(v->geom, false) /
+                    v->primitive->EvaluatePositionGivenDirectionPDF(v->geom, Math::Normalize(vPrev->geom.p - v->geom.p), false) / scene->EvaluateEmitterPDF(v->primitive).v;
+            }
+            for (int i = n - 1; i > s; i--)
+            {
+                const auto* v = &vertices[i];
+                const auto* vPrev = &vertices[i - 1];
+                const auto* vNext = i < n - 1 ? &vertices[i + 1] : nullptr;
+                const auto wi = vNext ? Math::Normalize(vNext->geom.p - v->geom.p) : Vec3();
+                const auto wo = Math::Normalize(vPrev->geom.p - v->geom.p);
+                const auto fs = v->primitive->EvaluateDirection(v->geom, v->type, wi, wo, TransportDirection::EL, false);
+                if (fs.Black()) return SPD();
+                alphaE *= fs / v->primitive->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false);
+            }
+        }
+        if (alphaE.Black())
+        {
+            return SPD();
+        }
+        #else
+        const auto alphaE = EvaluateAlpha(scene, t, TransportDirection::EL);
+        if (alphaE.Black())
+        {
+            return SPD();
+        }
+        #endif
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Compute Cst
+
+        const auto cst = EvaluateCst(s);
+        if (cst.Black())
+        {
+            return SPD();
+        }
+
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        return alphaL * cst * alphaE;
+    }
+
+    auto EvaluateAlpha(const Scene* scene, int l, TransportDirection transDir) const -> SPD
+    {
+        const int n = (int)(vertices.size());
+        const auto index = [&](int i)
+        {
+            return transDir == TransportDirection::LE ? i : n - 1 - i;
+        };
+
+        SPD alpha;
+        if (l == 0)
+        {
+            alpha = SPD(1_f);
+        }
+        else
+        {
+            {
+                const auto* v = &vertices[index(0)];
+                const auto* vNext = &vertices[index(1)];
+                alpha =
+                    v->primitive->EvaluatePosition(v->geom, false) /
+                    v->primitive->EvaluatePositionGivenDirectionPDF(v->geom, Math::Normalize(vNext->geom.p - v->geom.p), false) / scene->EvaluateEmitterPDF(v->primitive).v;
+            }
+            for (int i = 0; i < l - 1; i++)
+            {
+                const auto* v = &vertices[index(i)];
+                const auto* vPrev = index(i - 1) >= 0 ? &vertices[index(i - 1)] : nullptr;
+                const auto* vNext = index(i + 1) <  n ? &vertices[index(i + 1)] : nullptr;
+                assert(vPrev != nullptr || vNext != nullptr);
+                const auto wi = vPrev ? Math::Normalize(vPrev->geom.p - v->geom.p) : Vec3();
+                const auto wo = vNext ? Math::Normalize(vNext->geom.p - v->geom.p) : Vec3();
+                const auto fs = v->primitive->EvaluateDirection(v->geom, v->type, wi, wo, transDir, false);
+                if (fs.Black()) return SPD();
+                alpha *= fs / v->primitive->EvaluateDirectionPDF(v->geom, v->type, wi, wo, false);
+            }
+        }
+        if (alpha.Black())
+        {
+            return SPD();
+        }
+
+        return alpha;
+    }
+
     auto EvaluateF(int s) const -> SPD
     {
         const int n = (int)(vertices.size());
@@ -556,41 +711,6 @@ public:
     {
         #pragma region Helper function
 
-        const auto UniformConcentricDiskSample_Inverse = [](const Vec2& s) -> Vec2
-        {
-            const auto r = std::sqrt(s.x*s.x + s.y*s.y);
-            auto theta = std::atan2(s.y, s.x);
-            Vec2 u;
-            if (s.x > -s.y)
-            {
-                if (s.x > s.y)
-                {
-                    u.x = r;
-                    u.y = 4_f * theta * r * Math::InvPi();
-                }
-                else
-                {
-                    u.y = r;
-                    u.x = (2_f - 4_f * theta * Math::InvPi()) * r;
-                }
-            }
-            else
-            {
-                theta = theta < 0_f ? theta + 2_f * Math::Pi() : theta;
-                if (s.x < s.y)
-                {
-                    u.x = -r;
-                    u.y = (4_f - 4_f * theta * Math::InvPi()) * r;
-                }
-                else
-                {
-                    u.y = -r;
-                    u.x = (-6_f + 4_f * theta * Math::InvPi()) * r;
-                }
-            }
-            return (u + Vec2(1_f)) * 0.5_f;
-        };
-
         #if 0
         const auto SampleBechmannDist_Inverse = [](const Vec3& H, Float roughness) -> Vec2
         {
@@ -615,23 +735,6 @@ public:
             return Vec2(u0, u1);
         };
         #endif
-
-        const auto SampleGGX_Inverse = [](Float roughness_, const Vec3& H) -> Vec2
-        {
-            const auto u0 = [&]() {
-                const auto tanTheta2 = Math::LocalTan2(H);
-                if (tanTheta2 == Math::Inf()) return 1_f;
-                return tanTheta2 / (tanTheta2 + roughness_ * roughness_);
-            }();
-
-            const auto phiH = [&]() {
-                const auto t = std::atan2(H.y, H.x);
-                return t;
-            }();
-            const auto u1 = (phiH * Math::InvPi() + 1_f) * 0.5_f;
-
-            return Vec2(u0, u1);
-        };
 
         #pragma endregion
 
@@ -692,6 +795,58 @@ public:
         }
 
         return ps;
+    }
+
+    static auto UniformConcentricDiskSample_Inverse(const Vec2& s) -> Vec2
+    {
+        const auto r = std::sqrt(s.x*s.x + s.y*s.y);
+        auto theta = std::atan2(s.y, s.x);
+        Vec2 u;
+        if (s.x > -s.y)
+        {
+            if (s.x > s.y)
+            {
+                u.x = r;
+                u.y = 4_f * theta * r * Math::InvPi();
+            }
+            else
+            {
+                u.y = r;
+                u.x = (2_f - 4_f * theta * Math::InvPi()) * r;
+            }
+        }
+        else
+        {
+            theta = theta < 0_f ? theta + 2_f * Math::Pi() : theta;
+            if (s.x < s.y)
+            {
+                u.x = -r;
+                u.y = (4_f - 4_f * theta * Math::InvPi()) * r;
+            }
+            else
+            {
+                u.y = -r;
+                u.x = (-6_f + 4_f * theta * Math::InvPi()) * r;
+            }
+        }
+        return (u + Vec2(1_f)) * 0.5_f;
+    }
+
+    static auto SampleGGX_Inverse(Float roughness_, const Vec3& H) -> Vec2
+    {
+        const auto u0 = [&]() {
+            const auto tanTheta2 = Math::LocalTan2(H);
+            if (tanTheta2 == Math::Inf()) return 1_f;
+            return tanTheta2 / (tanTheta2 + roughness_ * roughness_);
+        }();
+
+        const auto phiH = [&]() {
+            const auto t = std::atan2(H.y, H.x);
+            return t;
+        }();
+        const auto u1 = (phiH * Math::InvPi() + 1_f) * 0.5_f;
+
+        return Vec2(u0, u1);
     }
 
     ///! Number of samples required for the underlying path sampler.

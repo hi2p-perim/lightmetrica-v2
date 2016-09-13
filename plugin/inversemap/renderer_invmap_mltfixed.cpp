@@ -30,6 +30,8 @@
 #define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 1
 #define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_DELETE_ALL 0
 #define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_PT 0
+#define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_LENS_PERTURB_INDEPENDENT 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LENS_PERTURB_SUBSPACE_CONSISTENCY 0
 
 LM_NAMESPACE_BEGIN
 
@@ -39,6 +41,7 @@ namespace
     {
         Bidir,
         Lens,
+        Caustic,
     };
 }
 
@@ -54,7 +57,7 @@ public:
     int numVertices_;
     long long numMutations_;
     long long numSeedSamples_;
-    std::vector<Float> strategyWeights_{ 1_f, 1_f };
+    std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f };
 
 public:
 
@@ -72,8 +75,9 @@ public:
                 LM_LOG_ERROR("Missing 'mutation_strategy_weights'");
                 return false;
             }
-            strategyWeights_[(int)(Strategy::Bidir)] = child->ChildAs<Float>("bidir", 1_f);
-            strategyWeights_[(int)(Strategy::Lens)]  = child->ChildAs<Float>("lens", 1_f);
+            strategyWeights_[(int)(Strategy::Bidir)]   = child->ChildAs<Float>("bidir", 1_f);
+            strategyWeights_[(int)(Strategy::Lens)]    = child->ChildAs<Float>("lens", 1_f);
+            strategyWeights_[(int)(Strategy::Caustic)] = child->ChildAs<Float>("caustic", 1_f);
         }
         return true;
     };
@@ -250,6 +254,23 @@ public:
 
                     const auto prop = [&]() -> boost::optional<Prop>
                     {
+                        const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
+                        {
+                            Float result;
+                            Float r = rng.Next();
+                            if (r < 0.5_f)
+                            {
+                                r = r * 2_f;
+                                result = u + s2 * std::exp(-std::log(s2 / s1) * r);
+                            }
+                            else
+                            {
+                                r = (r - 0.5_f) * 2_f;
+                                result = u - s2 * std::exp(-std::log(s2 / s1) * r);
+                            }
+                            return result;
+                        };
+
                         const int n = (int)(ctx.currP.vertices.size());
                         if (strategy == Strategy::Bidir)
                         {
@@ -329,24 +350,15 @@ public:
                         {
                             #pragma region Lens
 
-                            const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
+                            // Check if the strategy can mutate the current path
+                            // Acceptable path type: D/L/empty D/L S* E
                             {
-                                Float result;
-                                Float r = rng.Next();
-                                if (r < 0.5_f)
-                                {
-                                    r = r * 2_f;
-                                    result = u + s2 * std::exp(-std::log(s2 / s1) * r);
-                                    if (result > 1_f) result -= 1_f;
-                                }
-                                else
-                                {
-                                    r = (r - 0.5_f) * 2_f;
-                                    result = u - s2 * std::exp(-std::log(s2 / s1) * r);
-                                    if (result < 0_f) result += 1_f;
-                                }
-                                return result;
-                            };
+                                int iE = n - 1;
+                                int iL = iE - 1;
+                                iL--;
+                                while (iL >= 0 && ctx.currP.vertices[iL].type == SurfaceInteractionType::S) { iL--; }
+                                if (iL > 0 && ctx.currP.vertices[iL - 1].type == SurfaceInteractionType::S) { return boost::none;  }
+                            }
 
                             // Eye subpath
                             const auto subpathE = [&]() -> boost::optional<Subpath>
@@ -354,15 +366,48 @@ public:
                                 Subpath subpathE;
                                 subpathE.vertices.push_back(ctx.currP.vertices[n - 1]);
                                 bool failed = false;
+
+                                #if !INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_LENS_PERTURB_INDEPENDENT
+                                // Perturb raster position
+                                const auto propRasterPos = [&]() -> boost::optional<Vec2>
+                                {
+                                    // Calculating raster position from the path have small correlated error so just iterating
+                                    // update can change the state of the path. This affect the mixing of the chain especially when
+                                    // the kernel size is relatively small. However for moderately bigger kernels, this effect is negilible.
+                                    // Essentially this can happen with technique with inverse mapping, because calculating raster position
+                                    // is a process of inverse of CDF^-1 for the directing sampling of the camera rays.
+                                    const auto rasterPos = ctx.currP.RasterPosition();
+                                    const auto s1 = 1_f / 256_f;
+                                    const auto s2 = 1_f / 16_f;
+                                    //const auto s1 = 1_f / 4096_f;
+                                    //const auto s2 = 1_f / 256_f;
+                                    const auto rX = Perturb(ctx.rng, rasterPos.x, s1, s2);
+                                    const auto rY = Perturb(ctx.rng, rasterPos.y, s1, s2);
+                                    // Immediately reject if the proposed raster position is outside of [0,1]^2
+                                    if (rX < 0_f || rX > 1_f || rY < 0_f || rY > 1_f)
+                                    {
+                                        return boost::none;
+                                    }
+                                    return Vec2(rX, rY);
+                                }();
+                                if (!propRasterPos)
+                                {
+                                    return boost::none;
+                                }
+                                #endif
+
+                                // Trace subpath
                                 SubpathSampler::TraceSubpathFromEndpointWithSampler(scene, &subpathE.vertices[0], nullptr, 1, n, TransportDirection::EL,
                                     [&](const Primitive* primitive, SubpathSampler::SampleUsage usage, int index) -> Float
                                     {
                                         // Perturb sample used for sampling direction
                                         if (primitive && (primitive->Type() & SurfaceInteractionType::E) > 0 && usage == SubpathSampler::SampleUsage::Direction)
                                         {
-                                            const auto rasterPos = ctx.currP.RasterPosition();
-                                            return Perturb(ctx.rng, rasterPos[index], 1_f / 512_f, 1_f / 32_f);
-                                            //return ctx.rng.Next();
+                                            #if INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_LENS_PERTURB_INDEPENDENT
+                                            return ctx.rng.Next();
+                                            #else
+                                            return (*propRasterPos)[index];
+                                            #endif
                                         }
                                         // Other samples are not used.
                                         // TODO: This will not work for multi-component materials.
@@ -449,6 +494,159 @@ public:
                             return prop;
                             #pragma endregion
                         }
+                        else if (strategy == Strategy::Caustic)
+                        {
+                            #pragma region Caustic
+                            
+                            // Check if the strategy can mutate the current path
+                            // Acceptable path type: D/L S* D/G E
+                            const auto iL = [&]() -> boost::optional<int>
+                            {
+                                int iE = n-1;
+                                int iL = iE - 1;
+                                
+                                // Cannot support LE paths
+                                if (n <= 2) { return boost::none; }
+
+                                // Reject if the vertex next to E is not S
+                                if (ctx.currP.vertices[iL].type == SurfaceInteractionType::S) { return boost::none; }
+
+                                // Find first non-S vertex
+                                iL--;
+                                while (iL >= 0 && ctx.currP.vertices[iL].type == SurfaceInteractionType::S) { iL--; }
+
+                                return iL;
+                            }();
+                            if (!iL)
+                            {
+                                return boost::none;
+                            }
+
+                            // Light subpath
+                            const auto subpathL = [&]() -> boost::optional<Subpath>
+                            {
+                                Subpath subpathL;
+                                for (int s = 0; s <= *iL; s++) { subpathL.vertices.push_back(ctx.currP.vertices[s]); }
+                                bool failed = false;
+                                
+                                // Perturb direction sample
+                                // This is not similar formulation to Veach's one. Instead the technique uses
+                                // primary sample used for sampling the current direction via inverse of sampling functions.
+                                const auto perturbedDSample = [&]() -> Vec2
+                                {
+                                    // Current sample for direction sampling
+                                    const auto currU = [&]() -> Vec2
+                                    {
+                                        const auto* v = &ctx.currP.vertices[*iL];
+                                        const auto* vn = &ctx.currP.vertices[*iL + 1];
+                                        const auto* vp = *iL >= 1 ? &ctx.currP.vertices[*iL - 1] : nullptr;
+                                        const auto wo = Math::Normalize(vn->geom.p - v->geom.p);
+                                        const auto wi = vp ? Math::Normalize(vp->geom.p - v->geom.p) : Vec3();
+                                        if (v->type == SurfaceInteractionType::D || v->type == SurfaceInteractionType::L)
+                                        {
+                                            const auto localWo = v->geom.ToLocal * wo;
+                                            return InversemapUtils::UniformConcentricDiskSample_Inverse(Vec2(localWo.x, localWo.y));
+                                        }
+                                        else if (v->type == SurfaceInteractionType::G)
+                                        {
+                                            const auto localWi = v->geom.ToLocal * wi;
+                                            const auto localWo = v->geom.ToLocal * wo;
+                                            const auto H = Math::Normalize(localWi + localWo);
+                                            const auto roughness = v->primitive->bsdf->Glossiness();
+                                            return InversemapUtils::SampleGGX_Inverse(roughness, H);
+                                        }
+                                        LM_UNREACHABLE();
+                                        return Vec2();
+                                    }();
+
+                                    // Perturb it
+                                    const auto s1 = 1_f / 256_f;
+                                    const auto s2 = 1_f / 16_f;
+                                    const auto u1 = Perturb(ctx.rng, currU.x, s1, s2);
+                                    const auto u2 = Perturb(ctx.rng, currU.y, s1, s2);
+                                    return Vec2(u1, u2);
+                                }();
+
+                                // Trace subpath
+                                SubpathSampler::TraceSubpathFromEndpointWithSampler(scene, &subpathL.vertices[*iL], *iL > 0 ? &subpathL.vertices[*iL-1] : nullptr, *iL+1, n, TransportDirection::LE,
+                                    [&](const Primitive* primitive, SubpathSampler::SampleUsage usage, int index) -> Float
+                                    {
+                                        if (primitive && usage == SubpathSampler::SampleUsage::Direction)
+                                        {
+                                            return perturbedDSample[index];
+                                        }
+                                        return 0_f;
+                                    },
+                                    [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+                                    {
+                                        subpathL.vertices.push_back(v);
+                                        
+                                        // Reject if the corresponding vertex in the current path is not S
+                                        {
+                                            const auto propVT = (v.primitive->Type() & SurfaceInteractionType::S) > 0;
+                                            const auto currVT = (ctx.currP.vertices[numVertices-1].primitive->Type() & SurfaceInteractionType::S) > 0;
+                                            if (propVT != currVT)
+                                            {
+                                                failed = true;
+                                                return false;
+                                            }
+                                        }
+
+                                        // Continue to trace if intersected vertex is S
+                                        if ((v.primitive->Type() & SurfaceInteractionType::S) > 0)
+                                        {
+                                            return true;
+                                        }
+
+                                        assert((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0);
+                                        return false;
+                                    }
+                                );
+                                if (failed)
+                                {
+                                    return boost::none;
+                                }
+
+                                return subpathL;
+                            }();
+                            if (!subpathL)
+                            {
+                                return boost::none;
+                            }
+                            
+                            // Sampling is failed if the last vertex is S or E or point at infinity
+                            {
+                                if (n != (int)subpathL->vertices.size() + 1)
+                                {
+                                    return boost::none;
+                                }
+                                const auto& vL = subpathL->vertices.back();
+                                if (vL.geom.infinite || (vL.primitive->Type() & SurfaceInteractionType::S) > 0)
+                                {
+                                    return boost::none;
+                                }
+                            }
+
+                            // Eye subpath
+                            Subpath subpathE;
+                            subpathE.vertices.push_back(ctx.currP.vertices[n-1]);
+
+                            // Connect subpaths and create a proposed path
+                            Prop prop;
+                            if (!prop.p.ConnectSubpaths(scene, *subpathL, subpathE, (int)(subpathL->vertices.size()), 1))
+                            {
+                                return boost::none;
+                            }
+
+                            // Reject paths with zero-contribution (reject e.g., S + DS paths)
+                            if (prop.p.EvaluateF((int)(subpathL->vertices.size())).Black())
+                            {
+                                return boost::none;
+                            }
+
+                            return prop;
+                            #pragma endregion
+                        }
 
                         LM_UNREACHABLE();
                         return Prop();
@@ -486,7 +684,6 @@ public:
                         else if (strategy == Strategy::Lens)
                         {
                             #pragma region Lens
-
                             const int n = (int)(x.vertices.size());
                             assert(n == (int)(y.vertices.size()));
 
@@ -512,18 +709,33 @@ public:
                             }));
 
                             // Evaluate quantities
-                            const auto& vE  = y.vertices[n-1];
-                            const auto& vpE = y.vertices[n-2];
-                            const auto WeD = vE.primitive->EvaluateDirection(vE.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(vpE.geom.p - vE.geom.p), TransportDirection::EL, false);
-                            const auto cst = y.EvaluateCst(s);
-                            const auto pDE = vE.primitive->EvaluateDirectionPDF(vE.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(vpE.geom.p - vE.geom.p), false);
-                            assert(!WeD.Black());
+                            // The most of terms are cancelled out so we only need to consider alpha_t * c_{s,t}
+                            const auto alpha = y.EvaluateAlpha(scene, n - s, TransportDirection::EL);
+                            assert(!alpha.Black());
+                            const auto cst   = y.EvaluateCst(s);
                             if (cst.Black())
                             {
                                 return 0_f;
                             }
 
-                            return pDE.v / InversemapUtils::ScalarContrb(WeD * cst);
+                            return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
+                            #pragma endregion
+                        }
+                        else if (strategy == Strategy::Caustic)
+                        {
+                            #pragma region Caustic
+                            const int n = (int)(x.vertices.size());
+                            assert(n == (int)(y.vertices.size()));
+
+                            const auto alpha = y.EvaluateAlpha(scene, n-1, TransportDirection::LE);
+                            assert(!alpha.Black());
+                            const auto cst = y.EvaluateCst(n - 1);
+                            if (cst.Black())
+                            {
+                                return 0_f;
+                            }
+
+                            return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
                             #pragma endregion
                         }
 

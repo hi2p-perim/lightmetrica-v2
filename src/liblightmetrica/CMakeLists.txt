@@ -348,7 +348,7 @@ set(
 	# detail
 	"renderer/photonmap_naive.cpp"
 	"renderer/photonmap_kdtree.cpp"
-	"renderer/photonmaputils.cpp"
+	"renderer/subpathsampler.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer" FILES ${_RENDERER_HEADER_FILES})
@@ -360,12 +360,12 @@ list(APPEND _SOURCE_FILES ${_RENDERER_SOURCE_FILES})
 
 #
 # Renderer / Detail
-#
+#subpathsampler
 
 set(
     _RENDERER_DETAIL_HEADER_FILES
 	"${_INCLUDE_DIR}/detail/photonmap.h"
-	"${_INCLUDE_DIR}/detail/photonmaputils.h"
+	"${_INCLUDE_DIR}/detail/subpathsampler.h"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\renderer\\detail" FILES ${_RENDERER_DETAIL_HEADER_FILES})
