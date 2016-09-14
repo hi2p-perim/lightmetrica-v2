@@ -257,8 +257,8 @@ struct Path
             for (int i = 0; i < l - 1; i++)
             {
                 const auto* v = &vertices[index(i)];
-                const auto* vPrev = index(i - 1) >= 0 ? &vertices[index(i - 1)] : nullptr;
-                const auto* vNext = index(i + 1) <  n ? &vertices[index(i + 1)] : nullptr;
+                const auto* vPrev = index(i - 1) >= 0 && index(i - 1) < n ? &vertices[index(i - 1)] : nullptr;
+                const auto* vNext = index(i + 1) >= 0 && index(i + 1) < n ? &vertices[index(i + 1)] : nullptr;
                 assert(vPrev != nullptr || vNext != nullptr);
                 const auto wi = vPrev ? Math::Normalize(vPrev->geom.p - v->geom.p) : Vec3();
                 const auto wo = vNext ? Math::Normalize(vNext->geom.p - v->geom.p) : Vec3();

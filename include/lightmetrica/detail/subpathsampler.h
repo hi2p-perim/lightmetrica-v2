@@ -67,19 +67,24 @@ public:
         Sampler function type for determining the next sample
         this function is called when the sampler requiest a sample for the primitive and 
         the specified usage.
+
+        \param numVertices Number of path vertices currently sampling
+        \param primitive   Primitive that the sample is used for
+        \param usage       Sample usage
+        \param index       Sample index \in {0,1}
     */
-    using SamplerFunc = std::function<Float(const Primitive* primitive, SubpathSampler::SampleUsage usage, int index)>;
+    using SamplerFunc = std::function<Float(int numVertices, const Primitive* primitive, SubpathSampler::SampleUsage usage, int index)>;
 
     /*!
         Callback function type for processing path vertices.
 
-        \param step       Index of the path vertices currently processing (1-indexed).
-        \param rasterPos  Raster position (if available).
-        \param pv         Previous path vertex.
-        \param v          Current path vertex.
-        \param throughput Throughput of the path.
-        \retval true      Specify to continue the path.
-        \retval false     Specify not to continue the path.
+        \param numVertices Number of the path vertices currently processing (1-indexed).
+        \param rasterPos   Raster position (if available).
+        \param pv          Previous path vertex.
+        \param v           Current path vertex.
+        \param throughput  Throughput of the path.
+        \retval true       Specify to continue the path.
+        \retval false      Specify not to continue the path.
     */
     using ProcessPathVertexFunc = std::function<bool(int numVertices, const Vec2& rasterPos, const PathVertex& pv, const PathVertex& v, SPD& throughput)>;
 
