@@ -197,7 +197,7 @@ private:
                     // Other samples are not used.
                     // TODO: This will not work for multi-component materials.
                     // Introduce a feature to fix the component type in evaluation.
-                    return 0_f;
+                    return rng.Next();
                 },
                 [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                 {
@@ -330,7 +330,7 @@ private:
                         }
                         return (*propU)[index];
                     }
-                    return 0_f;
+                    return rng.Next();
                 },
                 [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                 {
@@ -428,7 +428,7 @@ private:
                         }
                         return (*propU)[index];
                     }
-                    return 0_f;
+                    return rng.Next();
                 },
                 [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                 {
