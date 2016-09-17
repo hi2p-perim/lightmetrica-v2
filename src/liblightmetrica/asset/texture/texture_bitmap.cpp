@@ -143,7 +143,7 @@ public:
             // --------------------------------------------------------------------------------
 
             // Scale
-            const auto scale = prop->ChildAs<Float>("scale", 1_f);
+            const auto scale = (float)(prop->ChildAs<Float>("scale", 1_f));
             for (auto& v : data_)
             {
                 v *= scale;

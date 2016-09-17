@@ -185,6 +185,8 @@ enum class SIMD
     Default = SSE,
     #elif LM_DOUBLE_PRECISION && LM_AVX
     Default = AVX,
+    #else
+    Default = None,
     #endif
     //! \endcond
 };
