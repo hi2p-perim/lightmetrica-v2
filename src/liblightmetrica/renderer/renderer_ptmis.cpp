@@ -36,6 +36,11 @@
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/scheduler.h>
+#include <lightmetrica/detail/parallel.h>
+
+#define LM_PTMIS_DEBUG_WEIGHT_IMAGE 0
+#define LM_PTMIS_DEBUG_SIMPLIFY_PT_ONLY 0
+#define LM_PTMIS_DEBUG_SIMPLIFY_DIRECT_ONLY 0
 
 LM_NAMESPACE_BEGIN
 
@@ -63,7 +68,13 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film_) -> void
     {
-        sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
+        #if LM_PTMIS_DEBUG_WEIGHT_IMAGE
+        assert(Parallel::GetNumThreads() == 1);
+        auto filmW1 = ComponentFactory::Clone<Film>(film_);
+        auto filmW2 = ComponentFactory::Clone<Film>(film_);
+        #endif
+
+        const long long processed = sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
         {
             #pragma region Sample a sensor
             const auto* E = scene->SampleEmitter(SurfaceInteractionType::E, rng->Next());
@@ -115,6 +126,7 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region Direct light sampling
+                #if !LM_PTMIS_DEBUG_SIMPLIFY_PT_ONLY
                 if (numVertices + 1 >= minNumVertices_)
                 {
                     #pragma region Sample a light
@@ -146,10 +158,14 @@ public:
 
                     // --------------------------------------------------------------------------------
 
-                    #pragma region MIS weight
+                    #pragma region MIS
+                    #if LM_PTMIS_DEBUG_SIMPLIFY_DIRECT_ONLY
+                    const auto w = 1_f;
+                    #else
                     const auto pdfD_DirectLight = pdfPL.ConvertToProjSA(geom, geomL).v * pdfL.v;
                     const auto pdfD_BSDF = primitive->EvaluateDirectionPDF(geom, type, wi, ppL, true).v;
                     const auto w = pdfD_DirectLight / (pdfD_DirectLight + pdfD_BSDF);
+                    #endif
                     #pragma endregion
 
                     // --------------------------------------------------------------------------------
@@ -166,9 +182,14 @@ public:
 
                         // Accumulate to film
                         film->Splat(rp, w * C);
+
+                        #if LM_PTMIS_DEBUG_WEIGHT_IMAGE
+                        filmW1->Splat(rp, SPD(w));
+                        #endif
                     }
                     #pragma endregion
                 }
+                #endif
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
@@ -217,24 +238,38 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region Handle hit with light source
+                #if !LM_PTMIS_DEBUG_SIMPLIFY_DIRECT_ONLY
                 if ((isect.primitive->Type() & SurfaceInteractionType::L) > 0)
                 {
                     // Accumulate to film
                     if (numVertices + 1 >= minNumVertices_)
                     {
                         // MIS weight
+                        #if LM_PTMIS_DEBUG_SIMPLIFY_PT_ONLY
+                        const auto w = 1_f;
+                        #else
                         const auto pdfD_BSDF = pdfD.v;
-                        const auto pdfD_DirectLight = isect.primitive->EvaluatePositionGivenPreviousPositionPDF(geom, isect.geom, true).v * scene->EvaluateEmitterPDF(isect.primitive).v;
+                        const auto pdfD_DirectLight =
+                            (type & SurfaceInteractionType::S) > 0
+                                ? 0_f
+                                : isect.primitive->EvaluatePositionGivenPreviousPositionPDF(isect.geom, geom, true).ConvertToProjSA(isect.geom, geom).v *
+                                  scene->EvaluateEmitterPDF(isect.primitive).v;
                         const auto w = pdfD_BSDF / (pdfD_BSDF + pdfD_DirectLight);
+                        #endif
 
                         // Contribution
                         const auto C =
-                                throughput
-                                * isect.primitive->EvaluateDirection(isect.geom, SurfaceInteractionType::L, Vec3(), -ray.d, TransportDirection::EL, false)
-                                * isect.primitive->EvaluatePosition(isect.geom, false);
+                            throughput
+                            * isect.primitive->EvaluateDirection(isect.geom, SurfaceInteractionType::L, Vec3(), -ray.d, TransportDirection::EL, false)
+                            * isect.primitive->EvaluatePosition(isect.geom, false);
                         film->Splat(rasterPos, w * C);
+
+                        #if LM_PTMIS_DEBUG_WEIGHT_IMAGE
+                        filmW2->Splat(rasterPos, SPD(w));
+                        #endif
                     }
                 }
+                #endif
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
@@ -267,6 +302,15 @@ public:
                 #pragma endregion
             }
         });
+
+        #if LM_PTMIS_DEBUG_WEIGHT_IMAGE
+        filmW1->Rescale(1_f / processed);
+        filmW2->Rescale(1_f / processed);
+        filmW1->Save("ptmis_w1");
+        filmW2->Save("ptmis_w2");
+        #else
+        LM_UNUSED(processed);
+        #endif
     };
 
 };

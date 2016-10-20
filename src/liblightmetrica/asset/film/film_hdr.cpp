@@ -28,6 +28,7 @@
 #include <lightmetrica/logger.h>
 #include <lightmetrica/enum.h>
 #include <FreeImage.h>
+#include <signal.h>
 
 LM_NAMESPACE_BEGIN
 

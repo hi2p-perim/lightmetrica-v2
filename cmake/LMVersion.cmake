@@ -29,10 +29,11 @@
 # Version number and codename
 # 2.0.0 - cocoa
 # 2.0.1 - sansha-sanyou
+# 2.0.2 - stella
 set(LM_VERSION_MAJOR "2")
 set(LM_VERSION_MINOR "0")
 set(LM_VERSION_PATCH "1")
-set(LM_VERSION_CODENAME "sansha-sanyou")
+set(LM_VERSION_CODENAME "stella")
 
 # Execute git command in the project root and check revision number
 find_package(Git REQUIRED)
