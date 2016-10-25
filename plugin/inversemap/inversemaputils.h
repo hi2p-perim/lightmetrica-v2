@@ -35,7 +35,7 @@
 #if LM_DEBUG_MODE
 #define INVERSEMAP_OMIT_NORMALIZATION 1
 #else
-#define INVERSEMAP_OMIT_NORMALIZATION 0
+#define INVERSEMAP_OMIT_NORMALIZATION 1
 #endif
 
 LM_NAMESPACE_BEGIN
@@ -628,11 +628,12 @@ public:
                 }
                 else
                 {
-                    // Random number for the component selection is fixed to zero, meaning no support for this kind of materials
+                    // Random number for the component selection is fixed to u1, current implementation only supports
+                    // the component selection of flesnel material. This case does not need the direction samples.
                     wi = Math::Normalize(ppv.geom.p - pv.geom.p);
                     const auto u1 = primarySample[samplerIndex++];
                     const auto u2 = primarySample[samplerIndex++];
-                    pv.primitive->SampleDirection(Vec2(u1, u2), 0_f, pv.type, pv.geom, wi, wo);
+                    pv.primitive->SampleDirection(Vec2(u1, u2), u1, pv.type, pv.geom, wi, wo);
                 }
 
                 // Evaluate direction
@@ -790,6 +791,8 @@ public:
                         ps.push_back(inv.x);
                         ps.push_back(inv.y);
                     }
+                    // TODO: Support SurfaceInteractionType::S
+                    // Be careful of multi-component selection
                 }
             }
         }

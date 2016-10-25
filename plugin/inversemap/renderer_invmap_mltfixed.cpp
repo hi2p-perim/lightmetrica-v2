@@ -30,8 +30,8 @@
 #define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 1
 #define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_DELETE_ALL 0
 #define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_BIDIR_MUT_PT 0
-#define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_LENS_PERTURB_INDEPENDENT 0
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LENS_PERTURB_SUBSPACE_CONSISTENCY 0
+#define INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_INDEPENDENT 0
 
 LM_NAMESPACE_BEGIN
 
@@ -160,7 +160,7 @@ private:
         {
             int iE = n - 1;
             int iL = iE - 1;
-            iL--;
+            //iL--;
             while (iL >= 0 && currP.vertices[iL].type == SurfaceInteractionType::S) { iL--; }
             if (iL > 0 && currP.vertices[iL - 1].type == SurfaceInteractionType::S) { return boost::none;  }
         }
@@ -170,41 +170,27 @@ private:
         {
             Subpath subpathE;
             subpathE.vertices.push_back(currP.vertices[n - 1]);
-            bool failed = false;
-
-            #if !INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_LENS_PERTURB_INDEPENDENT
-            // Perturb raster position
-            const auto propRasterPos = PerturbRasterPos(currP, rng);
-            if (!propRasterPos)
-            {
-                return boost::none;
-            }
-            #endif
 
             // Trace subpath
+            bool failed = false;
             SubpathSampler::TraceSubpathFromEndpointWithSampler(scene, &subpathE.vertices[0], nullptr, 1, n, TransportDirection::EL,
                 [&](int numVertices, const Primitive* primitive, SubpathSampler::SampleUsage usage, int index) -> Float
                 {
-                    // Perturb sample used for sampling direction
-                    if (primitive && (primitive->Type() & SurfaceInteractionType::E) > 0 && usage == SubpathSampler::SampleUsage::Direction)
+                    if (primitive && usage == SubpathSampler::SampleUsage::Direction && (primitive->Type() & SurfaceInteractionType::S) == 0)
                     {
-                        #if INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_LENS_PERTURB_INDEPENDENT
-                        return rng.Next();
-                        #else
-                        return (*propRasterPos)[index];
-                        #endif
+                        const auto propU = PerturbDirectionSample(currP, rng, primitive, numVertices - 2, TransportDirection::EL);
+                        if (!propU)
+                        {
+                            failed = true;
+                            return 0_f;
+                        }
+                        return (*propU)[index];
                     }
-                    // Other samples are not used.
-                    // TODO: This will not work for multi-component materials.
-                    // Introduce a feature to fix the component type in evaluation.
                     return rng.Next();
                 },
                 [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                 {
-                    if (numVertices == 1)
-                    {
-                        return true;
-                    }
+                    assert(numVertices > 1);
                     subpathE.vertices.emplace_back(v);
 
                     // Reject if the corresponding vertex in the current path is not S
@@ -453,7 +439,23 @@ private:
                     }
 
                     assert((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0);
-                    return false;
+
+                    // Stop if current vertex is the last one
+                    if (n - numVertices == 0)
+                    {
+                        return false;
+                    }
+                    
+                    assert(n - numVertices > 0);
+
+                    // Stop if corresponding next vertex is not S
+                    if ((currP.vertices[n - numVertices - 1].primitive->Type() & SurfaceInteractionType::S) == 0)
+                    {
+                        return false;
+                    }
+
+                    // Otherwise continue
+                    return true;
                 }
             );
             if (failed)
@@ -697,6 +699,9 @@ private:
     static auto PerturbDirectionSample(const Path& currP, Random& rng, const Primitive* primitive, int i, TransportDirection transDir) -> boost::optional<Vec2>
     {
         assert((primitive->Type() & SurfaceInteractionType::S) == 0);
+        #if INVERSEMAP_MLTFIXED_DEBUG_SIMPLIFY_INDEPENDENT
+        return rng.Next2D();
+        #else
         if ((primitive->Type() & SurfaceInteractionType::E) > 0)
         {
             // Perturb raster position
@@ -719,6 +724,7 @@ private:
         }
         LM_UNREACHABLE();
         return boost::none;
+        #endif
     }
 
 };
@@ -737,6 +743,9 @@ public:
     long long numSeedSamples_;
     MutationStrategy mut_;
     std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f, 1_f };
+    #if INVERSEMAP_OMIT_NORMALIZATION
+    Float normalization_;
+    #endif
 
 public:
 
@@ -759,6 +768,9 @@ public:
             strategyWeights_[(int)(Strategy::Caustic)]    = child->ChildAs<Float>("caustic", 1_f);
             strategyWeights_[(int)(Strategy::Multichain)] = child->ChildAs<Float>("multichain", 1_f);
         }
+        #if INVERSEMAP_OMIT_NORMALIZATION
+        normalization_ = prop->ChildAs<Float>("normalization", 1_f);
+        #endif
         return true;
     };
 
@@ -796,7 +808,7 @@ public:
 
         #pragma region Compute normalization factor
         #if INVERSEMAP_OMIT_NORMALIZATION
-        const auto b = 1_f;
+        const auto b = normalization_;
         #else
         const auto b = [&]() -> Float
         {

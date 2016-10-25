@@ -40,6 +40,9 @@ public:
     long long numMutations_;
     long long numSeedSamples_;
     Float largeStepProb_;
+    #if INVERSEMAP_OMIT_NORMALIZATION
+    Float normalization_;
+    #endif
 
 public:
 
@@ -49,12 +52,18 @@ public:
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
         if (!prop->ChildAs<long long>("num_seed_samples", numSeedSamples_)) return false;
         largeStepProb_ = prop->ChildAs<Float>("large_step_prob", 0.5_f);
+        #if INVERSEMAP_OMIT_NORMALIZATION
+        normalization_ = prop->ChildAs<Float>("normalization", 1_f);
+        #endif
         return true;
     };
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
     {
         #pragma region Compute normalization factor
+        #if INVERSEMAP_OMIT_NORMALIZATION
+        const auto b = normalization_;
+        #else
         const auto b = [&]() -> Float
         {
             LM_LOG_INFO("Computing normalization factor");
@@ -97,6 +106,7 @@ public:
             LM_LOG_INFO(boost::str(boost::format("Normalization factor: %.10f") % b));
             return b;
         }();
+        #endif
         #pragma endregion
 
         // --------------------------------------------------------------------------------
