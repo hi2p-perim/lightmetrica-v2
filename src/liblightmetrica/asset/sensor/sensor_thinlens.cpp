@@ -97,7 +97,7 @@ public:
         const auto rayDir = vx_ * woEye.x + vy_ * woEye.y + vz_ * woEye.z;
 
         // Compute the intersection point with the focal plane
-        const float tf = focalDistance_ / Math::Dot(-vz_, rayDir);
+        const auto tf = focalDistance_ / Math::Dot(-vz_, rayDir);
         const auto Pf = position_ + rayDir * tf;
 
         // Final ray direction
@@ -113,7 +113,7 @@ public:
         const auto rayDir = vx_ * woEye.x + vy_ * woEye.y + vz_ * woEye.z;
 
         // Compute the intersection point with the focal plane
-        const float tf = focalDistance_ / Math::Dot(-vz_, rayDir);
+        const auto tf = focalDistance_ / Math::Dot(-vz_, rayDir);
         const auto Pf = position_ + rayDir * tf;
 
         // Final ray direction
@@ -168,7 +168,7 @@ private:
 
         // Intersection point with focal plane
         assert(Math::Dot(-vz_, wo) > 0);
-        const float tf = focalDistance_ / Math::Dot(-vz_, wo);
+        const auto tf = focalDistance_ / Math::Dot(-vz_, wo);
         const auto Pf = geom.p + wo * tf;
 
         // Original ray direction before refraction
@@ -202,7 +202,7 @@ public:
         }
 
         // Intersection point with focal plane
-        const float tf = focalDistance_ / Math::Dot(-vz_, wo);
+        const auto tf = focalDistance_ / Math::Dot(-vz_, wo);
         const auto Pf = geom.p + wo * tf;
 
         // Original ray direction before refraction

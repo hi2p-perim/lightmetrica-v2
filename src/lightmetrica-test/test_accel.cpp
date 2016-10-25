@@ -59,7 +59,11 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
     }
 };
 
+#if LM_SSE && LM_SINGLE_PRECISION
 INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree", "accel::bvh", "accel::bvh_sah", "accel::bvh_sahbin", "accel::bvh_sahxyz", "accel::qbvh"));
+#else
+INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree", "accel::bvh", "accel::bvh_sah", "accel::bvh_sahbin", "accel::bvh_sahxyz"));
+#endif
 
 #pragma endregion
 

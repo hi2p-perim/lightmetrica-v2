@@ -31,9 +31,7 @@
 #include <lightmetrica/bound.h>
 #include <lightmetrica/intersectionutils.h>
 
-#if !LM_SSE || !LM_SINGLE_PRECISION
-    #error "accel_qbvh: Unsupported configuration"
-#endif
+#if LM_SSE && LM_SINGLE_PRECISION
 
 LM_NAMESPACE_BEGIN
 
@@ -507,3 +505,5 @@ private:
 LM_COMPONENT_REGISTER_IMPL(Accel_QBVH, "accel::qbvh");
 
 LM_NAMESPACE_END
+
+#endif
