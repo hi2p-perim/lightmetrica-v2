@@ -48,3 +48,5 @@ if (NOT CMAKE_BUILD_TYPE)
         "Choose build type (Debug, Release, RelWithDebInfo, or MinSizeRel)" FORCED)
 endif()
 
+# Distribution directory name
+set(LM_DIST_DIR_NAME "dist" CACHE STRING "Distribution directory name (default: 'dist')")

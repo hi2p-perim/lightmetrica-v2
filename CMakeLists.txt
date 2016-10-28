@@ -55,7 +55,7 @@ include_directories("include")
 include_directories("pch")
 
 # Output directories 
-set(_OUTPUT_ROOT "${CMAKE_SOURCE_DIR}/dist")
+set(_OUTPUT_ROOT "${CMAKE_SOURCE_DIR}/${LM_DIST_DIR_NAME}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/bin")

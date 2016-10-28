@@ -22,7 +22,7 @@
     THE SOFTWARE.
 */
 
-#include "inversemaputils.h"
+#include "mltutils.h"
 
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE 0
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT 0
@@ -30,6 +30,20 @@
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_COUNT_OCCURRENCES 0
 
 LM_NAMESPACE_BEGIN
+
+enum class InvmapStrategy : int
+{
+    // Path space mutations
+    Bidir       = (int)(Strategy::Bidir),
+    Lens        = (int)(Strategy::Lens),
+    Caustic     = (int)(Strategy::Caustic),
+    Multichain  = (int)(Strategy::Multichain),
+    Identity    = (int)(Strategy::Identity),
+        
+    // Primary sample space mutations
+    SmallStep,
+    LargeStep,
+};
 
 ///! Combining PSSMLT and MLT via inversemap (fixed path length)
 class Renderer_Invmap_MLTInvmapFixed final : public Renderer
@@ -43,7 +57,10 @@ public:
     int numVertices_;
     long long numMutations_;
     long long numSeedSamples_;
-    Float largeStepProb_;
+    std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
+    #if INVERSEMAP_OMIT_NORMALIZATION
+    Float normalization_;
+    #endif
 
 public:
 
@@ -52,7 +69,28 @@ public:
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
         if (!prop->ChildAs<long long>("num_seed_samples", numSeedSamples_)) return false;
-        largeStepProb_ = prop->ChildAs<Float>("large_step_prob", 0.5_f);
+
+        {
+            LM_LOG_INFO("Loading mutation strategy weights");
+            LM_LOG_INDENTER();
+            const auto* child = prop->Child("mutation_strategy_weights");
+            if (!child)
+            {
+                LM_LOG_ERROR("Missing 'mutation_strategy_weights'");
+                return false;
+            }
+            strategyWeights_[(int)(InvmapStrategy::Bidir)]      = child->ChildAs<Float>("bidir", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::Lens)]       = child->ChildAs<Float>("lens", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::Caustic)]    = child->ChildAs<Float>("caustic", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::Multichain)] = child->ChildAs<Float>("multichain", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::Identity)]   = child->ChildAs<Float>("identity", 0_f);
+            strategyWeights_[(int)(InvmapStrategy::SmallStep)]  = child->ChildAs<Float>("smallstep", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::LargeStep)]  = child->ChildAs<Float>("largestep", 1_f);
+        }
+
+        #if INVERSEMAP_OMIT_NORMALIZATION
+        normalization_ = prop->ChildAs<Float>("normalization", 1_f);
+        #endif
         return true;
     };
     
@@ -90,7 +128,7 @@ public:
 
         #pragma region Compute normalization factor
         #if INVERSEMAP_OMIT_NORMALIZATION
-        const auto b = 1_f;
+        const auto b = normalization_;
         #else
         const auto b = [&]() -> Float
         {
@@ -193,6 +231,227 @@ public:
 
                 // --------------------------------------------------------------------------------
 
+                const bool accept = [&]() -> bool
+                {
+                    #pragma region Select mutation strategy
+
+                    const auto strategy = [&]() -> InvmapStrategy
+                    {
+                        static thread_local const auto StrategyDist = [&]() -> Distribution1D
+                        {
+                            Distribution1D dist;
+                            for (Float w : strategyWeights_) dist.Add(w);
+                            dist.Normalize();
+                            return dist;
+                        }();
+                        return (InvmapStrategy)(StrategyDist.Sample(ctx.rng.Next()));
+                    }();
+
+                    #pragma endregion
+
+                    // --------------------------------------------------------------------------------
+
+                    if (strategy == InvmapStrategy::SmallStep || strategy == InvmapStrategy::LargeStep)
+                    {
+                        #pragma region PSSMLT mutations
+
+                        const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
+                        {
+                            assert(currPS.size() == numVertices_);
+                            std::vector<Float> propPS;
+                            for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
+                            {
+                                propPS.push_back(rng.Next());
+                            }
+                            return propPS;
+                        };
+
+                        const auto SmallStep = [this](const std::vector<Float>& ps, Random& rng) -> std::vector<Float>
+                        {
+                            const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
+                            {
+                                Float result;
+                                Float r = rng.Next();
+                                if (r < 0.5_f)
+                                {
+                                    r = r * 2_f;
+                                    result = u + s2 * std::exp(-std::log(s2 / s1) * r);
+                                    if (result > 1_f) result -= 1_f;
+                                }
+                                else
+                                {
+                                    r = (r - 0.5_f) * 2_f;
+                                    result = u - s2 * std::exp(-std::log(s2 / s1) * r);
+                                    if (result < 0_f) result += 1_f;
+                                }
+                                return result;
+                            };
+
+                            std::vector<Float> propPS;
+                            for (const Float u : ps)
+                            {
+                                propPS.push_back(Perturb(rng, u, 1_f / 256_f, 1_f / 16_f));
+                            }
+
+                            return propPS;
+                        };
+
+                        // Function to compute path contribution
+                        const auto PathContrb = [&](const Path& path) -> SPD
+                        {
+                            const auto F = path.EvaluateF(0);
+                            assert(!F.Black());
+                            SPD C;
+                            if (!F.Black())
+                            {
+                                const auto P = path.EvaluatePathPDF(scene, 0);
+                                assert(P > 0);
+                                C = F / P;
+                            }
+                            return C;
+                        };
+
+                        // --------------------------------------------------------------------------------
+
+                        // Mutate
+                        auto propPS = strategy == InvmapStrategy::LargeStep ? LargeStep(ctx.currPS, ctx.rng) : SmallStep(ctx.currPS, ctx.rng);
+
+                        // Map primary samples to paths
+                        const auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                        const auto propP = InversemapUtils::MapPS2Path(scene, propPS);
+
+                        // Immediately rejects if the proposed path is invalid or the dimension changes
+                        if (!propP || currP->vertices.size() != propP->vertices.size())
+                        {
+                            return false;
+                        }
+
+                        // Evaluate contributions
+                        const Float currC = InversemapUtils::ScalarContrb(PathContrb(*currP));
+                        const Float propC = InversemapUtils::ScalarContrb(PathContrb(*propP));
+
+                        // Acceptance ratio
+                        const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
+
+                        // Accept or reject?
+                        if (ctx.rng.Next() < A)
+                        {
+                            ctx.currPS.swap(propPS);
+                        }
+
+                        #pragma endregion
+                    }
+                    else
+                    {
+                        #pragma region MLT mutations
+
+                        #pragma region Map to path space
+                        auto currP = [&]() -> Path
+                        {
+                            const auto path = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                            assert(path);
+                            assert(!path->EvaluateF(0).Black());
+                            assert(path->vertices.size() == numVertices_);
+                            return *path;
+                        }();
+                        #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        #pragma region Mutate the current path
+                        const auto prop = MutationStrategy::Mutate((Strategy)(strategy), scene, ctx.rng, currP);
+                        if (!prop)
+                        {
+                            return false;
+                        }
+                        #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        #pragma region MH update
+                        {
+                            const auto Qxy = MutationStrategy::Q((Strategy)(strategy), scene, currP, prop->p, prop->kd, prop->dL);
+                            const auto Qyx = MutationStrategy::Q((Strategy)(strategy), scene, prop->p, currP, prop->kd, prop->dL);
+                            Float A = 0_f;
+                            if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
+                            {
+                                A = 0_f;
+                            }
+                            else
+                            {
+                                A = Math::Min(1_f, Qyx / Qxy);
+                            }
+                            if (ctx.rng.Next() < A)
+                            {
+                                currP = prop->p;
+                            }
+                            else
+                            {
+                                // This is critical
+                                return false;
+                            }
+                        }
+                        #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        #pragma region Map to primary sample space
+                        const auto ps = InversemapUtils::MapPath2PS(currP);
+                        const auto currP2 = InversemapUtils::MapPS2Path(scene, ps);
+                        if (!currP2 || currP.vertices.size() != currP2->vertices.size() || currP2->EvaluateF(0).Black())
+                        {
+                            // This sometimes happens due to numerical problem
+                            return false;
+                        }
+                        ctx.currPS = ps;
+                        #pragma endregion
+
+                        #pragma endregion
+                    }
+
+                    // --------------------------------------------------------------------------------
+                    return true;
+                }();
+
+                // --------------------------------------------------------------------------------
+
+                #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
+                {
+                    assert(Parallel::GetNumThreads() == 1);
+                    static bool prevIsReject = false;
+                    static long long sequencialtReject = 0;
+                    if (accept)
+                    {
+                        prevIsReject = false;
+                    }
+                    else
+                    {
+                        if (prevIsReject)
+                        {
+                            sequencialtReject++;
+                        }
+                        else
+                        {
+                            sequencialtReject = 1;
+                        }
+                        prevIsReject = true;
+                        if (sequencialtReject > maxReject)
+                        {
+                            maxReject = sequencialtReject;
+                        }
+                    }
+                }
+                if (maxReject > 10000)
+                {
+                    __debugbreak();
+                }
+                #else
+                LM_UNUSED(accept);
+                #endif
+
+                // --------------------------------------------------------------------------------
+
+#if 0
                 if (ctx.rng.Next() < largeStepProb_)
                 {
                     #pragma region Small step mutation in primary sample space
@@ -489,6 +748,7 @@ public:
                     LM_UNUSED(accept);
                     #endif
                 }
+#endif
 
                 // --------------------------------------------------------------------------------
 

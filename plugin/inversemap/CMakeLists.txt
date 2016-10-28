@@ -28,6 +28,7 @@ add_plugin(
 	NAME ${_PROJECT_NAME}
 	SOURCE
 		"inversemaputils.h"
+		"mltutils.h"
         "renderer_invmap_pssmltfixed.cpp"
         "renderer_invmap_mltfixed.cpp"
         "renderer_invmap_mltinvmapfixed.cpp"
