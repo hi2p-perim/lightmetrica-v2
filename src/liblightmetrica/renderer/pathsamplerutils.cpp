@@ -23,7 +23,7 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/detail/PathSamplerUtils.h>
+#include <lightmetrica/detail/pathsamplerutils.h>
 #include <lightmetrica/random.h>
 #include <lightmetrica/light.h>
 #include <lightmetrica/sensor.h>
