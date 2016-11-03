@@ -42,7 +42,7 @@ class BSDF : public SurfaceInteraction
 {
 public:
 
-    LM_INTERFACE_CLASS(BSDF, SurfaceInteraction, 1);
+    LM_INTERFACE_CLASS(BSDF, SurfaceInteraction, 3);
 
 public:
 
@@ -56,6 +56,9 @@ public:
 
     ///! Get glossiness if available.
     LM_INTERFACE_F(1, Glossiness, Float());
+
+    ///! Evaluate Flesnel term if available.
+    LM_INTERFACE_F(2, FlesnelTerm, Float(const SurfaceGeometry& geom, const Vec3& wi));
 
 };
 

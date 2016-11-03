@@ -91,6 +91,34 @@ struct Path
 {
     std::vector<SubpathSampler::PathVertex> vertices;
 
+    auto IsPathType(const std::string& types) const -> bool
+    {
+        const auto PathType = [](const SubpathSampler::PathVertex& v) -> char
+        {
+            switch (v.type)
+            {
+                case SurfaceInteractionType::D: return 'D';
+                case SurfaceInteractionType::G: return 'G';
+                case SurfaceInteractionType::S: return 'S';
+                case SurfaceInteractionType::L: return 'L';
+                case SurfaceInteractionType::E: return 'E';
+                default: return 'X';
+            }
+        };
+        if (types.size() > vertices.size())
+        {
+            return false;
+        }
+        for (size_t i = 0; i < vertices.size(); i++)
+        {
+            if (types[i] != PathType(vertices[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     auto ConnectSubpaths(const Scene* scene, const Subpath& subpathL, const Subpath& subpathE, int s, int t) -> bool
     {
         assert(s >= 0);
@@ -708,7 +736,12 @@ public:
         return path;
     }
 
-    static auto MapPath2PS(const Path& inputPath) -> std::vector<Float>
+    static auto MapPath2PS(const Path& inputPath)->std::vector<Float>
+    {
+        return MapPath2PS(inputPath, nullptr);
+    }
+
+    static auto MapPath2PS(const Path& inputPath, Random* rng) -> std::vector<Float>
     {
         #pragma region Helper function
 
@@ -760,7 +793,7 @@ public:
             if (vn)
             {
                 const auto wo = Math::Normalize(vn->geom.p - v->geom.p);
-                assert(v->type == SurfaceInteractionType::E || v->type == SurfaceInteractionType::D || v->type == SurfaceInteractionType::G);
+                assert(v->type != SurfaceInteractionType::L);
                 if (v->type == SurfaceInteractionType::E)
                 {
                     Vec2 inv;
@@ -791,8 +824,43 @@ public:
                         ps.push_back(inv.x);
                         ps.push_back(inv.y);
                     }
-                    // TODO: Support SurfaceInteractionType::S
-                    // Be careful of multi-component selection
+                    else if (v->type == SurfaceInteractionType::S)
+                    {
+                        // TODO: Replace it. String comparision is too slow.
+                        if (std::strcmp(v->primitive->bsdf->implName, "BSDF_ReflectAll") == 0)
+                        {
+                            // Deterministic computation of reflected directions breaks one-to-one mapping,
+                            // here we decide the next direction with filling with new random numbers.
+                            // If the mutation does not changes path types, we can set arbitrary values.
+                            ps.push_back(rng->Next());
+                            ps.push_back(rng->Next());
+                        }
+                        else if (std::strcmp(v->primitive->bsdf->implName, "BSDF_RefractAll") == 0)
+                        {
+                            ps.push_back(rng->Next());
+                            ps.push_back(rng->Next());
+                        }
+                        else if (std::strcmp(v->primitive->bsdf->implName, "BSDF_Flesnel") == 0)
+                        {
+                            const auto Fr = v->primitive->bsdf->FlesnelTerm(v->geom, wi);
+                            const auto localWi = v->geom.ToLocal * wi;
+                            const auto localWo = v->geom.ToLocal * wo;
+                            if (Math::LocalCos(localWi) * Math::LocalCos(localWo) >= 0_f)
+                            {
+                                // Reflection
+                                // Set u <= Fr
+                                ps.push_back(rng->Next() * (Fr - Math::Eps()));
+                            }
+                            else
+                            {
+                                // Refraction
+                                // Set u > Fr
+                                ps.push_back(Math::Eps() + Fr + rng->Next() * (1_f - Fr - Math::Eps()));
+                            }
+                            // Arbitrary number
+                            ps.push_back(rng->Next());
+                        }
+                    }
                 }
             }
         }

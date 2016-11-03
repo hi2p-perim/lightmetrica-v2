@@ -24,7 +24,7 @@
 
 #include "mltutils.h"
 
-#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE 1
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT 0
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION 0
 #define INVERSEMAP_MLTINVMAPFIXED_DEBUG_COUNT_OCCURRENCES 0
@@ -396,7 +396,7 @@ public:
                         // --------------------------------------------------------------------------------
 
                         #pragma region Map to primary sample space
-                        const auto ps = InversemapUtils::MapPath2PS(currP);
+                        const auto ps = InversemapUtils::MapPath2PS(currP, &ctx.rng);
                         const auto currP2 = InversemapUtils::MapPS2Path(scene, ps);
                         if (!currP2 || currP.vertices.size() != currP2->vertices.size() || currP2->EvaluateF(0).Black())
                         {

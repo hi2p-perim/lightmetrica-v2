@@ -172,6 +172,23 @@ public:
         return false;
     };
 
+    LM_IMPL_F(FlesnelTerm) = [this](const SurfaceGeometry& geom, const Vec3& wi) -> Float
+    {
+        // Local directions
+        const auto localWi = geom.ToLocal * wi;
+
+        // IORs
+        Float etaI = eta1_;
+        Float etaT = eta2_;
+        if (Math::LocalCos(localWi) < 0_f)
+        {
+            std::swap(etaI, etaT);
+        }
+
+        // Fresnel term
+        return EvaluateFresnelTerm(localWi, etaI, etaT);
+    };
+
 private:
 
     auto EvaluateFresnelTerm(const Vec3& localWi, Float etaI, Float etaT) const -> Float
