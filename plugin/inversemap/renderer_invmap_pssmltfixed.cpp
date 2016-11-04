@@ -43,6 +43,7 @@ public:
     #if INVERSEMAP_OMIT_NORMALIZATION
     Float normalization_;
     #endif
+    std::string pathType_;
 
 public:
 
@@ -55,11 +56,16 @@ public:
         #if INVERSEMAP_OMIT_NORMALIZATION
         normalization_ = prop->ChildAs<Float>("normalization", 1_f);
         #endif
+        pathType_ = prop->ChildAs<std::string>("path_type", "");
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Compute normalization factor
         #if INVERSEMAP_OMIT_NORMALIZATION
         const auto b = normalization_;
@@ -267,7 +273,7 @@ public:
                 {
                     auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
                     const auto currF = currP->EvaluateF(0);
-                    if (!currF.Black())
+                    if (!currF.Black() && currP->IsPathType(pathType_))
                     {
                         ctx.film->Splat(currP->RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
                         //ctx.film->Splat(currP->RasterPosition(), SPD(b));
@@ -285,6 +291,16 @@ public:
                 film->Accumulate(ctx.film.get());
             }
             film->Rescale((Float)(film->Width() * film->Height()) / numMutations_);
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
         }
         #pragma endregion
     };

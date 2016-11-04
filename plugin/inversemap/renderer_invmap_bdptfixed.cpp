@@ -36,6 +36,7 @@ public:
 
     int numVertices_;
     long long numMutations_;
+    std::string pathType_;
 
 public:
 
@@ -43,11 +44,16 @@ public:
     {
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
+        pathType_ = prop->ChildAs<std::string>("path_type", "");
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Thread-specific context
         struct Context
         {
@@ -96,6 +102,9 @@ public:
                     Path fullpath;
                     if (!fullpath.ConnectSubpaths(scene, subpathL, subpathE, s, t)) { continue; }
 
+                    // Check path type
+                    if (!fullpath.IsPathType(pathType_)) { continue; }
+
                     #if 0
                     // Evaluate contribution
                     const auto f = fullpath.EvaluateF(s);
@@ -138,6 +147,16 @@ public:
             film->Accumulate(ctx.film.get());
         }
         film->Rescale((Float)(film->Width() * film->Height()) / numMutations_);
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
+        }
         #pragma endregion
     };
 

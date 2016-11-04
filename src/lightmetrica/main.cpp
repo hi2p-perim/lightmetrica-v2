@@ -696,10 +696,6 @@ private:
         {
             LM_LOG_INFO("Rendering");
             LM_LOG_INDENTER();
-
-            // Film
-            const auto* sensor = static_cast<const Sensor*>(scene.get()->GetSensor()->emitter);
-            auto* film = sensor->GetFilm();
             
             // Initial random number generator
             Random initRng;
@@ -724,24 +720,8 @@ private:
 
             // Dispatch renderer
             FPUtils::EnableFPControl();
-            renderer.get()->Render(scene.get(), &initRng, film);
+            renderer.get()->Render(scene.get(), &initRng, opt.Render.OutputPath);
             FPUtils::DisableFPControl();
-        }
-
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        #pragma region Save image
-
-        {
-            LM_LOG_INFO("Saving image");
-            LM_LOG_INDENTER();
-            auto* film = static_cast<const Sensor*>(scene.get()->GetSensor()->emitter)->GetFilm();
-            if (!film->Save(opt.Render.OutputPath))
-            {
-                return false;
-            }
         }
 
         #pragma endregion

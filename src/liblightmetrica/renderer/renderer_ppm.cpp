@@ -89,8 +89,12 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Collect measumrement points
         
         struct MeasurementPoint
@@ -311,6 +315,16 @@ public:
                 #endif
             }
             #pragma endregion
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
         }
         #pragma endregion
     };

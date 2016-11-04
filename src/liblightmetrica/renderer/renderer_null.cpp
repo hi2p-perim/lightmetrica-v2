@@ -27,6 +27,8 @@
 #include <lightmetrica/scene.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/property.h>
+#include <lightmetrica/sensor.h>
+#include <lightmetrica/primitive.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -44,9 +46,10 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
         // Do nothing. Just output blank image.
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         for (int y = 0; y < film->Height(); y++)
         {
             for (int x = 0; x < film->Width(); x++)
@@ -54,6 +57,16 @@ public:
                 film->SetPixel(x, y, SPD::FromRGB(c_));
             }
         }
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
+        }
+        #pragma endregion
     };
 
 private:

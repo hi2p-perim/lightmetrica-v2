@@ -838,7 +838,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
         #if LM_COMPILER_CLANG
         tbb::enumerable_thread_specific<Subpath> subpathL_, subpathE_;
@@ -859,6 +859,7 @@ public:
 
         // --------------------------------------------------------------------------------
 
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         const auto processedSamples = sched_->Process(scene, film, initRng, [&](Film* film, Random* rng)
         {
             #if LM_COMPILER_CLANG
@@ -980,6 +981,16 @@ public:
         #else
         LM_UNUSED(processedSamples);
         #endif
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
+        }
+        #pragma endregion
     };
 
 };

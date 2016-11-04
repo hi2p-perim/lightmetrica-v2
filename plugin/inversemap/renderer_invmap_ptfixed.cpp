@@ -39,6 +39,7 @@ public:
 
     int numVertices_;
     long long numMutations_;
+    std::string pathType_;
 
 public:
 
@@ -46,11 +47,16 @@ public:
     {
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
+        pathType_ = prop->ChildAs<std::string>("path_type", "");
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+
         #if INVERSEMAP_PTFIXED_DEBUG
         // Output triangles
         {
@@ -131,7 +137,7 @@ public:
 
             // Record contribution
             const SPD F = path->EvaluateF(0);
-            if (!F.Black())
+            if (!F.Black() && path->IsPathType(pathType_))
             {
                 // Path probability
                 const auto p = path->EvaluatePathPDF(scene, 0);
@@ -187,6 +193,16 @@ public:
             film->Accumulate(ctx.film.get());
         }
         film->Rescale((Float)(film->Width() * film->Height()) / numMutations_);
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
+        }
+        #pragma endregion
     };
 
 };

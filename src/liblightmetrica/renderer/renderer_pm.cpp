@@ -69,7 +69,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film_) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
         #pragma region Trace photons
         std::vector<Photon> photons;
@@ -139,6 +139,7 @@ public:
         // --------------------------------------------------------------------------------
 
         #pragma region Trace eye rays
+        auto* film_ = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
         {
             bool gatherNext = !finalgather_;
@@ -198,6 +199,16 @@ public:
                 return true;
             });
         });
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film_->Save(outputPath);
+        }
         #pragma endregion
     };
 

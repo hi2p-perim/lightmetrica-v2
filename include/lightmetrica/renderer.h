@@ -65,7 +65,7 @@ public:
         \retval true Succeeded to render the scene.
         \retval true Failed to render the scene.
     */
-    LM_INTERFACE_F(0, Render, void(const Scene* scene, Random* initRng, Film* film));
+    LM_INTERFACE_F(0, Render, void(const Scene* scene, Random* initRng, const std::string& outputPath));
 
 };
 
