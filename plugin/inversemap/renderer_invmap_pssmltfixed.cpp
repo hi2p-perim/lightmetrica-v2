@@ -138,6 +138,65 @@ public:
                 ctx.film = ComponentFactory::Clone<Film>(film);
 
                 // Initial state
+#if 1
+                while (true)
+                {
+                    // Generate initial path with bidirectional path tracing
+                    const auto path = [&]() -> boost::optional<Path>
+                    {
+                        Subpath subpathE;
+                        Subpath subpathL;
+                        subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, numVertices_);
+                        subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, numVertices_);
+
+                        const int nE = (int)(subpathE.vertices.size());
+                        for (int t = 1; t <= nE; t++)
+                        {
+                            const int nL = (int)(subpathL.vertices.size());
+                            const int minS = Math::Max(0, Math::Max(2 - t, numVertices_ - t));
+                            const int maxS = Math::Min(nL, numVertices_ - t);
+                            for (int s = minS; s <= maxS; s++)
+                            {
+                                if (s + t != numVertices_) { continue; }
+                                Path fullpath;
+                                if (!fullpath.ConnectSubpaths(scene, subpathL, subpathE, s, t)) { continue; }
+                                if (!fullpath.IsPathType(pathType_)) { continue; }
+                                const auto Cstar = fullpath.EvaluateUnweightContribution(scene, s);
+                                if (Cstar.Black())
+                                {
+                                    continue;
+                                }
+                                return fullpath;
+                            }
+                        }
+
+                        return boost::none;
+                    }();
+                    if (!path)
+                    {
+                        continue;
+                    }
+
+                    // Convert the path to the primary sample with cdf(path).
+                    const auto ps = InversemapUtils::MapPath2PS(*path, initRng);
+                    
+                    // Sanity check
+                    const auto path2 = InversemapUtils::MapPS2Path(scene, ps);
+                    if (!path2)
+                    {
+                        continue;
+                    }
+                    const auto f1 = path->EvaluateF(0).Luminance();
+                    const auto f2 = path2->EvaluateF(0).Luminance();
+                    if (Math::Abs(f1 - f2) > Math::Eps())
+                    {
+                        continue;
+                    }
+
+                    ctx.currPS = ps;
+                    break;
+                }
+#else
                 while (true)
                 {
                     // Generate initial sample with positive contribution with path tracing
@@ -157,6 +216,7 @@ public:
                     ctx.currPS = ps;
                     break;
                 }
+#endif
             }
 
             // --------------------------------------------------------------------------------
@@ -174,7 +234,7 @@ public:
 
                     const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
                     {
-                        assert(currPS.size() == numVertices_);
+                        assert(currPS.size() == InversemapUtils::NumSamples(numVertices_));
                         std::vector<Float> propPS;
                         for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
                         {

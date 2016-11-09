@@ -93,6 +93,10 @@ struct Path
 
     auto IsPathType(const std::string& types) const -> bool
     {
+        if (types.empty())
+        {
+            return true;
+        }
         const auto PathType = [](const SubpathSampler::PathVertex& v) -> char
         {
             switch (v.type)
