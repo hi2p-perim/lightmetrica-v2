@@ -57,6 +57,22 @@ struct Subpath
         return (int)(vertices.size()) - n;
     }
 
+    auto SampleSubpathWithPrimarySamples(const Scene* scene, const std::vector<Float>& us, TransportDirection transDir, int maxNumVertices) -> void
+    {
+        int idx = 0;
+        vertices.clear();
+        SubpathSampler::TraceSubpathFromEndpointWithSampler(scene, nullptr, nullptr, 0, maxNumVertices, transDir,
+            [&](int numVertices, const Primitive* primitive, SubpathSampler::SampleUsage usage, int index) -> Float
+            {
+                return us[idx++];
+            },
+            [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+            {
+                vertices.emplace_back(v);
+                return true;
+            });
+    }
+
     auto BeginWith(const std::string& types) const -> bool
     {
         const auto PathType = [](const SubpathSampler::PathVertex& v) -> char
