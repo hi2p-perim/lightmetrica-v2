@@ -28,28 +28,29 @@
 
 LM_NAMESPACE_BEGIN
 
-class State
+class PSSMLTState
 {
 private:
 
     int maxNumVertices_;
     std::vector<Float> usL_;     // For light subpath
     std::vector<Float> usE_;     // For eye subpath
-    
+
 public:
 
-    State() {}
+    PSSMLTState() {}
 
-    State(Random* rng, int maxNumVertices)
+    PSSMLTState(Random* rng, int maxNumVertices)
         : maxNumVertices_(maxNumVertices)
     {
         const auto numStates = maxNumVertices * 3;
         usL_.assign(numStates, 0_f);
         usE_.assign(numStates, 0_f);
-        LargeStep(rng);
+        for (auto& u : usE_) u = rng->Next();
+        for (auto& u : usL_) u = rng->Next();
     }
 
-    State(const State& o)
+    PSSMLTState(const PSSMLTState& o)
         : maxNumVertices_(o.maxNumVertices_)
         , usL_(o.usL_)
         , usE_(o.usE_)
@@ -57,7 +58,7 @@ public:
 
 public:
 
-    auto Swap(State& o) -> void
+    auto Swap(PSSMLTState& o) -> void
     {
         assert(maxNumVertices_ == o.maxNumVertices_);
         usL_.swap(o.usL_);
@@ -67,16 +68,16 @@ public:
 public:
 
     // Large step mutation
-    auto LargeStep(Random* rng) const -> State
+    auto LargeStep(Random* rng) const -> PSSMLTState
     {
-        State next(*this);
+        PSSMLTState next(*this);
         for (auto& u : next.usE_) u = rng->Next();
         for (auto& u : next.usL_) u = rng->Next();
         return next;
     }
-    
+
     // Small step mutation
-    auto SmallStep(Random* rng) const -> State
+    auto SmallStep(Random* rng) const -> PSSMLTState
     {
         const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
         {
@@ -100,7 +101,7 @@ public:
         const auto s1 = 1_f / 256_f;
         const auto s2 = 1_f / 16_f;
 
-        State next(*this);
+        PSSMLTState next(*this);
         for (size_t i = 0; i < usE_.size(); i++) next.usE_[i] = Perturb(*rng, usE_[i], s1, s2);
         for (size_t i = 0; i < usL_.size(); i++) next.usL_[i] = Perturb(*rng, usL_[i], s1, s2);
 
@@ -143,7 +144,7 @@ public:
             for (int s = minS; s <= maxS; s++)
             {
                 const int t = n - s;
-                
+
                 CachedPaths::CachedPath p;
                 p.s = s;
                 p.t = t;
@@ -223,7 +224,7 @@ public:
             {
                 Random rng;
                 Film::UniquePtr film{ nullptr, nullptr };
-                State currState;
+                PSSMLTState currState;
             };
             std::vector<Context> contexts(Parallel::GetNumThreads());
             for (auto& ctx : contexts)
@@ -235,7 +236,7 @@ public:
                 while (true)
                 {
                     // Generate initial path with bidirectional path tracing
-                    State state(initRng, maxNumVertices_);
+                    PSSMLTState state(initRng, maxNumVertices_);
                     const auto paths = state.InvCDF(scene);
                     if (paths.ps.empty())
                     {

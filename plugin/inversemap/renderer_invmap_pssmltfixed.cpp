@@ -25,6 +25,8 @@
 #include "inversemaputils.h"
 #include <boost/format.hpp>
 
+#define INVERSEMAP_PSSMLTFIXED_DEBUG_PRINT_AVE_ACC 1
+
 LM_NAMESPACE_BEGIN
 
 ///! Primary sample space metropolis light transport (fixed path length)
@@ -130,6 +132,9 @@ public:
                 Random rng;
                 Film::UniquePtr film{nullptr, nullptr};
                 std::vector<Float> currPS;
+                #if INVERSEMAP_PSSMLTFIXED_DEBUG_PRINT_AVE_ACC
+                long long acceptCount = 0;
+                #endif
             };
             std::vector<Context> contexts(Parallel::GetNumThreads());
             for (auto& ctx : contexts)
@@ -228,7 +233,7 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region Small step mutation in primary sample space
-                [&]() -> void
+                const auto accept = [&]() -> bool
                 {
                     #pragma region Mutate
 
@@ -307,7 +312,7 @@ public:
                     // Immediately rejects if the proposed path is invalid or the dimension changes
                     if (!propP || currP->vertices.size() != propP->vertices.size())
                     {
-                        return;
+                        return false;
                     }
 
                     // Evaluate contributions
@@ -321,11 +326,22 @@ public:
                     if (ctx.rng.Next() < A)
                     {
                         ctx.currPS.swap(propPS);
+                        return true;
                     }
+
+                    return false;
 
                     #pragma endregion
                 }();
                 #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #if INVERSEMAP_PSSMLTFIXED_DEBUG_PRINT_AVE_ACC
+                if (accept) { ctx.acceptCount++; }
+                #else
+                LM_UNUSED(accept);
+                #endif
 
                 // --------------------------------------------------------------------------------
 
@@ -341,6 +357,17 @@ public:
                 }
                 #pragma endregion
             });
+
+            // --------------------------------------------------------------------------------
+
+            #if INVERSEMAP_PSSMLTFIXED_DEBUG_PRINT_AVE_ACC
+            {
+                long long sum = 0;
+                for (auto& ctx : contexts) { sum += ctx.acceptCount; }
+                const double ave = (double)sum / numMutations_;
+                LM_LOG_INFO(boost::str(boost::format("Ave. acceptance ratio: %.5f (%d / %d)") % ave % sum % numMutations_));
+            }
+            #endif
 
             // --------------------------------------------------------------------------------
 
