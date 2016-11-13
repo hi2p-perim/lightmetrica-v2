@@ -244,6 +244,8 @@
     TypeName() = delete; \
     LM_DISABLE_COPY_AND_MOVE(TypeName)
 
+#define LM_TBA LM_PRAGMA(error ("TBA"))
+
 #pragma endregion
 
 // --------------------------------------------------------------------------------
