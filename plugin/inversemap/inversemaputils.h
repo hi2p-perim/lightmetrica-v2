@@ -940,6 +940,11 @@ public:
         return Vec2(u0, u1);
     }
 
+    static auto SampleTriangleMesh_Inverse(const Primitive* primitive, const Distribution1D& dist, SurfaceGeometry& geom) -> Vec2
+    {
+        LM_TBA();
+    }
+
     ///! Number of samples required for the underlying path sampler.
     static auto NumSamples(int numVertices) -> int
     {

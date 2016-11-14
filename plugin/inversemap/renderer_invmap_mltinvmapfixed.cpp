@@ -34,11 +34,11 @@ LM_NAMESPACE_BEGIN
 enum class InvmapStrategy : int
 {
     // Path space mutations
-    Bidir       = (int)(Strategy::Bidir),
-    Lens        = (int)(Strategy::Lens),
-    Caustic     = (int)(Strategy::Caustic),
-    Multichain  = (int)(Strategy::Multichain),
-    Identity    = (int)(Strategy::Identity),
+    Bidir       = (int)(MLTStrategy::Bidir),
+    Lens        = (int)(MLTStrategy::Lens),
+    Caustic     = (int)(MLTStrategy::Caustic),
+    Multichain  = (int)(MLTStrategy::Multichain),
+    Identity    = (int)(MLTStrategy::Identity),
         
     // Primary sample space mutations
     SmallStep,
@@ -403,6 +403,11 @@ public:
                         if (ctx.rng.Next() < A)
                         {
                             ctx.currPS.swap(propPS);
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
                         }
 
                         #pragma endregion
@@ -425,7 +430,7 @@ public:
                         // --------------------------------------------------------------------------------
 
                         #pragma region Mutate the current path
-                        const auto prop = MutationStrategy::Mutate((Strategy)(strategy), scene, ctx.rng, currP);
+                        const auto prop = MLTMutationStrategy::Mutate((MLTStrategy)(strategy), scene, ctx.rng, currP);
                         if (!prop)
                         {
                             return false;
@@ -436,8 +441,8 @@ public:
 
                         #pragma region MH update
                         {
-                            const auto Qxy = MutationStrategy::Q((Strategy)(strategy), scene, currP, prop->p, prop->kd, prop->dL);
-                            const auto Qyx = MutationStrategy::Q((Strategy)(strategy), scene, prop->p, currP, prop->kd, prop->dL);
+                            const auto Qxy = MLTMutationStrategy::Q((MLTStrategy)(strategy), scene, currP, prop->p, prop->kd, prop->dL);
+                            const auto Qyx = MLTMutationStrategy::Q((MLTStrategy)(strategy), scene, prop->p, currP, prop->kd, prop->dL);
                             Float A = 0_f;
                             if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                             {
@@ -472,11 +477,13 @@ public:
                         ctx.currPS = ps;
                         #pragma endregion
 
+                        return true;
                         #pragma endregion
                     }
 
                     // --------------------------------------------------------------------------------
-                    return true;
+                    LM_UNREACHABLE();
+                    return false;
                 }();
 
                 // --------------------------------------------------------------------------------

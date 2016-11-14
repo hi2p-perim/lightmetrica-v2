@@ -32,7 +32,7 @@
 
 LM_NAMESPACE_BEGIN
 
-enum class Strategy : int
+enum class MLTStrategy : int
 {
     Bidir,
     Lens,
@@ -50,28 +50,28 @@ struct Prop
     int dL;
 };
 
-class MutationStrategy
+class MLTMutationStrategy
 {
 public:
 
-    static auto Mutate(Strategy strategy, const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
+    static auto Mutate(MLTStrategy strategy, const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
     {
-        if (strategy == Strategy::Bidir)           { return Mutate_Bidir(scene, rng, currP); }
-        else if (strategy == Strategy::Lens)       { return Mutate_Lens(scene, rng, currP); }
-        else if (strategy == Strategy::Caustic)    { return Mutate_Caustic(scene, rng, currP); }
-        else if (strategy == Strategy::Multichain) { return Mutate_Multichain(scene, rng, currP); }
-        else if (strategy == Strategy::Identity)   { return Prop{currP, -1 -1}; }
+        if (strategy == MLTStrategy::Bidir)           { return Mutate_Bidir(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Lens)       { return Mutate_Lens(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Caustic)    { return Mutate_Caustic(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Multichain) { return Mutate_Multichain(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Identity)   { return Prop{currP, -1 -1}; }
         LM_UNREACHABLE();
         return Prop();
     }
 
-    static auto Q(Strategy strategy, const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+    static auto Q(MLTStrategy strategy, const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
     {
-        if (strategy == Strategy::Bidir)           { return Q_Bidir(scene, x, y, kd, dL); }
-        else if (strategy == Strategy::Lens)       { return Q_Lens(scene, x, y, kd, dL); }
-        else if (strategy == Strategy::Caustic)    { return Q_Caustic(scene, x, y, kd, dL); }
-        else if (strategy == Strategy::Multichain) { return Q_Multichain(scene, x, y, kd, dL); }
-        else if (strategy == Strategy::Identity)   { return 1_f; }
+        if (strategy == MLTStrategy::Bidir)           { return Q_Bidir(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::Lens)       { return Q_Lens(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::Caustic)    { return Q_Caustic(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::Multichain) { return Q_Multichain(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::Identity)   { return 1_f; }
         LM_UNREACHABLE();
         return 0_f;
     }

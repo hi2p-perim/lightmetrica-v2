@@ -69,12 +69,19 @@ namespace
 
                 SubpathSampler::PathVertex v;
 
+                // Used sampled
+                const auto uEP   = sampleNext2D(step + 1, v.primitive, SubpathSampler::SampleUsage::Position);
+                const auto uEP_C = sampleNext(step + 1, nullptr, SubpathSampler::SampleUsage::EmitterSelection, 0);
+                const auto uED   = sampleNext2D(step + 1, v.primitive, SubpathSampler::SampleUsage::Direction);
+                const auto uED_C = sampleNext(step + 1, nullptr, SubpathSampler::SampleUsage::ComponentSelection, 0);
+                LM_UNUSED(uED_C);
+
                 // Sample an emitter
                 v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
-                v.primitive = scene->SampleEmitter(v.type, sampleNext(step + 1, nullptr, SubpathSampler::SampleUsage::EmitterSelection, 0));
+                v.primitive = scene->SampleEmitter(v.type, uEP_C);
 
                 // Sample a position on the emitter and initial ray direction
-                v.primitive->SamplePositionAndDirection(sampleNext2D(step + 1, v.primitive, SubpathSampler::SampleUsage::Direction), sampleNext2D(step + 1, v.primitive, SubpathSampler::SampleUsage::Position), v.geom, initWo);
+                v.primitive->SamplePositionAndDirection(uED, uEP, v.geom, initWo);
 
                 // Initial throughput
                 throughput =
@@ -113,7 +120,9 @@ namespace
                         // Sample if the surface support sampling from $p_{\sigma^\perp}(\omega_o | \mathbf{x})$
                         assert(pv.primitive->emitter);
                         if (!pv.primitive->emitter->SampleDirection.Implemented()) { break; }
-                        pv.primitive->SampleDirection(sampleNext2D(step + 1, pv.primitive, SubpathSampler::SampleUsage::Direction), sampleNext(step + 1, pv.primitive, SubpathSampler::SampleUsage::ComponentSelection, 0), pv.type, pv.geom, Vec3(), wo);
+                        const auto uD   = sampleNext2D(step + 1, pv.primitive, SubpathSampler::SampleUsage::Direction);
+                        const auto uD_C = sampleNext(step + 1, pv.primitive, SubpathSampler::SampleUsage::ComponentSelection, 0);
+                        pv.primitive->SampleDirection(uD, uD_C, pv.type, pv.geom, Vec3(), wo);
                     }
                     else
                     {
@@ -125,7 +134,9 @@ namespace
                 else
                 {
                     wi = Math::Normalize(ppv.geom.p - pv.geom.p);
-                    pv.primitive->SampleDirection(sampleNext2D(step + 1, pv.primitive, SubpathSampler::SampleUsage::Direction), sampleNext(step + 1, pv.primitive, SubpathSampler::SampleUsage::ComponentSelection, 0), pv.type, pv.geom, wi, wo);
+                    const auto uD   = sampleNext2D(step + 1, pv.primitive, SubpathSampler::SampleUsage::Direction);
+                    const auto uD_P = sampleNext(step + 1, pv.primitive, SubpathSampler::SampleUsage::ComponentSelection, 0);
+                    pv.primitive->SampleDirection(uD, uD_P, pv.type, pv.geom, wi, wo);
                 }
 
                 // Evaluate direction

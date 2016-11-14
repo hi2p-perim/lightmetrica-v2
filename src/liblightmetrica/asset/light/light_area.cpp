@@ -123,6 +123,8 @@ public:
 
     LM_IMPL_F(Emittance) = [this]() -> SPD { return Le_; };
 
+    LM_IMPL_F(TriAreaDist) = [this]() -> Distribution1D* { return &dist_; };
+
 private:
 
     SPD Le_;

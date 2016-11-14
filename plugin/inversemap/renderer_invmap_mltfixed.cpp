@@ -44,7 +44,7 @@ public:
     int numVertices_;
     long long numMutations_;
     long long numSeedSamples_;
-    MutationStrategy mut_;
+    MLTMutationStrategy mut_;
     std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f };
     #if INVERSEMAP_OMIT_NORMALIZATION
     Float normalization_;
@@ -67,11 +67,11 @@ public:
                 LM_LOG_ERROR("Missing 'mutation_strategy_weights'");
                 return false;
             }
-            strategyWeights_[(int)(Strategy::Bidir)]      = child->ChildAs<Float>("bidir", 1_f);
-            strategyWeights_[(int)(Strategy::Lens)]       = child->ChildAs<Float>("lens", 1_f);
-            strategyWeights_[(int)(Strategy::Caustic)]    = child->ChildAs<Float>("caustic", 1_f);
-            strategyWeights_[(int)(Strategy::Multichain)] = child->ChildAs<Float>("multichain", 1_f);
-            strategyWeights_[(int)(Strategy::Identity)]   = child->ChildAs<Float>("identity", 0_f);
+            strategyWeights_[(int)(MLTStrategy::Bidir)]      = child->ChildAs<Float>("bidir", 1_f);
+            strategyWeights_[(int)(MLTStrategy::Lens)]       = child->ChildAs<Float>("lens", 1_f);
+            strategyWeights_[(int)(MLTStrategy::Caustic)]    = child->ChildAs<Float>("caustic", 1_f);
+            strategyWeights_[(int)(MLTStrategy::Multichain)] = child->ChildAs<Float>("multichain", 1_f);
+            strategyWeights_[(int)(MLTStrategy::Identity)]   = child->ChildAs<Float>("identity", 0_f);
         }
         #if INVERSEMAP_OMIT_NORMALIZATION
         normalization_ = prop->ChildAs<Float>("normalization", 1_f);
@@ -284,7 +284,7 @@ public:
                 {
                     #pragma region Select mutation strategy
 
-                    const auto strategy = [&]() -> Strategy
+                    const auto strategy = [&]() -> MLTStrategy
                     {
                         static thread_local const auto StrategyDist = [&]() -> Distribution1D
                         {
@@ -293,7 +293,7 @@ public:
                             dist.Normalize();
                             return dist;
                         }();
-                        return (Strategy)(StrategyDist.Sample(ctx.rng.Next()));
+                        return (MLTStrategy)(StrategyDist.Sample(ctx.rng.Next()));
                     }();
 
                     #pragma endregion
@@ -302,7 +302,7 @@ public:
 
                     #pragma region Mutate the current path
 
-                    const auto prop = MutationStrategy::Mutate(strategy, scene, ctx.rng, ctx.currP);
+                    const auto prop = MLTMutationStrategy::Mutate(strategy, scene, ctx.rng, ctx.currP);
                     if (!prop)
                     {
                         return false;
@@ -314,8 +314,8 @@ public:
 
                     #pragma region MH update
                     {
-                        const auto Qxy = MutationStrategy::Q(strategy, scene, ctx.currP, prop->p, prop->kd, prop->dL);
-                        const auto Qyx = MutationStrategy::Q(strategy, scene, prop->p, ctx.currP, prop->kd, prop->dL);
+                        const auto Qxy = MLTMutationStrategy::Q(strategy, scene, ctx.currP, prop->p, prop->kd, prop->dL);
+                        const auto Qyx = MLTMutationStrategy::Q(strategy, scene, prop->p, ctx.currP, prop->kd, prop->dL);
                         Float A = 0_f;
                         if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                         {
