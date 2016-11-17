@@ -68,7 +68,7 @@ public:
     }
 
     //! Sample a position on the triangle mesh
-    static auto SampleTriangleMesh(const Vec2& u, const Primitive* primitive, const Distribution1D& dist, SurfaceGeometry& geom)
+    static auto SampleTriangleMesh(const Vec2& u, const Primitive* primitive, const Distribution1D& dist, SurfaceGeometry& geom) -> void
     {
         #pragma region Sample a triangle & a position on triangle
 
@@ -88,6 +88,7 @@ public:
         unsigned int i1 = fs[3 * i];
         unsigned int i2 = fs[3 * i + 1];
         unsigned int i3 = fs[3 * i + 2];
+        geom.faceindex = i;
 
         // Position
         Vec3 p1(primitive->transform * Vec4(ps[3 * i1], ps[3 * i1 + 1], ps[3 * i1 + 2], 1_f));

@@ -98,6 +98,42 @@ public:
         return PDFVal(PDFMeasure::ProjectedSolidAngle, 1_f);
     };
 
+#if 1
+    LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
+    {
+        if (evalDelta)
+        {
+            return SPD();
+        }
+
+        const auto localWi = geom.ToLocal * wi;
+        const auto localWo = geom.ToLocal * wo;
+
+        Float etaI = eta1_;
+        Float etaT = eta2_;
+        if (Math::LocalCos(localWi) < 0_f)
+        {
+            std::swap(etaI, etaT);
+        }
+
+        if (Math::LocalCos(localWi) * Math::LocalCos(localWo) >= 0_f)
+        {
+            // Total internal reflection
+            return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
+        }
+        else
+        {
+            // Refraction
+            const Float eta = etaI / etaT;
+            const auto refrCorrection = transDir == TransportDirection::EL ? eta : 1_f;
+            return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir) * refrCorrection * refrCorrection;
+        }
+
+        LM_UNREACHABLE();
+        return SPD();
+    };
+#else
+
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
     {
         if (evalDelta)
@@ -118,6 +154,7 @@ public:
         const auto refrCorrection = transDir == TransportDirection::EL ? eta : 1_f;
         return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir) * refrCorrection * refrCorrection;
     };
+#endif
 
     LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool
     {

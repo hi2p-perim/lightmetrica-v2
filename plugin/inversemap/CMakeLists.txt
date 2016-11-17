@@ -29,6 +29,7 @@ add_plugin(
 	SOURCE
 		"inversemaputils.h"
 		"mltutils.h"
+		"multiplexeddensity.h"
         "renderer_invmap_pssmltfixed.cpp"
         "renderer_invmap_mltfixed.cpp"
         "renderer_invmap_mltinvmapfixed.cpp"

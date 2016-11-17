@@ -81,6 +81,11 @@ public:
         return (i < 0 || i + 1 >= static_cast<int>(cdf.size())) ? 0 : cdf[i + 1] - cdf[i];
     }
 
+    auto EvaluateCDF(int i) const -> Float
+    {
+        return cdf[i];
+    }
+
     //! Clear distribution
     auto Clear() -> void
     {

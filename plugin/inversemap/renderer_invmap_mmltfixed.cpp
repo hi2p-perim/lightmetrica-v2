@@ -177,6 +177,7 @@ public:
     #if INVERSEMAP_OMIT_NORMALIZATION
     Float normalization_;
     #endif
+    std::string pathType_;
 
 public:
 
@@ -188,6 +189,7 @@ public:
         #if INVERSEMAP_OMIT_NORMALIZATION
         normalization_ = prop->ChildAs<Float>("normalization", 1_f);
         #endif
+        pathType_ = prop->ChildAs<std::string>("path_type", "");
         return true;
     };
 
@@ -239,6 +241,10 @@ public:
                     {
                         continue;
                     }
+                    if (!path->path.IsPathType(pathType_))
+                    {
+                        continue;
+                    }
 
                     ctx.curr = std::move(state);
                     break;
@@ -271,6 +277,7 @@ public:
 
                     #if INVERSEMAP_MMLTFIXED_DEBUG_SIMPLIFY_ALWAYS_ACCEPT
                     ctx.curr.Swap(prop);
+                    return true;
                     #else
                     // Scalar contributions
                     #if INVERSEMAP_MMLTFIXED_DEBUG_SIMPLIFY_STRATEGY_PT
@@ -296,6 +303,12 @@ public:
 
                 // --------------------------------------------------------------------------------
 
+                #if INVERSEMAP_MMLTFIXED_DEBUG_SIMPLIFY_ALWAYS_ACCEPT
+                if (!accept) { return; }
+                #endif
+
+                // --------------------------------------------------------------------------------
+
                 #if INVERSEMAP_MMLTFIXED_DEBUG_PRINT_AVE_ACC
                 if (accept) { ctx.acceptCount++; }
                 #else
@@ -308,17 +321,20 @@ public:
                 {
                     const auto p = ctx.curr.InvCDF(scene);
                     assert(p);
-                    #if INVERSEMAP_MMLTFIXED_DEBUG_SIMPLIFY_ALWAYS_ACCEPT
-                    ctx.film->Splat(p->path.RasterPosition(), p->Cstar);
-                    #elif INVERSEMAP_MMLTFIXED_DEBUG_SIMPLIFY_STRATEGY_PT
-                    const auto currF = p->path.EvaluateF(0);
-                    assert(!currF.Black());
-                    ctx.film->Splat(p->path.RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
-                    #else
-                    const auto I = p->ScalarContrb();
-                    const auto C = p->Cstar * p->w;
-                    ctx.film->Splat(p->path.RasterPosition(), C * (b / I));
-                    #endif
+                    if (p->path.IsPathType(pathType_))
+                    {
+                        #if INVERSEMAP_MMLTFIXED_DEBUG_SIMPLIFY_ALWAYS_ACCEPT
+                        ctx.film->Splat(p->path.RasterPosition(), p->Cstar);
+                        #elif INVERSEMAP_MMLTFIXED_DEBUG_SIMPLIFY_STRATEGY_PT
+                        const auto currF = p->path.EvaluateF(0);
+                        assert(!currF.Black());
+                        ctx.film->Splat(p->path.RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
+                        #else
+                        const auto I = p->ScalarContrb();
+                        const auto C = p->Cstar * p->w;
+                        ctx.film->Splat(p->path.RasterPosition(), C * (b / I));
+                        #endif
+                    }
                 }
                 #pragma endregion
             });

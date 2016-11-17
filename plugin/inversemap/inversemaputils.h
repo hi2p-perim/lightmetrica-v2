@@ -940,9 +940,45 @@ public:
         return Vec2(u0, u1);
     }
 
-    static auto SampleTriangleMesh_Inverse(const Primitive* primitive, const Distribution1D& dist, SurfaceGeometry& geom) -> Vec2
+    static auto SampleTriangleMesh_Inverse(const Primitive* primitive, const Distribution1D& dist, const SurfaceGeometry& geom) -> Vec2
     {
-        LM_TBA();
+        const int i = geom.faceindex;
+        const auto* mesh = primitive->mesh;
+        const auto* fs = mesh->Faces();
+        const auto* ps = mesh->Positions();
+        unsigned int i1 = fs[3 * i];
+        unsigned int i2 = fs[3 * i + 1];
+        unsigned int i3 = fs[3 * i + 2];
+
+        // Positions
+        Vec3 p1(primitive->transform * Vec4(ps[3 * i1], ps[3 * i1 + 1], ps[3 * i1 + 2], 1_f));
+        Vec3 p2(primitive->transform * Vec4(ps[3 * i2], ps[3 * i2 + 1], ps[3 * i2 + 2], 1_f));
+        Vec3 p3(primitive->transform * Vec4(ps[3 * i3], ps[3 * i3 + 1], ps[3 * i3 + 2], 1_f));
+
+        // Barycentric coordinates
+        // http://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+        const auto v0 = p2 - p1;
+        const auto v1 = p3 - p1;
+        const auto v2 = geom.p - p1;
+        const auto d00 = Math::Dot(v0, v0);
+        const auto d01 = Math::Dot(v0, v1);
+        const auto d11 = Math::Dot(v1, v1);
+        const auto d20 = Math::Dot(v2, v0);
+        const auto d21 = Math::Dot(v2, v1);
+        const auto invDenom = 1_f / (d00 * d11 - d01 * d01);
+        Vec2 b;
+        b.x = (d11 * d20 - d01 * d21) * invDenom;
+        b.y = (d00 * d21 - d01 * d20) * invDenom;
+        
+        // Inverse of 'UniformSampleTriangle'
+        Vec2 u;
+        u[0] = Math::Clamp((1_f - b.x) * (1_f - b.x), 0_f, 1_f);
+        u[1] = Math::Clamp(b.y / (1_f - b.x), 0_f, 1_f);
+
+        // Inverse of 'SampleReuse'
+        u[0] = Math::Clamp(dist.EvaluateCDF(i) + dist.EvaluatePDF(i) * u[0], 0_f, 1_f);
+
+        return u;
     }
 
     ///! Number of samples required for the underlying path sampler.

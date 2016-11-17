@@ -37,7 +37,7 @@
 #include <lightmetrica/detail/photonmap.h>
 #include <lightmetrica/detail/subpathsampler.h>
 
-#define LM_VCM_DEBUG 1  
+#define LM_VCM_DEBUG 0
 
 LM_NAMESPACE_BEGIN
 

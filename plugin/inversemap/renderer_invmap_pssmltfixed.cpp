@@ -26,6 +26,7 @@
 #include <boost/format.hpp>
 
 #define INVERSEMAP_PSSMLTFIXED_DEBUG_PRINT_AVE_ACC 1
+#define INVERSEMAP_PSSMLTFIXED_DEBUG_SIMPLIFY_PT 0
 
 LM_NAMESPACE_BEGIN
 
@@ -310,11 +311,23 @@ public:
                     const auto propP = InversemapUtils::MapPS2Path(scene, propPS);
 
                     // Immediately rejects if the proposed path is invalid or the dimension changes
+                    //static long long c_ = 0;
+                    //c_++;
                     if (!propP || currP->vertices.size() != propP->vertices.size())
                     {
+                        //static long long c2_ = 0;
+                        //c2_++;
+                        //if (c_ % 10000 == 0)
+                        //{
+                        //    LM_LOG_INFO(std::to_string((double)c2_ / c_));
+                        //}
                         return false;
                     }
 
+                    #if INVERSEMAP_PSSMLTFIXED_DEBUG_SIMPLIFY_PT
+                    ctx.currPS.swap(propPS);
+                    return true;
+                    #else
                     // Evaluate contributions
                     const Float currC = InversemapUtils::ScalarContrb(PathContrb(*currP));
                     const Float propC = InversemapUtils::ScalarContrb(PathContrb(*propP));
@@ -330,10 +343,17 @@ public:
                     }
 
                     return false;
+                    #endif
 
                     #pragma endregion
                 }();
                 #pragma endregion
+
+                // --------------------------------------------------------------------------------
+
+                #if INVERSEMAP_PSSMLTFIXED_DEBUG_SIMPLIFY_PT
+                if (!accept) { return; }
+                #endif
 
                 // --------------------------------------------------------------------------------
 
@@ -351,8 +371,14 @@ public:
                     const auto currF = currP->EvaluateF(0);
                     if (!currF.Black() && currP->IsPathType(pathType_))
                     {
+                        #if INVERSEMAP_PSSMLTFIXED_DEBUG_SIMPLIFY_PT
+                        const auto P = currP->EvaluatePathPDF(scene, 0);
+                        const auto C = currF / P;
+                        ctx.film->Splat(currP->RasterPosition(), C);
+                        #else
                         ctx.film->Splat(currP->RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
                         //ctx.film->Splat(currP->RasterPosition(), SPD(b));
+                        #endif
                     }
                 }
                 #pragma endregion

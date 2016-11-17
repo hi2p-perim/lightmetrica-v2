@@ -69,16 +69,18 @@ namespace
 
                 SubpathSampler::PathVertex v;
 
-                // Used sampled
+                // Sample for position
                 const auto uEP   = sampleNext2D(step + 1, v.primitive, SubpathSampler::SampleUsage::Position);
                 const auto uEP_C = sampleNext(step + 1, nullptr, SubpathSampler::SampleUsage::EmitterSelection, 0);
-                const auto uED   = sampleNext2D(step + 1, v.primitive, SubpathSampler::SampleUsage::Direction);
-                const auto uED_C = sampleNext(step + 1, nullptr, SubpathSampler::SampleUsage::ComponentSelection, 0);
-                LM_UNUSED(uED_C);
-
+                
                 // Sample an emitter
                 v.type = transDir == TransportDirection::LE ? SurfaceInteractionType::L : SurfaceInteractionType::E;
                 v.primitive = scene->SampleEmitter(v.type, uEP_C);
+
+                // Sample for direction
+                const auto uED   = sampleNext2D(step + 1, v.primitive, SubpathSampler::SampleUsage::Direction);
+                const auto uED_C = sampleNext(step + 1, nullptr, SubpathSampler::SampleUsage::ComponentSelection, 0);
+                LM_UNUSED(uED_C);
 
                 // Sample a position on the emitter and initial ray direction
                 v.primitive->SamplePositionAndDirection(uED, uEP, v.geom, initWo);
@@ -135,8 +137,8 @@ namespace
                 {
                     wi = Math::Normalize(ppv.geom.p - pv.geom.p);
                     const auto uD   = sampleNext2D(step + 1, pv.primitive, SubpathSampler::SampleUsage::Direction);
-                    const auto uD_P = sampleNext(step + 1, pv.primitive, SubpathSampler::SampleUsage::ComponentSelection, 0);
-                    pv.primitive->SampleDirection(uD, uD_P, pv.type, pv.geom, wi, wo);
+                    const auto uD_C = sampleNext(step + 1, pv.primitive, SubpathSampler::SampleUsage::ComponentSelection, 0);
+                    pv.primitive->SampleDirection(uD, uD_C, pv.type, pv.geom, wi, wo);
                 }
 
                 // Evaluate direction

@@ -46,7 +46,7 @@ LM_NAMESPACE_BEGIN
 
 #define LM_SPPM_DEBUG 0
 #define LM_SPPM_DEBUG_OUTPUT_PER_30_SEC 0
-#define LM_SPPM_RENDER_WITH_TIME 1
+#define LM_SPPM_RENDER_WITH_TIME 0
 
 /*!
     \brief Stochastic progressive photon mapping renderer.

@@ -69,10 +69,10 @@ public:
     LM_IMPL_F(SamplePositionAndDirection) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom, Vec3& wo) -> void
     {
         // Position
-        TriangleUtils::SampleTriangleMesh(u, primitive_, dist_, geom);
+        TriangleUtils::SampleTriangleMesh(u2, primitive_, dist_, geom);
 
         // Direction
-        const auto localWo = Sampler::CosineSampleHemisphere(u2);
+        const auto localWo = Sampler::CosineSampleHemisphere(u);
         wo = geom.ToWorld * localWo;
     };
 
