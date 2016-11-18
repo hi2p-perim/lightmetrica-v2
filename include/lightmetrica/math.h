@@ -735,6 +735,75 @@ struct TMat3
 
 // --------------------------------------------------------------------------------
 
+#pragma region Mat2
+
+/*!
+	\brief 2x2 matrix.
+
+    Generic column major 3x3 matrix.
+    A matrix
+        v00 v01
+        v10 v11
+    is stored sequentially as v00, v10, ..., v11.
+
+    \tparam T Internal value type.
+    \tparam Opt Optimizatoin flag.
+*/
+template <typename T, SIMD Opt = SIMD::None>
+struct TMat2
+{
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Mat;
+
+    // Value type
+    using VT = T;
+
+    // Matrix type
+    using MatT = TMat2<T, Opt>;
+
+    // Column vector type
+    template <typename T_, SIMD Opt_>
+    using TVec = TVec2<T_, Opt_>;
+    using VecT = TVec2<T, Opt>;
+
+    // Number of components
+    static constexpr int NC = 2;
+
+    // Parameter types
+    using ParamT = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
+    using RetT = ParamT;
+
+    VecT v_[NC];
+
+    LM_INLINE TMat2() {}
+    LM_INLINE TMat2(const MatT& m) : v_{ m.v_[0], m.v_[1] } {}
+    LM_INLINE TMat2(const TMat4<T, Opt>& m) : v_{ VecT(m.v_[0]), VecT(m.v_[1]) } {}
+    LM_INLINE TMat2(const TMat3<T, Opt>& m) : v_{ VecT(m.v_[0]), VecT(m.v_[1]) } {}
+    LM_INLINE TMat2(const VecT& v0, const VecT& v1) : v_{ v0, v1 } {}
+    LM_INLINE TMat2(const T& s) : v_{ VecT(s), VecT(s) } {}
+    LM_INLINE TMat2(
+        ParamT v00, ParamT v10,
+        ParamT v01, ParamT v11)
+        : v_{ VecT(v00, v10),
+              VecT(v01, v11) }
+    {}
+    LM_INLINE TMat2(std::initializer_list<VT> l)
+        : v_{ VecT(l.begin()[0], l.begin()[1]),
+              VecT(l.begin()[2], l.begin()[3]) }
+    {}
+
+    static auto Identity() -> MatT { return MatT{ 1,0, 0,1 }; }
+
+    LM_INLINE auto operator[](int i) -> VecT& { return v_[i]; }
+    LM_INLINE auto operator[](int i) const -> const VecT&{ return v_[i]; }
+    LM_INLINE auto operator*=(const MatT& m) -> MatT& { *this = *this * m; return *this; }
+
+};
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
 #pragma region Some aliases
 
 template <typename T, SIMD Opt, template <typename, SIMD> class MathObject>
@@ -929,6 +998,12 @@ LM_INLINE auto operator*(const T& s, const VecT<T, Opt>& v) -> VecT<T, Opt>
 #pragma region Mat * Mat
 
 template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat2<T, Opt>& m1, const TMat2<T, Opt>& m2) -> TMat2<T, Opt>
+{
+    return TMat2<T, Opt>(m1 * m2[0], m1 * m2[1]);
+}
+
+template <typename T, SIMD Opt>
 LM_INLINE auto operator*(const TMat3<T, Opt>& m1, const TMat3<T, Opt>& m2) -> TMat3<T, Opt>
 {
     return TMat3<T, Opt>(m1 * m2[0], m1 * m2[1], m1 * m2[2]);
@@ -945,6 +1020,14 @@ LM_INLINE auto operator*(const TMat4<T, Opt>& m1, const TMat4<T, Opt>& m2) -> TM
 // --------------------------------------------------------------------------------
 
 #pragma region Mat * Vec
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat2<T, Opt>& m, const TVec2<T, Opt>& v) -> TVec2<T, Opt>
+{
+    return TVec3<T, Opt>(
+        m[0][0] * v.x + m[1][0] * v.y,
+        m[0][1] * v.x + m[1][1] * v.y);
+}
 
 template <typename T, SIMD Opt>
 LM_INLINE auto operator*(const TMat3<T, Opt>& m, const TVec3<T, Opt>& v) -> TVec3<T, Opt>
@@ -1028,11 +1111,16 @@ LM_INLINE auto operator*<double, SIMD::AVX>(const TMat4<double, SIMD::AVX>& m, c
 #pragma region Mat * Scalar
 
 template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat2<T, Opt>& m, const T& s) -> TMat2<T, Opt>
+{
+    return TMat2<T, Opt>(m[0] * s, m[1] * s);
+}
+
+template <typename T, SIMD Opt>
 LM_INLINE auto operator*(const TMat3<T, Opt>& m, const T& s) -> TMat3<T, Opt>
 {
     return TMat3<T, Opt>(m[0] * s, m[1] * s, m[2] * s);
 }
-
 
 template <typename T, SIMD Opt>
 LM_INLINE auto operator*(const TMat4<T, Opt>& m, const T& s) -> TMat4<T, Opt>
@@ -1343,6 +1431,7 @@ LM_INLINE auto operator-(const VecT<double, SIMD::AVX>& v) -> VecT<double, SIMD:
 using Vec2 = TVec2<Float, SIMD::None>;
 using Vec3 = TVec3<Float, SIMD::Default>;
 using Vec4 = TVec4<Float, SIMD::Default>;
+using Mat2 = TMat2<Float, SIMD::Default>;
 using Mat3 = TMat3<Float, SIMD::Default>;
 using Mat4 = TMat4<Float, SIMD::Default>;
 
@@ -1693,6 +1782,17 @@ namespace Math
     // --------------------------------------------------------------------------------
 
     #pragma region Inverse
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Inverse(const TMat2<T, Opt>& m) -> TMat2<T, Opt>
+    {
+        const T invdet = T(1) / (m[0][0] * m[1][1] - m[1][0] * m[0][1]);
+        return TMat2<T, Opt>(
+            +m[1][1] * invdet,
+            -m[0][1] * invdet,
+            -m[1][0] * invdet,
+            +m[0][0] * invdet);
+    }
 
     template <typename T, SIMD Opt>
     LM_INLINE auto Inverse(const TMat3<T, Opt>& m) -> TMat3<T, Opt>
