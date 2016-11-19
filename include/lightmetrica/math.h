@@ -804,6 +804,143 @@ struct TMat2
 
 // --------------------------------------------------------------------------------
 
+#pragma region Mat3x2
+
+/*!
+	\brief 3x2 matrix.
+
+    Generic column major 3x3 matrix.
+    A matrix
+        v00 v01
+        v10 v11
+        v20 v21
+    is stored sequentially as v00, v10, ..., v21.
+
+    \tparam T Internal value type.
+    \tparam Opt Optimizatoin flag.
+*/
+template <typename T, SIMD Opt = SIMD::None>
+struct TMat3x2
+{
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Mat;
+
+    // Value type
+    using VT = T;
+
+    // Matrix type
+    using MatT = TMat3x2<T, Opt>;
+
+    // Column vector type
+    template <typename T_, SIMD Opt_>
+    using TVec = TVec3<T_, Opt_>;
+    using VecT = TVec3<T, Opt>;
+
+    // Number of components
+    static constexpr int NC = 2;
+
+    // Parameter types
+    using ParamT = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
+    using RetT = ParamT;
+
+    VecT v_[NC];
+
+    LM_INLINE TMat3x2() {}
+    LM_INLINE TMat3x2(const MatT& m) : v_{m.v_[0], m.v_[1]} {}
+    LM_INLINE TMat3x2(const TMat4<T, Opt>& m) : v_{ VecT(m.v_[0]), VecT(m.v_[1]) } {}
+    LM_INLINE TMat3x2(const TMat3<T, Opt>& m) : v_{ VecT(m.v_[0]), VecT(m.v_[1]) } {}
+    LM_INLINE TMat3x2(const VecT& v0, const VecT& v1) : v_{v0, v1} {}
+    LM_INLINE TMat3x2(const T& s) : v_{VecT(s), VecT(s)} {}
+    LM_INLINE TMat3x2(
+        ParamT v00, ParamT v10, ParamT v20,
+        ParamT v01, ParamT v11, ParamT v21)
+        : v_{VecT(v00, v10, v20),
+             VecT(v01, v11, v21)}
+    {}
+    LM_INLINE TMat3x2(std::initializer_list<VT> l)
+        : v_{VecT(l.begin()[0], l.begin()[1], l.begin()[2]),
+             VecT(l.begin()[3], l.begin()[4], l.begin()[5])}
+    {}
+
+	LM_INLINE auto operator[](int i) -> VecT& { return v_[i]; }
+	LM_INLINE auto operator[](int i) const -> const VecT& { return v_[i]; }
+    LM_INLINE auto operator*=(const MatT& m) -> MatT& { *this = *this * m; return *this; }
+
+};
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Mat2x3
+
+/*!
+	\brief 2x3 matrix.
+
+    Generic column major 3x3 matrix.
+    A matrix
+        v00 v01 v02
+        v10 v11 v12
+    is stored sequentially as v00, v10, ..., v12.
+
+    \tparam T Internal value type.
+    \tparam Opt Optimizatoin flag.
+*/
+template <typename T, SIMD Opt = SIMD::None>
+struct TMat2x3
+{
+    // Math object type
+    static constexpr MathObjectType ObjT = MathObjectType::Mat;
+
+    // Value type
+    using VT = T;
+
+    // Matrix type
+    using MatT = TMat2x3<T, Opt>;
+
+    // Column vector type
+    template <typename T_, SIMD Opt_>
+    using TVec = TVec2<T_, Opt_>;
+    using VecT = TVec2<T, Opt>;
+
+    // Number of components
+    static constexpr int NC = 3;
+
+    // Parameter types
+    using ParamT = std::conditional_t<std::is_fundamental<T>::value, T, const T&>;
+    using RetT = ParamT;
+
+    VecT v_[NC];
+
+    LM_INLINE TMat2x3() {}
+    LM_INLINE TMat2x3(const MatT& m) : v_{m.v_[0], m.v_[1], m.v_[2]} {}
+    LM_INLINE TMat2x3(const TMat4<T, Opt>& m) : v_{VecT(m.v_[0]), VecT(m.v_[1]), VecT(m.v_[2])} {}
+    LM_INLINE TMat2x3(const VecT& v0, const VecT& v1, const VecT& v2) : v_{v0, v1, v2} {}
+    LM_INLINE TMat2x3(const T& s) : v_{VecT(s), VecT(s), VecT(s)} {}
+    LM_INLINE TMat2x3(
+        ParamT v00, ParamT v10,
+        ParamT v01, ParamT v11,
+        ParamT v02, ParamT v12)
+        : v_{VecT(v00, v10),
+             VecT(v01, v11),
+             VecT(v02, v12)}
+    {}
+    LM_INLINE TMat2x3(std::initializer_list<VT> l)
+        : v_{VecT(l.begin()[0], l.begin()[1]),
+             VecT(l.begin()[2], l.begin()[3]),
+             VecT(l.begin()[4], l.begin()[5])}
+    {}
+
+	LM_INLINE auto operator[](int i) -> VecT& { return v_[i]; }
+	LM_INLINE auto operator[](int i) const -> const VecT& { return v_[i]; }
+    LM_INLINE auto operator*=(const MatT& m) -> MatT& { *this = *this * m; return *this; }
+
+};
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
 #pragma region Some aliases
 
 template <typename T, SIMD Opt, template <typename, SIMD> class MathObject>
@@ -1015,6 +1152,42 @@ LM_INLINE auto operator*(const TMat4<T, Opt>& m1, const TMat4<T, Opt>& m2) -> TM
     return TMat4<T, Opt>(m1 * m2[0], m1 * m2[1], m1 * m2[2], m1 * m2[3]);
 }
 
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat2x3<T, Opt>& m1, const TMat3<T, Opt>& m2) -> TMat2<T, Opt>
+{
+    return TMat2<T, Opt>(m1 * m2[0], m1 * m2[1]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat3x2<T, Opt>& m1, const TMat2<T, Opt>& m2) -> TMat3<T, Opt>
+{
+    return TMat3<T, Opt>(m1 * m2[0], m1 * m2[1], m1 * m2[2]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat2<T, Opt>& m1, const TMat2x3<T, Opt>& m2) -> TMat2x3<T, Opt>
+{
+    return TMat2x3<T, Opt>(m1 * m2[0], m1 * m2[1], m1 * m2[2]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat3<T, Opt>& m1, const TMat3x2<T, Opt>& m2) -> TMat3x2<T, Opt>
+{
+    return TMat2<T, Opt>(m1 * m2[0], m1 * m2[1]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat2x3<T, Opt>& m1, const TMat3x2<T, Opt>& m2) -> TMat2<T, Opt>
+{
+    return TMat2<T, Opt>(m1 * m2[0], m1 * m2[1]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat3x2<T, Opt>& m1, const TMat2x3<T, Opt>& m2) -> TMat3<T, Opt>
+{
+    return TMat3<T, Opt>(m1 * m2[0], m1 * m2[1], m1 * m2[2]);
+}
+
 #pragma endregion
 
 // --------------------------------------------------------------------------------
@@ -1024,18 +1197,35 @@ LM_INLINE auto operator*(const TMat4<T, Opt>& m1, const TMat4<T, Opt>& m2) -> TM
 template <typename T, SIMD Opt>
 LM_INLINE auto operator*(const TMat2<T, Opt>& m, const TVec2<T, Opt>& v) -> TVec2<T, Opt>
 {
-    return TVec3<T, Opt>(
-        m[0][0] * v.x + m[1][0] * v.y,
-        m[0][1] * v.x + m[1][1] * v.y);
+    return TVec2<T, Opt>(
+        m[0][0] * v[0] + m[1][0] * v[1],
+        m[0][1] * v[0] + m[1][1] * v[1]);
 }
 
 template <typename T, SIMD Opt>
 LM_INLINE auto operator*(const TMat3<T, Opt>& m, const TVec3<T, Opt>& v) -> TVec3<T, Opt>
 {
     return TVec3<T, Opt>(
-        m[0][0] * v.x + m[1][0] * v.y + m[2][0] * v.z,
-        m[0][1] * v.x + m[1][1] * v.y + m[2][1] * v.z,
-        m[0][2] * v.x + m[1][2] * v.y + m[2][2] * v.z);
+        m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
+        m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2],
+        m[0][2] * v[0] + m[1][2] * v[1] + m[2][2] * v[2]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat2x3<T, Opt>& m, const TVec3<T, Opt>& v) -> TVec2<T, Opt>
+{
+    return TVec2<T, Opt>(
+        m[0][0] * v[0] + m[1][0] * v[1] + m[2][0] * v[2],
+        m[0][1] * v[0] + m[1][1] * v[1] + m[2][1] * v[2]);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat3x2<T, Opt>& m, const TVec2<T, Opt>& v) -> TVec3<T, Opt>
+{
+    return TVec3<T, Opt>(
+        m[0][0] * v[0] + m[1][0] * v[1],
+        m[0][1] * v[0] + m[1][1] * v[1],
+        m[0][2] * v[0] + m[1][2] * v[1]);
 }
 
 #if LM_SSE
@@ -1126,6 +1316,18 @@ template <typename T, SIMD Opt>
 LM_INLINE auto operator*(const TMat4<T, Opt>& m, const T& s) -> TMat4<T, Opt>
 {
     return TMat4<T, Opt>(m[0] * s, m[1] * s, m[2] * s, m[3] * s);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat3x2<T, Opt>& m, const T& s) -> TMat3x2<T, Opt>
+{
+    return TMat3x2<T, Opt>(m[0] * s, m[1] * s);
+}
+
+template <typename T, SIMD Opt>
+LM_INLINE auto operator*(const TMat2x3<T, Opt>& m, const T& s) -> TMat2x3<T, Opt>
+{
+    return TMat2x3<T, Opt>(m[0] * s, m[1] * s, m[2] * s);
 }
 
 #pragma endregion
@@ -1434,6 +1636,8 @@ using Vec4 = TVec4<Float, SIMD::Default>;
 using Mat2 = TMat2<Float, SIMD::Default>;
 using Mat3 = TMat3<Float, SIMD::Default>;
 using Mat4 = TMat4<Float, SIMD::Default>;
+using Mat2x3 = TMat2x3<Float, SIMD::Default>;
+using Mat3x2 = TMat3x2<Float, SIMD::Default>;
 
 //! \}
 #pragma endregion
@@ -1776,6 +1980,23 @@ namespace Math
             _mm_movehl_ps(t3, t1));
     }
     #endif
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Transpose(const TMat2x3<T, Opt>& m) -> TMat3x2<T, Opt>
+    {
+        return TMat3x2<T, Opt>(
+            m[0][0], m[1][0], m[2][0],
+            m[0][1], m[1][1], m[2][1]);
+    }
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Transpose(const TMat3x2<T, Opt>& m) -> TMat2x3<T, Opt>
+    {
+        return TMat2x3<T, Opt>(
+            m[0][0], m[1][0],
+            m[0][1], m[1][1],
+            m[0][2], m[1][2]);
+    }
 
     #pragma endregion
 
