@@ -96,7 +96,7 @@ public:
 
     LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> PDFVal
     {
-        return PDFVal(PDFMeasure::Area, invArea_);
+        return PDFVal(PDFMeasure::Area, invArea_);  
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD

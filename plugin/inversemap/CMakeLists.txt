@@ -30,6 +30,8 @@ add_plugin(
 		"inversemaputils.h"
 		"mltutils.h"
 		"multiplexeddensity.h"
+		"debugio.h"
+		"debugio.cpp"
         "renderer_invmap_pssmltfixed.cpp"
         "renderer_invmap_mltfixed.cpp"
         "renderer_invmap_mltinvmapfixed.cpp"

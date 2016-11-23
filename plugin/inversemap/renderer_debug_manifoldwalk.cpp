@@ -23,12 +23,22 @@
 */
 
 #include "mltutils.h"
+#include "debugio.h"
+#include <chrono>
+#include <thread>
+#include <cereal/archives/json.hpp>
+#include <cereal/types/vector.hpp>
 
 #define INVERSEMAP_MANIFOLDWALK_OUTPUT_TRIANGLES          1
 #define INVERSEMAP_MANIFOLDWALK_OUTPUT_FAILED_TRIAL_PATHS 1
 #define INVERSEMAP_MANIFOLDWALK_SINGLE_TARGET             1
 
 LM_NAMESPACE_BEGIN
+
+namespace
+{
+    DebugIO io_;
+}
 
 namespace
 {
@@ -433,6 +443,49 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        io_.Run();
+
+        struct Test
+        {
+            int x, y, z;
+            template<class Archive>
+            void serialize(Archive & archive)
+            {
+                archive(x, y, z);
+            }
+        };
+
+        //while (io_.Wait())
+        //{
+        //    // Input and serialize
+        //    Test t;
+        //    {
+        //        std::stringstream ss(io_.Input());
+        //        cereal::JSONInputArchive ia(ss);
+        //        ia(t);
+        //        LM_LOG_DEBUG("In");
+        //        LM_LOG_DEBUG(ss.str());
+        //    }
+
+        //    t.x *= 2;
+        //    t.y *= 2;
+        //    t.z *= 2;
+
+        //    // Super long loop
+        //    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        //    std::stringstream ss;
+        //    {
+        //        cereal::JSONOutputArchive oa(ss);
+        //        oa(t);
+        //    }
+        //    LM_LOG_DEBUG("Out");
+        //    LM_LOG_DEBUG(ss.str());
+        //    io_.Output(ss.str());
+        //}
+
+        // --------------------------------------------------------------------------------
+
         #if INVERSEMAP_MANIFOLDWALK_OUTPUT_TRIANGLES
         {
             std::ofstream out("tris.out", std::ios::out | std::ios::trunc);
@@ -459,6 +512,42 @@ public:
             }
         }
         #endif
+
+        // --------------------------------------------------------------------------------
+
+        while (io_.Wait())
+        {
+            std::vector<double> vs;
+            for (int i = 0; i < scene->NumPrimitives(); i++)
+            {
+                const auto* primitive = scene->PrimitiveAt(i);
+                const auto* mesh = primitive->mesh;
+                if (!mesh) { continue; }
+                const auto* ps = mesh->Positions();
+                const auto* faces = mesh->Faces();
+                for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
+                {
+                    unsigned int vi1 = faces[3 * fi];
+                    unsigned int vi2 = faces[3 * fi + 1];
+                    unsigned int vi3 = faces[3 * fi + 2];
+                    Vec3 p1(primitive->transform * Vec4(ps[3 * vi1], ps[3 * vi1 + 1], ps[3 * vi1 + 2], 1_f));
+                    Vec3 p2(primitive->transform * Vec4(ps[3 * vi2], ps[3 * vi2 + 1], ps[3 * vi2 + 2], 1_f));
+                    Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
+                    for (int j = 0; j < 3; j++) vs.push_back(p1[j]);
+                    for (int j = 0; j < 3; j++) vs.push_back(p2[j]);
+                    for (int j = 0; j < 3; j++) vs.push_back(p3[j]);
+                }
+            }
+            
+            std::stringstream ss;
+            {
+                cereal::JSONOutputArchive oa(ss);
+                oa(cereal::make_nvp("triangle_vertices", vs));
+            }
+
+            io_.Output(ss.str());
+        }
+
 
         // --------------------------------------------------------------------------------
 
@@ -606,6 +695,10 @@ public:
             ofs.write((const char*)&BinSize, sizeof(int));
             ofs.write((const char*)dist.data(), sizeof(Float) * BinSize * BinSize);
         }
+
+        // --------------------------------------------------------------------------------
+
+        io_.Stop();
     };
 
 };
