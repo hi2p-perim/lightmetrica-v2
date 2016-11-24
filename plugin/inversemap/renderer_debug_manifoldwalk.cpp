@@ -367,6 +367,26 @@ namespace
 			#pragma endregion
 
             // --------------------------------------------------------------------------------
+            
+            if (nextP)
+            {
+                io_.Wait();
+                std::vector<double> vs;
+                for (const auto& v : nextP->vertices)
+                {
+                    for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+                }
+
+                std::stringstream ss;
+                {
+                    cereal::JSONOutputArchive oa(ss);
+                    oa(vs);
+                }
+
+                io_.Output("path", ss.str());
+            }
+
+            // --------------------------------------------------------------------------------
 
             #if INVERSEMAP_MANIFOLDWALK_OUTPUT_FAILED_TRIAL_PATHS
             if (nextP)
@@ -515,8 +535,9 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        while (io_.Wait())
         {
+            io_.Wait();
+
             std::vector<double> vs;
             for (int i = 0; i < scene->NumPrimitives(); i++)
             {
@@ -542,10 +563,10 @@ public:
             std::stringstream ss;
             {
                 cereal::JSONOutputArchive oa(ss);
-                oa(cereal::make_nvp("triangle_vertices", vs));
+                oa(vs);
             }
 
-            io_.Output(ss.str());
+            io_.Output("triangle_vertices", ss.str());
         }
 
 

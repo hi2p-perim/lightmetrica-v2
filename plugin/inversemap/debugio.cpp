@@ -32,6 +32,7 @@
 #include <thread>
 #include <mutex>
 #include <functional>
+#include <tuple>
 
 #include <boost/optional.hpp>
 #include <boost/signals2.hpp>
@@ -63,7 +64,7 @@ private:
     boost::signals2::signal<void(std::shared_ptr<Session>)> signal_OnDisconnected;
     boost::signals2::signal<void(const std::string&)> signal_OnSetInput;
     boost::signals2::signal<int()> signal_OnCheckRunning;
-    boost::signals2::signal<std::string()> signal_OnGetOutput;
+    boost::signals2::signal<std::tuple<std::string, std::string>()> signal_OnGetOutput;
     boost::signals2::signal<void()> signal_OnNotify;
 
 public:
@@ -78,7 +79,7 @@ public:
     auto Connect_OnDisconnected(const std::function<void(std::shared_ptr<Session>)>& func) -> boost::signals2::connection { return signal_OnDisconnected.connect(func); }
     auto Connect_OnSetInput(const std::function<void(const std::string&)>& func) -> boost::signals2::connection { return signal_OnSetInput.connect(func); }
     auto Connect_OnCheckRunning(const std::function<int()>& func) -> boost::signals2::connection { return signal_OnCheckRunning.connect(func); }
-    auto Connect_OnGetOutput(const std::function<std::string()>& func) -> boost::signals2::connection { return signal_OnGetOutput.connect(func); }
+    auto Connect_OnGetOutput(const std::function<std::tuple<std::string, std::string>()>& func) -> boost::signals2::connection { return signal_OnGetOutput.connect(func); }
     auto Connect_OnNotify(const std::function<void()>& func) -> boost::signals2::connection { return signal_OnNotify.connect(func); }
 
 public:
@@ -124,9 +125,13 @@ public:
                             LM_LOG_DEBUG("GetOutput");
                             const auto output = signal_OnGetOutput();
                             if (!output) { break; }
-                            const size_t size = output->size();
-                            boost::asio::async_write(socket, boost::asio::buffer(&size, sizeof(size_t)), yield);
-                            boost::asio::async_write(socket, boost::asio::buffer(output->data(), output->size()), yield);
+                            const auto WriteString = [&](const std::string& s){
+                                const size_t size = s.size();
+                                boost::asio::async_write(socket, boost::asio::buffer(&size, sizeof(size_t)), yield);
+                                boost::asio::async_write(socket, boost::asio::buffer(s.data(), s.size()), yield);
+                            };
+                            WriteString(std::get<0>(*output));
+                            WriteString(std::get<1>(*output));
                             break;
                         }
                         case CommandType::Notify:
@@ -166,7 +171,7 @@ private:
 private:
 
     std::string input_;
-    std::string output_;
+    std::tuple<std::string, std::string> output_;
     int running_ = 1;
 
 public:
@@ -213,7 +218,7 @@ public:
                     std::unique_lock<std::mutex> lock(ioMutex_);
                     return running_;
                 });
-                session->Connect_OnGetOutput([this]() -> std::string
+                session->Connect_OnGetOutput([this]() -> std::tuple<std::string, std::string>
                 {
                     std::unique_lock<std::mutex> lock(ioMutex_);
                     return output_;
@@ -249,10 +254,10 @@ public:
         return input_;
     }
 
-    auto Output(const std::string& out) -> void
+    auto Output(const std::string& tag, const std::string& out) -> void
     {
         std::unique_lock<std::mutex> lock(ioMutex_);
-        output_ = out;
+        output_ = std::make_tuple(tag, out);
     }
 
     auto Connected() -> bool
@@ -284,7 +289,7 @@ DebugIO::~DebugIO() {}
 auto DebugIO::Run() -> void { p_->Run(); }
 auto DebugIO::Stop() -> void { p_->Stop(); }
 auto DebugIO::Input() -> std::string { return p_->Input(); }
-auto DebugIO::Output(const std::string& out) -> void { p_->Output(out); }
+auto DebugIO::Output(const std::string& tag, const std::string& out) -> void { p_->Output(tag, out); }
 auto DebugIO::Connected() -> bool { return p_->Connected(); }
 auto DebugIO::Wait() -> bool { return p_->Wait(); }
 

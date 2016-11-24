@@ -48,7 +48,7 @@ public:
     auto Run() -> void;
     auto Stop() -> void;
     auto Input() ->std::string;
-    auto Output(const std::string& out) -> void;
+    auto Output(const std::string& tag, const std::string& out) -> void;
     auto Connected() -> bool;
     auto Wait() -> bool;
 
