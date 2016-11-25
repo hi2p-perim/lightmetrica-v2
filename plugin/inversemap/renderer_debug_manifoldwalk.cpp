@@ -29,15 +29,22 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/types/vector.hpp>
 
-#define INVERSEMAP_MANIFOLDWALK_OUTPUT_TRIANGLES          1
-#define INVERSEMAP_MANIFOLDWALK_OUTPUT_FAILED_TRIAL_PATHS 1
+#define INVERSEMAP_MANIFOLDWALK_OUTPUT_TRIANGLES          0
+#define INVERSEMAP_MANIFOLDWALK_OUTPUT_FAILED_TRIAL_PATHS 0
 #define INVERSEMAP_MANIFOLDWALK_SINGLE_TARGET             1
+#define INVERSEMAP_MANIFOLDWALK_DEBUG_IO                  1
 
 LM_NAMESPACE_BEGIN
 
 namespace
 {
     DebugIO io_;
+}
+
+template <class Archive>
+auto serialize(Archive& archive, Vec3& v) -> void
+{
+    archive(cereal::make_nvp("x", v.x), cereal::make_nvp("y", v.y), cereal::make_nvp("z", v.z));
 }
 
 namespace
@@ -216,7 +223,60 @@ namespace
 
 		#pragma endregion
 
+        // --------------------------------------------------------------------------------
+
+        #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+        LM_LOG_DEBUG("seed_path");
+        {
+            io_.Wait();
+            std::vector<double> vs;
+            for (const auto& v : currP.vertices)
+            {
+                for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+            }
+            std::stringstream ss;
+            {
+                cereal::JSONOutputArchive oa(ss);
+                oa(vs);
+            }
+            io_.Output("seed_path", ss.str());
+        }       
+        #endif
+
 		// --------------------------------------------------------------------------------
+
+        #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+        LM_LOG_DEBUG("target");
+        {
+            io_.Wait();
+            std::vector<double> vs;
+            for (int i = 0; i < 3; i++) vs.push_back(target[i]);
+            std::stringstream ss;
+            {
+                cereal::JSONOutputArchive oa(ss);
+                oa(vs);
+            }
+            io_.Output("target", ss.str());
+        }
+        #endif
+
+        // --------------------------------------------------------------------------------
+
+        //#if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+        //LM_LOG_DEBUG("tanget_frame_v1");
+        //{
+        //    io_.Wait();
+        //    std::stringstream ss;
+        //    {
+        //        cereal::JSONOutputArchive oa(ss);
+        //        const auto& v = currP.vertices[1];
+        //        oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
+        //    }
+        //    io_.Output("tanget_frame_v1", ss.str());
+        //}
+        //#endif
+
+        // --------------------------------------------------------------------------------
 
 		#pragma region Optimization loop
 
@@ -243,6 +303,42 @@ namespace
                     }
                     out << std::endl;
                 }
+            }
+            #endif
+
+            // --------------------------------------------------------------------------------
+
+            #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+            LM_LOG_DEBUG("current_path");
+            {
+                io_.Wait();
+                std::vector<double> vs;
+                for (const auto& v : currP.vertices)
+                {
+                    for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+                }
+                std::stringstream ss;
+                {
+                    cereal::JSONOutputArchive oa(ss);
+                    oa(vs);
+                }
+                io_.Output("current_path", ss.str());
+            }       
+            #endif
+
+            // --------------------------------------------------------------------------------
+
+            #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+            LM_LOG_DEBUG("current_tanget_frame_v1");
+            {
+                io_.Wait();
+                std::stringstream ss;
+                {
+                    cereal::JSONOutputArchive oa(ss);
+                    const auto& v = currP.vertices[1];
+                    oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
+                }
+                io_.Output("current_tanget_frame_v1", ss.str());
             }
             #endif
 
@@ -303,11 +399,29 @@ namespace
 
 				// W_{n-2} = P_2 W
 				const auto Wn2p = W[n - 3];
+                //const auto Wn2p = W[0];
 
 				// p = x_2 - \beta T(x_2) P_2 W_{n-2}
 				return x2 - Tx2 * Wn2p * beta;
             }();
 			#pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+            LM_LOG_DEBUG("point_on_tangent");
+            {
+                io_.Wait();
+                std::vector<double> vs;
+                for (int i = 0; i < 3; i++) vs.push_back(p[i]);
+                std::stringstream ss;
+                {
+                    cereal::JSONOutputArchive oa(ss);
+                    oa(vs);
+                }
+                io_.Output("point_on_tangent", ss.str());
+            }
+            #endif
 
 			// --------------------------------------------------------------------------------
 
@@ -368,23 +482,24 @@ namespace
 
             // --------------------------------------------------------------------------------
             
+            #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
             if (nextP)
             {
+                LM_LOG_DEBUG("next_path");
                 io_.Wait();
                 std::vector<double> vs;
                 for (const auto& v : nextP->vertices)
                 {
                     for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
                 }
-
                 std::stringstream ss;
                 {
                     cereal::JSONOutputArchive oa(ss);
                     oa(vs);
                 }
-
-                io_.Output("path", ss.str());
+                io_.Output("next_path", ss.str());
             }
+            #endif
 
             // --------------------------------------------------------------------------------
 
@@ -535,6 +650,8 @@ public:
 
         // --------------------------------------------------------------------------------
 
+        #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+        LM_LOG_DEBUG("triangle_vertices");
         {
             io_.Wait();
 
@@ -568,6 +685,7 @@ public:
 
             io_.Output("triangle_vertices", ss.str());
         }
+        #endif
 
 
         // --------------------------------------------------------------------------------
@@ -650,7 +768,22 @@ public:
         const int BinSize = 100;
         std::vector<Float> dist(BinSize*BinSize);
         #if INVERSEMAP_MANIFOLDWALK_SINGLE_TARGET
-        const int I = 40;
+
+        #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+        int I;
+        LM_LOG_DEBUG("waiting_for_input");
+        {
+            io_.Wait();
+            std::stringstream ss(io_.Input());
+            {
+                cereal::JSONInputArchive ia(ss);
+                ia(cereal::make_nvp("selected_target_id", I));
+            }
+        }
+        #else
+        const int I = 44;
+        #endif
+        
         for (int i = I; i <= I; i++)
         #else
         for (int i = 0; i < BinSize; i++)
