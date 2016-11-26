@@ -28,6 +28,8 @@
 #include <boost/format.hpp>
 #if LM_COMPILER_MSVC
 #pragma warning(disable:4714)
+#pragma warning(disable:4701)
+#pragma warning(disable:4456)
 #include <Eigen/Sparse>
 #else
 #include <eigen3/Eigen/Sparse>
@@ -45,6 +47,7 @@ namespace Eigen
         using Real       = T;
         using NonInteger = T;
         using Nested     = T;
+        using Literal    = T;
         enum
         {
             IsComplex = 0,

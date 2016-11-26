@@ -102,7 +102,7 @@ public:
                     {
                         case CommandType::SetInput:
                         {
-                            LM_LOG_DEBUG("SetInput");
+                            //LM_LOG_DEBUG("SetInput");
                             size_t size;
                             boost::asio::async_read(socket, boost::asio::buffer(&size, sizeof(size_t)), yield);
                             char* buf = new char[size];
@@ -114,7 +114,7 @@ public:
                         }
                         case CommandType::CheckRunning:
                         {
-                            LM_LOG_DEBUG("CheckRunning");
+                            //LM_LOG_DEBUG("CheckRunning");
                             const auto running = signal_OnCheckRunning();
                             if (!running) { break; }
                             boost::asio::async_write(socket, boost::asio::buffer(&*running, sizeof(int)), yield);
@@ -122,7 +122,7 @@ public:
                         }
                         case CommandType::GetOutput:
                         {
-                            LM_LOG_DEBUG("GetOutput");
+                            //LM_LOG_DEBUG("GetOutput");
                             const auto output = signal_OnGetOutput();
                             if (!output) { break; }
                             const auto WriteString = [&](const std::string& s){
@@ -136,7 +136,7 @@ public:
                         }
                         case CommandType::Notify:
                         {
-                            LM_LOG_DEBUG("Notify");
+                            //LM_LOG_DEBUG("Notify");
                             signal_OnNotify();
                         }
                     }

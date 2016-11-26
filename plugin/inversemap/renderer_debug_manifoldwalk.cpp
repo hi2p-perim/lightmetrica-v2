@@ -29,10 +29,19 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/types/vector.hpp>
 
+#pragma warning(push)
+#pragma warning(disable:4714)
+#pragma warning(disable:4701)
+#pragma warning(disable:4456)
+#include <Eigen/Dense>
+#pragma warning(pop)
+
 #define INVERSEMAP_MANIFOLDWALK_OUTPUT_TRIANGLES          0
 #define INVERSEMAP_MANIFOLDWALK_OUTPUT_FAILED_TRIAL_PATHS 0
 #define INVERSEMAP_MANIFOLDWALK_SINGLE_TARGET             1
 #define INVERSEMAP_MANIFOLDWALK_DEBUG_IO                  1
+#define INVERSEMAP_MANIFOLDWALK_CONSTRAINT_CONSISTENCY    1
+#define INVERSEMAP_MANIFOLDWALK_USE_EIGEN_SOLVER          1
 
 LM_NAMESPACE_BEGIN
 
@@ -58,6 +67,7 @@ namespace
 
     using ConstraintJacobian = std::vector<VertexConstraintJacobian>;
 
+    #if 0
 	auto ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void
 	{
 		const int n = (int)(path.vertices.size());
@@ -142,6 +152,97 @@ namespace
 			#pragma endregion
 		}
 	}
+    #else
+	auto ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void
+	{
+		const int n = (int)(path.vertices.size());
+		for (int i = 1; i < n - 1; i++)
+		{
+			#pragma region Some precomputation
+
+            const auto vi  = path.vertices[i];
+            const auto vip = path.vertices[i - 1];
+            const auto vin = path.vertices[i + 1];
+
+			const auto& x  = vi.geom;
+			const auto& xp = vip.geom;
+			const auto& xn = vin.geom;
+			
+			const auto wi  = Math::Normalize(xp.p - x.p);
+			const auto wo  = Math::Normalize(xn.p - x.p);
+            const auto eta = vi.primitive->bsdf->Eta(x, wi);
+			const auto H   = Math::Normalize(wi + eta * wo);
+
+			//const auto inv_wiL = 1_f / Math::Length(xp.p - x.p);
+			//const auto inv_woL = 1_f / Math::Length(xn.p - x.p);
+			//const auto inv_HL  = 1_f / Math::Length(wi + wo);
+			
+			//const auto dot_H_n    = Math::Dot(x.sn, H);
+			//const auto dot_H_dndu = Math::Dot(x.dndu, H);
+			//const auto dot_H_dndv = Math::Dot(x.dndv, H);
+			//const auto dot_u_n    = Math::Dot(x.dpdu, x.sn);
+			//const auto dot_v_n    = Math::Dot(x.dpdv, x.sn);
+
+			const auto s = x.dpdu - dot_u_n * x.sn;
+			const auto t = x.dpdv - dot_v_n * x.sn;
+
+			const auto div_inv_wiL_HL = inv_wiL * inv_HL;
+			const auto div_inv_woL_HL = inv_woL * inv_HL;
+
+			#pragma endregion
+
+			// --------------------------------------------------------------------------------
+
+			#pragma region Compute A_i (derivative w.r.t. x_{i-1})
+			
+			{
+				const auto tu = (xp.dpdu - wi * Math::Dot(wi, xp.dpdu)) * div_inv_wiL_HL;
+				const auto tv = (xp.dpdv - wi * Math::Dot(wi, xp.dpdv)) * div_inv_wiL_HL;
+				const auto dHdu = tu - H * Math::Dot(tu, H);
+				const auto dHdv = tv - H * Math::Dot(tv, H);
+				nablaC[i-1].A = Mat2(
+					Math::Dot(dHdu, s), Math::Dot(dHdu, t),
+					Math::Dot(dHdv, s), Math::Dot(dHdv, t));
+			}
+
+			#pragma endregion
+			
+			// --------------------------------------------------------------------------------
+
+			#pragma region Compute B_i (derivative w.r.t. x_i)
+
+			{
+				const auto tu = -x.dpdu * (div_inv_wiL_HL + div_inv_woL_HL) + wi * (Math::Dot(wi, x.dpdu) * div_inv_wiL_HL) + wo * (Math::Dot(wo, x.dpdu) * div_inv_woL_HL);
+				const auto tv = -x.dpdv * (div_inv_wiL_HL + div_inv_woL_HL) + wi * (Math::Dot(wi, x.dpdv) * div_inv_wiL_HL) + wo * (Math::Dot(wo, x.dpdv) * div_inv_woL_HL);
+				const auto dHdu = tu - H * Math::Dot(tu, H);
+				const auto dHdv = tv - H * Math::Dot(tv, H);
+				nablaC[i-1].B = Mat2(
+					Math::Dot(dHdu, s) - Math::Dot(x.dpdu, x.dndu) * dot_H_n - dot_u_n * dot_H_dndu,
+					Math::Dot(dHdu, t) - Math::Dot(x.dpdv, x.dndu) * dot_H_n - dot_v_n * dot_H_dndu,
+					Math::Dot(dHdv, s) - Math::Dot(x.dpdu, x.dndv) * dot_H_n - dot_u_n * dot_H_dndv,
+					Math::Dot(dHdv, t) - Math::Dot(x.dpdv, x.dndv) * dot_H_n - dot_v_n * dot_H_dndv);
+			}
+
+			#pragma endregion
+			
+			// --------------------------------------------------------------------------------
+
+			#pragma region Compute C_i (derivative w.r.t. x_{i+1})
+
+			{
+				const auto tu = (xn.dpdu - wo * Math::Dot(wo, xn.dpdu)) * div_inv_woL_HL;
+				const auto tv = (xn.dpdv - wo * Math::Dot(wo, xn.dpdv)) * div_inv_woL_HL;
+				const auto dHdu = tu - H * Math::Dot(tu, H);
+				const auto dHdv = tv - H * Math::Dot(tv, H);
+				nablaC[i - 1].C = Mat2(
+					Math::Dot(dHdu, s), Math::Dot(dHdu, t),
+					Math::Dot(dHdv, s), Math::Dot(dHdv, t));
+			}
+
+			#pragma endregion
+		}
+	}
+    #endif
 
     auto SolveBlockLinearEq(const ConstraintJacobian& nablaC, const std::vector<Vec2>& V, std::vector<Vec2>& W) -> void
 	{
@@ -282,8 +383,8 @@ namespace
 
 		const Float MaxBeta = 100.0;
 		Float beta = MaxBeta;
-		const Float Eps = 1e-5;
-		const int MaxIter = 30;
+		const Float Eps = 1e-4;
+		const int MaxIter = 100;
 
 		for (int iteration = 0; iteration < MaxIter; iteration++)
 		{
@@ -328,25 +429,25 @@ namespace
 
             // --------------------------------------------------------------------------------
 
-            #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
-            LM_LOG_DEBUG("current_tanget_frame_v1");
-            {
-                io_.Wait();
-                std::stringstream ss;
-                {
-                    cereal::JSONOutputArchive oa(ss);
-                    const auto& v = currP.vertices[1];
-                    oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
-                }
-                io_.Output("current_tanget_frame_v1", ss.str());
-            }
-            #endif
+            //#if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+            //LM_LOG_DEBUG("current_tanget_frame_v1");
+            //{
+            //    io_.Wait();
+            //    std::stringstream ss;
+            //    {
+            //        cereal::JSONOutputArchive oa(ss);
+            //        const auto& v = currP.vertices[1];
+            //        oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
+            //    }
+            //    io_.Output("current_tanget_frame_v1", ss.str());
+            //}
+            //#endif
 
             // --------------------------------------------------------------------------------
 
             {
                 const auto d = Math::Length(currP.vertices.back().geom.p - target);
-                //LM_LOG_INFO(boost::str(boost::format("#%02d: Dist to target %.15f") % iteration % d));
+                LM_LOG_DEBUG(boost::str(boost::format("#%02d: Dist to target %.15f") % iteration % d));
             }
 
             // --------------------------------------------------------------------------------
@@ -391,18 +492,105 @@ namespace
 				std::vector<Vec2> V(n - 2);
 				std::vector<Vec2> W(n - 2);
 				for (int i = 0; i < n - 2; i++) { V[i] = i == n - 3 ? V_n2p : Vec2(); }
+                #if !INVERSEMAP_MANIFOLDWALK_USE_EIGEN_SOLVER
 				SolveBlockLinearEq(nablaC, V, W);
+                #else
+                using Matrix = Eigen::Matrix<Float, Eigen::Dynamic, Eigen::Dynamic>;
+                using Vector = Eigen::Matrix<Float, Eigen::Dynamic, 1>;
+                Matrix nablaC_ = Matrix::Zero(2*(n-2),2*(n-2));
+                for (int i = 0; i < n - 2; i++)
+                {
+                    if (i > 0)
+                    {
+                        const auto& A = nablaC[i].A;
+                        Eigen::Array22d m;
+                        m << A[0][0], A[1][0],
+                             A[0][1], A[1][1];
+                        nablaC_.block<2, 2>(i * 2, (i - 1) * 2) = m;
+                    }
+                    {
+                        const auto& B = nablaC[i].B;
+                        Eigen::Array22d m;
+                        m << B[0][0], B[1][0],
+                             B[0][1], B[1][1];
+                        nablaC_.block<2, 2>(i * 2, i * 2) = m;
+                    }
+                    if (i < n - 2 - 1)
+                    {
+                        const auto& C = nablaC[i].C;
+                        Eigen::Array22d m;
+                        m << C[0][0], C[1][0],
+                             C[0][1], C[1][1];
+                        nablaC_.block<2, 2>(i * 2, (i + 1) * 2) = m;
+
+                    }
+                }
+                Vector V_(2*(n - 2));
+                for (int i = 0; i < n - 2; i++) { V_(2*i) = V[i].x; V_(2*i+1) = V[i].y; }
+                Vector W_ = nablaC_.colPivHouseholderQr().solve(V_);
+                for (int i = 0; i < n - 2; i++) { W[i].x = W_(2 * i); W[i].y = W_(2 * i + 1); }
+                #endif
+
+                #if INVERSEMAP_MANIFOLDWALK_CONSTRAINT_CONSISTENCY
+                {
+                    const auto PointOnTangentPlane = [&](int i) -> Vec3
+                    {
+                        const Mat3x2 Tx(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
+                        return currP.vertices[i + 1].geom.p + Tx * W[i];
+                    };
+                    for (int i = 0; i < n - 2; i++)
+                    {
+                        const auto p  = PointOnTangentPlane(i);
+                        const auto pp = i == 0 ? currP.vertices[0].geom.p : PointOnTangentPlane(i-1);
+                        const auto pn = i == n - 3 ? target : PointOnTangentPlane(i+1);
+                        const auto wi = Math::Normalize(pp - p);
+                        const auto wo = Math::Normalize(pn - p);
+                        const auto H  = Math::Normalize(wi + wo);
+
+                        const auto Tx    = Mat3x2(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
+                        const auto TxT   = Math::Transpose(Tx);
+                        const auto projH = TxT * H;
+                        const auto projH_L = projH.x * projH.x + projH.y * projH.y;
+                        if (projH_L > Math::Eps())
+                        {
+                            __debugbreak();
+                        }
+                    }
+                }
+                #endif
 
 				// x_2, T(x_2)
 				const auto& x2 = currP.vertices[1].geom.p;
 				const Mat3x2 Tx2(currP.vertices[1].geom.dpdu, currP.vertices[1].geom.dpdv);
 
+                #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+                LM_LOG_DEBUG("points_on_tangent_s");
+                {
+                    io_.Wait();
+                    std::vector<Vec3> vs;
+                    for (int i = 0; i < n - 2; i++)
+                    {
+                        const Mat3x2 Tx(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
+                        vs.push_back(currP.vertices[i + 1].geom.p +  Tx * W[i]);
+                    }
+                    std::stringstream ss;
+                    {
+                        cereal::JSONOutputArchive oa(ss);
+                        oa(vs);
+                    }
+                    io_.Output("points_on_tangent_s", ss.str());
+                }
+                #endif
+
 				// W_{n-2} = P_2 W
-				const auto Wn2p = W[n - 3];
-                //const auto Wn2p = W[0];
+				//const auto Wn2p = W[n - 3];
+                const auto Wn2p = W[0];
 
 				// p = x_2 - \beta T(x_2) P_2 W_{n-2}
-				return x2 - Tx2 * Wn2p * beta;
+                const auto t1 = Tx2 * Wn2p;
+                const auto t2 = t1 * beta;
+				//return x2 - t2;
+                return x2 + t2;
             }();
 			#pragma endregion
 
@@ -523,7 +711,7 @@ namespace
             }
             #endif
 
-			// --------------------------------------------------------------------------------
+            // --------------------------------------------------------------------------------
 
 			#pragma region Update beta
             const auto update = [&]() -> bool
