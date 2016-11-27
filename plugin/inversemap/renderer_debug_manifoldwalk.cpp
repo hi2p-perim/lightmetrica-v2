@@ -40,7 +40,7 @@
 #define INVERSEMAP_MANIFOLDWALK_OUTPUT_FAILED_TRIAL_PATHS 0
 #define INVERSEMAP_MANIFOLDWALK_SINGLE_TARGET             1
 #define INVERSEMAP_MANIFOLDWALK_DEBUG_IO                  1
-#define INVERSEMAP_MANIFOLDWALK_CONSTRAINT_CONSISTENCY    1
+#define INVERSEMAP_MANIFOLDWALK_CONSTRAINT_CONSISTENCY    0
 #define INVERSEMAP_MANIFOLDWALK_USE_EIGEN_SOLVER          1
 
 LM_NAMESPACE_BEGIN
@@ -173,21 +173,21 @@ namespace
             const auto eta = vi.primitive->bsdf->Eta(x, wi);
 			const auto H   = Math::Normalize(wi + eta * wo);
 
-			//const auto inv_wiL = 1_f / Math::Length(xp.p - x.p);
-			//const auto inv_woL = 1_f / Math::Length(xn.p - x.p);
-			//const auto inv_HL  = 1_f / Math::Length(wi + wo);
+			const auto inv_wiL = 1_f / Math::Length(xp.p - x.p);     // ili
+			const auto inv_woL = 1_f / Math::Length(xn.p - x.p);     // ilo
+			const auto inv_HL  = 1_f / Math::Length(wi + eta * wo);  // ilh
 			
-			//const auto dot_H_n    = Math::Dot(x.sn, H);
-			//const auto dot_H_dndu = Math::Dot(x.dndu, H);
-			//const auto dot_H_dndv = Math::Dot(x.dndv, H);
-			//const auto dot_u_n    = Math::Dot(x.dpdu, x.sn);
-			//const auto dot_v_n    = Math::Dot(x.dpdv, x.sn);
+			const auto dot_H_n    = Math::Dot(x.sn, H);
+			const auto dot_H_dndu = Math::Dot(x.dndu, H);
+			const auto dot_H_dndv = Math::Dot(x.dndv, H);
+			const auto dot_u_n    = Math::Dot(x.dpdu, x.sn);
+			const auto dot_v_n    = Math::Dot(x.dpdv, x.sn);
 
 			const auto s = x.dpdu - dot_u_n * x.sn;
 			const auto t = x.dpdv - dot_v_n * x.sn;
 
-			const auto div_inv_wiL_HL = inv_wiL * inv_HL;
-			const auto div_inv_woL_HL = inv_woL * inv_HL;
+			const auto div_inv_wiL_HL = inv_wiL * inv_HL;         // ili := ili * ilh
+			const auto div_inv_woL_HL = inv_woL * inv_HL * eta;   // ilo := ilo * eta * ilh
 
 			#pragma endregion
 
@@ -383,7 +383,7 @@ namespace
 
 		const Float MaxBeta = 100.0;
 		Float beta = MaxBeta;
-		const Float Eps = 1e-4;
+		const Float Eps = 1e-5;
 		const int MaxIter = 100;
 
 		for (int iteration = 0; iteration < MaxIter; iteration++)
@@ -447,7 +447,7 @@ namespace
 
             {
                 const auto d = Math::Length(currP.vertices.back().geom.p - target);
-                LM_LOG_DEBUG(boost::str(boost::format("#%02d: Dist to target %.15f") % iteration % d));
+                //LM_LOG_DEBUG(boost::str(boost::format("#%02d: Dist to target %.15f") % iteration % d));
             }
 
             // --------------------------------------------------------------------------------
@@ -531,33 +531,34 @@ namespace
                 for (int i = 0; i < n - 2; i++) { W[i].x = W_(2 * i); W[i].y = W_(2 * i + 1); }
                 #endif
 
-                #if INVERSEMAP_MANIFOLDWALK_CONSTRAINT_CONSISTENCY
-                {
-                    const auto PointOnTangentPlane = [&](int i) -> Vec3
-                    {
-                        const Mat3x2 Tx(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
-                        return currP.vertices[i + 1].geom.p + Tx * W[i];
-                    };
-                    for (int i = 0; i < n - 2; i++)
-                    {
-                        const auto p  = PointOnTangentPlane(i);
-                        const auto pp = i == 0 ? currP.vertices[0].geom.p : PointOnTangentPlane(i-1);
-                        const auto pn = i == n - 3 ? target : PointOnTangentPlane(i+1);
-                        const auto wi = Math::Normalize(pp - p);
-                        const auto wo = Math::Normalize(pn - p);
-                        const auto H  = Math::Normalize(wi + wo);
+                //#if INVERSEMAP_MANIFOLDWALK_CONSTRAINT_CONSISTENCY
+                //{
+                //    const auto PointOnTangentPlane = [&](int i) -> Vec3
+                //    {
+                //        const Mat3x2 Tx(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
+                //        return currP.vertices[i + 1].geom.p + Tx * W[i];
+                //    };
+                //    for (int i = 0; i < n - 2; i++)
+                //    {
+                //        const auto p  = PointOnTangentPlane(i);
+                //        const auto pp = i == 0 ? currP.vertices[0].geom.p : PointOnTangentPlane(i-1);
+                //        const auto pn = i == n - 3 ? target : PointOnTangentPlane(i+1);
+                //        const auto wi = Math::Normalize(pp - p);
+                //        const auto wo = Math::Normalize(pn - p);
+                //        const auto eta = currP.vertices[i + 1].primitive->bsdf->Eta(currP.vertices[i + 1].geom, wi);
+                //        const auto H  = Math::Normalize(wi + eta * wo);
 
-                        const auto Tx    = Mat3x2(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
-                        const auto TxT   = Math::Transpose(Tx);
-                        const auto projH = TxT * H;
-                        const auto projH_L = projH.x * projH.x + projH.y * projH.y;
-                        if (projH_L > Math::Eps())
-                        {
-                            __debugbreak();
-                        }
-                    }
-                }
-                #endif
+                //        const auto Tx    = Mat3x2(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
+                //        const auto TxT   = Math::Transpose(Tx);
+                //        const auto projH = TxT * H;
+                //        const auto projH_L = projH.x * projH.x + projH.y * projH.y;
+                //        if (projH_L > 1e-3_f)
+                //        {
+                //            __debugbreak();
+                //        }
+                //    }
+                //}
+                //#endif
 
 				// x_2, T(x_2)
 				const auto& x2 = currP.vertices[1].geom.p;
