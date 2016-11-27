@@ -25,6 +25,7 @@
 #pragma once
 
 #include "inversemaputils.h"
+#include <regex>
 
 #define INVERSEMAP_DEBUG_SIMPLIFY_BIDIR_MUT_DELETE_ALL 0
 #define INVERSEMAP_DEBUG_SIMPLIFY_BIDIR_MUT_PT 0
@@ -38,6 +39,7 @@ enum class MLTStrategy : int
     Lens,
     Caustic,
     Multichain,
+    ManifoldLens,   // Manifold lens perturbation supporting [LD]S+DS+E paths
     Identity,
 };
 
@@ -56,22 +58,24 @@ public:
 
     static auto Mutate(MLTStrategy strategy, const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
     {
-        if (strategy == MLTStrategy::Bidir)           { return Mutate_Bidir(scene, rng, currP); }
-        else if (strategy == MLTStrategy::Lens)       { return Mutate_Lens(scene, rng, currP); }
-        else if (strategy == MLTStrategy::Caustic)    { return Mutate_Caustic(scene, rng, currP); }
-        else if (strategy == MLTStrategy::Multichain) { return Mutate_Multichain(scene, rng, currP); }
-        else if (strategy == MLTStrategy::Identity)   { return Prop{currP, -1 -1}; }
+        if (strategy == MLTStrategy::Bidir)             { return Mutate_Bidir(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Lens)         { return Mutate_Lens(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Caustic)      { return Mutate_Caustic(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Multichain)   { return Mutate_Multichain(scene, rng, currP); }
+        else if (strategy == MLTStrategy::ManifoldLens) { return Mutate_ManifoldLens(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Identity)     { return Prop{currP, -1 -1}; }
         LM_UNREACHABLE();
         return Prop();
     }
 
     static auto Q(MLTStrategy strategy, const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
     {
-        if (strategy == MLTStrategy::Bidir)           { return Q_Bidir(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::Lens)       { return Q_Lens(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::Caustic)    { return Q_Caustic(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::Multichain) { return Q_Multichain(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::Identity)   { return 1_f; }
+        if (strategy == MLTStrategy::Bidir)             { return Q_Bidir(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::Lens)         { return Q_Lens(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::Caustic)      { return Q_Caustic(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::Multichain)   { return Q_Multichain(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::ManifoldLens) { return Q_ManifoldLens(scene, x, y, kd, dL); }
+        else if (strategy == MLTStrategy::Identity)     { return 1_f; }
         LM_UNREACHABLE();
         return 0_f;
     }
@@ -507,6 +511,118 @@ private:
         return prop;
     }
 
+    static auto Mutate_ManifoldLens(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
+    {
+        // L | S+ | DS+E
+        const int n = (int)(currP.vertices.size());
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Check if current path can be mutated with the strategy
+        {
+            const auto type = currP.PathType();
+            std::regex reg(R"x(^LS+DS+E$)x");
+            std::smatch match;
+            if (!std::regex_match(type, match, reg))
+            {
+                return boost::none;
+            }
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+        
+        #pragma region Perturb eye subpath
+        const auto subpathE = [&]() -> boost::optional<Subpath>
+        {
+            Subpath subpathE;
+            subpathE.vertices.push_back(currP.vertices[n - 1]);
+
+            // Trace subpath
+            bool failed = false;
+            SubpathSampler::TraceSubpathFromEndpointWithSampler(scene, &subpathE.vertices[0], nullptr, 1, n, TransportDirection::EL,
+                [&](int numVertices, const Primitive* primitive, SubpathSampler::SampleUsage usage, int index) -> Float
+                {
+                    if (primitive && usage == SubpathSampler::SampleUsage::Direction && (primitive->Type() & SurfaceInteractionType::S) == 0)
+                    {
+                        const auto propU = PerturbDirectionSample(currP, rng, primitive, numVertices - 2, TransportDirection::EL);
+                        if (!propU)
+                        {
+                            failed = true;
+                            return 0_f;
+                        }
+                        return (*propU)[index];
+                    }
+                    return rng.Next();
+                },
+                [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+                {
+                    assert(numVertices > 1);
+                    subpathE.vertices.emplace_back(v);
+
+                    // Reject if the corresponding vertex in the current path is not S
+                    {
+                        const auto propVT = (v.primitive->Type() & SurfaceInteractionType::S) > 0;
+                        const auto currVT = (currP.vertices[n - numVertices].primitive->Type() & SurfaceInteractionType::S) > 0;
+                        if (propVT != currVT)
+                        {
+                            failed = true;
+                            return false;
+                        }
+                    }
+                                    
+                    // Continue to trace if intersected vertex is S
+                    if ((v.primitive->Type() & SurfaceInteractionType::S) > 0)
+                    {
+                        return true;
+                    }
+
+                    assert((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0);
+                    return false;
+                }
+            );
+            if (failed)
+            {
+                return boost::none;
+            }
+            {
+                // Sampling is failed if the last vertex is S or E or point at infinity
+                const auto& vE = subpathE.vertices.back();
+                if (vE.geom.infinite || (vE.primitive->Type() & SurfaceInteractionType::E) > 0 || (vE.primitive->Type() & SurfaceInteractionType::S) > 0)
+                {
+                    return boost::none;
+                }
+            }
+            return subpathE;
+        }();
+        if (!subpathE)
+        {
+            return boost::none;
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Connect light subapth
+        {
+            // Original light subpath
+            Subpath subpathL;
+            const int nE = (int)(subpathE->vertices.size());
+            const int nL = n - nE;
+            for (int s = 0; s < nL; s++)
+            {
+                subpathL.vertices.push_back(currP.vertices[s]);
+            }
+
+            // Manifold walk
+            
+
+            return subpathL;
+        }
+        #pragma endregion
+
+    }
+
 private:
 
     static auto Q_Bidir(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
@@ -609,6 +725,11 @@ private:
         }
 
         return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
+    }
+
+    static auto Q_ManifoldLens(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+    {
+        
     }
 
 private:

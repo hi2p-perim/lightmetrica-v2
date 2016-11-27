@@ -107,13 +107,35 @@ struct Path
 {
     std::vector<SubpathSampler::PathVertex> vertices;
 
+    auto PathType() const -> std::string
+    {
+        const auto PathVertexType = [](const SubpathSampler::PathVertex& v) -> char
+        {
+            switch (v.type)
+            {
+                case SurfaceInteractionType::D: return 'D';
+                case SurfaceInteractionType::G: return 'G';
+                case SurfaceInteractionType::S: return 'S';
+                case SurfaceInteractionType::L: return 'L';
+                case SurfaceInteractionType::E: return 'E';
+                default: return 'X';
+            }
+        };
+        std::string s;
+        for (const auto& v : vertices)
+        {
+            s += PathVertexType(v);
+        }
+        return s;
+    }
+
     auto IsPathType(const std::string& types) const -> bool
     {
         if (types.empty())
         {
             return true;
         }
-        const auto PathType = [](const SubpathSampler::PathVertex& v) -> char
+        const auto PathVertexType = [](const SubpathSampler::PathVertex& v) -> char
         {
             switch (v.type)
             {
@@ -131,7 +153,7 @@ struct Path
         }
         for (size_t i = 0; i < vertices.size(); i++)
         {
-            if (types[i] != PathType(vertices[i]))
+            if (types[i] != PathVertexType(vertices[i]))
             {
                 return false;
             }
