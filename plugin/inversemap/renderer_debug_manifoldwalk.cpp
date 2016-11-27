@@ -733,12 +733,12 @@ namespace
             }();
             if (update)
             {
-                beta *= 0.5_f;
+                beta *= -0.5_f;
                 //LM_LOG_INFO(boost::str(boost::format("- beta: %.15f") % beta));
             }
             else
             {
-                beta = Math::Min(MaxBeta, beta * 1.7_f);
+                beta = Math::Clamp(beta * 2_f, -MaxBeta, MaxBeta);
                 //LM_LOG_INFO(boost::str(boost::format("+ beta: %.15f") % beta));
                 currP = *nextP;
             }
