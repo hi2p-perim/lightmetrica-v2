@@ -34,14 +34,8 @@
 #define INVERSEMAP_MANIFOLDWALK_OUTPUT_FAILED_TRIAL_PATHS 0
 #define INVERSEMAP_MANIFOLDWALK_SINGLE_TARGET             1
 #define INVERSEMAP_MANIFOLDWALK_CONSTRAINT_CONSISTENCY    0
-#define INVERSEMAP_MANIFOLDWALK_USE_EIGEN_SOLVER          1
 
 LM_NAMESPACE_BEGIN
-
-namespace
-{
-    DebugIO io_;
-}
 
 class Renderer_Debug_ManifoldWalk final : public Renderer
 {
@@ -58,46 +52,9 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
-        io_.Run();
-
-        struct Test
-        {
-            int x, y, z;
-            template<class Archive>
-            void serialize(Archive & archive)
-            {
-                archive(x, y, z);
-            }
-        };
-
-        //while (io_.Wait())
-        //{
-        //    // Input and serialize
-        //    Test t;
-        //    {
-        //        std::stringstream ss(io_.Input());
-        //        cereal::JSONInputArchive ia(ss);
-        //        ia(t);
-        //        LM_LOG_DEBUG("In");
-        //        LM_LOG_DEBUG(ss.str());
-        //    }
-
-        //    t.x *= 2;
-        //    t.y *= 2;
-        //    t.z *= 2;
-
-        //    // Super long loop
-        //    std::this_thread::sleep_for(std::chrono::seconds(5));
-
-        //    std::stringstream ss;
-        //    {
-        //        cereal::JSONOutputArchive oa(ss);
-        //        oa(t);
-        //    }
-        //    LM_LOG_DEBUG("Out");
-        //    LM_LOG_DEBUG(ss.str());
-        //    io_.Output(ss.str());
-        //}
+        #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+        DebugIO::Run();
+        #endif
 
         // --------------------------------------------------------------------------------
 
@@ -133,7 +90,7 @@ public:
         #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
         LM_LOG_DEBUG("triangle_vertices");
         {
-            io_.Wait();
+            DebugIO::Wait();
 
             std::vector<double> vs;
             for (int i = 0; i < scene->NumPrimitives(); i++)
@@ -163,7 +120,7 @@ public:
                 oa(vs);
             }
 
-            io_.Output("triangle_vertices", ss.str());
+            DebugIO::Output("triangle_vertices", ss.str());
         }
         #endif
 
@@ -209,7 +166,7 @@ public:
 
                 Ray ray;
                 ray.o = pv.geom.p;
-                pv.primitive->SampleDirection(Vec2(), 0_f, pv.type, pv.geom, Math::Normalize(ppv.geom.p - pv.geom.p), ray.d);
+                pv.primitive->SampleDirection(Vec2(), 1_f, pv.type, pv.geom, Math::Normalize(ppv.geom.p - pv.geom.p), ray.d);
                 Intersection isect;
                 if (!scene->Intersect(ray, isect)) { LM_UNREACHABLE(); return; }
 
@@ -253,8 +210,8 @@ public:
         int I;
         LM_LOG_DEBUG("waiting_for_input");
         {
-            io_.Wait();
-            std::stringstream ss(io_.Input());
+            DebugIO::Wait();
+            std::stringstream ss(DebugIO::Input());
             {
                 cereal::JSONInputArchive ia(ss);
                 ia(cereal::make_nvp("selected_target_id", I));
@@ -298,14 +255,14 @@ public:
                 #endif
 
                 // Run ManifoldWalk for the new point p
-                const auto connPath    = WalkManifold(scene, subpathL, p);
+                const auto connPath = ManifoldUtils::WalkManifold(scene, subpathL, p);
                 if (!connPath)
                 {
                     dist[i*BinSize + j] = 0_f;
                     continue;
                 }
 
-                const auto connPathInv = WalkManifold(scene, *connPath, subpathL.vertices.back().geom.p);
+                const auto connPathInv = ManifoldUtils::WalkManifold(scene, *connPath, subpathL.vertices.back().geom.p);
                 if (!connPathInv)
                 {
                     dist[i*BinSize + j] = 0.5_f;
@@ -332,7 +289,9 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        io_.Stop();
+        #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+        DebugIO::Stop();
+        #endif
     };
 
 };

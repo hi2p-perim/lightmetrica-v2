@@ -26,7 +26,11 @@
 
 #include "inversemaputils.h"
 
-#define INVERSEMAP_MANIFOLDWALK_DEBUG_IO 1
+#if LM_DEBUG_MODE
+#define INVERSEMAP_MANIFOLDWALK_DEBUG_IO 0
+#else
+#define INVERSEMAP_MANIFOLDWALK_DEBUG_IO 0
+#endif
 
 LM_NAMESPACE_BEGIN
 
@@ -38,7 +42,8 @@ public:
 
 public:
 
-    auto WalkManifold(const Scene* scene, const Subpath& seedPath, const Vec3& target) -> boost::optional<Subpath>;
+    static auto WalkManifold(const Scene* scene, const Subpath& seedPath, const Vec3& target) -> boost::optional<Subpath>;
+    static auto ComputeConstraintJacobianDeterminant(const Subpath& subpath) -> Float;
 
 };
 

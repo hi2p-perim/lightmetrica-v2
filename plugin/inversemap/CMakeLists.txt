@@ -29,6 +29,7 @@ add_plugin(
 	SOURCE
 		"inversemaputils.h"
 		"mltutils.h"
+		"mltutils.cpp"
 		"multiplexeddensity.h"
 		"manifoldutils.h"
 		"manifoldutils.cpp"

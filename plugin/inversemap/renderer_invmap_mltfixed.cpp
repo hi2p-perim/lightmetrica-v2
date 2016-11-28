@@ -23,7 +23,11 @@
 */
 
 #include "mltutils.h"
+#include "inversemaputils.h"
+#include "debugio.h"
 #include <mutex>
+#include <cereal/archives/json.hpp>
+#include <cereal/types/vector.hpp>
 
 #define INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_TRIANGLES 0
 #define INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_SAMPLED_PATHS 0
@@ -45,7 +49,7 @@ public:
     long long numMutations_;
     long long numSeedSamples_;
     MLTMutationStrategy mut_;
-    std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f };
+    std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
     #if INVERSEMAP_OMIT_NORMALIZATION
     Float normalization_;
     #endif
@@ -67,11 +71,12 @@ public:
                 LM_LOG_ERROR("Missing 'mutation_strategy_weights'");
                 return false;
             }
-            strategyWeights_[(int)(MLTStrategy::Bidir)]      = child->ChildAs<Float>("bidir", 1_f);
-            strategyWeights_[(int)(MLTStrategy::Lens)]       = child->ChildAs<Float>("lens", 1_f);
-            strategyWeights_[(int)(MLTStrategy::Caustic)]    = child->ChildAs<Float>("caustic", 1_f);
-            strategyWeights_[(int)(MLTStrategy::Multichain)] = child->ChildAs<Float>("multichain", 1_f);
-            strategyWeights_[(int)(MLTStrategy::Identity)]   = child->ChildAs<Float>("identity", 0_f);
+            strategyWeights_[(int)(MLTStrategy::Bidir)]        = child->ChildAs<Float>("bidir", 1_f);
+            strategyWeights_[(int)(MLTStrategy::Lens)]         = child->ChildAs<Float>("lens", 1_f);
+            strategyWeights_[(int)(MLTStrategy::Caustic)]      = child->ChildAs<Float>("caustic", 1_f);
+            strategyWeights_[(int)(MLTStrategy::Multichain)]   = child->ChildAs<Float>("multichain", 1_f);
+            strategyWeights_[(int)(MLTStrategy::ManifoldLens)] = child->ChildAs<Float>("manifoldlens", 1_f);
+            strategyWeights_[(int)(MLTStrategy::Identity)]     = child->ChildAs<Float>("identity", 0_f);
         }
         #if INVERSEMAP_OMIT_NORMALIZATION
         normalization_ = prop->ChildAs<Float>("normalization", 1_f);
@@ -82,6 +87,12 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        #if INVERSEMAP_MLT_DEBUG_IO
+        DebugIO::Run();
+        #endif
+
+        // --------------------------------------------------------------------------------
+
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
 
         // --------------------------------------------------------------------------------
@@ -111,6 +122,46 @@ public:
                         << p1.x << " " << p1.y << " " << p1.z << std::endl;
                 }
             }
+        }
+        #endif
+
+        // --------------------------------------------------------------------------------
+
+        #if INVERSEMAP_MLT_DEBUG_IO
+        LM_LOG_DEBUG("triangle_vertices");
+        {
+            DebugIO::Wait();
+
+            std::vector<double> vs;
+            for (int i = 0; i < scene->NumPrimitives(); i++)
+            {
+                const auto* primitive = scene->PrimitiveAt(i);
+                const auto* mesh = primitive->mesh;
+                if (!mesh) { continue; }
+                const auto* ps = mesh->Positions();
+                const auto* faces = mesh->Faces();
+                for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
+                {
+                    unsigned int vi1 = faces[3 * fi];
+                    unsigned int vi2 = faces[3 * fi + 1];
+                    unsigned int vi3 = faces[3 * fi + 2];
+                    Vec3 p1(primitive->transform * Vec4(ps[3 * vi1], ps[3 * vi1 + 1], ps[3 * vi1 + 2], 1_f));
+                    Vec3 p2(primitive->transform * Vec4(ps[3 * vi2], ps[3 * vi2 + 1], ps[3 * vi2 + 2], 1_f));
+                    Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
+                    for (int j = 0; j < 3; j++) vs.push_back(p1[j]);
+                    for (int j = 0; j < 3; j++) vs.push_back(p2[j]);
+                    for (int j = 0; j < 3; j++) vs.push_back(p3[j]);
+                }
+            }
+            
+            std::stringstream ss;
+            {
+                cereal::JSONOutputArchive oa(ss);
+                oa(vs);
+            }
+
+            DebugIO::Output("triangle_vertices", ss.str());
+            DebugIO::Wait();
         }
         #endif
 
@@ -442,6 +493,12 @@ public:
             film->Save(outputPath);
         }
         #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #if INVERSEMAP_MLT_DEBUG_IO
+        DebugIO::Stop();
+        #endif
     };
 
 };

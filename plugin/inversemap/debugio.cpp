@@ -157,6 +157,18 @@ class DebugIOImpl
 {
 private:
 
+    static std::unique_ptr<DebugIOImpl> instance_;
+
+public:
+
+    static DebugIOImpl* Instance()
+    {
+        if (!instance_) instance_.reset(new DebugIOImpl);
+        return instance_.get();
+    }
+
+private:
+
     int port_;
     boost::asio::io_service io_;
     std::unique_ptr<boost::asio::io_service::work> work_{ new boost::asio::io_service::work(io_) };
@@ -284,13 +296,13 @@ public:
 
 };
 
-DebugIO::DebugIO() : p_(new DebugIOImpl) {}
-DebugIO::~DebugIO() {}
-auto DebugIO::Run() -> void { p_->Run(); }
-auto DebugIO::Stop() -> void { p_->Stop(); }
-auto DebugIO::Input() -> std::string { return p_->Input(); }
-auto DebugIO::Output(const std::string& tag, const std::string& out) -> void { p_->Output(tag, out); }
-auto DebugIO::Connected() -> bool { return p_->Connected(); }
-auto DebugIO::Wait() -> bool { return p_->Wait(); }
+std::unique_ptr<DebugIOImpl> DebugIOImpl::instance_;
+
+auto DebugIO::Run() -> void { DebugIOImpl::Instance()->Run(); }
+auto DebugIO::Stop() -> void { DebugIOImpl::Instance()->Stop(); }
+auto DebugIO::Input() -> std::string { return DebugIOImpl::Instance()->Input(); }
+auto DebugIO::Output(const std::string& tag, const std::string& out) -> void { DebugIOImpl::Instance()->Output(tag, out); }
+auto DebugIO::Connected() -> bool { return DebugIOImpl::Instance()->Connected(); }
+auto DebugIO::Wait() -> bool { return DebugIOImpl::Instance()->Wait(); }
 
 LM_NAMESPACE_END

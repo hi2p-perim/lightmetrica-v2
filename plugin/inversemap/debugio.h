@@ -26,31 +26,23 @@
 
 #include <lightmetrica/macros.h>
 #include <string>
-#include <memory>
 
 LM_NAMESPACE_BEGIN
 
-class DebugIOImpl;
-
 class DebugIO
 {
-private:
+public:
 
-    std::unique_ptr<DebugIOImpl> p_;
+    LM_DISABLE_CONSTRUCT(DebugIO);
 
 public:
 
-    DebugIO();
-    ~DebugIO();
-
-public:
-
-    auto Run() -> void;
-    auto Stop() -> void;
-    auto Input() ->std::string;
-    auto Output(const std::string& tag, const std::string& out) -> void;
-    auto Connected() -> bool;
-    auto Wait() -> bool;
+    static auto Run() -> void;
+    static auto Stop() -> void;
+    static auto Input() ->std::string;
+    static auto Output(const std::string& tag, const std::string& out) -> void;
+    static auto Connected() -> bool;
+    static auto Wait() -> bool;
 
 };
 

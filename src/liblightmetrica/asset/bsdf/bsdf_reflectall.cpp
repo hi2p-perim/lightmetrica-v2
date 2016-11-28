@@ -109,6 +109,11 @@ public:
         return false;
     };
 
+    LM_IMPL_F(Eta) = [this](const SurfaceGeometry& geom, const Vec3& wi) -> Float
+    {
+        return 1_f;
+    };
+
 public:
 
     SPD R_;

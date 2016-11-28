@@ -23,6 +23,9 @@
 */
 
 #include "manifoldutils.h"
+#include "debugio.h"
+#include <cereal/archives/json.hpp>
+#include <cereal/types/vector.hpp>
 
 #pragma warning(push)
 #pragma warning(disable:4714)
@@ -31,7 +34,13 @@
 #include <Eigen/Dense>
 #pragma warning(pop)
 
+#define INVERSEMAP_MANIFOLDWALK_USE_EIGEN_SOLVER 1
+#define INVERSEMAP_MANIFOLDWALK_BETA_EXT 0
+
 LM_NAMESPACE_BEGIN
+
+using Matrix = Eigen::Matrix<Float, Eigen::Dynamic, Eigen::Dynamic>;
+using Vector = Eigen::Matrix<Float, Eigen::Dynamic, 1>;
 
 template <class Archive>
 auto serialize(Archive& archive, Vec3& v) -> void
@@ -202,6 +211,61 @@ auto SolveBlockLinearEq(const ConstraintJacobian& nablaC, const std::vector<Vec2
 
 }
 
+// --------------------------------------------------------------------------------
+
+auto ManifoldUtils::ComputeConstraintJacobianDeterminant(const Subpath& subpath) -> Float
+{
+    const int n = (int)(subpath.vertices.size());
+
+    // --------------------------------------------------------------------------------
+
+    ConstraintJacobian nablaC(n - 2);
+    ComputeConstraintJacobian(subpath, nablaC);
+
+    // --------------------------------------------------------------------------------
+
+    // A
+    Matrix A = Matrix::Zero(2 * (n - 2), 2 * (n - 2));
+    for (int i = 0; i < n - 2; i++)
+    {
+        if (i > 0)
+        {
+            const auto& A_ = nablaC[i].A;
+            Eigen::Array22d m;
+            m << A_[0][0], A_[1][0],
+                 A_[0][1], A_[1][1];
+            A.block<2, 2>(i * 2, (i - 1) * 2) = m;
+        }
+        {
+            const auto& B_ = nablaC[i].B;
+            Eigen::Array22d m;
+            m << B_[0][0], B_[1][0],
+                 B_[0][1], B_[1][1];
+            A.block<2, 2>(i * 2, i * 2) = m;
+        }
+        if (i < n - 2 - 1)
+        {
+            const auto& C_ = nablaC[i].C;
+            Eigen::Array22d m;
+            m << C_[0][0], C_[1][0],
+                 C_[0][1], C_[1][1];
+            A.block<2, 2>(i * 2, (i + 1) * 2) = m;
+        }
+    }
+
+    // A^-1
+    const decltype(A) invA = A.inverse();
+
+    // P_2 A^-1 B_n
+    const auto Bn_np   = nablaC[n - 3].C;
+    const auto invA_0n = Mat2(invA(0, 2*(n-3)), invA(1, 2*(n-3)), invA(0, 2*(n-3)+1), invA(1, 2*(n-3)+1));
+    const auto invA_Bn = invA_0n * Bn_np;
+    const auto det     = invA_Bn[0][0] * invA_Bn[1][1] - invA_Bn[1][0] * invA_Bn[0][1];
+
+    // --------------------------------------------------------------------------------
+    return Math::Abs(det);
+}
+
 // Returns the converged path. Returns none if not converged.
 auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, const Vec3& target) -> boost::optional<Subpath>
 {
@@ -213,14 +277,6 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
 	// Initial path
     Subpath currP = seedPath;
 
-	//// Compute \nabla C
-	//ConstraintJacobian nablaC(n - 2);
-	//ComputeConstraintJacobian(currP, nablaC);
-
-	//// Compute L
-	//Float L = 0;
-	//for (const auto& x : currP.vertices) { L = Math::Max(L, Math::Length(x.geom.p)); }
-
 	#pragma endregion
 
     // --------------------------------------------------------------------------------
@@ -228,7 +284,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
     #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
     LM_LOG_DEBUG("seed_path");
     {
-        io_.Wait();
+        DebugIO::Wait();
         std::vector<double> vs;
         for (const auto& v : currP.vertices)
         {
@@ -239,7 +295,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
             cereal::JSONOutputArchive oa(ss);
             oa(vs);
         }
-        io_.Output("seed_path", ss.str());
+        DebugIO::Output("seed_path", ss.str());
     }       
     #endif
 
@@ -248,7 +304,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
     #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
     LM_LOG_DEBUG("target");
     {
-        io_.Wait();
+        DebugIO::Wait();
         std::vector<double> vs;
         for (int i = 0; i < 3; i++) vs.push_back(target[i]);
         std::stringstream ss;
@@ -256,7 +312,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
             cereal::JSONOutputArchive oa(ss);
             oa(vs);
         }
-        io_.Output("target", ss.str());
+        DebugIO::Output("target", ss.str());
     }
     #endif
 
@@ -265,14 +321,14 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
     //#if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
     //LM_LOG_DEBUG("tanget_frame_v1");
     //{
-    //    io_.Wait();
+    //    DebugIO::Wait();
     //    std::stringstream ss;
     //    {
     //        cereal::JSONOutputArchive oa(ss);
     //        const auto& v = currP.vertices[1];
     //        oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
     //    }
-    //    io_.Output("tanget_frame_v1", ss.str());
+    //    DebugIO::Output("tanget_frame_v1", ss.str());
     //}
     //#endif
 
@@ -281,9 +337,13 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
 	#pragma region Optimization loop
 
 	const Float MaxBeta = 100.0;
+    #if INVERSEMAP_MANIFOLDWALK_BETA_EXT
+    Vec2 beta(MaxBeta, MaxBeta);
+    #else
 	Float beta = MaxBeta;
-	const Float Eps = 1e-5;
-	const int MaxIter = 100;
+    #endif
+	const Float Eps = 1e-4;
+	const int MaxIter = 50;
 
 	for (int iteration = 0; iteration < MaxIter; iteration++)
 	{
@@ -311,7 +371,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
         #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
         LM_LOG_DEBUG("current_path");
         {
-            io_.Wait();
+            DebugIO::Wait();
             std::vector<double> vs;
             for (const auto& v : currP.vertices)
             {
@@ -322,7 +382,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
                 cereal::JSONOutputArchive oa(ss);
                 oa(vs);
             }
-            io_.Output("current_path", ss.str());
+            DebugIO::Output("current_path", ss.str());
         }       
         #endif
 
@@ -331,14 +391,14 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
         //#if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
         //LM_LOG_DEBUG("current_tanget_frame_v1");
         //{
-        //    io_.Wait();
+        //    DebugIO::Wait();
         //    std::stringstream ss;
         //    {
         //        cereal::JSONOutputArchive oa(ss);
         //        const auto& v = currP.vertices[1];
         //        oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
         //    }
-        //    io_.Output("current_tanget_frame_v1", ss.str());
+        //    DebugIO::Output("current_tanget_frame_v1", ss.str());
         //}
         //#endif
 
@@ -394,8 +454,6 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
             #if !INVERSEMAP_MANIFOLDWALK_USE_EIGEN_SOLVER
 			SolveBlockLinearEq(nablaC, V, W);
             #else
-            using Matrix = Eigen::Matrix<Float, Eigen::Dynamic, Eigen::Dynamic>;
-            using Vector = Eigen::Matrix<Float, Eigen::Dynamic, 1>;
             Matrix nablaC_ = Matrix::Zero(2*(n-2),2*(n-2));
             for (int i = 0; i < n - 2; i++)
             {
@@ -404,14 +462,14 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
                     const auto& A = nablaC[i].A;
                     Eigen::Array22d m;
                     m << A[0][0], A[1][0],
-                            A[0][1], A[1][1];
+                         A[0][1], A[1][1];
                     nablaC_.block<2, 2>(i * 2, (i - 1) * 2) = m;
                 }
                 {
                     const auto& B = nablaC[i].B;
                     Eigen::Array22d m;
                     m << B[0][0], B[1][0],
-                            B[0][1], B[1][1];
+                         B[0][1], B[1][1];
                     nablaC_.block<2, 2>(i * 2, i * 2) = m;
                 }
                 if (i < n - 2 - 1)
@@ -419,7 +477,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
                     const auto& C = nablaC[i].C;
                     Eigen::Array22d m;
                     m << C[0][0], C[1][0],
-                            C[0][1], C[1][1];
+                         C[0][1], C[1][1];
                     nablaC_.block<2, 2>(i * 2, (i + 1) * 2) = m;
 
                 }
@@ -430,35 +488,6 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
             for (int i = 0; i < n - 2; i++) { W[i].x = W_(2 * i); W[i].y = W_(2 * i + 1); }
             #endif
 
-            //#if INVERSEMAP_MANIFOLDWALK_CONSTRAINT_CONSISTENCY
-            //{
-            //    const auto PointOnTangentPlane = [&](int i) -> Vec3
-            //    {
-            //        const Mat3x2 Tx(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
-            //        return currP.vertices[i + 1].geom.p + Tx * W[i];
-            //    };
-            //    for (int i = 0; i < n - 2; i++)
-            //    {
-            //        const auto p  = PointOnTangentPlane(i);
-            //        const auto pp = i == 0 ? currP.vertices[0].geom.p : PointOnTangentPlane(i-1);
-            //        const auto pn = i == n - 3 ? target : PointOnTangentPlane(i+1);
-            //        const auto wi = Math::Normalize(pp - p);
-            //        const auto wo = Math::Normalize(pn - p);
-            //        const auto eta = currP.vertices[i + 1].primitive->bsdf->Eta(currP.vertices[i + 1].geom, wi);
-            //        const auto H  = Math::Normalize(wi + eta * wo);
-
-            //        const auto Tx    = Mat3x2(currP.vertices[i + 1].geom.dpdu, currP.vertices[i + 1].geom.dpdv);
-            //        const auto TxT   = Math::Transpose(Tx);
-            //        const auto projH = TxT * H;
-            //        const auto projH_L = projH.x * projH.x + projH.y * projH.y;
-            //        if (projH_L > 1e-3_f)
-            //        {
-            //            __debugbreak();
-            //        }
-            //    }
-            //}
-            //#endif
-
 			// x_2, T(x_2)
 			const auto& x2 = currP.vertices[1].geom.p;
 			const Mat3x2 Tx2(currP.vertices[1].geom.dpdu, currP.vertices[1].geom.dpdv);
@@ -466,7 +495,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
             #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
             LM_LOG_DEBUG("points_on_tangent_s");
             {
-                io_.Wait();
+                DebugIO::Wait();
                 std::vector<Vec3> vs;
                 for (int i = 0; i < n - 2; i++)
                 {
@@ -478,7 +507,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
                     cereal::JSONOutputArchive oa(ss);
                     oa(vs);
                 }
-                io_.Output("points_on_tangent_s", ss.str());
+                DebugIO::Output("points_on_tangent_s", ss.str());
             }
             #endif
 
@@ -487,10 +516,14 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
             const auto Wn2p = W[0];
 
 			// p = x_2 - \beta T(x_2) P_2 W_{n-2}
+            #if INVERSEMAP_MANIFOLDWALK_BETA_EXT
+            const auto t1 = Vec2(Wn2p.x * beta.x, Wn2p.y * beta.y);
+            const auto t2 = Tx2 * t1;
+            #else
             const auto t1 = Tx2 * Wn2p;
             const auto t2 = t1 * beta;
-			//return x2 - t2;
-            return x2 + t2;
+            #endif
+			return x2 - t2;
         }();
 		#pragma endregion
 
@@ -499,7 +532,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
         #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
         LM_LOG_DEBUG("point_on_tangent");
         {
-            io_.Wait();
+            DebugIO::Wait();
             std::vector<double> vs;
             for (int i = 0; i < 3; i++) vs.push_back(p[i]);
             std::stringstream ss;
@@ -507,7 +540,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
                 cereal::JSONOutputArchive oa(ss);
                 oa(vs);
             }
-            io_.Output("point_on_tangent", ss.str());
+            DebugIO::Output("point_on_tangent", ss.str());
         }
         #endif
 
@@ -531,8 +564,21 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
                     else
                     {
                         assert(vp->type == SurfaceInteractionType::S);
+                        const auto uC = [&]() -> Float
+                        {
+                            // Fix sampled component for Flesnel material (TODO. refactor it)
+                            // Vertices in current path
+                            const auto& curr_v  = currP.vertices[i - 1];
+                            const auto& curr_vp = currP.vertices[i - 2];
+                            const auto& curr_vn = currP.vertices[i];
+                            const auto wo = Math::Normalize(curr_vn.geom.p - curr_v.geom.p);
+                            const auto wi = Math::Normalize(curr_vp.geom.p - curr_v.geom.p);
+                            const auto localWo = curr_v.geom.ToLocal * wo;
+                            const auto localWi = curr_v.geom.ToLocal * wi;
+                            return Math::LocalCos(localWi) * Math::LocalCos(localWo) >= 0_f ? 0_f : 1_f;
+                        }();
                         Vec3 wo;
-                        vp->primitive->SampleDirection(Vec2(), 0_f, vp->type, vp->geom, Math::Normalize(vpp->geom.p - vp->geom.p), wo);
+                        vp->primitive->SampleDirection(Vec2(), uC, vp->type, vp->geom, Math::Normalize(vpp->geom.p - vp->geom.p), wo);
                         return wo;
                     }
                 }();
@@ -574,7 +620,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
         if (nextP)
         {
             LM_LOG_DEBUG("next_path");
-            io_.Wait();
+            DebugIO::Wait();
             std::vector<double> vs;
             for (const auto& v : nextP->vertices)
             {
@@ -585,7 +631,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
                 cereal::JSONOutputArchive oa(ss);
                 oa(vs);
             }
-            io_.Output("next_path", ss.str());
+            DebugIO::Output("next_path", ss.str());
         }
         #endif
 
@@ -632,12 +678,24 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
         }();
         if (update)
         {
+            #if INVERSEMAP_MANIFOLDWALK_BETA_EXT
+            if (Math::Abs(beta.x) > Math::Abs(beta.y)) { beta.x *= -0.5_f; }
+            else { beta.y *= -0.5_f; }
+            #else
             beta *= -0.5_f;
+            #endif
             //LM_LOG_INFO(boost::str(boost::format("- beta: %.15f") % beta));
         }
         else
         {
+            #if INVERSEMAP_MANIFOLDWALK_BETA_EXT
+            beta.x = Math::Clamp(beta.x * 2_f, -MaxBeta, MaxBeta);
+            beta.y = Math::Clamp(beta.y * 2_f, -MaxBeta, MaxBeta);
+            //if (Math::Abs(beta.x) > Math::Abs(beta.y)) { beta.y = Math::Clamp(beta.y * 2_f, -MaxBeta, MaxBeta); }
+            //else { beta.x = Math::Clamp(beta.x * 2_f, -MaxBeta, MaxBeta); }
+            #else
             beta = Math::Clamp(beta * 2_f, -MaxBeta, MaxBeta);
+            #endif
             //LM_LOG_INFO(boost::str(boost::format("+ beta: %.15f") % beta));
             currP = *nextP;
         }
