@@ -600,20 +600,20 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
 
     // --------------------------------------------------------------------------------
     
-    //#if INVERSEMAP_MLT_DEBUG_IO
-    //{
-    //    LM_LOG_DEBUG("manifoldlens_current_path");
-    //    DebugIO::Wait();
-    //    std::vector<double> vs;
-    //    for (const auto& v : currP.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
-    //    std::stringstream ss;
-    //    {
-    //        cereal::JSONOutputArchive oa(ss);
-    //        oa(vs);
-    //    }
-    //    DebugIO::Output("manifoldlens_current_path", ss.str());
-    //}
-    //#endif
+    #if INVERSEMAP_MLT_DEBUG_IO
+    {
+        LM_LOG_DEBUG("manifoldlens_current_path");
+        DebugIO::Wait();
+        std::vector<double> vs;
+        for (const auto& v : currP.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+        std::stringstream ss;
+        {
+            cereal::JSONOutputArchive oa(ss);
+            oa(vs);
+        }
+        DebugIO::Output("manifoldlens_current_path", ss.str());
+    }
+    #endif
 
     // --------------------------------------------------------------------------------
 
@@ -688,20 +688,20 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
 
     // --------------------------------------------------------------------------------
 
-    //#if INVERSEMAP_MLT_DEBUG_IO
-    //{
-    //    LM_LOG_DEBUG("manifoldlens_perturbed_eye_subpath");
-    //    DebugIO::Wait();
-    //    std::vector<double> vs;
-    //    for (const auto& v : subpathE->vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
-    //    std::stringstream ss;
-    //    {
-    //        cereal::JSONOutputArchive oa(ss);
-    //        oa(vs);
-    //    }
-    //    DebugIO::Output("manifoldlens_perturbed_eye_subpath", ss.str());
-    //}
-    //#endif
+    #if INVERSEMAP_MLT_DEBUG_IO
+    {
+        LM_LOG_DEBUG("manifoldlens_perturbed_eye_subpath");
+        DebugIO::Wait();
+        std::vector<double> vs;
+        for (const auto& v : subpathE->vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+        std::stringstream ss;
+        {
+            cereal::JSONOutputArchive oa(ss);
+            oa(vs);
+        }
+        DebugIO::Output("manifoldlens_perturbed_eye_subpath", ss.str());
+    }
+    #endif
 
     // --------------------------------------------------------------------------------
 
@@ -749,20 +749,20 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
 
     // --------------------------------------------------------------------------------
     
-    //#if INVERSEMAP_MLT_DEBUG_IO
-    //{
-    //    LM_LOG_DEBUG("manifoldlens_proposed_path");
-    //    DebugIO::Wait();
-    //    std::vector<double> vs;
-    //    for (const auto& v : prop.p.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
-    //    std::stringstream ss;
-    //    {
-    //        cereal::JSONOutputArchive oa(ss);
-    //        oa(vs);
-    //    }
-    //    DebugIO::Output("manifoldlens_proposed_path", ss.str());
-    //}
-    //#endif
+    #if INVERSEMAP_MLT_DEBUG_IO
+    {
+        LM_LOG_DEBUG("manifoldlens_proposed_path");
+        DebugIO::Wait();
+        std::vector<double> vs;
+        for (const auto& v : prop.p.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+        std::stringstream ss;
+        {
+            cereal::JSONOutputArchive oa(ss);
+            oa(vs);
+        }
+        DebugIO::Output("manifoldlens_proposed_path", ss.str());
+    }
+    #endif
 
     // --------------------------------------------------------------------------------
     return prop;

@@ -213,6 +213,30 @@ auto SolveBlockLinearEq(const ConstraintJacobian& nablaC, const std::vector<Vec2
 
 // --------------------------------------------------------------------------------
 
+namespace
+{
+    template <typename t_matrix>
+    t_matrix PseudoInverse(const t_matrix& m, const double &tolerance = 1.e-6)
+    {
+        using namespace Eigen;
+        typedef JacobiSVD<t_matrix> TSVD;
+        unsigned int svd_opt(ComputeThinU | ComputeThinV);
+        if (m.RowsAtCompileTime != Dynamic || m.ColsAtCompileTime != Dynamic)
+            svd_opt = ComputeFullU | ComputeFullV;
+        TSVD svd(m, svd_opt);
+        const typename TSVD::SingularValuesType &sigma(svd.singularValues());
+        typename TSVD::SingularValuesType sigma_inv(sigma.size());
+        for (long i = 0; i<sigma.size(); ++i)
+        {
+            if (sigma(i) > tolerance)
+                sigma_inv(i) = 1.0 / sigma(i);
+            else
+                sigma_inv(i) = 0.0;
+        }
+        return svd.matrixV()*sigma_inv.asDiagonal()*svd.matrixU().transpose();
+    }
+}
+
 auto ManifoldUtils::ComputeConstraintJacobianDeterminant(const Subpath& subpath) -> Float
 {
     const int n = (int)(subpath.vertices.size());
@@ -255,6 +279,7 @@ auto ManifoldUtils::ComputeConstraintJacobianDeterminant(const Subpath& subpath)
 
     // A^-1
     const decltype(A) invA = A.inverse();
+    //const decltype(A) invA = PseudoInverse(A);
 
     // P_2 A^-1 B_n
     const auto Bn_np   = nablaC[n - 3].C;
