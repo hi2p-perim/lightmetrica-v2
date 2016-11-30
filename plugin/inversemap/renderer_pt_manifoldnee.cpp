@@ -25,9 +25,11 @@
 #include "inversemaputils.h"
 #include "manifoldutils.h"
 #include "debugio.h"
+#include <atomic>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/vector.hpp>
 
+#define LM_PT_MANIFOLDNEE_MANIFOLDWALK_STAT 1
 #if LM_DEBUG_MODE
 #define LM_PT_MANIFOLDNEE_DEBUG_IO 0
 #else
@@ -41,6 +43,11 @@ class Renderer_PT_ManifoldNEE final : public Renderer
 public:
 
     LM_IMPL_CLASS(Renderer_PT_ManifoldNEE, Renderer);
+
+public:
+
+    int maxNumVertices_;
+    Scheduler::UniquePtr sched_;
 
 public:
 
@@ -104,6 +111,11 @@ public:
         #endif
 
         // --------------------------------------------------------------------------------
+
+        #if LM_PT_MANIFOLDNEE_MANIFOLDWALK_STAT
+        std::atomic<long long> manifoldWalkCount = 0;
+        std::atomic<long long> manifoldWalkSuccessCount = 0;
+        #endif
 
         auto* film_ = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
@@ -297,10 +309,16 @@ public:
                         else
                         {
                             // Manifold NEE
+                            #if LM_PT_MANIFOLDNEE_MANIFOLDWALK_STAT
+                            manifoldWalkCount++;
+                            #endif
                             const auto connPath = ManifoldUtils::WalkManifold(scene, *subpathL, geom.p);
                             if (!connPath) { return boost::none; }
                             const auto connPathInv = ManifoldUtils::WalkManifold(scene, *connPath, subpathL->vertices.back().geom.p);
                             if (!connPathInv) { return boost::none; }
+                            #if LM_PT_MANIFOLDNEE_MANIFOLDWALK_STAT
+                            manifoldWalkSuccessCount++;
+                            #endif
 
                             // Contribution
                             const auto& vL  = connPath->vertices[0];
@@ -313,15 +331,16 @@ public:
                             {
                                 SPD prodFs(1_f);
                                 const int n = (int)(connPath->vertices.size());
+                                const auto index = [&](int i) { return n - 1 - i; };
                                 for (int i = 1; i < n - 1; i++)
                                 {
-                                    const auto& vi  = connPath->vertices[i];
-                                    const auto& vip = connPath->vertices[i - 1];
-                                    const auto& vin = connPath->vertices[i + 1];
+                                    const auto& vi  = connPath->vertices[index(i)];
+                                    const auto& vip = connPath->vertices[index(i - 1)];
+                                    const auto& vin = connPath->vertices[index(i + 1)];
                                     assert(vi.type == SurfaceInteractionType::S);
                                     const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
                                     const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
-                                    const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, TransportDirection::LE, false);
+                                    const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, TransportDirection::EL, false);
                                     prodFs *= fs;
                                 }
                                 return prodFs;
@@ -456,6 +475,15 @@ public:
 
         // --------------------------------------------------------------------------------
 
+        #if LM_PT_MANIFOLDNEE_MANIFOLDWALK_STAT
+        {
+            const double rate = (double)manifoldWalkSuccessCount / manifoldWalkCount;
+            LM_LOG_INFO(boost::str(boost::format("Manifold walk success rate: %.5f (%d / %d)") % rate % (long long)manifoldWalkSuccessCount % (long long)manifoldWalkCount));
+        }
+        #endif
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Save image
         {
             LM_LOG_INFO("Saving image");
@@ -470,11 +498,6 @@ public:
         DebugIO::Stop();
         #endif
     };
-
-private:
-
-    int maxNumVertices_;
-    Scheduler::UniquePtr sched_;
 
 };
 

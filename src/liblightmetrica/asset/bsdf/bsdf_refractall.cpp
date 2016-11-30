@@ -126,7 +126,8 @@ public:
             // Refraction
             const Float eta = etaI / etaT;
             const auto refrCorrection = transDir == TransportDirection::EL ? eta : 1_f;
-            return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir) * refrCorrection * refrCorrection;
+            const auto normalCorrection = BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
+            return R_ * normalCorrection * refrCorrection * refrCorrection;
         }
 
         LM_UNREACHABLE();
