@@ -353,6 +353,15 @@ public:
 
                     #pragma region Mutate the current path
 
+                    //if (index == 727)
+                    //{
+                    //    __debugbreak();
+                    //}
+                    //if (index == 732)
+                    //{
+                    //    __debugbreak();
+                    //}
+
                     const auto prop = MLTMutationStrategy::Mutate(strategy, scene, ctx.rng, ctx.currP);
                     if (!prop)
                     {
@@ -391,6 +400,12 @@ public:
 
                     return true;
                 }();
+
+                static long long lastAcceptIndex = 0;
+                if (accept)
+                {
+                    lastAcceptIndex = index;
+                }
 
                 // --------------------------------------------------------------------------------
 

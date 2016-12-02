@@ -899,6 +899,10 @@ auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, cons
             const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
             const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
             const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, transDir, false);
+            const auto fsInv = vi.primitive->EvaluateDirection(vi.geom, vi.type, wo, wi, (TransportDirection)(1 - (int)transDir), false);
+            // Sometimes evaluation in the swapped directions wrongly evaluates as total internal reflection.
+            // Reject such a case here.
+            if (fsInv.Black()) { return SPD(); }
             prodFs *= fs;
         }
         return prodFs;
@@ -906,6 +910,10 @@ auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, cons
     const auto prodFs_L = EvaluateSpecularReflectances(s, TransportDirection::LE);
     const auto prodFs_E = EvaluateSpecularReflectances(t, TransportDirection::EL);
     const auto prodFs   = prodFs_L * prodFs_E;
+    if (prodFs.Black())
+    {
+        return 0_f;
+    }
 
     // --------------------------------------------------------------------------------
 

@@ -429,7 +429,7 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region Handle hit with light source for LS*D paths
-                if ((isect.primitive->Type() & SurfaceInteractionType::L) > 0 && lastNonSIndex == 0)
+                if ((isect.primitive->Type() & SurfaceInteractionType::L) > 0 && lastNonSIndex == 0 && numVertices != 1)
                 {
                     const auto C =
                         throughput
@@ -476,6 +476,7 @@ public:
         // --------------------------------------------------------------------------------
 
         #if LM_PT_MANIFOLDNEE_MANIFOLDWALK_STAT
+        if (manifoldWalkCount > 0)
         {
             const double rate = (double)manifoldWalkSuccessCount / manifoldWalkCount;
             LM_LOG_INFO(boost::str(boost::format("Manifold walk success rate: %.5f (%d / %d)") % rate % (long long)manifoldWalkSuccessCount % (long long)manifoldWalkCount));
