@@ -49,7 +49,7 @@ public:
     long long numMutations_;
     long long numSeedSamples_;
     MLTMutationStrategy mut_;
-    std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
+    std::vector<Float> initStrategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
     #if INVERSEMAP_OMIT_NORMALIZATION
     Float normalization_;
     #endif
@@ -71,12 +71,13 @@ public:
                 LM_LOG_ERROR("Missing 'mutation_strategy_weights'");
                 return false;
             }
-            strategyWeights_[(int)(MLTStrategy::Bidir)]        = child->ChildAs<Float>("bidir", 1_f);
-            strategyWeights_[(int)(MLTStrategy::Lens)]         = child->ChildAs<Float>("lens", 1_f);
-            strategyWeights_[(int)(MLTStrategy::Caustic)]      = child->ChildAs<Float>("caustic", 1_f);
-            strategyWeights_[(int)(MLTStrategy::Multichain)]   = child->ChildAs<Float>("multichain", 1_f);
-            strategyWeights_[(int)(MLTStrategy::ManifoldLens)] = child->ChildAs<Float>("manifoldlens", 1_f);
-            strategyWeights_[(int)(MLTStrategy::Identity)]     = child->ChildAs<Float>("identity", 0_f);
+            initStrategyWeights_[(int)(MLTStrategy::Bidir)]           = child->ChildAs<Float>("bidir", 1_f);
+            initStrategyWeights_[(int)(MLTStrategy::Lens)]            = child->ChildAs<Float>("lens", 1_f);
+            initStrategyWeights_[(int)(MLTStrategy::Caustic)]         = child->ChildAs<Float>("caustic", 1_f);
+            initStrategyWeights_[(int)(MLTStrategy::Multichain)]      = child->ChildAs<Float>("multichain", 1_f);
+            initStrategyWeights_[(int)(MLTStrategy::ManifoldLens)]    = child->ChildAs<Float>("manifoldlens", 1_f);
+            initStrategyWeights_[(int)(MLTStrategy::ManifoldCaustic)] = child->ChildAs<Float>("manifoldcaustic", 1_f);
+            initStrategyWeights_[(int)(MLTStrategy::Identity)]        = child->ChildAs<Float>("identity", 0_f);
         }
         #if INVERSEMAP_OMIT_NORMALIZATION
         normalization_ = prop->ChildAs<Float>("normalization", 1_f);
@@ -334,40 +335,38 @@ public:
                 const auto accept = [&]() -> bool
                 {
                     #pragma region Select mutation strategy
-
                     const auto strategy = [&]() -> MLTStrategy
                     {
-                        static thread_local const auto StrategyDist = [&]() -> Distribution1D
+                        const auto StrategyDist = [&]() -> Distribution1D
                         {
                             Distribution1D dist;
-                            for (Float w : strategyWeights_) dist.Add(w);
+                            for (size_t i = 0; i < initStrategyWeights_.size(); i++)
+                            {
+                                const auto w = initStrategyWeights_[i];
+                                if (MLTMutationStrategy::CheckMutatable((MLTStrategy)(i), ctx.currP))
+                                {
+                                    dist.Add(w);
+                                }
+                                else
+                                {
+                                    dist.Add(0_f);
+                                }
+                            }
                             dist.Normalize();
                             return dist;
                         }();
                         return (MLTStrategy)(StrategyDist.Sample(ctx.rng.Next()));
                     }();
-
                     #pragma endregion
 
                     // --------------------------------------------------------------------------------
 
                     #pragma region Mutate the current path
-
-                    //if (index == 727)
-                    //{
-                    //    __debugbreak();
-                    //}
-                    //if (index == 732)
-                    //{
-                    //    __debugbreak();
-                    //}
-
                     const auto prop = MLTMutationStrategy::Mutate(strategy, scene, ctx.rng, ctx.currP);
                     if (!prop)
                     {
                         return false;
                     }
-
                     #pragma endregion
 
                     // --------------------------------------------------------------------------------
@@ -498,6 +497,12 @@ public:
             #pragma endregion
         }
         #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+        MLTMutationStrategy::PrintStat();
+        #endif
 
         // --------------------------------------------------------------------------------
 

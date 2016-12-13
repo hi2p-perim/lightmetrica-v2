@@ -27,6 +27,7 @@
 #include "manifoldutils.h"
 #include "debugio.h"
 #include <regex>
+#include <atomic>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/vector.hpp>
 
@@ -146,6 +147,66 @@ namespace
         #endif
     }
 
+}
+
+#if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+namespace
+{
+    std::atomic<long long> manifoldWalkCount{0};
+    std::atomic<long long> manifoldWalkSuccessCount{0};
+}
+#endif
+
+// --------------------------------------------------------------------------------
+
+auto MLTMutationStrategy::CheckMutatable_Bidir(const Path& currP) -> bool
+{
+    return true;
+}
+
+auto MLTMutationStrategy::CheckMutatable_Lens(const Path& currP) -> bool
+{
+    const int n = (int)(currP.vertices.size());
+    int iE = n - 1;
+    int iL = iE - 1;
+    while (iL >= 0 && currP.vertices[iL].type == SurfaceInteractionType::S) { iL--; }
+    if (iL > 0 && currP.vertices[iL - 1].type == SurfaceInteractionType::S) { return false; }
+    return true;
+}
+
+auto MLTMutationStrategy::CheckMutatable_Caustic(const Path& currP) -> bool
+{
+    const int n = (int)(currP.vertices.size());
+    int iE = n - 1;
+    int iL = iE - 1;
+    if (n <= 2) { return false; }
+    if (currP.vertices[iL].type == SurfaceInteractionType::S) { return false; }
+    iL--;
+    while (iL >= 0 && currP.vertices[iL].type == SurfaceInteractionType::S) { iL--; }
+    return true;
+}
+
+auto MLTMutationStrategy::CheckMutatable_Multichain(const Path& currP) -> bool
+{
+    return true;
+}
+
+auto MLTMutationStrategy::CheckMutatable_ManifoldLens(const Path& currP) -> bool
+{
+    const auto type = currP.PathType();
+    std::regex reg(R"x(^LS+DS*E$)x");
+    std::smatch match;
+    if (!std::regex_match(type, match, reg)) { return false; }
+    return true;
+}
+
+auto MLTMutationStrategy::CheckMutatable_ManifoldCaustic(const Path& currP) -> bool
+{
+    const auto type = currP.PathType();
+    std::regex reg(R"x(^LS*DS+E$)x");
+    std::smatch match;
+    if (!std::regex_match(type, match, reg)) { return false; }
+    return true;
 }
 
 // --------------------------------------------------------------------------------
@@ -581,7 +642,7 @@ auto MLTMutationStrategy::Mutate_Multichain(const Scene* scene, Random& rng, con
 
 auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
 {
-    // L | S+ | DS+E
+    // L | S* | DS+E
     const int n = (int)(currP.vertices.size());
 
     // --------------------------------------------------------------------------------
@@ -601,18 +662,18 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
     // --------------------------------------------------------------------------------
     
     #if INVERSEMAP_MLT_DEBUG_IO
-    {
-        LM_LOG_DEBUG("manifoldlens_current_path");
-        DebugIO::Wait();
-        std::vector<double> vs;
-        for (const auto& v : currP.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
-        std::stringstream ss;
-        {
-            cereal::JSONOutputArchive oa(ss);
-            oa(vs);
-        }
-        DebugIO::Output("manifoldlens_current_path", ss.str());
-    }
+    //{
+    //    LM_LOG_DEBUG("manifoldlens_current_path");
+    //    DebugIO::Wait();
+    //    std::vector<double> vs;
+    //    for (const auto& v : currP.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+    //    std::stringstream ss;
+    //    {
+    //        cereal::JSONOutputArchive oa(ss);
+    //        oa(vs);
+    //    }
+    //    DebugIO::Output("manifoldlens_current_path", ss.str());
+    //}
     #endif
 
     // --------------------------------------------------------------------------------
@@ -664,8 +725,7 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
 
                 assert((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0);
                 return false;
-            }
-        );
+            });
         if (failed)
         {
             return boost::none;
@@ -689,18 +749,18 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
     // --------------------------------------------------------------------------------
 
     #if INVERSEMAP_MLT_DEBUG_IO
-    {
-        LM_LOG_DEBUG("manifoldlens_perturbed_eye_subpath");
-        DebugIO::Wait();
-        std::vector<double> vs;
-        for (const auto& v : subpathE->vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
-        std::stringstream ss;
-        {
-            cereal::JSONOutputArchive oa(ss);
-            oa(vs);
-        }
-        DebugIO::Output("manifoldlens_perturbed_eye_subpath", ss.str());
-    }
+    //{
+    //    LM_LOG_DEBUG("manifoldlens_perturbed_subpath");
+    //    DebugIO::Wait();
+    //    std::vector<double> vs;
+    //    for (const auto& v : subpathE->vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+    //    std::stringstream ss;
+    //    {
+    //        cereal::JSONOutputArchive oa(ss);
+    //        oa(vs);
+    //    }
+    //    DebugIO::Output("manifoldlens_perturbed_subpath", ss.str());
+    //}
     #endif
 
     // --------------------------------------------------------------------------------
@@ -708,7 +768,7 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
     #pragma region Connect light subapth
     const auto subpathL = [&]() -> boost::optional<Subpath>
     {
-        // Original light subpath (LS+D)
+        // Original light subpath (LS*D)
         Subpath subpathL_Orig;
         const int nE = (int)(subpathE->vertices.size());
         const int nL = n - nE;
@@ -718,6 +778,9 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
         }
 
         // Manifold walk
+        #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+        manifoldWalkCount++;
+        #endif
         const auto connPath = ManifoldUtils::WalkManifold(scene, subpathL_Orig, subpathE->vertices.back().geom.p);
         if (!connPath)
         {
@@ -728,6 +791,9 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
         {
             return boost::none;
         }
+        #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+        manifoldWalkSuccessCount++;
+        #endif
 
         return *connPath;
     }();
@@ -744,6 +810,200 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
         const int nE = (int)(subpathE->vertices.size());
         const int nL = n - nE;
         for (int s = 0; s < nL; s++)      { prop.p.vertices.push_back(subpathL->vertices[s]); }
+        for (int t = nE - 1; t >= 0; t--) { prop.p.vertices.push_back(subpathE->vertices[t]); }
+    }
+
+    // --------------------------------------------------------------------------------
+    
+    #if INVERSEMAP_MLT_DEBUG_IO
+    //{
+    //    LM_LOG_DEBUG("manifoldlens_proposed_path");
+    //    DebugIO::Wait();
+    //    std::vector<double> vs;
+    //    for (const auto& v : prop.p.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+    //    std::stringstream ss;
+    //    {
+    //        cereal::JSONOutputArchive oa(ss);
+    //        oa(vs);
+    //    }
+    //    DebugIO::Output("manifoldlens_proposed_path", ss.str());
+    //}
+    #endif
+
+    // --------------------------------------------------------------------------------
+    return prop;
+}
+
+auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
+{
+    // LS+D | S* | E
+    const int n = (int)(currP.vertices.size());
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Check if current path can be mutated with the strategy
+    {
+        const auto type = currP.PathType();
+        std::regex reg(R"x(^LS*DS+E$)x");
+        std::smatch match;
+        if (!std::regex_match(type, match, reg))
+        {
+            return boost::none;
+        }
+    }
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #if INVERSEMAP_MLT_DEBUG_IO
+    {
+        LM_LOG_DEBUG("manifoldlens_current_path");
+        DebugIO::Wait();
+        std::vector<double> vs;
+        for (const auto& v : currP.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+        std::stringstream ss;
+        {
+            cereal::JSONOutputArchive oa(ss);
+            oa(vs);
+        }
+        DebugIO::Output("manifoldlens_current_path", ss.str());
+    }
+    #endif
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Perturb light subpath
+    const auto subpathL = [&]() -> boost::optional<Subpath>
+    {
+        Subpath subpathL;
+        subpathL.vertices.push_back(currP.vertices[0]);
+
+        // Trace subpath
+        bool failed = false;
+        SubpathSampler::TraceSubpathFromEndpointWithSampler(scene, &subpathL.vertices[0], nullptr, 1, n, TransportDirection::LE,
+            [&](int numVertices, const Primitive* primitive, SubpathSampler::SampleUsage usage, int index) -> Float
+            {
+                if (primitive && usage == SubpathSampler::SampleUsage::Direction && (primitive->Type() & SurfaceInteractionType::S) == 0)
+                {
+                    const auto propU = PerturbDirectionSample(currP, rng, primitive, numVertices - 2, TransportDirection::LE);
+                    if (!propU)
+                    {
+                        failed = true;
+                        return 0_f;
+                    }
+                    return (*propU)[index];
+                }
+                return rng.Next();
+            },
+            [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+            {
+                assert(numVertices > 1);
+                subpathL.vertices.emplace_back(v);
+
+                // Reject if the corresponding vertex in the current path is not S
+                {
+                    const auto propVT = (v.primitive->Type() & SurfaceInteractionType::S) > 0;
+                    const auto currVT = (currP.vertices[numVertices - 1].primitive->Type() & SurfaceInteractionType::S) > 0;
+                    if (propVT != currVT)
+                    {
+                        failed = true;
+                        return false;
+                    }
+                }
+
+                // Continue to trace if intersected vertex is S
+                if ((v.primitive->Type() & SurfaceInteractionType::S) > 0)
+                {
+                    return true;
+                }
+
+                assert((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0);
+                return false;
+            });
+        if (failed)
+        {
+            return boost::none;
+        }
+        {
+            // Sampling is failed if the last vertex is S or L or point at infinity
+            const auto& vL = subpathL.vertices.back();
+            if (vL.geom.infinite || (vL.primitive->Type() & SurfaceInteractionType::L) > 0 || (vL.primitive->Type() & SurfaceInteractionType::S) > 0)
+            {
+                return boost::none;
+            }
+        }
+        return subpathL;
+    }();
+    if (!subpathL)
+    {
+        return boost::none;
+    }
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #if INVERSEMAP_MLT_DEBUG_IO
+    {
+        LM_LOG_DEBUG("manifoldlens_perturbed_subpath");
+        DebugIO::Wait();
+        std::vector<double> vs;
+        for (const auto& v : subpathL->vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+        std::stringstream ss;
+        {
+            cereal::JSONOutputArchive oa(ss);
+            oa(vs);
+        }
+        DebugIO::Output("manifoldlens_perturbed_subpath", ss.str());
+    }
+    #endif
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Connect eye subapth
+    const auto subpathE = [&]() -> boost::optional<Subpath>
+    {
+        // Original eye subpath (ES*D)
+        Subpath subpathE_Orig;
+        const int nL = (int)(subpathL->vertices.size());
+        const int nE = n - nL;
+        for (int t = 0; t < nE + 1; t++)
+        {
+            subpathE_Orig.vertices.push_back(currP.vertices[n - 1 - t]);
+        }
+        
+        // Manifold walk
+        #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+        manifoldWalkCount++;
+        #endif
+        const auto connPath = ManifoldUtils::WalkManifold(scene, subpathE_Orig, subpathL->vertices.back().geom.p);
+        if (!connPath)
+        {
+            return boost::none;
+        }
+        const auto connPathInv = ManifoldUtils::WalkManifold(scene, *connPath, subpathE_Orig.vertices.back().geom.p);
+        if (!connPathInv)
+        {
+            return boost::none;
+        }
+        #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+        manifoldWalkSuccessCount++;
+        #endif
+
+        return *connPath;
+    }();
+    if (!subpathE)
+    {
+        return boost::none;
+    }
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    Prop prop;
+    {
+        const int nE = (int)(subpathE->vertices.size());
+        const int nL = n - nE;
+        for (int s = 0; s < nL; s++) { prop.p.vertices.push_back(subpathL->vertices[s]); }
         for (int t = nE - 1; t >= 0; t--) { prop.p.vertices.push_back(subpathE->vertices[t]); }
     }
 
@@ -942,5 +1202,89 @@ auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, cons
     const auto C = prodFs * multiG / pED;
     return 1_f / InversemapUtils::ScalarContrb(C);
 }
+
+auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+{
+    const int n = (int)(x.vertices.size());
+    assert(n == (int)(y.vertices.size()));
+
+    // --------------------------------------------------------------------------------
+
+    // Number of vertices in subpaths. n = s + 1 + t
+    const int s = (int)std::distance(y.vertices.begin(), std::find_if(y.vertices.begin(), y.vertices.end(), [](const SubpathSampler::PathVertex& v) -> bool { return (v.primitive->Type() & SurfaceInteractionType::L) == 0 && (v.primitive->Type() & SurfaceInteractionType::S) == 0; }));
+    const int t = n - s - 1;
+
+    // --------------------------------------------------------------------------------
+
+    // Product of specular reflectances
+    const auto EvaluateSpecularReflectances = [&](int l, TransportDirection transDir) -> SPD
+    {
+        SPD prodFs(1_f);
+        const auto index = [&](int i) { return transDir == TransportDirection::LE ? i : n - 1 - i; };
+        for (int i = 1; i < l; i++)
+        {
+            const auto& vi = y.vertices[index(i)];
+            const auto& vip = y.vertices[index(i - 1)];
+            const auto& vin = y.vertices[index(i + 1)];
+            assert(vi.type == SurfaceInteractionType::S);
+            const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
+            const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
+            const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, transDir, false);
+            const auto fsInv = vi.primitive->EvaluateDirection(vi.geom, vi.type, wo, wi, (TransportDirection)(1 - (int)transDir), false);
+            // Sometimes evaluation in the swapped directions wrongly evaluates as total internal reflection.
+            // Reject such a case here.
+            if (fsInv.Black()) { return SPD(); }
+            prodFs *= fs;
+        }
+        return prodFs;
+    };
+    const auto prodFs_L = EvaluateSpecularReflectances(s, TransportDirection::LE);
+    const auto prodFs_E = EvaluateSpecularReflectances(t, TransportDirection::EL);
+    const auto prodFs = prodFs_L * prodFs_E;
+    if (prodFs.Black())
+    {
+        return 0_f;
+    }
+
+    // --------------------------------------------------------------------------------
+
+    // Perturbation probability (using cancelling out)
+    const auto pLD = [&]() -> PDFVal
+    {
+        const auto& vL = y.vertices[0];
+        const auto& vLn = y.vertices[1];
+        return vL.primitive->EvaluateDirectionPDF(vL.geom, vL.type, Vec3(), Math::Normalize(vLn.geom.p - vL.geom.p), false);
+    }();
+
+    // --------------------------------------------------------------------------------
+
+    // Generalized geometry factor
+    const auto multiG = [&]() -> Float
+    {
+        Subpath subpathE;
+        for (int i = 0; i < t + 1; i++) { subpathE.vertices.push_back(y.vertices[n-1-i]); }
+        const auto det = ManifoldUtils::ComputeConstraintJacobianDeterminant(subpathE);
+        const auto G = RenderUtils::GeometryTerm(y.vertices[n-1].geom, y.vertices[n-2].geom);
+        return det * G;
+    }();
+
+    // --------------------------------------------------------------------------------
+
+    const auto C = prodFs * multiG / pLD;
+    return 1_f / InversemapUtils::ScalarContrb(C);
+}
+
+// --------------------------------------------------------------------------------
+
+#if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+auto MLTMutationStrategy::PrintStat() -> void
+{
+    if (manifoldWalkCount > 0)
+    {
+        const double rate = (double)manifoldWalkSuccessCount / manifoldWalkCount;
+        LM_LOG_INFO(boost::str(boost::format("Manifold walk success rate: %.5f (%d / %d)") % rate % (long long)manifoldWalkSuccessCount % (long long)manifoldWalkCount));
+    }
+}
+#endif
 
 LM_NAMESPACE_END

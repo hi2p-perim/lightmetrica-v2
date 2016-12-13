@@ -339,24 +339,6 @@ public:
                             const auto LeP = vL.primitive->EvaluatePosition(vL.geom, false);
                             const auto fsE = primitive->EvaluateDirection(geom, type, wi, Math::Normalize(connPath->vertices[connPath->vertices.size()-2].geom.p - geom.p), TransportDirection::EL, true);
                             const auto fsL = vL.primitive->EvaluateDirection(vL.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(connPath->vertices[1].geom.p - vL.geom.p), TransportDirection::LE, false);
-                            //const auto fsS = [&]() -> SPD
-                            //{
-                            //    SPD prodFs(1_f);
-                            //    const int n = (int)(connPath->vertices.size());
-                            //    const auto index = [&](int i) { return n - 1 - i; };
-                            //    for (int i = 1; i < n - 1; i++)
-                            //    {
-                            //        const auto& vi  = connPath->vertices[index(i)];
-                            //        const auto& vip = connPath->vertices[index(i - 1)];
-                            //        const auto& vin = connPath->vertices[index(i + 1)];
-                            //        assert(vi.type == SurfaceInteractionType::S);
-                            //        const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
-                            //        const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
-                            //        const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, TransportDirection::EL, false);
-                            //        prodFs *= fs / 9_f;
-                            //    }
-                            //    return prodFs;
-                            //}();
                             const auto fsS = [&]() -> SPD
                             {
                                 SPD prodFs(1_f);
