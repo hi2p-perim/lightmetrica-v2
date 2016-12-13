@@ -34,6 +34,15 @@
 
 LM_NAMESPACE_BEGIN
 
+struct VertexConstraintJacobian
+{
+    Mat2 A;
+    Mat2 B;
+    Mat2 C;
+};
+
+using ConstraintJacobian = std::vector<VertexConstraintJacobian>;
+
 class ManifoldUtils
 {
 public:
@@ -42,6 +51,7 @@ public:
 
 public:
 
+    static auto ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void;
     static auto WalkManifold(const Scene* scene, const Subpath& seedPath, const Vec3& target) -> boost::optional<Subpath>;
     static auto ComputeConstraintJacobianDeterminant(const Subpath& subpath) -> Float;
 

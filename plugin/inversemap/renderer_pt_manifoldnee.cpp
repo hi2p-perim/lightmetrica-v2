@@ -182,6 +182,18 @@ public:
                         Subpath subpathL;
                         for (int i = 0; i < maxNumVertices_ - numVertices + 1; i++)
                         {
+                            #if LM_PT_MANIFOLDNEE_DEBUG_IO
+                            if (std::strcmp(primitive->id, "n3") == 0 && !subpathL.vertices.empty() && numVertices >= 2)
+                            {
+                                LM_LOG_DEBUG("seed_path");
+                                DebugIO::Wait();
+                                std::vector<double> vs;
+                                for (const auto& v : subpathL.vertices) for (int j = 0; j < 3; j++) { vs.push_back(v.geom.p[j]); }
+                                std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
+                                DebugIO::Output("seed_path", ss.str());
+                            }
+                            #endif
+
                             if (i == 0)
                             {
                                 // Initial vertex
@@ -215,20 +227,20 @@ public:
                                     }
                                 }();
 
-                                //#if LM_PT_MANIFOLDNEE_DEBUG_IO
-                                //if (numVertices == 3)
-                                //{
-                                //    LM_LOG_DEBUG("ray");
-                                //    DebugIO::Wait();
-                                //    std::vector<double> vs;
-                                //    const auto p1 = pv->geom.p;
-                                //    const auto p2 = pv->geom.p + wo * 0.5_f;
-                                //    for (int j = 0; j < 3; j++) { vs.push_back(p1[j]); }
-                                //    for (int j = 0; j < 3; j++) { vs.push_back(p2[j]); }
-                                //    std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
-                                //    DebugIO::Output("ray", ss.str());
-                                //}
-                                //#endif
+                                #if LM_PT_MANIFOLDNEE_DEBUG_IO
+                                if (std::strcmp(primitive->id, "n3") == 0 && numVertices >= 2)
+                                {
+                                    LM_LOG_DEBUG("ray");
+                                    DebugIO::Wait();
+                                    std::vector<double> vs;
+                                    const auto p1 = pv->geom.p;
+                                    const auto p2 = pv->geom.p + wo * 0.5_f;
+                                    for (int j = 0; j < 3; j++) { vs.push_back(p1[j]); }
+                                    for (int j = 0; j < 3; j++) { vs.push_back(p2[j]); }
+                                    std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
+                                    DebugIO::Output("ray", ss.str());
+                                }
+                                #endif
                                 
                                 // Intersection query
                                 Ray ray = { pv->geom.p, wo };
@@ -259,7 +271,7 @@ public:
                             }
                         }
                         {
-                            // Fails if the last vertex is specular or E or inifinite geometry
+                            // Fails if the last vertex is specular or E or infinite geometry
                             const auto& v = subpathL.vertices.back();
                             if (v.geom.infinite || (v.type & SurfaceInteractionType::S) > 0 || (v.type & SurfaceInteractionType::E) > 0)
                             {
@@ -327,20 +339,38 @@ public:
                             const auto LeP = vL.primitive->EvaluatePosition(vL.geom, false);
                             const auto fsE = primitive->EvaluateDirection(geom, type, wi, Math::Normalize(connPath->vertices[connPath->vertices.size()-2].geom.p - geom.p), TransportDirection::EL, true);
                             const auto fsL = vL.primitive->EvaluateDirection(vL.geom, SurfaceInteractionType::L, Vec3(), Math::Normalize(connPath->vertices[1].geom.p - vL.geom.p), TransportDirection::LE, false);
+                            //const auto fsS = [&]() -> SPD
+                            //{
+                            //    SPD prodFs(1_f);
+                            //    const int n = (int)(connPath->vertices.size());
+                            //    const auto index = [&](int i) { return n - 1 - i; };
+                            //    for (int i = 1; i < n - 1; i++)
+                            //    {
+                            //        const auto& vi  = connPath->vertices[index(i)];
+                            //        const auto& vip = connPath->vertices[index(i - 1)];
+                            //        const auto& vin = connPath->vertices[index(i + 1)];
+                            //        assert(vi.type == SurfaceInteractionType::S);
+                            //        const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
+                            //        const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
+                            //        const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, TransportDirection::EL, false);
+                            //        prodFs *= fs / 9_f;
+                            //    }
+                            //    return prodFs;
+                            //}();
                             const auto fsS = [&]() -> SPD
                             {
                                 SPD prodFs(1_f);
                                 const int n = (int)(connPath->vertices.size());
-                                const auto index = [&](int i) { return n - 1 - i; };
+                                const auto index = [&](int i) { return i; };
                                 for (int i = 1; i < n - 1; i++)
                                 {
-                                    const auto& vi  = connPath->vertices[index(i)];
+                                    const auto& vi = connPath->vertices[index(i)];
                                     const auto& vip = connPath->vertices[index(i - 1)];
                                     const auto& vin = connPath->vertices[index(i + 1)];
                                     assert(vi.type == SurfaceInteractionType::S);
                                     const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
                                     const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
-                                    const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, TransportDirection::EL, false);
+                                    const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, TransportDirection::LE, false);
                                     prodFs *= fs;
                                 }
                                 return prodFs;

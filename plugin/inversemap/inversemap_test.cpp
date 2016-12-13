@@ -158,6 +158,8 @@ public:
 
 };
 
+// --------------------------------------------------------------------------------
+
 #if 0
 // Tests if CDF(CDF^-1(u)) = u for Bechmann distribution
 TEST_F(InversemapTest, BeckmannDistInverseConsistency)
@@ -248,6 +250,8 @@ TEST_F(InversemapTest, BeckmannDistInverseConsistencyInv)
 }
 #endif
 
+// --------------------------------------------------------------------------------
+
 // Tests if CDF(CDF^-1(u)) = u for GGX
 TEST_F(InversemapTest, GGXInverseConsistency)
 {
@@ -281,6 +285,8 @@ TEST_F(InversemapTest, GGXInverseConsistency)
         __debugbreak();
     }
 }
+
+// --------------------------------------------------------------------------------
 
 // Tests if CDF^-1(CDF(H)) = H for GGX
 #if 1

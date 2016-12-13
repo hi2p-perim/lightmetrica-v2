@@ -62,8 +62,13 @@ pch_add_executable(
     "${_INCLUDE_DIR}/utils.h"
     "${_INCLUDE_DIR}/mathutils.h"
     "${PROJECT_SOURCE_DIR}/src/lightmetrica-test/main.cpp"
+	
+	"manifoldutils.h"
+	"manifoldutils.cpp"
     "inversemap_test.cpp"
-    "${_GTEST_SOURCE_DIR}/src/gtest-all.cc")
+	"manifold_test.cpp"
+    
+	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc")
 target_link_libraries(${_PROJECT_NAME} ${COMMON_LIBRARIES} liblightmetrica)
 add_dependencies(${_PROJECT_NAME} liblightmetrica)
 set_target_properties(${_PROJECT_NAME} PROPERTIES FOLDER "test")

@@ -48,19 +48,72 @@ auto serialize(Archive& archive, Vec3& v) -> void
     archive(cereal::make_nvp("x", v.x), cereal::make_nvp("y", v.y), cereal::make_nvp("z", v.z));
 }
 
+
 namespace
 {
 
-struct VertexConstraintJacobian
+auto SolveBlockLinearEq(const ConstraintJacobian& nablaC, const std::vector<Vec2>& V, std::vector<Vec2>& W) -> void
 {
-    Mat2 A;
-    Mat2 B;
-    Mat2 C;
-};
+	const int n = (int)(nablaC.size());
+	assert(V.size() == nablaC.size());
+		
+	// --------------------------------------------------------------------------------
 
-using ConstraintJacobian = std::vector<VertexConstraintJacobian>;
+	#pragma region LU decomposition
 
-auto ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void
+	// A'_{0,n-1} = B_{0,n-1}
+	// B'_{0,n-2} = C_{0,n-2}
+	// C'_{0,n-2} = A_{1,n-1}
+	std::vector<Mat2> L(n);
+	std::vector<Mat2> U(n);
+	{
+		// U_1 = A'_1
+		U[0] = nablaC[0].B;
+		for (int i = 1; i < n; i++)
+		{
+			L[i] = nablaC[i].A * Math::Inverse(U[i-1]);		// L_i = C'_i U_{i-1}^-1
+			U[i] = nablaC[i].B - L[i] * nablaC[i-1].C;		// U_i = A'_i - L_i * B'_{i-1}
+		}
+	}
+
+	#pragma endregion
+
+	// --------------------------------------------------------------------------------
+
+	#pragma region Forward substitution
+ 
+	// Solve L V' = V
+	std::vector<Vec2> Vp(n);
+	Vp[0] = V[0];
+	for (int i = 1; i < n; i++)
+	{
+		// V'_i = V_i - L_i V'_{i-1}
+		Vp[i] = V[i] - L[i] * Vp[i - 1];
+	}
+
+	#pragma endregion
+
+	// --------------------------------------------------------------------------------
+
+	#pragma region Backward substitution
+
+	W.assign(n, Vec2());
+
+	// Solve U_n W_n = V'_n
+	W[n - 1] = Math::Inverse(U[n - 1]) * Vp[n - 1];
+
+	for (int i = n - 2; i >= 0; i--)
+	{
+		// Solve U_i W_i = V'_i - V_i W_{i+1}
+		W[i] = Math::Inverse(U[i]) * (Vp[i] - V[i] * W[i + 1]);
+	}
+
+	#pragma endregion
+}
+
+}
+
+auto ManifoldUtils::ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void
 {
 	const int n = (int)(path.vertices.size());
 	for (int i = 1; i < n - 1; i++)
@@ -77,7 +130,7 @@ auto ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) 
 			
 		const auto wi  = Math::Normalize(xp.p - x.p);
 		const auto wo  = Math::Normalize(xn.p - x.p);
-        const auto eta = vi.primitive->bsdf->Eta(x, wi);
+        const auto eta = 1_f / vi.primitive->bsdf->Eta(x, wi);
 		const auto H   = Math::Normalize(wi + eta * wo);
 
 		const auto inv_wiL = 1_f / Math::Length(xp.p - x.p);     // ili
@@ -148,67 +201,6 @@ auto ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) 
 
 		#pragma endregion
 	}
-}
-
-auto SolveBlockLinearEq(const ConstraintJacobian& nablaC, const std::vector<Vec2>& V, std::vector<Vec2>& W) -> void
-{
-	const int n = (int)(nablaC.size());
-	assert(V.size() == nablaC.size());
-		
-	// --------------------------------------------------------------------------------
-
-	#pragma region LU decomposition
-
-	// A'_{0,n-1} = B_{0,n-1}
-	// B'_{0,n-2} = C_{0,n-2}
-	// C'_{0,n-2} = A_{1,n-1}
-	std::vector<Mat2> L(n);
-	std::vector<Mat2> U(n);
-	{
-		// U_1 = A'_1
-		U[0] = nablaC[0].B;
-		for (int i = 1; i < n; i++)
-		{
-			L[i] = nablaC[i].A * Math::Inverse(U[i-1]);		// L_i = C'_i U_{i-1}^-1
-			U[i] = nablaC[i].B - L[i] * nablaC[i-1].C;		// U_i = A'_i - L_i * B'_{i-1}
-		}
-	}
-
-	#pragma endregion
-
-	// --------------------------------------------------------------------------------
-
-	#pragma region Forward substitution
- 
-	// Solve L V' = V
-	std::vector<Vec2> Vp(n);
-	Vp[0] = V[0];
-	for (int i = 1; i < n; i++)
-	{
-		// V'_i = V_i - L_i V'_{i-1}
-		Vp[i] = V[i] - L[i] * Vp[i - 1];
-	}
-
-	#pragma endregion
-
-	// --------------------------------------------------------------------------------
-
-	#pragma region Backward substitution
-
-	W.assign(n, Vec2());
-
-	// Solve U_n W_n = V'_n
-	W[n - 1] = Math::Inverse(U[n - 1]) * Vp[n - 1];
-
-	for (int i = n - 2; i >= 0; i--)
-	{
-		// Solve U_i W_i = V'_i - V_i W_{i+1}
-		W[i] = Math::Inverse(U[i]) * (Vp[i] - V[i] * W[i + 1]);
-	}
-
-	#pragma endregion
-}
-
 }
 
 // --------------------------------------------------------------------------------
