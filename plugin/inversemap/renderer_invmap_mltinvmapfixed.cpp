@@ -441,8 +441,8 @@ public:
 
                         #pragma region MH update
                         {
-                            const auto Qxy = MLTMutationStrategy::Q((MLTStrategy)(strategy), scene, currP, prop->p, prop->kd, prop->dL);
-                            const auto Qyx = MLTMutationStrategy::Q((MLTStrategy)(strategy), scene, prop->p, currP, prop->kd, prop->dL);
+                            const auto Qxy = MLTMutationStrategy::Q((MLTStrategy)(strategy), scene, currP, prop->p, prop->subspace);
+                            const auto Qyx = MLTMutationStrategy::Q((MLTStrategy)(strategy), scene, prop->p, currP, prop->subspace);
                             Float A = 0_f;
                             if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                             {

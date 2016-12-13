@@ -46,16 +46,30 @@ enum class MLTStrategy : int
     Multichain,
     ManifoldLens,    // Manifold lens perturbation supporting LS+DS*E paths
     ManifoldCaustic, // Manifold caustic perturbation supporting LS*DS+E paths
+    Manifold,        // Jakob's original manifold perturbation supporting L[DS]*D[DS]*E paths
     Identity,
 };
 
 // Bidirectional mutation first narrows the mutation space by limiting the deleted range
 // in the current path, so it requires some additional information other than proposed path itself.
+struct Subspace
+{
+    struct
+    {
+        int kd;
+        int dL;
+    } bidir;
+    struct
+    {
+        int ia;
+        int ib;
+        int ic;
+    } manifold;
+};
 struct Prop
 {
     Path p;
-    int kd;
-    int dL;
+    Subspace subspace;
 };
 
 class MLTMutationStrategy
@@ -71,6 +85,7 @@ public:
         else if (strategy == MLTStrategy::Multichain)      { return CheckMutatable_Multichain(currP); }
         else if (strategy == MLTStrategy::ManifoldLens)    { return CheckMutatable_ManifoldLens(currP); }
         else if (strategy == MLTStrategy::ManifoldCaustic) { return CheckMutatable_ManifoldCaustic(currP); }
+        else if (strategy == MLTStrategy::Manifold)        { return CheckMutatable_Manifold(currP); }
         else if (strategy == MLTStrategy::Identity)        { return true; }
         LM_UNREACHABLE();
         return false;
@@ -84,19 +99,21 @@ public:
         else if (strategy == MLTStrategy::Multichain)      { return Mutate_Multichain(scene, rng, currP); }
         else if (strategy == MLTStrategy::ManifoldLens)    { return Mutate_ManifoldLens(scene, rng, currP); }
         else if (strategy == MLTStrategy::ManifoldCaustic) { return Mutate_ManifoldCaustic(scene, rng, currP); }
+        else if (strategy == MLTStrategy::Manifold)        { return Mutate_Manifold(scene, rng, currP); }
         else if (strategy == MLTStrategy::Identity)        { return Prop{currP, -1 -1}; }
         LM_UNREACHABLE();
         return Prop();
     }
 
-    static auto Q(MLTStrategy strategy, const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+    static auto Q(MLTStrategy strategy, const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
     {
-        if (strategy == MLTStrategy::Bidir)                { return Q_Bidir(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::Lens)            { return Q_Lens(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::Caustic)         { return Q_Caustic(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::Multichain)      { return Q_Multichain(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::ManifoldLens)    { return Q_ManifoldLens(scene, x, y, kd, dL); }
-        else if (strategy == MLTStrategy::ManifoldCaustic) { return Q_ManifoldCaustic(scene, x, y, kd, dL); }
+        if (strategy == MLTStrategy::Bidir)                { return Q_Bidir(scene, x, y, subspace); }
+        else if (strategy == MLTStrategy::Lens)            { return Q_Lens(scene, x, y, subspace); }
+        else if (strategy == MLTStrategy::Caustic)         { return Q_Caustic(scene, x, y, subspace); }
+        else if (strategy == MLTStrategy::Multichain)      { return Q_Multichain(scene, x, y, subspace); }
+        else if (strategy == MLTStrategy::ManifoldLens)    { return Q_ManifoldLens(scene, x, y, subspace); }
+        else if (strategy == MLTStrategy::ManifoldCaustic) { return Q_ManifoldCaustic(scene, x, y, subspace); }
+        else if (strategy == MLTStrategy::Manifold)        { return Q_Manifold(scene, x, y, subspace); }
         else if (strategy == MLTStrategy::Identity)        { return 1_f; }
         LM_UNREACHABLE();
         return 0_f;
@@ -110,6 +127,7 @@ private:
     static auto CheckMutatable_Multichain(const Path& currP) -> bool;
     static auto CheckMutatable_ManifoldLens(const Path& currP) -> bool;
     static auto CheckMutatable_ManifoldCaustic(const Path& currP) -> bool;
+    static auto CheckMutatable_Manifold(const Path& currP) -> bool;
 
 private:
 
@@ -119,15 +137,17 @@ private:
     static auto Mutate_Multichain(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>;
     static auto Mutate_ManifoldLens(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>;
     static auto Mutate_ManifoldCaustic(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>;
+    static auto Mutate_Manifold(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>;
 
 private:
 
-    static auto Q_Bidir(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float;
-    static auto Q_Lens(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float;
-    static auto Q_Caustic(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float;
-    static auto Q_Multichain(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float;
-    static auto Q_ManifoldLens(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float;
-    static auto Q_ManifoldCaustic(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float;
+    static auto Q_Bidir(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_Lens(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_Caustic(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_Multichain(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_ManifoldLens(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_ManifoldCaustic(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_Manifold(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
 
 public:
 

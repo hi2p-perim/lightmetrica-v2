@@ -209,6 +209,15 @@ auto MLTMutationStrategy::CheckMutatable_ManifoldCaustic(const Path& currP) -> b
     return true;
 }
 
+auto MLTMutationStrategy::CheckMutatable_Manifold(const Path& currP) -> bool
+{
+    const auto type = currP.PathType();
+    std::regex reg(R"x(^L[DS]*D[DS]*E$)x");
+    std::smatch match;
+    if (!std::regex_match(type, match, reg)) { return false; }
+    return true;
+}
+
 // --------------------------------------------------------------------------------
 
 auto MLTMutationStrategy::Mutate_Bidir(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
@@ -276,8 +285,8 @@ auto MLTMutationStrategy::Mutate_Bidir(const Scene* scene, Random& rng, const Pa
         return boost::none;
     }
 
-    prop.kd = kd;
-    prop.dL = dL;
+    prop.subspace.bidir.kd = kd;
+    prop.subspace.bidir.dL = dL;
     return prop;
 }
 
@@ -811,6 +820,11 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
         const int nL = n - nE;
         for (int s = 0; s < nL; s++)      { prop.p.vertices.push_back(subpathL->vertices[s]); }
         for (int t = nE - 1; t >= 0; t--) { prop.p.vertices.push_back(subpathE->vertices[t]); }
+        if (prop.p.EvaluateF(0).Black())
+        {
+            // Reject paths with zero-contribution
+            return boost::none;
+        }
     }
 
     // --------------------------------------------------------------------------------
@@ -856,18 +870,18 @@ auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene* scene, Random& rng
     // --------------------------------------------------------------------------------
 
     #if INVERSEMAP_MLT_DEBUG_IO
-    {
-        LM_LOG_DEBUG("manifoldlens_current_path");
-        DebugIO::Wait();
-        std::vector<double> vs;
-        for (const auto& v : currP.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
-        std::stringstream ss;
-        {
-            cereal::JSONOutputArchive oa(ss);
-            oa(vs);
-        }
-        DebugIO::Output("manifoldlens_current_path", ss.str());
-    }
+    //{
+    //    LM_LOG_DEBUG("manifoldlens_current_path");
+    //    DebugIO::Wait();
+    //    std::vector<double> vs;
+    //    for (const auto& v : currP.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+    //    std::stringstream ss;
+    //    {
+    //        cereal::JSONOutputArchive oa(ss);
+    //        oa(vs);
+    //    }
+    //    DebugIO::Output("manifoldlens_current_path", ss.str());
+    //}
     #endif
 
     // --------------------------------------------------------------------------------
@@ -943,18 +957,18 @@ auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene* scene, Random& rng
     // --------------------------------------------------------------------------------
 
     #if INVERSEMAP_MLT_DEBUG_IO
-    {
-        LM_LOG_DEBUG("manifoldlens_perturbed_subpath");
-        DebugIO::Wait();
-        std::vector<double> vs;
-        for (const auto& v : subpathL->vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
-        std::stringstream ss;
-        {
-            cereal::JSONOutputArchive oa(ss);
-            oa(vs);
-        }
-        DebugIO::Output("manifoldlens_perturbed_subpath", ss.str());
-    }
+    //{
+    //    LM_LOG_DEBUG("manifoldlens_perturbed_subpath");
+    //    DebugIO::Wait();
+    //    std::vector<double> vs;
+    //    for (const auto& v : subpathL->vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+    //    std::stringstream ss;
+    //    {
+    //        cereal::JSONOutputArchive oa(ss);
+    //        oa(vs);
+    //    }
+    //    DebugIO::Output("manifoldlens_perturbed_subpath", ss.str());
+    //}
     #endif
 
     // --------------------------------------------------------------------------------
@@ -1005,6 +1019,289 @@ auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene* scene, Random& rng
         const int nL = n - nE;
         for (int s = 0; s < nL; s++) { prop.p.vertices.push_back(subpathL->vertices[s]); }
         for (int t = nE - 1; t >= 0; t--) { prop.p.vertices.push_back(subpathE->vertices[t]); }
+        if (prop.p.EvaluateF(0).Black())
+        {
+            // Reject paths with zero-contribution
+            return boost::none;
+        }
+    }
+
+    // --------------------------------------------------------------------------------
+    
+    #if INVERSEMAP_MLT_DEBUG_IO
+    //{
+    //    LM_LOG_DEBUG("manifoldlens_proposed_path");
+    //    DebugIO::Wait();
+    //    std::vector<double> vs;
+    //    for (const auto& v : prop.p.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+    //    std::stringstream ss;
+    //    {
+    //        cereal::JSONOutputArchive oa(ss);
+    //        oa(vs);
+    //    }
+    //    DebugIO::Output("manifoldlens_proposed_path", ss.str());
+    //}
+    #endif
+
+    // --------------------------------------------------------------------------------
+    return prop;
+}
+
+auto MLTMutationStrategy::Mutate_Manifold(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
+{
+    const int n = (int)(currP.vertices.size());
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Check if current path can be mutated with the strategy
+    {
+        const auto type = currP.PathType();
+        std::regex reg(R"x(^L[DS]*D[DS]*E$)x");
+        std::smatch match;
+        if (!std::regex_match(type, match, reg))
+        {
+            return boost::none;
+        }
+    }
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #if INVERSEMAP_MLT_DEBUG_IO
+    {
+        LM_LOG_DEBUG("manifoldlens_current_path");
+        DebugIO::Wait();
+        std::vector<double> vs;
+        for (const auto& v : currP.vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+        std::stringstream ss;
+        {
+            cereal::JSONOutputArchive oa(ss);
+            oa(vs);
+        }
+        DebugIO::Output("manifoldlens_current_path", ss.str());
+    }
+    #endif
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Select subspace
+    struct ManifoldSubspace
+    {
+        int ia;
+        int ib;
+        int ic;
+    };
+    const auto subspace = [&]() -> boost::optional<ManifoldSubspace>
+    {
+        // Indices of non-S vertices
+        const auto nonSIndices = [&]() -> std::vector<int>
+        {
+            std::vector<int> indices;
+            for (size_t i = 0; i < currP.vertices.size(); i++)
+            {
+                const auto& v = currP.vertices[i];
+                if ((v.primitive->Type() & SurfaceInteractionType::S) == 0)
+                {
+                    indices.push_back((int)i);
+                }
+            }
+            return indices;
+        }();
+        // Requires at least 3 non-S vertices
+        if (nonSIndices.size() < 3)
+        {
+            return boost::none;
+        }
+        
+        // ia
+        const auto ia = [&]() -> int
+        {
+            const int i = Math::Clamp((int)(rng.Next() * (nonSIndices.size() - 2)), 0, (int)(nonSIndices.size()) - 3);
+            return nonSIndices[i];
+        }();
+
+        // ib, ic
+        const auto NearestNonSIndexFrom = [&](int ii) -> int
+        {
+            int i = ii + 1;
+            while ((currP.vertices[i].primitive->Type() & SurfaceInteractionType::S) != 0) { i++; }
+            return i;
+        };
+        const auto ib = NearestNonSIndexFrom(ia);
+        const auto ic = NearestNonSIndexFrom(ib);
+
+        return ManifoldSubspace{ ia, ib, ic };
+    }();
+    if (!subspace)
+    {
+        return boost::none;
+    }
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Perturb light subpath
+    const auto subpathL = [&]() -> boost::optional<Subpath>
+    {
+        Subpath subpathL;
+        for (int i = 0; i <= subspace->ia; i++) { subpathL.vertices.push_back(currP.vertices[i]); }
+
+        // Trace subpath
+        bool failed = false;
+        SubpathSampler::TraceSubpathFromEndpointWithSampler(scene, &subpathL.vertices.back(), nullptr, (int)subpathL.vertices.size(), n, TransportDirection::LE,
+            [&](int numVertices, const Primitive* primitive, SubpathSampler::SampleUsage usage, int index) -> Float
+            {
+                if (primitive && usage == SubpathSampler::SampleUsage::Direction && (primitive->Type() & SurfaceInteractionType::S) == 0)
+                {
+                    const auto propU = PerturbDirectionSample(currP, rng, primitive, numVertices - 2, TransportDirection::LE);
+                    if (!propU)
+                    {
+                        failed = true;
+                        return 0_f;
+                    }
+                    return (*propU)[index];
+                }
+                return rng.Next();
+            },
+            [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::SubpathSampler::PathVertex& pv, const SubpathSampler::SubpathSampler::PathVertex& v, SPD& throughput) -> bool
+            {
+                assert(numVertices > 1);
+                subpathL.vertices.emplace_back(v);
+
+                // Reject if the corresponding vertex in the current path is not S
+                {
+                    const auto propVT = (v.primitive->Type() & SurfaceInteractionType::S) > 0;
+                    const auto currVT = (currP.vertices[numVertices - 1].primitive->Type() & SurfaceInteractionType::S) > 0;
+                    if (propVT != currVT)
+                    {
+                        failed = true;
+                        return false;
+                    }
+                }
+
+                // Continue to trace if intersected vertex is S
+                if ((v.primitive->Type() & SurfaceInteractionType::S) > 0)
+                {
+                    return true;
+                }
+
+                assert((v.primitive->Type() & SurfaceInteractionType::D) > 0 || (v.primitive->Type() & SurfaceInteractionType::G) > 0);
+                return false;
+            });
+        if (failed)
+        {
+            return boost::none;
+        }
+        {
+            // Sampling is failed if the last vertex is S or point at infinity, or no change in number of vertices
+            const auto& vL = subpathL.vertices.back();
+            if (vL.geom.infinite || (vL.primitive->Type() & SurfaceInteractionType::S) > 0 || subpathL.vertices.size() != subspace->ib+1)
+            {
+                return boost::none;
+            }
+        }
+
+        return subpathL;
+    }();
+    if (!subpathL)
+    {
+        return boost::none;
+    }
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    #if INVERSEMAP_MLT_DEBUG_IO
+    {
+        LM_LOG_DEBUG("manifoldlens_perturbed_subpath");
+        DebugIO::Wait();
+        std::vector<double> vs;
+        for (const auto& v : subpathL->vertices) for (int i = 0; i < 3; i++) vs.push_back(v.geom.p[i]);
+        std::stringstream ss;
+        {
+            cereal::JSONOutputArchive oa(ss);
+            oa(vs);
+        }
+        DebugIO::Output("manifoldlens_perturbed_subpath", ss.str());
+    }
+    #endif
+
+    // --------------------------------------------------------------------------------
+
+    #pragma region Connect eye subapth
+    const auto subpathE = [&]() -> boost::optional<Subpath>
+    {
+        // Partial subpath [ib,ic]
+        Subpath subpathE_Orig;
+        for (int i = subspace->ic; i >= subspace->ib; i--) { subpathE_Orig.vertices.push_back(currP.vertices[i]); }
+        
+        // Conenct
+        const auto connPath = [&]() -> boost::optional<Subpath>
+        {
+            if (subspace->ib + 1 == subspace->ic)
+            {
+                // Path connection
+                const auto& vL = subpathL->vertices.back();
+                const auto& vE = currP.vertices[subspace->ic];
+                if (vL.geom.infinite || vE.geom.infinite)  { return boost::none; }
+                if (!scene->Visible(vL.geom.p, vE.geom.p)) { return boost::none; }
+                Subpath connPath;
+                connPath.vertices.push_back(vE);
+                connPath.vertices.push_back(vL);
+                return connPath;
+            }
+            else
+            {
+                // Manifold walk
+                #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+                manifoldWalkCount++;
+                #endif
+                const auto connPath = ManifoldUtils::WalkManifold(scene, subpathE_Orig, subpathL->vertices.back().geom.p);
+                if (!connPath) { return boost::none; }
+                const auto connPathInv = ManifoldUtils::WalkManifold(scene, *connPath, subpathE_Orig.vertices.back().geom.p);
+                if (!connPathInv) { return boost::none; }
+                #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+                manifoldWalkSuccessCount++;
+                #endif
+                return connPath;
+            }
+            LM_UNREACHABLE();
+            return boost::none;
+        }();
+        if (!connPath)
+        {
+            return boost::none;
+        }
+
+        // Connected eye subpath
+        Subpath subpathE;
+        for (int i = n - 1; i > subspace->ic; i--) { subpathE.vertices.push_back(currP.vertices[i]); }
+        for (const auto& v : connPath->vertices) { subpathE.vertices.push_back(v); }
+
+        return subpathE;
+    }();
+    if (!subpathE)
+    {
+        return boost::none;
+    }
+    #pragma endregion
+
+    // --------------------------------------------------------------------------------
+
+    Prop prop;
+    {
+        prop.subspace.manifold.ia = subspace->ia;
+        prop.subspace.manifold.ib = subspace->ib;
+        prop.subspace.manifold.ic = subspace->ic;
+        const int nE = (int)(subpathE->vertices.size());
+        const int nL = n - nE;
+        for (int s = 0; s < nL; s++) { prop.p.vertices.push_back(subpathL->vertices[s]); }
+        for (int t = nE - 1; t >= 0; t--) { prop.p.vertices.push_back(subpathE->vertices[t]); }
+        if (prop.p.EvaluateF(0).Black())
+        {
+            // Reject paths with zero-contribution
+            return boost::none;
+        }
     }
 
     // --------------------------------------------------------------------------------
@@ -1025,26 +1322,27 @@ auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene* scene, Random& rng
     #endif
 
     // --------------------------------------------------------------------------------
+    //LM_LOG_INFO(boost::str(boost::format("Selected subspace (%d,%d,%d)") % subspace->ia % subspace->ib % subspace->ic));
     return prop;
 }
 
 // --------------------------------------------------------------------------------
 
-auto MLTMutationStrategy::Q_Bidir(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+auto MLTMutationStrategy::Q_Bidir(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     Float sum = 0_f;
     #if INVERSEMAP_DEBUG_SIMPLIFY_BIDIR_MUT_PT
     for (int i = 0; i <= 0; i++)
     #else
-    for (int i = 0; i <= kd; i++)
+    for (int i = 0; i <= subspace.bidir.kd; i++)
     #endif
     {
-        const auto f = InversemapUtils::ScalarContrb(y.EvaluateF(dL + i));
+        const auto f = InversemapUtils::ScalarContrb(y.EvaluateF(subspace.bidir.dL + i));
         if (f == 0_f)
         {
             continue;
         }
-        const auto p = y.EvaluatePathPDF(scene, dL + i);
+        const auto p = y.EvaluatePathPDF(scene, subspace.bidir.dL + i);
         assert(p.v > 0_f);
         const auto C = f / p.v;
         sum += 1_f / C;
@@ -1052,7 +1350,7 @@ auto MLTMutationStrategy::Q_Bidir(const Scene* scene, const Path& x, const Path&
     return sum;
 }
 
-auto MLTMutationStrategy::Q_Lens(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+auto MLTMutationStrategy::Q_Lens(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1091,7 +1389,7 @@ auto MLTMutationStrategy::Q_Lens(const Scene* scene, const Path& x, const Path& 
     return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
 }
 
-auto MLTMutationStrategy::Q_Caustic(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+auto MLTMutationStrategy::Q_Caustic(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1107,7 +1405,7 @@ auto MLTMutationStrategy::Q_Caustic(const Scene* scene, const Path& x, const Pat
     return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
 }
 
-auto MLTMutationStrategy::Q_Multichain(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+auto MLTMutationStrategy::Q_Multichain(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1132,7 +1430,7 @@ auto MLTMutationStrategy::Q_Multichain(const Scene* scene, const Path& x, const 
     return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
 }
 
-auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1146,29 +1444,8 @@ auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, cons
     // --------------------------------------------------------------------------------
 
     // Product of specular reflectances
-    const auto EvaluateSpecularReflectances = [&](int l, TransportDirection transDir) -> SPD
-    {
-        SPD prodFs(1_f);
-        const auto index = [&](int i) { return transDir == TransportDirection::LE ? i : n - 1 - i; };
-        for (int i = 1; i < l; i++)
-        {
-            const auto& vi  = y.vertices[index(i)];
-            const auto& vip = y.vertices[index(i - 1)];
-            const auto& vin = y.vertices[index(i + 1)];
-            assert(vi.type == SurfaceInteractionType::S);
-            const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
-            const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
-            const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, transDir, false);
-            const auto fsInv = vi.primitive->EvaluateDirection(vi.geom, vi.type, wo, wi, (TransportDirection)(1 - (int)transDir), false);
-            // Sometimes evaluation in the swapped directions wrongly evaluates as total internal reflection.
-            // Reject such a case here.
-            if (fsInv.Black()) { return SPD(); }
-            prodFs *= fs;
-        }
-        return prodFs;
-    };
-    const auto prodFs_L = EvaluateSpecularReflectances(s, TransportDirection::LE);
-    const auto prodFs_E = EvaluateSpecularReflectances(t, TransportDirection::EL);
+    const auto prodFs_L = y.EvaluateSpecularReflectances(1, s, TransportDirection::LE);
+    const auto prodFs_E = y.EvaluateSpecularReflectances(1, t, TransportDirection::EL);
     const auto prodFs   = prodFs_L * prodFs_E;
     if (prodFs.Black())
     {
@@ -1184,6 +1461,11 @@ auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, cons
         const auto& vEn = y.vertices[n - 2];
         return vE.primitive->EvaluateDirectionPDF(vE.geom, vE.type, Vec3(), Math::Normalize(vEn.geom.p - vE.geom.p), false);
     }();
+    if (pED.v == 0_f)
+    {
+        // Numerical error
+        return 0_f;
+    }
 
     // --------------------------------------------------------------------------------
 
@@ -1203,7 +1485,7 @@ auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, cons
     return 1_f / InversemapUtils::ScalarContrb(C);
 }
 
-auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene* scene, const Path& x, const Path& y, int kd, int dL) -> Float
+auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1217,29 +1499,8 @@ auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene* scene, const Path& x, c
     // --------------------------------------------------------------------------------
 
     // Product of specular reflectances
-    const auto EvaluateSpecularReflectances = [&](int l, TransportDirection transDir) -> SPD
-    {
-        SPD prodFs(1_f);
-        const auto index = [&](int i) { return transDir == TransportDirection::LE ? i : n - 1 - i; };
-        for (int i = 1; i < l; i++)
-        {
-            const auto& vi = y.vertices[index(i)];
-            const auto& vip = y.vertices[index(i - 1)];
-            const auto& vin = y.vertices[index(i + 1)];
-            assert(vi.type == SurfaceInteractionType::S);
-            const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
-            const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
-            const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, transDir, false);
-            const auto fsInv = vi.primitive->EvaluateDirection(vi.geom, vi.type, wo, wi, (TransportDirection)(1 - (int)transDir), false);
-            // Sometimes evaluation in the swapped directions wrongly evaluates as total internal reflection.
-            // Reject such a case here.
-            if (fsInv.Black()) { return SPD(); }
-            prodFs *= fs;
-        }
-        return prodFs;
-    };
-    const auto prodFs_L = EvaluateSpecularReflectances(s, TransportDirection::LE);
-    const auto prodFs_E = EvaluateSpecularReflectances(t, TransportDirection::EL);
+    const auto prodFs_L = y.EvaluateSpecularReflectances(1, s, TransportDirection::LE);
+    const auto prodFs_E = y.EvaluateSpecularReflectances(1, t, TransportDirection::EL);
     const auto prodFs = prodFs_L * prodFs_E;
     if (prodFs.Black())
     {
@@ -1255,6 +1516,11 @@ auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene* scene, const Path& x, c
         const auto& vLn = y.vertices[1];
         return vL.primitive->EvaluateDirectionPDF(vL.geom, vL.type, Vec3(), Math::Normalize(vLn.geom.p - vL.geom.p), false);
     }();
+    if (pLD.v == 0_f)
+    {
+        // Numerical error
+        return 0_f;
+    }
 
     // --------------------------------------------------------------------------------
 
@@ -1266,6 +1532,64 @@ auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene* scene, const Path& x, c
         const auto det = ManifoldUtils::ComputeConstraintJacobianDeterminant(subpathE);
         const auto G = RenderUtils::GeometryTerm(y.vertices[n-1].geom, y.vertices[n-2].geom);
         return det * G;
+    }();
+
+    // --------------------------------------------------------------------------------
+
+    const auto C = prodFs * multiG / pLD;
+    return 1_f / InversemapUtils::ScalarContrb(C);
+}
+
+auto MLTMutationStrategy::Q_Manifold(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
+{
+    const int n = (int)(x.vertices.size());
+    assert(n == (int)(y.vertices.size()));
+
+    // --------------------------------------------------------------------------------
+
+    // Product of specular reflectances
+    const auto prodFs_L = y.EvaluateSpecularReflectances(subspace.manifold.ia+1, subspace.manifold.ib, TransportDirection::LE);
+    const auto prodFs_E = y.EvaluateSpecularReflectances(n-1-(subspace.manifold.ic-1), n-1-subspace.manifold.ib, TransportDirection::EL);
+    const auto prodFs = prodFs_L * prodFs_E;
+    if (prodFs.Black())
+    {
+        return 0_f;
+    }
+
+    // --------------------------------------------------------------------------------
+
+    // Perturbation probability (using cancelling out)
+    const auto pLD = [&]() -> PDFVal
+    {
+        const auto& vL = y.vertices[subspace.manifold.ia];
+        const auto& vLn = y.vertices[subspace.manifold.ia+1];
+        return vL.primitive->EvaluateDirectionPDF(vL.geom, vL.type, Vec3(), Math::Normalize(vLn.geom.p - vL.geom.p), false);
+    }();
+    if (pLD.v == 0_f)
+    {
+        // Numerical error
+        return 0_f;
+    }
+
+    // --------------------------------------------------------------------------------
+
+    // Generalized geometry factor
+    const auto multiG = [&]() -> Float
+    {
+        if (subspace.manifold.ib + 1 == subspace.manifold.ic)
+        {
+            return RenderUtils::GeometryTerm(y.vertices[subspace.manifold.ib].geom, y.vertices[subspace.manifold.ic].geom);
+        }
+        else
+        {
+            Subpath subpathE;
+            for (int i = subspace.manifold.ic; i >= subspace.manifold.ib; i--) { subpathE.vertices.push_back(y.vertices[i]); }
+            const auto det = ManifoldUtils::ComputeConstraintJacobianDeterminant(subpathE);
+            const auto G = RenderUtils::GeometryTerm(y.vertices[subspace.manifold.ic].geom, y.vertices[subspace.manifold.ic - 1].geom);
+            return det * G;
+        }
+        LM_UNREACHABLE();
+        return 0_f;
     }();
 
     // --------------------------------------------------------------------------------

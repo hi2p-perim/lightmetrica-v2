@@ -49,7 +49,7 @@ public:
     long long numMutations_;
     long long numSeedSamples_;
     MLTMutationStrategy mut_;
-    std::vector<Float> initStrategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
+    std::vector<Float> initStrategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
     #if INVERSEMAP_OMIT_NORMALIZATION
     Float normalization_;
     #endif
@@ -77,6 +77,7 @@ public:
             initStrategyWeights_[(int)(MLTStrategy::Multichain)]      = child->ChildAs<Float>("multichain", 1_f);
             initStrategyWeights_[(int)(MLTStrategy::ManifoldLens)]    = child->ChildAs<Float>("manifoldlens", 1_f);
             initStrategyWeights_[(int)(MLTStrategy::ManifoldCaustic)] = child->ChildAs<Float>("manifoldcaustic", 1_f);
+            initStrategyWeights_[(int)(MLTStrategy::Manifold)]        = child->ChildAs<Float>("manifold", 1_f);
             initStrategyWeights_[(int)(MLTStrategy::Identity)]        = child->ChildAs<Float>("identity", 0_f);
         }
         #if INVERSEMAP_OMIT_NORMALIZATION
@@ -330,8 +331,13 @@ public:
             {
                 auto& ctx = contexts[threadid];
 
-                // --------------------------------------------------------------------------------
+                //if (index == 1119)
+                //{
+                //    __debugbreak();
+                //}
 
+                // --------------------------------------------------------------------------------
+                
                 const auto accept = [&]() -> bool
                 {
                     #pragma region Select mutation strategy
@@ -373,8 +379,8 @@ public:
 
                     #pragma region MH update
                     {
-                        const auto Qxy = MLTMutationStrategy::Q(strategy, scene, ctx.currP, prop->p, prop->kd, prop->dL);
-                        const auto Qyx = MLTMutationStrategy::Q(strategy, scene, prop->p, ctx.currP, prop->kd, prop->dL);
+                        const auto Qxy = MLTMutationStrategy::Q(strategy, scene, ctx.currP, prop->p, prop->subspace);
+                        const auto Qyx = MLTMutationStrategy::Q(strategy, scene, prop->p, ctx.currP, prop->subspace);
                         Float A = 0_f;
                         if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
                         {
@@ -400,11 +406,13 @@ public:
                     return true;
                 }();
 
+                #if LM_DEBUG_MODE
                 static long long lastAcceptIndex = 0;
                 if (accept)
                 {
                     lastAcceptIndex = index;
                 }
+                #endif
 
                 // --------------------------------------------------------------------------------
 

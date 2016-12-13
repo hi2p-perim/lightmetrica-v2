@@ -544,6 +544,29 @@ struct Path
         return rasterPos;
     }
 
+    auto EvaluateSpecularReflectances(int l1, int l2, TransportDirection transDir) const -> SPD
+    {
+        SPD prodFs(1_f);
+        const int n = (int)(vertices.size());
+        const auto index = [&](int i) { return transDir == TransportDirection::LE ? i : n - 1 - i; };
+        for (int i = l1; i < l2; i++)
+        {
+            const auto& vi  = vertices[index(i)];
+            const auto& vip = vertices[index(i - 1)];
+            const auto& vin = vertices[index(i + 1)];
+            assert(vi.type == SurfaceInteractionType::S);
+            const auto wi = Math::Normalize(vip.geom.p - vi.geom.p);
+            const auto wo = Math::Normalize(vin.geom.p - vi.geom.p);
+            const auto fs = vi.primitive->EvaluateDirection(vi.geom, vi.type, wi, wo, transDir, false);
+            const auto fsInv = vi.primitive->EvaluateDirection(vi.geom, vi.type, wo, wi, (TransportDirection)(1 - (int)transDir), false);
+            // Sometimes evaluation in the swapped directions wrongly evaluates as total internal reflection.
+            // Reject such a case here.
+            if (fsInv.Black()) { return SPD(); }
+            prodFs *= fs;
+        }
+        return prodFs;
+    }
+
 };
 
 // --------------------------------------------------------------------------------
