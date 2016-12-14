@@ -30,11 +30,14 @@ LM_NAMESPACE_BEGIN
 enum class MMLTInvmapFixed_Strategy : int
 {
     // Path space mutations
-    Bidir      = (int)(MLTStrategy::Bidir),
-    Lens       = (int)(MLTStrategy::Lens),
-    Caustic    = (int)(MLTStrategy::Caustic),
-    Multichain = (int)(MLTStrategy::Multichain),
-    Identity   = (int)(MLTStrategy::Identity),
+    Bidir           = (int)(MLTStrategy::Bidir),
+    Lens            = (int)(MLTStrategy::Lens),
+    Caustic         = (int)(MLTStrategy::Caustic),
+    Multichain      = (int)(MLTStrategy::Multichain),
+    ManifoldLens    = (int)(MLTStrategy::ManifoldLens),
+    ManifoldCaustic = (int)(MLTStrategy::ManifoldCaustic),
+    Manifold        = (int)(MLTStrategy::Manifold),
+    Identity        = (int)(MLTStrategy::Identity),
 
     // Primary sample space mutations
     SmallStep,
@@ -53,7 +56,7 @@ public:
 
     int numVertices_;
     long long numMutations_;
-    std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
+    std::vector<Float> initStrategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
     #if INVERSEMAP_OMIT_NORMALIZATION
     Float normalization_;
     #endif
@@ -75,14 +78,17 @@ public:
                 LM_LOG_ERROR("Missing 'mutation_strategy_weights'");
                 return false;
             }
-            strategyWeights_[(int)(MMLTInvmapFixed_Strategy::Bidir)]           = child->ChildAs<Float>("bidir", 1_f);
-            strategyWeights_[(int)(MMLTInvmapFixed_Strategy::Lens)]            = child->ChildAs<Float>("lens", 1_f);
-            strategyWeights_[(int)(MMLTInvmapFixed_Strategy::Caustic)]         = child->ChildAs<Float>("caustic", 1_f);
-            strategyWeights_[(int)(MMLTInvmapFixed_Strategy::Multichain)]      = child->ChildAs<Float>("multichain", 1_f);
-            strategyWeights_[(int)(MMLTInvmapFixed_Strategy::Identity)]        = child->ChildAs<Float>("identity", 0_f);
-            strategyWeights_[(int)(MMLTInvmapFixed_Strategy::SmallStep)]       = child->ChildAs<Float>("smallstep", 1_f);
-            strategyWeights_[(int)(MMLTInvmapFixed_Strategy::LargeStep)]       = child->ChildAs<Float>("largestep", 1_f);
-            strategyWeights_[(int)(MMLTInvmapFixed_Strategy::ChangeTechnique)] = child->ChildAs<Float>("changetechnique", 0_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::Bidir)]           = child->ChildAs<Float>("bidir", 1_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::Lens)]            = child->ChildAs<Float>("lens", 1_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::Caustic)]         = child->ChildAs<Float>("caustic", 1_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::Multichain)]      = child->ChildAs<Float>("multichain", 1_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::ManifoldLens)]    = child->ChildAs<Float>("manifoldlens", 0_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::ManifoldCaustic)] = child->ChildAs<Float>("manifoldcaustic", 0_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::Manifold)]        = child->ChildAs<Float>("manifold", 1_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::Identity)]        = child->ChildAs<Float>("identity", 0_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::SmallStep)]       = child->ChildAs<Float>("smallstep", 1_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::LargeStep)]       = child->ChildAs<Float>("largestep", 1_f);
+            initStrategyWeights_[(int)(MMLTInvmapFixed_Strategy::ChangeTechnique)] = child->ChildAs<Float>("changetechnique", 0_f);
         }
 
         #if INVERSEMAP_OMIT_NORMALIZATION
@@ -185,10 +191,26 @@ public:
                     #pragma region Select mutation strategy
                     const auto strategy = [&]() -> MMLTInvmapFixed_Strategy
                     {
-                        static thread_local const auto StrategyDist = [&]() -> Distribution1D
+                        const auto StrategyDist = [&]() -> Distribution1D
                         {
                             Distribution1D dist;
-                            for (Float w : strategyWeights_) dist.Add(w);
+                            for (size_t i = 0; i < initStrategyWeights_.size(); i++)
+                            {
+                                const auto w = initStrategyWeights_[i];
+                                if (i <= (int)(MMLTInvmapFixed_Strategy::Identity))
+                                {
+                                    // Path space mutations
+                                    // TODO: Optimize it
+                                    const auto currP = MultiplexedDensity::InvCDF(ctx.curr, scene);
+                                    if (MLTMutationStrategy::CheckMutatable((MLTStrategy)(i), currP->path)) { dist.Add(w); }
+                                    else { dist.Add(0_f); }
+                                }
+                                else
+                                {
+                                    // Primary sample space mutations
+                                    dist.Add(w);
+                                }
+                            }
                             dist.Normalize();
                             return dist;
                         }();
@@ -365,6 +387,12 @@ public:
             #pragma endregion
         }
         #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
+        MLTMutationStrategy::PrintStat();
+        #endif
 
         // --------------------------------------------------------------------------------
         

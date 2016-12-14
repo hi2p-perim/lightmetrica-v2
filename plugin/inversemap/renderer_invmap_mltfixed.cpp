@@ -331,11 +331,6 @@ public:
             {
                 auto& ctx = contexts[threadid];
 
-                //if (index == 1119)
-                //{
-                //    __debugbreak();
-                //}
-
                 // --------------------------------------------------------------------------------
                 
                 const auto accept = [&]() -> bool

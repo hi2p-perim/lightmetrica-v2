@@ -44,11 +44,13 @@ namespace
         {
             r = r * 2_f;
             result = u + s2 * std::exp(-std::log(s2 / s1) * r);
+            if (result > 1_f) result -= 1_f;
         }
         else
         {
             r = (r - 0.5_f) * 2_f;
             result = u - s2 * std::exp(-std::log(s2 / s1) * r);
+            if (result < 0_f) result += 1_f;
         }
         return result;
     }
@@ -194,7 +196,7 @@ auto MLTMutationStrategy::CheckMutatable_Multichain(const Path& currP) -> bool
 auto MLTMutationStrategy::CheckMutatable_ManifoldLens(const Path& currP) -> bool
 {
     const auto type = currP.PathType();
-    std::regex reg(R"x(^LS+DS*E$)x");
+    std::regex reg(R"x(^LS+[DG]S*E$)x");
     std::smatch match;
     if (!std::regex_match(type, match, reg)) { return false; }
     return true;
@@ -203,7 +205,7 @@ auto MLTMutationStrategy::CheckMutatable_ManifoldLens(const Path& currP) -> bool
 auto MLTMutationStrategy::CheckMutatable_ManifoldCaustic(const Path& currP) -> bool
 {
     const auto type = currP.PathType();
-    std::regex reg(R"x(^LS*DS+E$)x");
+    std::regex reg(R"x(^LS*[DG]S+E$)x");
     std::smatch match;
     if (!std::regex_match(type, match, reg)) { return false; }
     return true;
@@ -212,7 +214,7 @@ auto MLTMutationStrategy::CheckMutatable_ManifoldCaustic(const Path& currP) -> b
 auto MLTMutationStrategy::CheckMutatable_Manifold(const Path& currP) -> bool
 {
     const auto type = currP.PathType();
-    std::regex reg(R"x(^L[DS]*D[DS]*E$)x");
+    std::regex reg(R"x(^L[DSG]*[DG][DSG]*E$)x");
     std::smatch match;
     if (!std::regex_match(type, match, reg)) { return false; }
     return true;
@@ -659,7 +661,7 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
     #pragma region Check if current path can be mutated with the strategy
     {
         const auto type = currP.PathType();
-        std::regex reg(R"x(^LS+DS*E$)x");
+        std::regex reg(R"x(^LS+[DG]S*E$)x");
         std::smatch match;
         if (!std::regex_match(type, match, reg))
         {
@@ -858,7 +860,7 @@ auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene* scene, Random& rng
     #pragma region Check if current path can be mutated with the strategy
     {
         const auto type = currP.PathType();
-        std::regex reg(R"x(^LS*DS+E$)x");
+        std::regex reg(R"x(^LS*[DG]S+E$)x");
         std::smatch match;
         if (!std::regex_match(type, match, reg))
         {
@@ -1056,7 +1058,7 @@ auto MLTMutationStrategy::Mutate_Manifold(const Scene* scene, Random& rng, const
     #pragma region Check if current path can be mutated with the strategy
     {
         const auto type = currP.PathType();
-        std::regex reg(R"x(^L[DS]*D[DS]*E$)x");
+        std::regex reg(R"x(^L[DSG]*[DG][DSG]*E$)x");
         std::smatch match;
         if (!std::regex_match(type, match, reg))
         {

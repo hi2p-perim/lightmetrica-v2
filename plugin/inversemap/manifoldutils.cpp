@@ -614,8 +614,8 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
                     return boost::none;
                 }
                     
-                // Fails if the last vertex is not D
-                if (i == n - 1 && (isect.primitive->Type() & SurfaceInteractionType::D) == 0)
+                // Fails if the last vertex is S
+                if (i == n - 1 && (isect.primitive->Type() & SurfaceInteractionType::S) != 0)
                 {
                     return boost::none;
                 }
