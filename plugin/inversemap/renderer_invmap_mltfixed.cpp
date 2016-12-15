@@ -291,7 +291,8 @@ public:
                     }
                     const auto f1 = path->EvaluateF(0).Luminance();
                     const auto f2 = path2->EvaluateF(0).Luminance();
-                    if (Math::Abs(f1 - f2) > Math::Eps())
+                    const auto err = Math::Abs(f1 - f2) / Math::Abs(f1);
+                    if (err > Math::Eps())
                     {
                         continue;
                     }

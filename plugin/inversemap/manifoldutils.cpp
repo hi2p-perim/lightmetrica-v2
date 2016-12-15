@@ -113,6 +113,7 @@ auto SolveBlockLinearEq(const ConstraintJacobian& nablaC, const std::vector<Vec2
 
 }
 
+#if 0
 auto ManifoldUtils::ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void
 {
 	const int n = (int)(path.vertices.size());
@@ -202,6 +203,99 @@ auto ManifoldUtils::ComputeConstraintJacobian(const Subpath& path, ConstraintJac
 		#pragma endregion
 	}
 }
+#else
+auto ManifoldUtils::ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void
+{
+	const int n = (int)(path.vertices.size());
+	for (int i = 1; i < n - 1; i++)
+	{
+		#pragma region Some precomputation
+
+        const auto vi  = path.vertices[i];
+        const auto vip = path.vertices[i - 1];
+        const auto vin = path.vertices[i + 1];
+
+		const auto& x  = vi.geom;
+		const auto& xp = vip.geom;
+		const auto& xn = vin.geom;
+			
+		const auto wi  = Math::Normalize(xp.p - x.p);
+		const auto wo  = Math::Normalize(xn.p - x.p);
+        const auto eta = 1_f / vi.primitive->bsdf->Eta(x, wi);
+        // No need to normalize H for index-matched materials or reflections
+        const bool normalizeH = eta != 1_f;
+		const auto H   = normalizeH ? Math::Normalize(wi + eta * wo) : wi + wo;
+
+		const auto inv_wiL = 1_f / Math::Length(xp.p - x.p);                        // ili
+		const auto inv_woL = 1_f / Math::Length(xn.p - x.p);                        // ilo
+        const auto inv_HL = normalizeH ? 1_f / Math::Length(wi + eta * wo) : 1_f;  // ilh
+			
+		const auto dot_H_n    = Math::Dot(x.sn, H);
+		const auto dot_H_dndu = Math::Dot(x.dndu, H);
+		const auto dot_H_dndv = Math::Dot(x.dndv, H);
+		const auto dot_u_n    = Math::Dot(x.dpdu, x.sn);
+		const auto dot_v_n    = Math::Dot(x.dpdv, x.sn);
+
+		const auto s = x.dpdu - dot_u_n * x.sn;
+		const auto t = x.dpdv - dot_v_n * x.sn;
+
+		const auto div_inv_wiL_HL = inv_wiL * inv_HL;         // ili := ili * ilh
+		const auto div_inv_woL_HL = inv_woL * inv_HL * eta;   // ilo := ilo * eta * ilh
+
+		#pragma endregion
+
+		// --------------------------------------------------------------------------------
+
+		#pragma region Compute A_i (derivative w.r.t. x_{i-1})
+			
+		{
+			const auto tu = (xp.dpdu - wi * Math::Dot(wi, xp.dpdu)) * div_inv_wiL_HL;
+			const auto tv = (xp.dpdv - wi * Math::Dot(wi, xp.dpdv)) * div_inv_wiL_HL;
+			const auto dHdu = normalizeH ? tu - H * Math::Dot(tu, H) : tu;
+			const auto dHdv = normalizeH ? tv - H * Math::Dot(tv, H) : tv;
+			nablaC[i-1].A = Mat2(
+				Math::Dot(dHdu, s), Math::Dot(dHdu, t),
+				Math::Dot(dHdv, s), Math::Dot(dHdv, t));
+		}
+
+		#pragma endregion
+			
+		// --------------------------------------------------------------------------------
+
+		#pragma region Compute B_i (derivative w.r.t. x_i)
+
+		{
+			const auto tu = -x.dpdu * (div_inv_wiL_HL + div_inv_woL_HL) + wi * (Math::Dot(wi, x.dpdu) * div_inv_wiL_HL) + wo * (Math::Dot(wo, x.dpdu) * div_inv_woL_HL);
+			const auto tv = -x.dpdv * (div_inv_wiL_HL + div_inv_woL_HL) + wi * (Math::Dot(wi, x.dpdv) * div_inv_wiL_HL) + wo * (Math::Dot(wo, x.dpdv) * div_inv_woL_HL);
+			const auto dHdu = normalizeH ? tu - H * Math::Dot(tu, H) : tu;
+			const auto dHdv = normalizeH ? tv - H * Math::Dot(tv, H) : tv;
+			nablaC[i-1].B = Mat2(
+				Math::Dot(dHdu, s) - Math::Dot(x.dpdu, x.dndu) * dot_H_n - dot_u_n * dot_H_dndu,
+				Math::Dot(dHdu, t) - Math::Dot(x.dpdv, x.dndu) * dot_H_n - dot_v_n * dot_H_dndu,
+				Math::Dot(dHdv, s) - Math::Dot(x.dpdu, x.dndv) * dot_H_n - dot_u_n * dot_H_dndv,
+				Math::Dot(dHdv, t) - Math::Dot(x.dpdv, x.dndv) * dot_H_n - dot_v_n * dot_H_dndv);
+		}
+
+		#pragma endregion
+			
+		// --------------------------------------------------------------------------------
+
+		#pragma region Compute C_i (derivative w.r.t. x_{i+1})
+
+		{
+			const auto tu = (xn.dpdu - wo * Math::Dot(wo, xn.dpdu)) * div_inv_woL_HL;
+			const auto tv = (xn.dpdv - wo * Math::Dot(wo, xn.dpdv)) * div_inv_woL_HL;
+			const auto dHdu = normalizeH ? tu - H * Math::Dot(tu, H) : tu;
+			const auto dHdv = normalizeH ? tv - H * Math::Dot(tv, H) : tv;
+			nablaC[i - 1].C = Mat2(
+				Math::Dot(dHdu, s), Math::Dot(dHdu, t),
+				Math::Dot(dHdv, s), Math::Dot(dHdv, t));
+		}
+
+		#pragma endregion
+	}
+}
+#endif
 
 // --------------------------------------------------------------------------------
 
