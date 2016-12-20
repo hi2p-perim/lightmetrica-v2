@@ -33,10 +33,13 @@
 #include <mutex>
 #include <functional>
 #include <tuple>
+#include <condition_variable>
 
 #include <boost/optional.hpp>
 #include <boost/signals2.hpp>
 #include <boost/bind.hpp>
+
+#if LM_COMPILER_MSVC
 #pragma warning(push)
 #pragma warning(disable:4267)
 #pragma warning(disable:4251)
@@ -44,6 +47,17 @@
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
 #pragma warning(pop)
+#elif LM_COMPILER_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#include <boost/asio.hpp>
+#include <boost/asio/spawn.hpp>
+#pragma clang diagnostic pop
+#else
+#include <boost/asio.hpp>
+#include <boost/asio/spawn.hpp>
+#endif
+
 
 LM_NAMESPACE_BEGIN
 

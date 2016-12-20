@@ -172,7 +172,7 @@ private:
     {
         // Input u \in [0,1]^2
         const auto ToOpenOpen = [](Float u) -> Float { return (1_f - 2_f * Math::Eps()) * u + Math::Eps(); };
-        const auto ToClosedOpen = [](Float u) -> Float { return (1_f - Math::Eps()) * u; };
+        //const auto ToClosedOpen = [](Float u) -> Float { return (1_f - Math::Eps()) * u; };
         const auto ToOpenClosed = [](Float u) -> Float { return (1_f - Math::Eps()) * u + Math::Eps(); };
 
         // u0 \in (0,1]

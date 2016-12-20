@@ -232,7 +232,7 @@ public:
             for (int j = 0; j < BinSize; j++)
             #endif
             {
-                const auto D = 1_f / BinSize;
+                //const auto D = 1_f / BinSize;
                 Vec3 p;
                 p.x = (((Float)j + 0.5_f) / BinSize) * 2_f - 1_f;
                 p.y = -1_f;

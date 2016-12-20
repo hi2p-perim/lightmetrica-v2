@@ -80,6 +80,7 @@ public:
             v.push_back(uT_);
             v.insert(v.end(), usL_.begin(), usL_.end());
             v.insert(v.end(), usE_.begin(), usE_.end());
+			return v;
         }
 
         auto Swap(State& o) -> void
@@ -225,9 +226,9 @@ public:
         {
             const auto* v = &p.vertices[index(i)];
             const auto* vp = index(i - 1) >= 0 && index(i - 1) < n ? &p.vertices[index(i - 1)] : nullptr;
-            const auto* vn = index(i + 1) >= 0 && index(i + 1) < n ? &p.vertices[index(i + 1)] : nullptr;
+            //const auto* vn = index(i + 1) >= 0 && index(i + 1) < n ? &p.vertices[index(i + 1)] : nullptr;
             const auto* vpp = index(i - 2) >= 0 && index(i - 2) < n ? &p.vertices[index(i - 2)] : nullptr;
-            const auto* vnn = index(i + 2) >= 0 && index(i + 2) < n ? &p.vertices[index(i + 2)] : nullptr;
+            //const auto* vnn = index(i + 2) >= 0 && index(i + 2) < n ? &p.vertices[index(i + 2)] : nullptr;
             assert(vp != nullptr || vn != nullptr);
 
             if (!vp)

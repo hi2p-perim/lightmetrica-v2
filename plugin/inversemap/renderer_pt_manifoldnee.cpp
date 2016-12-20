@@ -113,8 +113,8 @@ public:
         // --------------------------------------------------------------------------------
 
         #if LM_PT_MANIFOLDNEE_MANIFOLDWALK_STAT
-        std::atomic<long long> manifoldWalkCount = 0;
-        std::atomic<long long> manifoldWalkSuccessCount = 0;
+        std::atomic<long long> manifoldWalkCount(0);
+        std::atomic<long long> manifoldWalkSuccessCount(0);
         #endif
 
         auto* film_ = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
@@ -367,7 +367,7 @@ public:
                             return C;
                         }
                         LM_UNREACHABLE();
-                        return Vec3();
+                        return SPD();
                     }();
                     if (!C || C->Black())
                     {

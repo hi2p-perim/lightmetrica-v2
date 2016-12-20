@@ -27,12 +27,14 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/types/vector.hpp>
 
-#pragma warning(push)
+#if LM_COMPILER_MSVC
 #pragma warning(disable:4714)
 #pragma warning(disable:4701)
 #pragma warning(disable:4456)
 #include <Eigen/Dense>
-#pragma warning(pop)
+#else
+#include <eigen3/Eigen/Dense>
+#endif
 
 #define INVERSEMAP_MANIFOLDWALK_USE_EIGEN_SOLVER 1
 #define INVERSEMAP_MANIFOLDWALK_BETA_EXT 0
@@ -516,7 +518,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
         // --------------------------------------------------------------------------------
 
         {
-            const auto d = Math::Length(currP.vertices.back().geom.p - target);
+            //const auto d = Math::Length(currP.vertices.back().geom.p - target);
             //LM_LOG_DEBUG(boost::str(boost::format("#%02d: Dist to target %.15f") % iteration % d));
         }
 

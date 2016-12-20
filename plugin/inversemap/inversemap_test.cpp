@@ -119,7 +119,7 @@ public:
     {
         // Input u \in [0,1]^2
         const auto ToOpenOpen = [](Float u) -> Float { return (1_f - 2_f * Math::Eps()) * u + Math::Eps(); };
-        const auto ToClosedOpen = [](Float u) -> Float { return (1_f - Math::Eps()) * u; };
+        //const auto ToClosedOpen = [](Float u) -> Float { return (1_f - Math::Eps()) * u; };
         const auto ToOpenClosed = [](Float u) -> Float { return (1_f - Math::Eps()) * u + Math::Eps(); };
 
         // u0 \in (0,1]
@@ -276,13 +276,13 @@ TEST_F(InversemapTest, GGXInverseConsistency)
             EXPECT_TRUE(result);
             if (!result)
             {
-                __debugbreak();
+                //__debugbreak();
             }
         }
     }
     catch (const std::exception)
     {
-        __debugbreak();
+        //__debugbreak();
     }
 }
 
@@ -317,13 +317,13 @@ TEST_F(InversemapTest, GGXInverseConsistencyInv)
                 // u2 := CDF(H2)
                 const auto u2 = SampleGGX_Inverse(H2);
                 LM_UNUSED(u2);
-                __debugbreak();
+                //__debugbreak();
             }
         }
     }
     catch (const std::exception)
     {
-        __debugbreak();
+        //__debugbreak();
     }
 }
 #endif

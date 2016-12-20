@@ -161,7 +161,7 @@ public:
                     {
                         continue;
                     }
-                    const auto C1 = (path->Cstar * path->w).Luminance();
+                    //const auto C1 = (path->Cstar * path->w).Luminance();
                     const auto C2 = (path_invS->Cstar * path_invS->w).Luminance();
                     //if (path->s != path_invS->s || path->t != path_invS->t || Math::Abs(C1 - C2) > Math::Eps())
                     //{
@@ -331,7 +331,7 @@ public:
                                 {
                                     return false;
                                 }
-                                const auto C1 = (currP.Cstar * currP.w).Luminance();
+                                //const auto C1 = (currP.Cstar * currP.w).Luminance();
                                 const auto C2 = (path_propInvS->Cstar * path_propInvS->w).Luminance();
                                 //if (currP.s != path_propInvS->s || currP.t != path_propInvS->t || Math::Abs(C1 - C2) > Math::Eps())
                                 //{
@@ -357,6 +357,7 @@ public:
                     LM_UNREACHABLE();
                     return true;
                 }();
+                LM_UNUSED(accept);
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------

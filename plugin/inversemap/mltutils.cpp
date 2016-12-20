@@ -1197,7 +1197,7 @@ auto MLTMutationStrategy::Mutate_Manifold(const Scene* scene, Random& rng, const
         {
             // Sampling is failed if the last vertex is S or point at infinity, or no change in number of vertices
             const auto& vL = subpathL.vertices.back();
-            if (vL.geom.infinite || (vL.primitive->Type() & SurfaceInteractionType::S) > 0 || subpathL.vertices.size() != subspace->ib+1)
+            if (vL.geom.infinite || (vL.primitive->Type() & SurfaceInteractionType::S) > 0 || (int)subpathL.vertices.size() != subspace->ib+1)
             {
                 return boost::none;
             }
