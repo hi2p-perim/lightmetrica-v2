@@ -26,7 +26,21 @@
 # Build options
 #
 
-#include(CMakeDependentOption)
+include(CMakeDependentOption)
+
+# LM_USE_SINGLE_PRECISION
+option(LM_USE_SINGLE_PRECISION "Use single presicion floating-point number" ON)
+if (LM_USE_SINGLE_PRECISION)
+    add_definitions(-DLM_USE_SINGLE_PRECISION)
+endif()
+
+# LM_USE_DOUBLE_PRECISION
+cmake_dependent_option(
+    LM_USE_DOUBLE_PRECISION "Use double precision floating-point number" ON
+    "NOT LM_USE_SINGLE_PRECISION" OFF)
+if (LM_USE_DOUBLE_PRECISION)
+    add_definitions(-DLM_USE_DOUBLE_PRECISION)
+endif()
 
 # Build type must be specified for make-like generators
 if (NOT CMAKE_BUILD_TYPE)
@@ -34,3 +48,5 @@ if (NOT CMAKE_BUILD_TYPE)
         "Choose build type (Debug, Release, RelWithDebInfo, or MinSizeRel)" FORCED)
 endif()
 
+# Distribution directory name
+set(LM_DIST_DIR_NAME "dist" CACHE STRING "Distribution directory name (default: 'dist')")
