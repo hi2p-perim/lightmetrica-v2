@@ -52,7 +52,7 @@ struct PDFVal
     PDFVal(PDFMeasure measure, Float v) : measure(measure), v(v) {}
 
     //! Convert to area measure.
-    auto ConvertToArea(const SurfaceGeometry& geom1, const SurfaceGeometry& geom2) -> PDFVal
+    auto ConvertToArea(const SurfaceGeometry& geom1, const SurfaceGeometry& geom2) const -> PDFVal
     {
         switch (measure)
         {
@@ -90,7 +90,7 @@ struct PDFVal
     }
 
     //! Convert to projected solid angle measure
-    auto ConvertToProjSA(const SurfaceGeometry& geom1, const SurfaceGeometry& geom2) -> PDFVal
+    auto ConvertToProjSA(const SurfaceGeometry& geom1, const SurfaceGeometry& geom2) const -> PDFVal
     {
         switch (measure)
         {

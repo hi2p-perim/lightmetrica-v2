@@ -4,7 +4,9 @@ if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 	# Install some dependencies
 	brew update
 	brew unlink cmake boost
-	brew install cmake tbb assimp freeimage boost eigen
+	brew install cmake
+	brew link cmake
+	brew install tbb assimp freeimage boost eigen
 
 	# Install ctemplate
 	# cd $HOME

@@ -14,5 +14,5 @@ resources/
 experimental/
 external/
 example
-dist/
+dist*/
 .idea/

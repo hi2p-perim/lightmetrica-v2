@@ -46,6 +46,11 @@ public:
 
     LM_IMPL_CLASS(Renderer_LT, Renderer);
 
+private:
+
+    int maxNumVertices_;
+    Scheduler::UniquePtr sched_;
+
 public:
 
     Renderer_LT()
@@ -238,11 +243,6 @@ public:
         }
         #pragma endregion
     };
-
-private:
-
-    int maxNumVertices_;
-    Scheduler::UniquePtr sched_;
 
 };
 

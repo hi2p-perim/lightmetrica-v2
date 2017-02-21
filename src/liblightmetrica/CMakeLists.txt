@@ -337,6 +337,7 @@ set(
 	"renderer/renderer_raycast.cpp"
 	"renderer/renderer_pt.cpp"
 	"renderer/renderer_ptdirect.cpp"
+    "renderer/renderer_ptmis.cpp"
 	"renderer/renderer_lt.cpp"
 	"renderer/renderer_ltdirect.cpp"
 	"renderer/renderer_bdpt.cpp"
