@@ -38,7 +38,7 @@
 #include <lightmetrica/scheduler.h>
 #include <lightmetrica/renderutils.h>
 #include <lightmetrica/detail/photonmap.h>
-#include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/subpathsampler.h>
 #include <lightmetrica/detail/parallel.h>
 #include <tbb/tbb.h>
 
@@ -84,13 +84,17 @@ public:
         alpha_                 = prop->ChildAs<Float>("alpha", 0.7_f);
         photonmap_             = ComponentFactory::Create<PhotonMap>("photonmap::" + prop->ChildAs<std::string>("photonmap", "kdtree"));
         #if LM_PPM_DEBUG
-        debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "sppm_%05d");
+        debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "ppm_%05d");
         #endif
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Collect measumrement points
         
         struct MeasurementPoint
@@ -101,7 +105,7 @@ public:
             Vec3 wi;                        // Direction to previous vertex
             SPD throughputE;                // Throughput of importance
             SPD tau;                        // Sum of throughput of luminance multiplies BSDF (Eq.10 in [Hachisuka et al. 2008]
-            PhotonMapUtils::PathVertex v;   // Current vertex information
+            SubpathSampler::PathVertex v;   // Current vertex information
             SPD emission;                   // Contribution of LS*E
             int numVertices;                // Number of vertices needed to generate the measurement point 
         };
@@ -125,7 +129,7 @@ public:
             Parallel::For(numSamples_, [&](long long index, int threadid, bool init)
             {
                 auto& ctx = contexts[threadid];
-                PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, const SPD& throughput) -> bool
+                SubpathSampler::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, const SPD& throughput) -> bool
                 {
                     // Skip initial vertex
                     if (numVertices == 1)
@@ -200,7 +204,7 @@ public:
                 Parallel::For(numPhotonTraceSamples_, [&](long long index, int threadid, bool init)
                 {
                     auto& ctx = contexts[threadid];
-                    PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+                    SubpathSampler::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                     {
                         // Skip initial vertex
                         if (numVertices == 1)
@@ -311,6 +315,16 @@ public:
                 #endif
             }
             #pragma endregion
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
         }
         #pragma endregion
     };

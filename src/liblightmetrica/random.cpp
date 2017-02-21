@@ -24,14 +24,26 @@
 
 #include <pch.h>
 #include <lightmetrica/random.h>
+
+#define LM_RANDOM_USE_STANDARD_RANDOM 0
+#if LM_RANDOM_USE_STANDARD_RANDOM
+#include <random>
+#else
 #include <dSFMT.h>
+#endif
 
 LM_NAMESPACE_BEGIN
 
 class Random::Impl
 {
 public:
+    #if LM_RANDOM_USE_STANDARD_RANDOM
+    std::mt19937 engine_;
+    std::uniform_real_distribution<Float> distFloat_;
+    std::uniform_int_distribution<unsigned int> distUInt_;
+    #else
     dsfmt_t dsfmt;
+    #endif
 };
 
 auto Random_Constructor(Random* p) -> void
@@ -46,17 +58,50 @@ auto Random_Destructor(Random* p) -> void
 
 auto Random_SetSeed(Random* p, unsigned int seed) -> void
 {
+    #if LM_RANDOM_USE_STANDARD_RANDOM
+    p->p_->engine_.seed(seed);
+    p->p_->distFloat_.reset();
+    p->p_->distUInt_.reset();
+    #else
     dsfmt_init_gen_rand(&p->p_->dsfmt, seed);
+    #endif
 }
 
 auto Random_NextUInt(Random* p) -> unsigned int
 {
+    #if LM_RANDOM_USE_STANDARD_RANDOM
+    return p->p_->distUInt_(p->p_->engine_);
+    #else
     return dsfmt_genrand_uint32(&p->p_->dsfmt);
+    #endif
 }
 
 auto Random_Next(Random* p) -> double
 {
+    #if LM_RANDOM_USE_STANDARD_RANDOM
+    return p->p_->distFloat_(p->p_->engine_);
+    #else
     return dsfmt_genrand_close_open(&p->p_->dsfmt);
+    #endif
+}
+
+auto Random_GetInternalState(Random* p, unsigned char** state, size_t* size) -> void
+{
+    #if LM_RANDOM_USE_STANDARD_RANDOM
+    LM_TBA_RUNTIME();
+    #else
+    *state = reinterpret_cast<unsigned char*>(&p->p_->dsfmt);
+    *size  = sizeof(dsfmt_t);
+    #endif
+}
+
+auto Random_SetInternalState(Random* p, const unsigned char* state) -> void
+{
+    #if LM_RANDOM_USE_STANDARD_RANDOM
+    LM_TBA_RUNTIME();
+    #else
+    std::memcpy(&p->p_->dsfmt, state, sizeof(dsfmt_t));
+    #endif
 }
 
 LM_NAMESPACE_END

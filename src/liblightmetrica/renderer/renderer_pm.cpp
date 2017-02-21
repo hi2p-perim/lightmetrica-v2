@@ -36,7 +36,7 @@
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/detail/photonmap.h>
-#include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/subpathsampler.h>
 #include <lightmetrica/detail/parallel.h>
 
 LM_NAMESPACE_BEGIN
@@ -69,7 +69,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film_) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
         #pragma region Trace photons
         std::vector<Photon> photons;
@@ -91,7 +91,7 @@ public:
             Parallel::For(numPhotonTraceSamples_, [&](long long index, int threadid, bool init)
             {
                 auto& ctx = contexts[threadid];
-                PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+                SubpathSampler::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                 {
                     // Record photon
                     if ((v.type & SurfaceInteractionType::D) > 0 || (v.type & SurfaceInteractionType::G) > 0)
@@ -139,10 +139,11 @@ public:
         // --------------------------------------------------------------------------------
 
         #pragma region Trace eye rays
+        auto* film_ = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
         {
             bool gatherNext = !finalgather_;
-            PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+            SubpathSampler::TraceSubpath(scene, rng, maxNumVertices_, TransportDirection::EL, [&](int numVertices, const Vec2& rasterPos, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, SPD& throughput) -> bool
             {
                 // Skip initial vertex
                 if (numVertices == 1)
@@ -198,6 +199,16 @@ public:
                 return true;
             });
         });
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film_->Save(outputPath);
+        }
         #pragma endregion
     };
 

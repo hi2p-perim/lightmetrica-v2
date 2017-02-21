@@ -39,6 +39,7 @@
 #include <memory>
 #include <string>
 #include <sstream>
+#include <cassert>
 
 /*!
     \defgroup component Component system
@@ -427,6 +428,7 @@ public:
 extern "C"
 {
     LM_PUBLIC_API auto ComponentFactory_Register(const char* key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void;
+    LM_PUBLIC_API auto ComponentFactory_Unregister(const char* key) -> void;
     LM_PUBLIC_API auto ComponentFactory_Create(const char* key) -> Component*;
     LM_PUBLIC_API auto ComponentFactory_ReleaseFunc(const char* key) -> ReleaseFuncPointerType;
     LM_PUBLIC_API auto ComponentFactory_LoadPlugin(const char* path) -> bool;
@@ -445,6 +447,7 @@ public:
 
     //! \cond detail
     static auto Register(const std::string& key, CreateFuncPointerType createFunc, ReleaseFuncPointerType releaseFunc) -> void { LM_EXPORTED_F(ComponentFactory_Register, key.c_str(), createFunc, releaseFunc); }
+    static auto Unregister(const std::string& key) -> void { LM_EXPORTED_F(ComponentFactory_Unregister, key.c_str()); }
     static auto Create(const std::string& key) -> Component* { return LM_EXPORTED_F(ComponentFactory_Create, key.c_str()); }
     static auto ReleaseFunc(const std::string& key) -> ReleaseFuncPointerType { return LM_EXPORTED_F(ComponentFactory_ReleaseFunc, key.c_str()); }
     //! \endcond
@@ -561,6 +564,10 @@ namespace
 template <typename ImplType>
 class ImplEntry
 {
+private:
+
+    std::string key_;
+
 public:
 
     static auto Instance(const std::string& key) -> ImplEntry<ImplType>&
@@ -572,6 +579,7 @@ public:
 private:
 
     ImplEntry(const std::string& key)
+        : key_(key)
     {
         ComponentFactory::Register(
             key,
@@ -582,6 +590,11 @@ private:
                 LM_SAFE_DELETE(p2);
                 p = nullptr;
             });
+    }
+
+    ~ImplEntry()
+    {
+        ComponentFactory::Unregister(key_);
     }
 
 };

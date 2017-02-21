@@ -62,14 +62,27 @@ LM_NAMESPACE_BEGIN
 */
 class LoggerImpl
 {
+private:
+
+    static std::unique_ptr<LoggerImpl> instance_;
+
 public:
 
-	static LoggerImpl* Instance();
+    static LoggerImpl* Instance()
+    {
+        if (!instance_) instance_.reset(new LoggerImpl);
+        return instance_.get();
+    }
 
 public:
 
 	auto Run(bool restart = false) -> void
 	{
+        if (started_)
+        {
+            return;
+        }
+        started_ = true;
         if (!restart)
         {
             logStartTime_ = std::chrono::high_resolution_clock::now();
@@ -79,6 +92,10 @@ public:
 
 	auto Stop() -> void
 	{
+        if (!started_)
+        {
+            return;
+        }
 		if (ioThread_.joinable())
 		{
             // Clear the `work` associated to `io_service`
@@ -92,6 +109,7 @@ public:
             work_.reset(new boost::asio::io_service::work(io_));
 
             // Reset internal states
+            started_ = false;
             indentation_ = 0;
             indentationString_ = "";
             prevMessageIsInplace_ = false;
@@ -175,7 +193,10 @@ public:
 					    }
 				    }
 				    #endif
-				    std::cout << std::string(consoleWidth, ' ') << "\r";
+                    std::cout << std::string(consoleWidth, ' ');
+                    std::cout.flush();
+                    std::cout << "\r";
+                    std::cout.flush();
 			    }
 
 			    // Print message
@@ -183,7 +204,9 @@ public:
 			    const auto text = simple ? messageLine : GenerateMessage(type, messageLine, boost::filesystem::path(filename).filename().string(), line, threadId);
 			    if (inplace)
 			    {
-				    std::cout << text << "\r";
+                    std::cout << text;
+                    std::cout.flush();
+                    std::cout << "\r";
 				    std::cout.flush();
 				    prevMessageIsInplace_ = true;
 			    }
@@ -277,17 +300,13 @@ private:
 
 private:
 
-	static std::atomic<LoggerImpl*> instance_;
-	static std::mutex mutex_;
-
-private:
-
 	boost::asio::io_service io_;
 	std::unique_ptr<boost::asio::io_service::work> work_{new boost::asio::io_service::work(io_)};
 	std::thread ioThread_;
 
 private:
 
+    bool started_ = false;
     std::chrono::high_resolution_clock::time_point logStartTime_;
 	int indentation_ = 0;
 	std::string indentationString_;
@@ -298,26 +317,7 @@ private:
 
 };
 
-std::atomic<LoggerImpl*> LoggerImpl::instance_;
-std::mutex LoggerImpl::mutex_;
-
-auto LoggerImpl::Instance() -> LoggerImpl*
-{
-	auto* p = instance_.load(std::memory_order_relaxed);
-    std::atomic_thread_fence(std::memory_order_acquire);
-	if (p == nullptr)
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		p = instance_.load(std::memory_order_relaxed);
-		if (p == nullptr)
-		{
-			p = new LoggerImpl;
-			std::atomic_thread_fence(std::memory_order_release);
-			instance_.store(p, std::memory_order_relaxed);
-		}
-	}
-	return p;
-}
+std::unique_ptr<LoggerImpl> LoggerImpl::instance_;
 
 auto Logger_Run() -> void { LoggerImpl::Instance()->Run(); }
 auto Logger_Stop() -> void { LoggerImpl::Instance()->Stop(); }

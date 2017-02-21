@@ -38,13 +38,15 @@
 #include <lightmetrica/scheduler.h>
 #include <lightmetrica/renderutils.h>
 #include <lightmetrica/detail/photonmap.h>
-#include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/subpathsampler.h>
 #include <lightmetrica/detail/parallel.h>
 #include <tbb/tbb.h>
 
 LM_NAMESPACE_BEGIN
 
-#define LM_SPPM_DEBUG 1
+#define LM_SPPM_DEBUG 0
+#define LM_SPPM_DEBUG_OUTPUT_PER_30_SEC 0
+#define LM_SPPM_RENDER_WITH_TIME 0
 
 /*!
     \brief Stochastic progressive photon mapping renderer.
@@ -70,6 +72,9 @@ private:
     #if LM_SPPM_DEBUG
     std::string debugOutputPath_;
     #endif
+    #if LM_SPPM_RENDER_WITH_TIME
+    double renderTime_;
+    #endif
 
 public:
 
@@ -84,10 +89,13 @@ public:
         #if LM_SPPM_DEBUG
         debugOutputPath_       = prop->ChildAs<std::string>("debug_output_path", "sppm_%05d");
         #endif
+        #if LM_SPPM_RENDER_WITH_TIME
+        renderTime_            = prop->ChildAs("render_time", 10.0);
+        #endif
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
         #pragma region Render pass
 
@@ -100,11 +108,12 @@ public:
             SPD tau;                        // Sum of throughput of luminance multiplies BSDF (Eq.10 in [Hachisuka et al. 2008]
             Vec3 wi;                        // Direction to previous vertex
             SPD throughputE;                // Throughput of importance
-            PhotonMapUtils::PathVertex v;   // Current vertex information
+            SubpathSampler::PathVertex v;   // Current vertex information
             SPD emission;                   // Contribution of LS*E
             int numVertices;                // Number of vertices needed to generate the measurement point 
         };
 
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         const auto W = film->Width();
         const auto H = film->Height();
         std::vector<MeasurementPoint> mps(W * H);
@@ -116,7 +125,12 @@ public:
 
         long long totalPhotonTraceSamples = 0;
 
+        #if LM_SPPM_RENDER_WITH_TIME
+        const auto renderStartTime = std::chrono::high_resolution_clock::now();
+        for (long long pass = 0; ; pass++)
+        #else
         for (long long pass = 0; pass < numIterationPass_; pass++)
+        #endif
         {
             LM_LOG_INFO("Pass " + std::to_string(pass));
             LM_LOG_INDENTER();
@@ -143,7 +157,7 @@ public:
                     auto& ctx = contexts[threadid];
                     const Vec2 initRasterPos(((Float)(index % W) + ctx.rng.Next()) / W, ((Float)(index / W) + ctx.rng.Next()) / H);
                     mps[index].valid = false;
-                    PhotonMapUtils::TraceEyeSubpathFixedRasterPos(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, initRasterPos, [&](int numVertices, const Vec2& rasterPos, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, const SPD& throughput) -> bool
+                    SubpathSampler::TraceEyeSubpathFixedRasterPos(scene, &ctx.rng, maxNumVertices_, TransportDirection::EL, initRasterPos, [&](int numVertices, const Vec2& rasterPos, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, const SPD& throughput) -> bool
                     {
                         // Skip initial vertex
                         if (numVertices == 1)
@@ -202,7 +216,7 @@ public:
                 Parallel::For(numPhotonTraceSamples_, [&](long long index, int threadid, bool init)
                 {
                     auto& ctx = contexts[threadid];
-                    PhotonMapUtils::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+                    SubpathSampler::TraceSubpath(scene, &ctx.rng, maxNumVertices_, TransportDirection::LE, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, SPD& throughput) -> bool
                     {
                         // Skip initial vertex
                         if (numVertices == 1)
@@ -314,8 +328,47 @@ public:
                     film->Save(boost::str(f % pass));
                 }
                 #endif
+                #if LM_SPPM_DEBUG_OUTPUT_PER_30_SEC
+                {
+                    static auto prevOutputTime = std::chrono::high_resolution_clock::now();
+                    const auto currentTime = std::chrono::high_resolution_clock::now();
+                    const double elapsed = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - prevOutputTime).count()) / 1000.0;
+                    if (elapsed > 30.0)
+                    {
+                        static long long outN = 0;
+                        boost::format f("%03d");
+                        f.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
+                        film->Save(boost::str(f % outN));
+                        outN++;
+                        prevOutputTime = currentTime;
+                    }
+                }
+                #endif
             }
             #pragma endregion
+
+            // --------------------------------------------------------------------------------
+
+            #if LM_SPPM_RENDER_WITH_TIME
+            {
+                const auto currentTime = std::chrono::high_resolution_clock::now();
+                const double elapsed = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - renderStartTime).count()) / 1000.0;
+                if (elapsed > renderTime_)
+                {
+                    break;
+                }
+            }
+            #endif
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
         }
         #pragma endregion
     };

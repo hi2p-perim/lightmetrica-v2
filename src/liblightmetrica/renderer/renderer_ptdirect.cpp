@@ -62,8 +62,9 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film_) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        auto* film_ = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
         {
             #pragma region Sample a sensor
@@ -271,6 +272,16 @@ public:
                 #pragma endregion
             }
         });
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film_->Save(outputPath);
+        }
+        #pragma endregion
     };
 
 private:

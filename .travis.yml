@@ -4,7 +4,7 @@ matrix:
   include:
     - os: linux
       services: docker
-    - os: osx
+    #- os: osx
 
 install:
   - cd $TRAVIS_BUILD_DIR

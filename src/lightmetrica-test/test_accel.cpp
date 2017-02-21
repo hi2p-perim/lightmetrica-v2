@@ -29,6 +29,7 @@
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>
+#include <lightmetrica/exception.h>
 #include <lightmetrica-test/mathutils.h>
 
 LM_TEST_NAMESPACE_BEGIN
@@ -39,18 +40,30 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
 {
     virtual auto SetUp() -> void override
     {
+        SEHUtils::EnableStructuralException();
         Logger::SetVerboseLevel(2); Logger::Run();
-        ComponentFactory::LoadPlugin("./plugin/accel_embree");
+        if (std::strcmp(GetParam(), "accel::embree") == 0)
+        {
+            ComponentFactory::LoadPlugin("./plugin/accel_embree");
+        }
     }
 
     virtual auto TearDown() -> void override
     {
-        ComponentFactory::UnloadPlugins();
+        if (std::strcmp(GetParam(), "accel::embree") == 0)
+        {
+            ComponentFactory::UnloadPlugins();
+        }
         Logger::Stop();
+        SEHUtils::DisableStructuralException();
     }
 };
 
+#if LM_SSE && LM_SINGLE_PRECISION
 INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree", "accel::bvh", "accel::bvh_sah", "accel::bvh_sahbin", "accel::bvh_sahxyz", "accel::qbvh"));
+#else
+INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree", "accel::bvh", "accel::bvh_sah", "accel::bvh_sahbin", "accel::bvh_sahxyz"));
+#endif
 
 #pragma endregion
 
@@ -261,7 +274,8 @@ TEST_P(AccelTest, Simple)
     StubTriangleMesh_Simple mesh;
     Stub_Scene scene(mesh);
 
-    const auto accel = ComponentFactory::Create<Accel>(GetParam());
+    const auto param = GetParam();
+    const auto accel = ComponentFactory::Create<Accel>(param);
     ASSERT_NE(nullptr, accel);
     EXPECT_TRUE(accel->Initialize(nullptr));
     EXPECT_TRUE(accel->Build(&scene));

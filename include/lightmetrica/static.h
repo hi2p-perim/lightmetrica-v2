@@ -73,7 +73,7 @@ public:
         handle = LoadLibraryA(p.c_str());
         if (!handle)
         {
-            std::cerr << "Failed to load library : " << p << std::endl;
+            std::cerr << "Failed to load library or its dependencies : " << p << std::endl;
             std::cerr << GetLastErrorAsString() << std::endl;
             return false;
         }
@@ -81,7 +81,7 @@ public:
         handle = dlopen(p.c_str(), RTLD_LAZY | RTLD_LOCAL);
         if (!handle)
         {
-            std::cerr << "Failed to load library : " << p << std::endl;
+            std::cerr << "Failed to load library or its dependencies : " << p << std::endl;
             std::cerr << dlerror() << std::endl;
             return false;
         }

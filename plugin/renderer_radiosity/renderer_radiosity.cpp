@@ -28,6 +28,8 @@
 #include <boost/format.hpp>
 #if LM_COMPILER_MSVC
 #pragma warning(disable:4714)
+#pragma warning(disable:4701)
+#pragma warning(disable:4456)
 #include <Eigen/Sparse>
 #else
 #include <eigen3/Eigen/Sparse>
@@ -45,6 +47,7 @@ namespace Eigen
         using Real       = T;
         using NonInteger = T;
         using Nested     = T;
+        using Literal    = T;
         enum
         {
             IsComplex = 0,
@@ -115,8 +118,12 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+
         // Create patches
         Patches patches;
         patches.Create(scene, subdivLimitArea_);
@@ -246,6 +253,16 @@ public:
 
         LM_LOG_INFO("Progress: 100.0%");
 
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
+        }
         #pragma endregion
     };
 

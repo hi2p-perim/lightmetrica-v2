@@ -35,9 +35,9 @@
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/detail/parallel.h>
 #include <lightmetrica/detail/photonmap.h>
-#include <lightmetrica/detail/photonmaputils.h>
+#include <lightmetrica/detail/subpathsampler.h>
 
-#define LM_VCM_DEBUG 1
+#define LM_VCM_DEBUG 0
 
 LM_NAMESPACE_BEGIN
 
@@ -54,7 +54,7 @@ struct VCMSubpath
     auto SampleSubpath(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> void
     {
         vertices.clear();
-        PhotonMapUtils::TraceSubpath(scene, rng, maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const PhotonMapUtils::PathVertex& pv, const PhotonMapUtils::PathVertex& v, SPD& throughput) -> bool
+        SubpathSampler::TraceSubpath(scene, rng, maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, SPD& throughput) -> bool
         {
             VCMPathVertex v_;
             v_.type = v.type;
@@ -577,9 +577,10 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, Film* film) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
         Float mergeRadius = 0_f;
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         for (long long pass = 0; pass < numIterationPass_; pass++)
         {
             LM_LOG_INFO("Pass " + std::to_string(pass));
@@ -661,8 +662,8 @@ public:
                     // --------------------------------------------------------------------------------
 
                     #pragma region Sample subpaths
-                    VCMSubpath subpathE;
-                    VCMSubpath subpathL;
+                    static thread_local VCMSubpath subpathE;
+                    static thread_local VCMSubpath subpathL;
                     subpathE.SampleSubpath(scene, &ctx.rng, TransportDirection::EL, maxNumVertices_);
                     subpathL.SampleSubpath(scene, &ctx.rng, TransportDirection::LE, maxNumVertices_);
                     #pragma endregion
@@ -682,7 +683,7 @@ public:
                             for (int s = minS; s <= maxS; s++)
                             {
                                 // Connect vertices and create a full path
-                                VCMPath fullpath;
+                                static thread_local VCMPath fullpath;
                                 if (!fullpath.ConnectSubpaths(scene, subpathL, subpathE, s, t)) { continue; }
 
                                 // Evaluate contribution
@@ -726,7 +727,7 @@ public:
                                 if (n < minNumVertices_ || maxNumVertices_ < n) { return; }
 
                                 // Merge vertices and create a full path
-                                VCMPath fullpath;
+                                static thread_local VCMPath fullpath;
                                 if (!fullpath.MergeSubpaths(subpathLs[si], subpathE, s - 1, t)) { return; }
 
                                 // Evaluate contribution
@@ -775,6 +776,16 @@ public:
             }
             #endif
         }
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Save image
+        {
+            LM_LOG_INFO("Saving image");
+            LM_LOG_INDENTER();
+            film->Save(outputPath);
+        }
+        #pragma endregion
     };
 
 };

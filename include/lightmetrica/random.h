@@ -26,6 +26,7 @@
 
 #include <lightmetrica/static.h>
 #include <lightmetrica/math.h>
+#include <vector>
 
 LM_NAMESPACE_BEGIN
 
@@ -36,6 +37,8 @@ extern "C" LM_PUBLIC_API auto Random_Destructor(Random* p) -> void;
 extern "C" LM_PUBLIC_API auto Random_SetSeed(Random* p, unsigned int seed) -> void;
 extern "C" LM_PUBLIC_API auto Random_NextUInt(Random* p) -> unsigned int;
 extern "C" LM_PUBLIC_API auto Random_Next(Random* p) -> double;
+extern "C" LM_PUBLIC_API auto Random_GetInternalState(Random* p, unsigned char**, size_t*) -> void;
+extern "C" LM_PUBLIC_API auto Random_SetInternalState(Random* p, const unsigned char*) -> void;
 //! \endcond
 
 /*!
@@ -51,7 +54,7 @@ class Random
 {
 public:
 
-    Random() { LM_EXPORTED_F(Random_Constructor, this); }
+    Random()  { LM_EXPORTED_F(Random_Constructor, this); }
     ~Random() { LM_EXPORTED_F(Random_Destructor, this); }
     LM_DISABLE_COPY_AND_MOVE(Random);
 
@@ -63,10 +66,10 @@ public:
     //! Generate an uniform random number as unsigned int type.
     auto NextUInt() -> unsigned int { return LM_EXPORTED_F(Random_NextUInt, this); }
 
-    //! Generate an uniform random number in [0,1].
+    //! Generate an uniform random number in [0,1).
     auto Next() -> Float { return Float(LM_EXPORTED_F(Random_Next, this)); }
 
-    //! Generate uniform random numbers in [0,1]^2.
+    //! Generate uniform random numbers in [0,1)^2.
     LM_INLINE auto Next2D() -> Vec2
     {
         // Note : according to C++ standard, evaluation order of the arguments are undefined
@@ -74,6 +77,21 @@ public:
         const auto u1 = Next();
         const auto u2 = Next();
         return Vec2(u1, u2);
+    }
+
+    //! Get internal state of random number generator.
+    auto GetInternalState() -> std::vector<unsigned char>
+    {
+        unsigned char* state;
+        size_t size;
+        LM_EXPORTED_F(Random_GetInternalState, this, &state, &size);
+        return std::vector<unsigned char>(state, state + size);
+    }
+
+    //! Set internal state of random number generator.
+    auto SetInternalState(const std::vector<unsigned char>& state) -> void
+    {
+        LM_EXPORTED_F(Random_SetInternalState, this, state.data());
     }
 
 public:

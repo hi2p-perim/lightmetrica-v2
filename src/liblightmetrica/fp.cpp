@@ -33,8 +33,64 @@
 LM_NAMESPACE_BEGIN
 
 #if LM_PLATFORM_WINDOWS
-namespace
+
+class FPUtilsImpl
 {
+public:
+
+    // Thread local singleton
+    static FPUtilsImpl* Instance()
+    {
+        thread_local FPUtilsImpl instance;
+        return &instance;
+    }
+
+private:
+
+    bool enabled_ = false;      // Current state of the floating point exception {enabled, disabled}
+    std::deque<bool> stateQ_;   // State queue
+
+public:
+
+    auto EnableFPControl() -> void
+    {
+        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+        SetFPException((unsigned int)(~(_EM_INVALID | _EM_ZERODIVIDE)));
+        enabled_ = true;
+    }
+
+    auto DisableFPControl() -> void
+    {
+        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
+        SetFPException((unsigned int)(_EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT));
+        enabled_ = false;
+    }
+
+    auto PushFPControl() -> void
+    {
+        stateQ_.push_back(enabled_);
+    }
+
+    auto PopFPControl() -> void
+    {
+        if (stateQ_.empty())
+        {
+            LM_LOG_WARN("Failed to pop floating point exception state");
+            return;
+        }
+        const bool prev = stateQ_.back(); stateQ_.pop_back();
+        if (prev)
+        {
+            EnableFPControl();
+        }
+        else
+        {
+            DisableFPControl();
+        }
+    }
+
+private:
+
     auto SetFPException(unsigned int newFPState) -> bool
     {
         errno_t error;
@@ -56,26 +112,39 @@ namespace
 
         return true;
     }
-}
+
+};
+
 #endif
+
+// --------------------------------------------------------------------------------
+
   
-auto FPUtils_EnableFPControl() -> bool
+auto FPUtils_EnableFPControl() -> void
 {
     #if LM_PLATFORM_WINDOWS
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    return SetFPException((unsigned int)(~(_EM_INVALID | _EM_ZERODIVIDE)));
-    #else
-    return false;
+    FPUtilsImpl::Instance()->EnableFPControl();
     #endif
 }
 
-auto FPUtils_DisableFPControl() -> bool
+auto FPUtils_DisableFPControl() -> void
 {
     #if LM_PLATFORM_WINDOWS
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
-    return SetFPException((unsigned int)(_EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT));
-    #else
-    return false;
+    FPUtilsImpl::Instance()->DisableFPControl();
+    #endif
+}
+
+auto FPUtils_PushFPControl() -> void
+{
+    #if LM_PLATFORM_WINDOWS
+    FPUtilsImpl::Instance()->PushFPControl();
+    #endif
+}
+
+auto FPUtils_PopFPControl() -> void
+{
+    #if LM_PLATFORM_WINDOWS
+    FPUtilsImpl::Instance()->PopFPControl();
     #endif
 }
 
