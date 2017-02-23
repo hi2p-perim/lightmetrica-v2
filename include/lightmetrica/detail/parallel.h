@@ -29,6 +29,19 @@
 
 LM_NAMESPACE_BEGIN
 
+enum class ParallelMode
+{
+    Samples,
+    Time,
+};
+
+struct ParallelForParams
+{
+    ParallelMode mode;
+    long long numSamples;
+    double duration;
+};
+
 ///! Parallelization utilities.
 class Parallel
 {
@@ -59,6 +72,8 @@ public:
         only after the thread specified by `threadid` is initially created.     
     */
     LM_PUBLIC_API static auto For(long long numSamples, const std::function<void(long long index, int threadid, bool init)>& processFunc) -> void;
+
+    LM_PUBLIC_API static auto For(const ParallelForParams& params, const std::function<void(long long index, int threadid, bool init)>& processFunc) -> long long;
 
 };
 
