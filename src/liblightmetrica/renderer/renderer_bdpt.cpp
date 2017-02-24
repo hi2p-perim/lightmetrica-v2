@@ -77,7 +77,7 @@ struct Subpath
 
 public:
 
-    auto Sample(const Scene* scene, Random* rng, TransportDirection transDir, int maxPathVertices) -> void
+    auto Sample(const Scene3* scene, Random* rng, TransportDirection transDir, int maxPathVertices) -> void
     {
         vertices.clear();
 
@@ -230,7 +230,7 @@ public:
 
     #pragma region BDPT path initialization
 
-    auto Connect(const Scene* scene, int s, int t, bool direct, const Subpath& subpathL, const Subpath& subpathE) -> bool
+    auto Connect(const Scene3* scene, int s, int t, bool direct, const Subpath& subpathL, const Subpath& subpathE) -> bool
     {
         assert(s > 0 || t > 0);
         vertices.clear();
@@ -338,7 +338,7 @@ public:
 
     #pragma region BDPT path evaluation
 
-    auto EvaluateContribution(const MISWeight* mis, const Scene* scene, int s, bool direct) const -> SPD
+    auto EvaluateContribution(const MISWeight* mis, const Scene3* scene, int s, bool direct) const -> SPD
     {
         const auto Cstar = EvaluateUnweightContribution(scene, s, direct);
         //const auto Cstar = EvaluateF(s, direct) / EvaluatePDF(scene, s, direct);
@@ -486,7 +486,7 @@ public:
         return fL * cst * fE;
     }
 
-    auto EvaluateUnweightContribution(const Scene* scene, int s, bool direct) const -> SPD
+    auto EvaluateUnweightContribution(const Scene3* scene, int s, bool direct) const -> SPD
     {
         const int n = (int)(vertices.size());
         const int t = n - s;
@@ -646,7 +646,7 @@ public:
         return true;
     }
 
-    auto EvaluatePDF(const Scene* scene, int s, bool direct) const -> PDFVal
+    auto EvaluatePDF(const Scene3* scene, int s, bool direct) const -> PDFVal
     {
         if (!Samplable(s, direct))
         {
@@ -716,7 +716,7 @@ public:
 
 public:
 
-    LM_IMPL_F(Evaluate) = [this](const Path& path, const Scene* scene, int s_, bool direct_) -> Float
+    LM_IMPL_F(Evaluate) = [this](const Path& path, const Scene3* scene, int s_, bool direct_) -> Float
     {
         const int n = (int)(path.vertices.size());
         int nonzero = 0;
@@ -752,7 +752,7 @@ public:
 
 public:
 
-    LM_IMPL_F(Evaluate) = [this](const Path& path, const Scene* scene, int s_, bool direct_) -> Float
+    LM_IMPL_F(Evaluate) = [this](const Path& path, const Scene3* scene, int s_, bool direct_) -> Float
     {
         const int n = static_cast<int>(path.vertices.size());
         const auto ps = path.EvaluatePDF(scene, s_, direct_);
@@ -838,7 +838,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
     {
         #if LM_COMPILER_CLANG
         tbb::enumerable_thread_specific<Subpath> subpathL_, subpathE_;

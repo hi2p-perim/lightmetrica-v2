@@ -122,7 +122,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(PostLoad) = [this](const Scene* scene) -> bool
+    LM_IMPL_F(PostLoad) = [this](const Scene3* scene) -> bool
     {
         bound_ = scene->GetSphereBound();
         invArea_ = 1_f / (Math::Pi() * bound_.radius * bound_.radius);

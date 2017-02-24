@@ -66,7 +66,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
     {
         #if LM_PTMIS_DEBUG_WEIGHT_IMAGE
         assert(Parallel::GetNumThreads() == 1);

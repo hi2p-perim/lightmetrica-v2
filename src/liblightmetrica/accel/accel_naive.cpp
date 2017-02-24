@@ -42,11 +42,11 @@ LM_NAMESPACE_BEGIN
     We simply utilizes a list of triangles from the primitives as a structure.
     We utilize this class only for testing, not recommend in the practical use.
 */
-class Accel_Naive final : public Accel
+class Accel_Naive final : public Accel3
 {
 public:
 
-    LM_IMPL_CLASS(Accel_Naive, Accel);
+    LM_IMPL_CLASS(Accel_Naive, Accel3);
 
 public:
 
@@ -56,7 +56,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene3* scene) -> bool
     {
         int np = scene->NumPrimitives();
         for (int i = 0; i < np; i++)
@@ -88,7 +88,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene3* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         bool hit = false;
         size_t minIndex = 0;

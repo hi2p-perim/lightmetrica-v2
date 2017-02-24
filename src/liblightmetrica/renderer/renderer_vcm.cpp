@@ -51,7 +51,7 @@ struct VCMPathVertex
 struct VCMSubpath
 {
     std::vector<VCMPathVertex> vertices;
-    auto SampleSubpath(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> void
+    auto SampleSubpath(const Scene3* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> void
     {
         vertices.clear();
         SubpathSampler::TraceSubpath(scene, rng, maxNumVertices, transDir, [&](int numVertices, const Vec2& /*rasterPos*/, const SubpathSampler::PathVertex& pv, const SubpathSampler::PathVertex& v, SPD& throughput) -> bool
@@ -70,7 +70,7 @@ struct VCMPath
 {
     std::vector<VCMPathVertex> vertices;
 
-    auto ConnectSubpaths(const Scene* scene, const VCMSubpath& subpathL, const VCMSubpath& subpathE, int s, int t) -> bool
+    auto ConnectSubpaths(const Scene3* scene, const VCMSubpath& subpathL, const VCMSubpath& subpathE, int s, int t) -> bool
     {
         assert(s >= 0);
         assert(t >= 0);
@@ -210,7 +210,7 @@ struct VCMPath
         return fL * cst * fE;
     }
 
-    auto EvaluatePathPDF(const Scene* scene, int s, bool merge, Float radius) const -> PDFVal
+    auto EvaluatePathPDF(const Scene3* scene, int s, bool merge, Float radius) const -> PDFVal
     {
         const int n = (int)(vertices.size());
         const int t = n - s;
@@ -277,7 +277,7 @@ struct VCMPath
         return pdf;
     }
 
-    auto EvaluateMISWeight_VCM(const Scene* scene, int s_, bool merge, Float radius, long long numPhotonTraceSamples) const -> Float
+    auto EvaluateMISWeight_VCM(const Scene3* scene, int s_, bool merge, Float radius, long long numPhotonTraceSamples) const -> Float
     {
         const int n = static_cast<int>(vertices.size());
         const auto ps = EvaluatePathPDF(scene, s_, merge, radius);
@@ -300,7 +300,7 @@ struct VCMPath
         return 1_f / invw;
     }
 
-    auto EvaluateMISWeight_BDPT(const Scene* scene, int s_) const -> Float
+    auto EvaluateMISWeight_BDPT(const Scene3* scene, int s_) const -> Float
     {
         const int n = static_cast<int>(vertices.size());
         const auto ps = EvaluatePathPDF(scene, s_, false, 0_f);
@@ -320,7 +320,7 @@ struct VCMPath
         return 1_f / invw;
     }
 
-    auto EvaluateMISWeight_BDPM(const Scene* scene, int s_, Float radius, long long numPhotonTraceSamples) const -> Float
+    auto EvaluateMISWeight_BDPM(const Scene3* scene, int s_, Float radius, long long numPhotonTraceSamples) const -> Float
     {
         const int n = static_cast<int>(vertices.size());
         const auto ps = EvaluatePathPDF(scene, s_, true, radius);
@@ -577,7 +577,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
     {
         Float mergeRadius = 0_f;
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();

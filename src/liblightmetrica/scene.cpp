@@ -39,15 +39,15 @@
 
 LM_NAMESPACE_BEGIN
 
-class Scene_ final : public Scene
+class Scene_ final : public Scene3
 {
 public:
 
-    LM_IMPL_CLASS(Scene_, Scene);
+    LM_IMPL_CLASS(Scene_, Scene3);
 
 public:
 
-    LM_IMPL_F(Initialize) = [this](const PropertyNode* sceneNode, Assets* assets, Accel* accel) -> bool
+    LM_IMPL_F(Initialize) = [this](const PropertyNode* sceneNode, Assets* assets, Accel3* accel) -> bool
     {
         #pragma region Load primitives
         
@@ -557,7 +557,7 @@ private:
     Primitive* sensorPrimitive_;                                        // Pointer to sensor primitive
     std::vector<size_t> lightPrimitiveIndices_;                         // Pointers to light primitives
 
-    const Accel* accel_;                                                // Acceleration structure
+    const Accel3* accel_;                                                // Acceleration structure
     Bound bound_;                                                       // Scene bound (AABB)
     SphereBound sphereBound_;                                           // Scene bound (sphere)
     std::vector<const EmitterShape*> emitterShapes_;                    // Special shapes for emitters

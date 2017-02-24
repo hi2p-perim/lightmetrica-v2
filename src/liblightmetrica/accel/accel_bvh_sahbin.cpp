@@ -54,11 +54,11 @@ struct BVHNode
     };
 };
 
-class Accel_BVHSAHBin final : public Accel
+class Accel_BVHSAHBin final : public Accel3
 {
 public:
 
-    LM_IMPL_CLASS(Accel_BVHSAHBin, Accel);
+    LM_IMPL_CLASS(Accel_BVHSAHBin, Accel3);
 
 public:
 
@@ -67,7 +67,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene3* scene) -> bool
     {
         std::vector<Bound> bounds_;
 
@@ -230,7 +230,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene3* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         int minIndex;
         Vec2 minB;

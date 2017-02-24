@@ -647,7 +647,7 @@ private:
 
         #pragma region Initialize accel
         
-        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "qbvh" });
+        const auto accel = InitializeConfigurable<Accel3>(root, "accel", { "qbvh" });
         if (!accel)
         {
             return false;
@@ -659,7 +659,7 @@ private:
 
         #pragma region Initialize scene
 
-        const auto scene = ComponentFactory::Create<Scene>();
+        const auto scene = ComponentFactory::Create<Scene3>();
         {
             LM_LOG_INFO("Initializing scene");
             LM_LOG_INDENTER();

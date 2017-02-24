@@ -39,15 +39,11 @@ struct Intersection;
     \brief Acceleration structure for ray-triangle intersection.
 */
 
-/*!
-    \brief An interface for the acceleration structure.
-    \ingroup accel
-*/
 class Accel : public Configurable
 {
 public:
 
-    LM_INTERFACE_CLASS(Accel, Configurable, 2);
+    LM_INTERFACE_CLASS(Accel, Configurable, 1);
 
 public:
 
@@ -68,6 +64,25 @@ public:
     */
     LM_INTERFACE_F(0, Build, bool(const Scene* scene));
 
+};
+
+/*!
+    \brief An interface for the acceleration structure.
+    \ingroup accel
+*/
+class Accel3 : public Accel
+{
+public:
+
+    LM_INTERFACE_CLASS(Accel3, Accel, 1);
+
+public:
+
+    Accel3() = default;
+    LM_DISABLE_COPY_AND_MOVE(Accel3);
+
+public:
+
     /*!
         \brief Intersection query with triangles.
 
@@ -84,7 +99,7 @@ public:
         \retval true  Intersected with the scene.
         \retval false Not intersected with the scene.
     */
-    LM_INTERFACE_F(1, Intersect, bool(const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT));
+    LM_INTERFACE_F(0, Intersect, bool(const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT));
 
 };
 

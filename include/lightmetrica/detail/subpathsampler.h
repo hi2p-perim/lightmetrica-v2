@@ -33,7 +33,7 @@
 
 LM_NAMESPACE_BEGIN
 
-class Scene;
+class Scene3;
 class Random;
 struct Primitive;
 

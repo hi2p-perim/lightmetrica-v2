@@ -46,7 +46,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
     {
         // Do nothing. Just output blank image.
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();

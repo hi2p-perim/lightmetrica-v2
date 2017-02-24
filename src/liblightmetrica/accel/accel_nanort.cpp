@@ -65,11 +65,11 @@ LM_NAMESPACE_BEGIN
 /*
     TODO: Falling tests. Fix it.
 */
-class Accel_NanoRT final : public Accel
+class Accel_NanoRT final : public Accel3
 {
 public:
 
-    LM_IMPL_CLASS(Accel_NanoRT, Accel);
+    LM_IMPL_CLASS(Accel_NanoRT, Accel3);
 
 public:
 
@@ -79,7 +79,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene3* scene) -> bool
     {
         // Convert a set of primitives to one large mesh
         fsCDF_.push_back(0);
@@ -134,7 +134,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene3* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         nanort::Ray rayRT;
         rayRT.org[0] = (float)(ray.o[0]);
