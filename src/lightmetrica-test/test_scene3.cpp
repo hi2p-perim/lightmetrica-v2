@@ -23,12 +23,12 @@
 */
 
 #include <pch_test.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica-test/utils.h>
 #include <lightmetrica/assets.h>
-#include <lightmetrica/accel.h>
+#include <lightmetrica/accel3.h>
 #include <lightmetrica/light.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/bsdf.h>

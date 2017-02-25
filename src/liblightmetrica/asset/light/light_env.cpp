@@ -31,7 +31,7 @@
 #include <lightmetrica/sampler.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/triangleutils.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/renderutils.h>
 #include <lightmetrica/texture.h>
 #include <lightmetrica/assets.h>

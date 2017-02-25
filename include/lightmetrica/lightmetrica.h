@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <lightmetrica/accel.h>
+#include <lightmetrica/accel3.h>
 #include <lightmetrica/align.h>
 #include <lightmetrica/asset.h>
 #include <lightmetrica/assets.h>
@@ -56,7 +56,7 @@
 #include <lightmetrica/renderer.h>
 #include <lightmetrica/renderutils.h>
 #include <lightmetrica/sampler.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/scheduler.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/spectrum.h>

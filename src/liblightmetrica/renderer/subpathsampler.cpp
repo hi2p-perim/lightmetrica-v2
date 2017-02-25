@@ -31,7 +31,7 @@
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/primitive.h>
 
 LM_NAMESPACE_BEGIN

@@ -285,7 +285,9 @@ list(APPEND _SOURCE_FILES ${_ASSET_TEXTURE_SOURCE_FILES})
 set(
     _SCENE_HEADER_FILES
 	"${_INCLUDE_DIR}/scene.h"
+	"${_INCLUDE_DIR}/scene3.h"
 	"${_INCLUDE_DIR}/accel.h"
+	"${_INCLUDE_DIR}/accel3.h"
 	"${_INCLUDE_DIR}/triaccel.h"
 	"${_INCLUDE_DIR}/primitive.h"
 )

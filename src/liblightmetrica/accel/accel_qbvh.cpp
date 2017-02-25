@@ -23,8 +23,8 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/accel.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/accel3.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/triaccel.h>
 #include <lightmetrica/primitive.h>

@@ -25,7 +25,7 @@
 #pragma once
 
 #include <lightmetrica/math.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/light.h>

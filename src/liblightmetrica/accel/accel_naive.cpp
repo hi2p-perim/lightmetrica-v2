@@ -23,8 +23,8 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/accel.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/accel3.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>

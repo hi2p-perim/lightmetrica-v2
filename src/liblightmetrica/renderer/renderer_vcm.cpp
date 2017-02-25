@@ -26,11 +26,11 @@
 #include <lightmetrica/renderer.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/random.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/renderutils.h>
 #include <lightmetrica/primitive.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/random.h>
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/detail/parallel.h>

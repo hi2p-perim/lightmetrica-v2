@@ -25,10 +25,10 @@
 #include <lightmetrica/logger.h>
 #include <lightmetrica/exception.h>
 #include <lightmetrica/property.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/renderer.h>
 #include <lightmetrica/assets.h>
-#include <lightmetrica/accel.h>
+#include <lightmetrica/accel3.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/sensor.h>

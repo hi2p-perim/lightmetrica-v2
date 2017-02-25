@@ -26,7 +26,7 @@
 #include <lightmetrica/renderer.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/scheduler.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/ray.h>

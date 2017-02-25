@@ -24,7 +24,7 @@
 
 #include <pch.h>
 #include <lightmetrica/renderer.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/sensor.h>

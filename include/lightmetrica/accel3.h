@@ -24,39 +24,48 @@
 
 #pragma once
 
-#include <lightmetrica/component.h>
-#include <lightmetrica/math.h>
+#include <lightmetrica/accel.h>
 
 LM_NAMESPACE_BEGIN
 
-class PropertyNode;
-class Assets;
-class Accel;
+struct Primitive;
+struct Ray;
+struct Intersection;
 
 /*!
-    \defgroup scene Scene
-    \brief Scene configuration of the framework.
+    \brief An interface for the acceleration structure for 3-dimensional scenes.
+    \ingroup accel
 */
-
-/*!
-    \brief A base class of the scene.
-    \ingroup scene
-*/
-class Scene : public Component
+class Accel3 : public Accel
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene, Component, 1);
+    LM_INTERFACE_CLASS(Accel3, Accel, 1);
+
+public:
+
+    Accel3() = default;
+    LM_DISABLE_COPY_AND_MOVE(Accel3);
 
 public:
 
     /*!
-        \brief Initialize the scene.
+        \brief Intersection query with triangles.
 
-        Initializes the scene from the given property of
-        the scene configuration file.
+        The function checks if `ray` hits with the scene.
+        This function is supposed to be accelerated by spatial acceleration structure.
+        When intersected, information on the hit point is stored in the intersection data.
+        The intersection is valid only with the range of the distance between `minT` and `maxT`.
+
+        \param scene  Scene.
+        \param ray    Ray.
+        \param isect  Intersection data.
+        \param minT   Minimum range of the distance.
+        \param minT   Maximum range of the distance.
+        \retval true  Intersected with the scene.
+        \retval false Not intersected with the scene.
     */
-    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*, Assets*, Accel*));
+    LM_INTERFACE_F(0, Intersect, bool(const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT));
 
 };
 

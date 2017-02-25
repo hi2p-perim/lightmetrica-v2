@@ -26,7 +26,7 @@
 #include <lightmetrica/renderer.h>
 #include <lightmetrica/property.h>
 #include <lightmetrica/random.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/bsdf.h>
 #include <lightmetrica/ray.h>
