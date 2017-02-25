@@ -97,7 +97,7 @@ list(APPEND _SOURCE_FILES ${_CORE_SOURCE_FILES})
 
 set(
 	_SCENE_SOURCE_FILES
-	"test_scene.cpp"
+	"test_scene3.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\scene" FILES ${_SCENE_SOURCE_FILES})
@@ -126,7 +126,7 @@ list(APPEND _SOURCE_FILES ${_MATH_SOURCE_FILES})
 
 set(
 	_ACCEL_SOURCE_FILES
-	"test_accel.cpp"
+	"test_accel3.cpp"
 )
 
 source_group("${_SOURCE_FILES_ROOT}\\accel" FILES ${_ACCEL_SOURCE_FILES})

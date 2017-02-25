@@ -36,7 +36,7 @@ LM_TEST_NAMESPACE_BEGIN
 
 #pragma region Fixture
 
-struct AccelTest : public ::testing::TestWithParam<const char*>
+struct Accel3Test : public ::testing::TestWithParam<const char*>
 {
     virtual auto SetUp() -> void override
     {
@@ -60,7 +60,7 @@ struct AccelTest : public ::testing::TestWithParam<const char*>
 };
 
 #if LM_SSE && LM_SINGLE_PRECISION
-INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree", "accel::bvh", "accel::bvh_sah", "accel::bvh_sahbin", "accel::bvh_sahxyz", "accel::qbvh"));
+INSTANTIATE_TEST_CASE_P(AccelTypes, Accel3Test, ::testing::Values("accel::naive", "accel::embree", "accel::bvh", "accel::bvh_sah", "accel::bvh_sahbin", "accel::bvh_sahxyz", "accel::qbvh"));
 #else
 INSTANTIATE_TEST_CASE_P(AccelTypes, AccelTest, ::testing::Values("accel::naive", "accel::embree", "accel::bvh", "accel::bvh_sah", "accel::bvh_sahbin", "accel::bvh_sahxyz"));
 #endif
@@ -238,11 +238,11 @@ private:
 
 #pragma region Stub scene
 
-class Stub_Scene : public Scene
+class Stub_Scene : public Scene3
 {
 public:
 
-    LM_IMPL_CLASS(Stub_Scene, Scene);
+    LM_IMPL_CLASS(Stub_Scene, Scene3);
 
 public:
 
@@ -269,13 +269,13 @@ private:
 
 #pragma region Tests
 
-TEST_P(AccelTest, Simple)
+TEST_P(Accel3Test, Simple)
 {
     StubTriangleMesh_Simple mesh;
     Stub_Scene scene(mesh);
 
     const auto param = GetParam();
-    const auto accel = ComponentFactory::Create<Accel>(param);
+    const auto accel = ComponentFactory::Create<Accel3>(param);
     ASSERT_NE(nullptr, accel);
     EXPECT_TRUE(accel->Initialize(nullptr));
     EXPECT_TRUE(accel->Build(&scene));
@@ -309,12 +309,12 @@ TEST_P(AccelTest, Simple)
     }
 }
 
-TEST_P(AccelTest, Simple2)
+TEST_P(Accel3Test, Simple2)
 {
     StubTriangleMesh_Simple2 mesh;
     Stub_Scene scene(mesh);
 
-    const auto accel = ComponentFactory::Create<Accel>(GetParam());
+    const auto accel = ComponentFactory::Create<Accel3>(GetParam());
     ASSERT_NE(nullptr, accel);
     EXPECT_TRUE(accel->Initialize(nullptr));
     EXPECT_TRUE(accel->Build(&scene));

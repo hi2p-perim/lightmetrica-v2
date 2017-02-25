@@ -577,10 +577,14 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
-        Float mergeRadius = 0_f;
+        const auto* scene = static_cast<const Scene3*>(scene_);
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+
+        Float mergeRadius = 0_f;
         for (long long pass = 0; pass < numIterationPass_; pass++)
         {
             LM_LOG_INFO("Pass " + std::to_string(pass));

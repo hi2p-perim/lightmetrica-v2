@@ -79,8 +79,10 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene3* scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene_) -> bool
     {
+        const auto* scene = static_cast<const Scene3*>(scene_);
+
         // Convert a set of primitives to one large mesh
         fsCDF_.push_back(0);
         for (int i = 0; i < scene->NumPrimitives(); i++)
@@ -134,7 +136,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene3* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene* scene_, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         nanort::Ray rayRT;
         rayRT.org[0] = (float)(ray.o[0]);
@@ -157,6 +159,7 @@ public:
         const int primIndex = faceIDToPrimitive_[isectRT.faceID];
         const int faceIndex = isectRT.faceID - fsCDF_[primIndex];
 
+        const auto* scene = static_cast<const Scene3*>(scene_);
         isect = IntersectionUtils::CreateTriangleIntersection(
             scene->PrimitiveAt(faceIndex),
             ray.o + ray.d * (Float)(isectRT.t),

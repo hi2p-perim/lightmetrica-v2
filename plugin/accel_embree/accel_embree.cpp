@@ -57,11 +57,11 @@ namespace
     }
 }
 
-class Accel_Embree final : public Accel
+class Accel_Embree final : public Accel3
 {
 public:
 
-    LM_IMPL_CLASS(Accel_Embree, Accel);
+    LM_IMPL_CLASS(Accel_Embree, Accel3);
 
 public:
 
@@ -85,8 +85,10 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene_) -> bool
     {
+        const auto* scene = static_cast<const Scene3*>(scene_);
+
         // Create scene
         RtcScene = rtcDeviceNewScene(device, RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
 
@@ -145,7 +147,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene* scene_, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         if (minT > maxT)
         {
@@ -179,6 +181,7 @@ public:
         }
 
         // Fill in the intersection structure
+        const auto* scene = static_cast<const Scene3*>(scene_);
         isect = IntersectionUtils::CreateTriangleIntersection(
             scene->PrimitiveAt((int)(RtcGeomIDToPrimitiveIndexMap.at(rtcRay.geomID))),
             ray.o + ray.d * (Float)(rtcRay.tfar),

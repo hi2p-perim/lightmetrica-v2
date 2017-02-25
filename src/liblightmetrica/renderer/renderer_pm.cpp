@@ -69,8 +69,12 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
+        const auto* scene = static_cast<const Scene3*>(scene_);
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Trace photons
         std::vector<Photon> photons;
         {

@@ -66,7 +66,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
         #if LM_PTMIS_DEBUG_WEIGHT_IMAGE
         assert(Parallel::GetNumThreads() == 1);
@@ -74,6 +74,7 @@ public:
         auto filmW2 = ComponentFactory::Clone<Film>(film_);
         #endif
 
+        const auto* scene = static_cast<const Scene3*>(scene_);
         auto* film_ = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         const long long processed = sched_->Process(scene, film_, initRng, [&](Film* film, Random* rng)
         {

@@ -292,7 +292,7 @@ set(
 
 set(
     _SCENE_SOURCE_FILES
-	"scene.cpp"
+	"scene3.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\scene" FILES ${_SCENE_HEADER_FILES})

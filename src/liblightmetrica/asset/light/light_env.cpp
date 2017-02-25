@@ -122,8 +122,9 @@ public:
         return true;
     };
 
-    LM_IMPL_F(PostLoad) = [this](const Scene3* scene) -> bool
+    LM_IMPL_F(PostLoad) = [this](const Scene* scene_) -> bool
     {
+        const auto* scene = static_cast<const Scene3*>(scene_);
         bound_ = scene->GetSphereBound();
         invArea_ = 1_f / (Math::Pi() * bound_.radius * bound_.radius);
         emitterShape_.reset(new EmitterShape_EnvLight(bound_, primitive_));

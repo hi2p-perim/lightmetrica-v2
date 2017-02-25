@@ -151,9 +151,10 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene3* scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene_) -> bool
     {
         std::vector<Bound> bounds_;
+        const auto* scene = static_cast<const Scene3*>(scene_);
 
         // --------------------------------------------------------------------------------
 
@@ -396,7 +397,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene3* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene* scene_, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         #pragma region Prepare some required data
 
@@ -486,6 +487,7 @@ public:
 
         if (hit)
         {
+            const auto* scene = static_cast<const Scene3*>(scene_);
             isect = IntersectionUtils::CreateTriangleIntersection(
                 scene->PrimitiveAt(triangles_[minIndex].primIndex),
                 ray.o + ray.d * maxT,

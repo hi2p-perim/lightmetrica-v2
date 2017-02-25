@@ -37,7 +37,7 @@
 
 LM_TEST_NAMESPACE_BEGIN
 
-struct SceneTest : public ::testing::Test
+struct Scene3Test : public ::testing::Test
 {
     virtual auto SetUp() -> void override { Logger::SetVerboseLevel(2); Logger::Run(); }
     virtual auto TearDown() -> void override { Logger::Stop(); }
@@ -67,7 +67,7 @@ LM_COMPONENT_REGISTER_IMPL_DEFAULT(Stub_Accel);
 // --------------------------------------------------------------------------------
 
 // Tests simple loading of the scene
-TEST_F(SceneTest, SimpleLoad)
+TEST_F(Scene3Test, SimpleLoad)
 {
     const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
     | sensor: n1
@@ -86,8 +86,8 @@ TEST_F(SceneTest, SimpleLoad)
     ASSERT_TRUE(prop->LoadFromString(SimpleLoad_Input));
 
     const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
-    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
-    const auto scene = ComponentFactory::Create<Scene>();
+    const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
+    const auto scene = ComponentFactory::Create<Scene3>();
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     EXPECT_EQ("n1", std::string(scene->PrimitiveByID("n1")->id));
@@ -142,7 +142,7 @@ LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_2, "trianglemesh::stub_trianglemesh
 LM_COMPONENT_REGISTER_IMPL(Stub_BSDF, "bsdf::stub_bsdf");
 
 // Tests simple loading of the scene with delayed loading of assets
-TEST_F(SceneTest, SimpleLoadWithAssets)
+TEST_F(Scene3Test, SimpleLoadWithAssets)
 {
     const auto SimpleLoad_Input = TestUtils::MultiLineLiteral(R"x(
     | assets:
@@ -190,8 +190,8 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
     const auto assets = ComponentFactory::Create<Assets>();
     EXPECT_TRUE(assets->Initialize(prop->Root()->Child("assets")));
     
-    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
-    const auto scene = ComponentFactory::Create<Scene>();
+    const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
+    const auto scene = ComponentFactory::Create<Scene3>();
     ASSERT_TRUE(scene->Initialize(prop->Root()->Child("scene"), assets.get(), accel.get()));
 
     const auto* n1 = scene->PrimitiveByID("n1");
@@ -214,7 +214,7 @@ TEST_F(SceneTest, SimpleLoadWithAssets)
 // --------------------------------------------------------------------------------
 
 // Tests with the scene with transform
-TEST_F(SceneTest, Transform)
+TEST_F(Scene3Test, Transform)
 {
     const auto Transform_Input = TestUtils::MultiLineLiteral(R"x(
     | sensor: n1
@@ -260,8 +260,8 @@ TEST_F(SceneTest, Transform)
     EXPECT_TRUE(prop->LoadFromString(Transform_Input));
 
     const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
-    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
-    const auto scene = ComponentFactory::Create<Scene>();
+    const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
+    const auto scene = ComponentFactory::Create<Scene3>();
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     const Primitive* n1 = scene->PrimitiveByID("n1");
@@ -280,7 +280,7 @@ TEST_F(SceneTest, Transform)
 // --------------------------------------------------------------------------------
 
 // Sensor nodes
-TEST_F(SceneTest, SensorNode)
+TEST_F(Scene3Test, SensorNode)
 {
     const auto SensorNode_Input = TestUtils::MultiLineLiteral(R"x(
     | sensor: n2
@@ -293,8 +293,8 @@ TEST_F(SceneTest, SensorNode)
     EXPECT_TRUE(prop->LoadFromString(SensorNode_Input));
 
     const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
-    const auto accel = ComponentFactory::Create<Accel>("Stub_Accel");
-    const auto scene = ComponentFactory::Create<Scene>();
+    const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
+    const auto scene = ComponentFactory::Create<Scene3>();
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     EXPECT_EQ("n2", std::string(scene->GetSensor()->id));

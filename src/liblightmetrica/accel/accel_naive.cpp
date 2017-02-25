@@ -56,8 +56,9 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene3* scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene_) -> bool
     {
+        const auto* scene = static_cast<const Scene3*>(scene_);
         int np = scene->NumPrimitives();
         for (int i = 0; i < np; i++)
         {
@@ -88,8 +89,9 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene3* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene* scene_, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
+        const auto* scene = static_cast<const Scene3*>(scene_);
         bool hit = false;
         size_t minIndex = 0;
         Vec2 minB;

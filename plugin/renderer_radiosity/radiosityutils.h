@@ -80,7 +80,7 @@ public:
     auto Size() const -> int { return (int)(patches_.size()); }
 
     ///! Create patches structure by subdividing the triangles meshes
-    auto Create(const Scene* scene, Float subdivLimitArea) -> void
+    auto Create(const Scene3* scene, Float subdivLimitArea) -> void
     {
         LM_LOG_INFO("Creating patches");
 
@@ -267,7 +267,7 @@ public:
 public:
 
     ///! Helper function to estimate the form factor
-    static auto EstimateFormFactor(const Scene* scene, const Patch& pi, const Patch& pj) -> Float
+    static auto EstimateFormFactor(const Scene3* scene, const Patch& pi, const Patch& pj) -> Float
     {
         const auto  ci = pi.Centroid();
         const auto  cj = pj.Centroid();

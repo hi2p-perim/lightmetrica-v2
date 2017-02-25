@@ -39,15 +39,15 @@
 
 LM_NAMESPACE_BEGIN
 
-class Scene_ final : public Scene3
+class Scene3_ final : public Scene3
 {
 public:
 
-    LM_IMPL_CLASS(Scene_, Scene3);
+    LM_IMPL_CLASS(Scene3_, Scene3);
 
 public:
 
-    LM_IMPL_F(Initialize) = [this](const PropertyNode* sceneNode, Assets* assets, Accel3* accel) -> bool
+    LM_IMPL_F(Initialize) = [this](const PropertyNode* sceneNode, Assets* assets, Accel* accel) -> bool
     {
         #pragma region Load primitives
         
@@ -442,12 +442,13 @@ public:
             LM_LOG_INFO("Building acceleration structure");
             LM_LOG_INDENTER();
 
-            if (!accel->Build(this))
+            auto* accel3 = static_cast<Accel3*>(accel);
+            if (!accel3->Build(this))
             {
                 return false;
             }
 
-            accel_ = accel;
+            accel_ = accel3;
         }
 
         #pragma endregion
@@ -567,6 +568,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL_DEFAULT(Scene_);
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(Scene3_);
 
 LM_NAMESPACE_END

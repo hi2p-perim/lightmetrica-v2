@@ -95,8 +95,13 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
+        const auto* scene = static_cast<const Scene3*>(scene_);
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+
         #pragma region Render pass
 
         // Create measurement points shared with per pixel
@@ -113,7 +118,6 @@ public:
             int numVertices;                // Number of vertices needed to generate the measurement point 
         };
 
-        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         const auto W = film->Width();
         const auto H = film->Height();
         std::vector<MeasurementPoint> mps(W * H);

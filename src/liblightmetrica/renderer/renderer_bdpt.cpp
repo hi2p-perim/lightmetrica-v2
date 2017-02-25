@@ -50,7 +50,7 @@ struct Path;
 struct MISWeight : public Component
 {
     LM_INTERFACE_CLASS(MISWeight, Component, 1);
-    LM_INTERFACE_F(0, Evaluate, Float(const Path& path, const Scene* scene, int s, bool direct));
+    LM_INTERFACE_F(0, Evaluate, Float(const Path& path, const Scene3* scene, int s, bool direct));
 };
 
 // --------------------------------------------------------------------------------
@@ -838,8 +838,12 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene3* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
+        const auto* scene = static_cast<const Scene3*>(scene_);
+
+        // --------------------------------------------------------------------------------
+
         #if LM_COMPILER_CLANG
         tbb::enumerable_thread_specific<Subpath> subpathL_, subpathE_;
         tbb::enumerable_thread_specific<Path> path_;
