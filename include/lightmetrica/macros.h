@@ -244,6 +244,9 @@
     TypeName() = delete; \
     LM_DISABLE_COPY_AND_MOVE(TypeName)
 
+#define LM_TBA() LM_PRAGMA(error ("TBA"))
+#define LM_TBA_RUNTIME() throw std::runtime_error("TBA")
+
 #pragma endregion
 
 // --------------------------------------------------------------------------------

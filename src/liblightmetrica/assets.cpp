@@ -31,9 +31,7 @@
 
 LM_NAMESPACE_BEGIN
 
-/*
-    The assets are loaded when it queries.
-*/
+// The assets are loaded when it queries.
 class Assets_ final : public Assets
 {
 public:

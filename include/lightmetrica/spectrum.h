@@ -126,6 +126,13 @@ LM_INLINE auto operator/(const DiscreteSPD<3>& spd, const PDFVal& p) -> Discrete
     return spd / p.v;
 }
 
+LM_INLINE auto operator/(Float spd, const PDFVal& p) -> Float
+{
+    assert(p.v != 0_f || (p.v == 0_f && spd == 0_f));
+    if (spd == 0_f) return 0_f;
+    return spd / p.v;
+}
+
 #if LM_SPECTRUM_MULTI
     using SPD = DiscreteSPD<LM_SPECTRUM_SPD_N>;
 #elif LM_SPECTRUM_RGB

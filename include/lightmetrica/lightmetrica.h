@@ -32,7 +32,6 @@
 #include <lightmetrica/bsdf.h>
 #include <lightmetrica/bsdfutils.h>
 #include <lightmetrica/component.h>
-#include <lightmetrica/configurable.h>
 #include <lightmetrica/debug.h>
 #include <lightmetrica/dist.h>
 #include <lightmetrica/emitter.h>

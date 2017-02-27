@@ -25,10 +25,10 @@
 #include <lightmetrica/logger.h>
 #include <lightmetrica/exception.h>
 #include <lightmetrica/property.h>
-#include <lightmetrica/scene3.h>
+#include <lightmetrica/scene.h>
 #include <lightmetrica/renderer.h>
 #include <lightmetrica/assets.h>
-#include <lightmetrica/accel3.h>
+#include <lightmetrica/accel.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/primitive.h>
 #include <lightmetrica/sensor.h>
@@ -624,75 +624,58 @@ private:
         // --------------------------------------------------------------------------------
 
         #pragma region Initialize asset manager
-
-        const auto assets = ComponentFactory::Create<Assets>();
+        const auto assets = InitializeConfigurable<Assets>(root, "assets", { "Assets_" }, [&](Assets* p, const PropertyNode* pn)
         {
-            LM_LOG_INFO("Initializing asset manager");
-            LM_LOG_INDENTER();
-
-            const auto* n = root->Child("assets");
-            if (!n)
-            {
-                return false;
-            }
-            if (!assets->Initialize(n))
-            {
-                return false;
-            }
+            return p->Initialize(pn);
+        });
+        if (!assets)
+        {
+            return false;
         }
-        
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Initialize accel
-        
-        const auto accel = InitializeConfigurable<Accel3>(root, "accel", { "qbvh" });
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "qbvh" }, [&](Accel* p, const PropertyNode* pn)
+        {
+            return p->Initialize(pn);
+        });
         if (!accel)
         {
             return false;
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Initialize scene
-
-        const auto scene = ComponentFactory::Create<Scene3>();
+        const auto scene = InitializeConfigurable<Scene>(root, "scene", { "Scene3_" }, [&](Scene* p, const PropertyNode* pn)
         {
-            LM_LOG_INFO("Initializing scene");
-            LM_LOG_INDENTER();
-
-            const auto* n = root->Child("scene");
-            if (!n)
-            {
-                return false;
-            }
-            if (!scene->Initialize(n, assets.get(), accel->get()))
-            {
-                return false;
-            }
+            return p->Initialize(pn, assets.get(), accel.get());
+        });
+        if (!scene)
+        {
+            return false;
         }
-
         #pragma endregion
 
-        // ---------------------------------------- ----------------------------------------
+        // --------------------------------------------------------------------------------
 
         #pragma region Initialize renderer
-
-        const auto renderer = InitializeConfigurable<Renderer>(root, "renderer");
+        const auto renderer = InitializeConfigurable<Renderer>(root, "renderer", {}, [&](Renderer* p, const PropertyNode* pn)
+        {
+            return p->Initialize(pn);
+        });
         if (!renderer)
         {
             return false;
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Process rendering
-
         {
             LM_LOG_INFO("Rendering");
             LM_LOG_INDENTER();
@@ -720,10 +703,9 @@ private:
 
             // Dispatch renderer
             FPUtils::EnableFPControl();
-            renderer.get()->Render(scene.get(), &initRng, opt.Render.OutputPath);
+            renderer->Render(scene.get(), &initRng, opt.Render.OutputPath);
             FPUtils::DisableFPControl();
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -733,77 +715,86 @@ private:
 
 private:
 
-    // Function to initialize configurable component
-    template <typename AssetT>
-    auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::vector<std::string>& defs = {}) -> boost::optional<typename AssetT::UniquePtr>
-    {
-        static_assert(std::is_base_of<Configurable, AssetT>::value, "AssetT must inherits Configurable");
+    // Get type and configurable parameters
+    
 
+    // Function to initialize configurable component
+    template <typename ConfigurableT>
+    auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::vector<std::string>& defs, const std::function<bool(ConfigurableT*, const PropertyNode* pn)>& initializeFunc) -> typename ConfigurableT::UniquePtr
+    {
         LM_LOG_INFO("Initializing " + name);
         LM_LOG_INDENTER();
 
+        // Create instance
+        std::string type;
         const auto* n = root->Child(name);
-        if (!n)
+        auto p = [&]() -> typename ConfigurableT::UniquePtr
         {
-            if (defs.empty())
+            // Find the node of given name, if not found try to create an instance with defaults
+            if (!n)
             {
-                LM_LOG_ERROR("Missing '" + name + "' node");
-                PropertyUtils::PrintPrettyError(root);
-                return boost::none;
-            }
-
-            LM_LOG_WARN("Missing '" + name + "' node");
-            LM_LOG_INDENTER();
-
-            for (const auto& def : defs)
-            {
-                LM_LOG_WARN("Using default type '" + def + "'");
-                LM_LOG_INDENTER();
-                auto p = ComponentFactory::Create<AssetT>(name + "::" + def);
-                if (p == nullptr)
+                if (defs.empty())
                 {
-                    LM_LOG_WARN("Failed to create '" + def + "'. Trying next candidate..");
-                    continue;
+                    LM_LOG_ERROR("Missing '" + name + "' node");
+                    PropertyUtils::PrintPrettyError(root);
+                    return ConfigurableT::UniquePtr(nullptr, nullptr);
                 }
-                return std::move(p);
+
+                LM_LOG_WARN("Missing '" + name + "' node");
+                LM_LOG_INDENTER();
+
+                for (const auto& def : defs)
+                {
+                    LM_LOG_WARN("Using default type '" + def + "'");
+                    LM_LOG_INDENTER();
+                    auto p = ComponentFactory::Create<ConfigurableT>(name + "::" + def);
+                    if (p == nullptr)
+                    {
+                        LM_LOG_WARN("Failed to create '" + def + "'. Trying next candidate..");
+                        continue;
+                    }
+                    return p;
+                }
+
+                LM_UNREACHABLE();
+                return ConfigurableT::UniquePtr(nullptr, nullptr);
             }
 
-            LM_UNREACHABLE();
-            return boost::none;
-        }
+            // Creata an instance of the given name
+            const auto tn = n->Child("type");
+            if (!tn)
+            {
+                LM_LOG_ERROR("Missing '" + name + "/type' node");
+                PropertyUtils::PrintPrettyError(n);
+                return ConfigurableT::UniquePtr(nullptr, nullptr);
+            }
+            type = tn->template As<std::string>();
+            LM_LOG_INFO("Type: '" + type + "'");
 
-        const auto tn = n->Child("type");
-        if (!tn)
-        {
-            LM_LOG_ERROR("Missing '" + name + "/type' node");
-            PropertyUtils::PrintPrettyError(n);
-            return boost::none;
-        }
-        LM_LOG_INFO("Type: '" + tn->template As<std::string>() + "'");
+            auto p = ComponentFactory::Create<ConfigurableT>(name + "::" + type);
+            if (!p)
+            {
+                LM_LOG_ERROR("Failed to create '" + type + "'");
+                PropertyUtils::PrintPrettyError(tn);
+                return ConfigurableT::UniquePtr(nullptr, nullptr);
+            }
 
-        const auto pn = n->Child("params");
-        //if (!pn)
-        //{
-        //    LM_LOG_ERROR("Missing '" + name + "/params' node");
-        //    PropertyUtils::PrintPrettyError(n);
-        //    return boost::none;
-        //}
-
-        auto p = ComponentFactory::Create<AssetT>(name + "::" + tn->template As<std::string>());
+            return p;
+        }();
         if (!p)
         {
-            LM_LOG_ERROR("Failed to create '" + tn->template As<std::string>() + "'");
-            PropertyUtils::PrintPrettyError(tn);
-            return boost::none;
+            return ConfigurableT::UniquePtr(nullptr, nullptr);
         }
-
-        if (!p->Initialize(pn))
+        
+        // Initialize
+        const auto pn = n->Child("params");
+        if (!initializeFunc(p.get(), pn))
         {
-            LM_LOG_ERROR("Failed to initialize '" + tn->template As<std::string>() + "'");
-            return boost::none;
+            LM_LOG_ERROR("Failed to initialize '" + type + "'");
+            return ConfigurableT::UniquePtr(nullptr, nullptr);
         }
 
-        return std::move(p);
+        return p;
     }
 
 };

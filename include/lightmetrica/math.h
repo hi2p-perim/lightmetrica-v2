@@ -1633,11 +1633,11 @@ LM_INLINE auto operator-(const VecT<double, SIMD::AVX>& v) -> VecT<double, SIMD:
 using Vec2 = TVec2<Float, SIMD::None>;
 using Vec3 = TVec3<Float, SIMD::Default>;
 using Vec4 = TVec4<Float, SIMD::Default>;
-using Mat2 = TMat2<Float, SIMD::Default>;
+using Mat2 = TMat2<Float, SIMD::None>;
 using Mat3 = TMat3<Float, SIMD::Default>;
 using Mat4 = TMat4<Float, SIMD::Default>;
-using Mat2x3 = TMat2x3<Float, SIMD::Default>;
-using Mat3x2 = TMat3x2<Float, SIMD::Default>;
+using Mat2x3 = TMat2x3<Float, SIMD::None>;
+using Mat3x2 = TMat3x2<Float, SIMD::None>;
 
 //! \}
 #pragma endregion
@@ -1710,6 +1710,12 @@ namespace Math
     #pragma region Vector functions
 
     #pragma region Dot
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Dot(const TVec2<T, Opt>& v1, const TVec2<T, Opt>& v2) -> T
+    {
+        return v1.x * v2.x + v1.y * v2.y;
+    }
 
     template <typename T, SIMD Opt>
     LM_INLINE auto Dot(const TVec3<T, Opt>& v1, const TVec3<T, Opt>& v2) -> T
@@ -1980,6 +1986,14 @@ namespace Math
             _mm_movehl_ps(t3, t1));
     }
     #endif
+
+    template <typename T, SIMD Opt>
+    LM_INLINE auto Transpose(const TMat2<T, Opt>& m) -> TMat2<T, Opt>
+    {
+        return TMat2<T, Opt>(
+            m[0][0], m[1][0],
+            m[0][1], m[1][1]);
+    }
 
     template <typename T, SIMD Opt>
     LM_INLINE auto Transpose(const TMat2x3<T, Opt>& m) -> TMat3x2<T, Opt>

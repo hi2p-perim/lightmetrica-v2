@@ -24,12 +24,13 @@
 
 #pragma once
 
-#include <lightmetrica/configurable.h>
+#include <lightmetrica/component.h>
 #include <lightmetrica/math.h>
 
 LM_NAMESPACE_BEGIN
 
 class Scene;
+class PropertyNode;
 
 /*!
     \defgroup accel Accel
@@ -40,11 +41,11 @@ class Scene;
     \brief An interface for the acceleration structure.
     \ingroup accel
 */
-class Accel : public Configurable
+class Accel : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Accel, Configurable, 1);
+    LM_INTERFACE_CLASS(Accel, Component, 2);
 
 public:
 
@@ -52,6 +53,18 @@ public:
     LM_DISABLE_COPY_AND_MOVE(Accel);
 
 public:
+
+    /*!
+        \brief Initialize the configurable component.
+        
+        Initializes the component with the parameters specified by
+        the property node `prop`.
+
+        \params prop The propery node pointing to `params` node.
+        \retval true Succeeded to initialize.
+        \retval false Failed to initialize.
+    */
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode* prop));
 
     /*!
         \brief Build the acceleration structure.
@@ -63,7 +76,7 @@ public:
         \retval true  Succeeded to build.
         \retval false Failed to build.
     */
-    LM_INTERFACE_F(0, Build, bool(const Scene* scene));
+    LM_INTERFACE_F(1, Build, bool(const Scene* scene));
 
 };
 

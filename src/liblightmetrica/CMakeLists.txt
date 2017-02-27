@@ -72,7 +72,6 @@ set(
 	"${_INCLUDE_DIR}/intersection.h"
 	"${_INCLUDE_DIR}/intersectionutils.h"
 	"${_INCLUDE_DIR}/spectrum.h"
-	"${_INCLUDE_DIR}/configurable.h"
 	"${_INCLUDE_DIR}/enum.h"
 	"${_INCLUDE_DIR}/probability.h"
 	"${_INCLUDE_DIR}/debug.h"

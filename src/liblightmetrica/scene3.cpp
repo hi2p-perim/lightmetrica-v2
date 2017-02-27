@@ -558,7 +558,7 @@ private:
     Primitive* sensorPrimitive_;                                        // Pointer to sensor primitive
     std::vector<size_t> lightPrimitiveIndices_;                         // Pointers to light primitives
 
-    const Accel3* accel_;                                                // Acceleration structure
+    const Accel3* accel_;                                               // Acceleration structure
     Bound bound_;                                                       // Scene bound (AABB)
     SphereBound sphereBound_;                                           // Scene bound (sphere)
     std::vector<const EmitterShape*> emitterShapes_;                    // Special shapes for emitters

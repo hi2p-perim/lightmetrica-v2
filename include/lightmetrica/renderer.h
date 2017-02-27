@@ -24,13 +24,14 @@
 
 #pragma once
 
-#include <lightmetrica/configurable.h>
+#include <lightmetrica/component.h>
 
 LM_NAMESPACE_BEGIN
 
 class Scene;
 class Film;
 class Random;
+class PropertyNode;
 
 /*!
     \defgroup renderer Renderer
@@ -41,11 +42,11 @@ class Random;
     \brief A base class of the renderer.
     \ingroup renderer
 */
-class Renderer : public Configurable
+class Renderer : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Renderer, Configurable, 1);
+    LM_INTERFACE_CLASS(Renderer, Component, 2);
 
 public:
 
@@ -53,6 +54,18 @@ public:
     LM_DISABLE_COPY_AND_MOVE(Renderer);
 
 public:
+
+    /*!
+        \brief Initialize the renderer.
+        
+        Initializes the component with the parameters specified by
+        the property node `prop`.
+
+        \params prop The propery node pointing to `params` node.
+        \retval true Succeeded to initialize.
+        \retval false Failed to initialize.
+    */
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode* prop));
 
     /*!
         \brief Render an image.
@@ -65,7 +78,7 @@ public:
         \retval true Succeeded to render the scene.
         \retval true Failed to render the scene.
     */
-    LM_INTERFACE_F(0, Render, void(const Scene* scene, Random* initRng, const std::string& outputPath));
+    LM_INTERFACE_F(1, Render, void(const Scene* scene, Random* initRng, const std::string& outputPath));
 
 };
 
