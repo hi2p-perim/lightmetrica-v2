@@ -353,15 +353,12 @@ private:
     auto ProcessCommand_Render(const ProgramOption& opt) -> bool
     {
         #pragma region Configure logger
-
         Logger::SetVerboseLevel(opt.Render.Verbose ? 2 : 0);
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Handle help message
-
         if (opt.Render.Help)
         {
             LM_LOG_INFO_SIMPLE("");
@@ -370,27 +367,22 @@ private:
             LM_LOG_INFO_SIMPLE(opt.Render.HelpDetail);
             return true;
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Print initial message
-
         {
             #pragma region Header
-
             if (opt.Render.Verbose)
             {
                 LM_LOG_INFO_SIMPLE("| TYPE  TIME  | FILENAME  | LINE  | TID |");
             }
-
             #pragma endregion
 
             // --------------------------------------------------------------------------------
 
             #pragma region Current time
-
             std::string currentTime;
             {
                 std::stringstream ss;
@@ -407,13 +399,11 @@ private:
                 #endif
                 currentTime = ss.str();
             };
-
             #pragma endregion
 
             // --------------------------------------------------------------------------------
 
             #pragma region Application flags
-
             std::string flags;
             {
                 flags += LM_SINGLE_PRECISION ? "single_precision " : "";
@@ -421,13 +411,11 @@ private:
                 flags += LM_SSE ? "sse " : "";
                 flags += LM_AVX ? "avx " : "";
             }
-
             #pragma endregion
 
             // --------------------------------------------------------------------------------
 
             #pragma region Print message
-
             const auto message = MultiLineLiteral(R"x(
             |
             | Lightmetrica
@@ -445,7 +433,6 @@ private:
             | CURRENT TIME | %s
             |
             )x");
-
             LM_LOG_INFO(boost::str(boost::format(message)
                 % Version::Formatted()
                 % Version::Codename()
@@ -454,16 +441,13 @@ private:
                 % Version::Archtecture()
                 % flags
                 % currentTime));
-
             #pragma endregion
         }
-
         #pragma endregion
         
         // --------------------------------------------------------------------------------
 
         #pragma region Load plugins
-
         // TODO: Make configurable plugin directory
         {
             // Get executable path
@@ -507,13 +491,11 @@ private:
             LM_LOG_INDENTER();
             ComponentFactory::LoadPlugins((executablePath->parent_path() / "plugin").string());
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Load configuration files
-
         // Scene configuration
         const auto sceneConf = ComponentFactory::Create<PropertyTree>();
         {
@@ -553,13 +535,11 @@ private:
                 return false;
             }
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Check root node
-
         // Scene configuration file must begin with `lightmetrica` node
         const auto* root = sceneConf->Root()->Child("lightmetrica");
         if (!root)
@@ -568,13 +548,11 @@ private:
             LM_LOG_ERROR("Missing 'lightmetrica' node");
             return false;
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Scene version check
-
         {
             // Scene version support
             using VersionT = std::tuple<int, int, int>;
@@ -618,7 +596,6 @@ private:
                 return false;
             }
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -637,7 +614,7 @@ private:
         // --------------------------------------------------------------------------------
 
         #pragma region Initialize accel
-        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "qbvh" }, [&](Accel* p, const PropertyNode* pn)
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "accel::qbvh" }, [&](Accel* p, const PropertyNode* pn)
         {
             return p->Initialize(pn);
         });
@@ -747,7 +724,7 @@ private:
                 {
                     LM_LOG_WARN("Using default type '" + def + "'");
                     LM_LOG_INDENTER();
-                    auto p = ComponentFactory::Create<ConfigurableT>(name + "::" + def);
+                    auto p = ComponentFactory::Create<ConfigurableT>(def);
                     if (p == nullptr)
                     {
                         LM_LOG_WARN("Failed to create '" + def + "'. Trying next candidate..");
@@ -787,7 +764,7 @@ private:
         }
         
         // Initialize
-        const auto pn = n->Child("params");
+        const auto* pn = n ? n->Child("params") : nullptr;
         if (!initializeFunc(p.get(), pn))
         {
             LM_LOG_ERROR("Failed to initialize '" + type + "'");

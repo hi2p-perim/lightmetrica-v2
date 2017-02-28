@@ -136,11 +136,11 @@ public:
 
         // File format
         #if LM_PLATFORM_WINDOWS
-        const std::regex pluginNameExp("([a-z_]+)\\.dll$");
+        const std::regex pluginNameExp("([0-9a-z_]+)\\.dll$");
         #elif LM_PLATFORM_LINUX
-        const std::regex pluginNameExp("^([a-z_]+)\\.so$");
+        const std::regex pluginNameExp("^([0-9a-z_]+)\\.so$");
         #elif LM_PLATFORM_APPLE
-        const std::regex pluginNameExp("^([a-z_]+)\\.dylib$");
+        const std::regex pluginNameExp("^([0-9a-z_]+)\\.dylib$");
         #endif
 
         // Enumerate dynamic libraries in #pluginDir
