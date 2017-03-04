@@ -12,7 +12,7 @@
 misc/
 resources/
 experimental/
-external/
+/external/
 example
 dist*/
 .idea/
