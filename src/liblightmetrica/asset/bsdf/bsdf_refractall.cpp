@@ -106,6 +106,7 @@ public:
         }
 
         const auto localWi = geom.ToLocal * wi;
+        const auto localWo = geom.ToLocal * wo;
 
         Float etaI = eta1_;
         Float etaT = eta2_;
@@ -114,9 +115,22 @@ public:
             std::swap(etaI, etaT);
         }
 
-        const Float eta = etaI / etaT;
-        const auto refrCorrection = transDir == TransportDirection::EL ? eta : 1_f;
-        return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir) * refrCorrection * refrCorrection;
+        if (Math::LocalCos(localWi) * Math::LocalCos(localWo) >= 0_f)
+        {
+            // Total internal reflection
+            return R_ * BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
+        }
+        else
+        {
+            // Refraction
+            const Float eta = etaI / etaT;
+            const auto refrCorrection = transDir == TransportDirection::EL ? eta : 1_f;
+            const auto normalCorrection = BSDFUtils::ShadingNormalCorrection(geom, wi, wo, transDir);
+            return R_ * normalCorrection * refrCorrection * refrCorrection;
+        }
+
+        LM_UNREACHABLE();
+        return SPD();
     };
 
     LM_IMPL_F(IsDeltaDirection) = [this](int type) -> bool

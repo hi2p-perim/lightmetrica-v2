@@ -614,7 +614,7 @@ private:
         // --------------------------------------------------------------------------------
 
         #pragma region Initialize accel
-        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "accel::qbvh" }, [&](Accel* p, const PropertyNode* pn)
+        const auto accel = InitializeConfigurable<Accel>(root, "accel", { "accel::embree" }, [&](Accel* p, const PropertyNode* pn)
         {
             return p->Initialize(pn);
         });

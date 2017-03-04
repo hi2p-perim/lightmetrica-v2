@@ -32,7 +32,7 @@ function(add_plugin)
     add_dependencies(${_ARG_NAME} liblightmetrica)
 
     # Output directory
-    set(_OUTPUT_ROOT "${CMAKE_SOURCE_DIR}/dist")
+    set(_OUTPUT_ROOT "${CMAKE_SOURCE_DIR}/${LM_DIST_DIR_NAME}")
     set_target_properties(${_ARG_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/bin/plugin")
     set_target_properties(${_ARG_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/bin/plugin")
     set_target_properties(${_ARG_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${_OUTPUT_ROOT}/bin/plugin")

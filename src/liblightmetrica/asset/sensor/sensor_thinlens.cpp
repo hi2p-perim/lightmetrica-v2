@@ -97,7 +97,23 @@ public:
         const auto rayDir = vx_ * woEye.x + vy_ * woEye.y + vz_ * woEye.z;
 
         // Compute the intersection point with the focal plane
-        const float tf = focalDistance_ / Math::Dot(-vz_, rayDir);
+        const auto tf = focalDistance_ / Math::Dot(-vz_, rayDir);
+        const auto Pf = position_ + rayDir * tf;
+
+        // Final ray direction
+        wo = Math::Normalize(Pf - geom.p);
+    };
+
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    {
+        // Sample a direction
+        const auto rasterPos = 2.0_f * u - Vec2(1.0_f);
+        const Float tanFov = Math::Tan(fov_ * 0.5_f);
+        const auto woEye = Math::Normalize(Vec3(aspect_ * tanFov * rasterPos.x, tanFov * rasterPos.y, -1_f));
+        const auto rayDir = vx_ * woEye.x + vy_ * woEye.y + vz_ * woEye.z;
+
+        // Compute the intersection point with the focal plane
+        const auto tf = focalDistance_ / Math::Dot(-vz_, rayDir);
         const auto Pf = position_ + rayDir * tf;
 
         // Final ray direction
@@ -152,7 +168,7 @@ private:
 
         // Intersection point with focal plane
         assert(Math::Dot(-vz_, wo) > 0);
-        const float tf = focalDistance_ / Math::Dot(-vz_, wo);
+        const auto tf = focalDistance_ / Math::Dot(-vz_, wo);
         const auto Pf = geom.p + wo * tf;
 
         // Original ray direction before refraction
@@ -186,7 +202,7 @@ public:
         }
 
         // Intersection point with focal plane
-        const float tf = focalDistance_ / Math::Dot(-vz_, wo);
+        const auto tf = focalDistance_ / Math::Dot(-vz_, wo);
         const auto Pf = geom.p + wo * tf;
 
         // Original ray direction before refraction

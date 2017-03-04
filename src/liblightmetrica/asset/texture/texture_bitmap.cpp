@@ -27,6 +27,8 @@
 #include <lightmetrica/property.h>
 #include <FreeImage.h>
 
+#define LM_TEXTURE_BITMAP_FLIP_VERTICAL 0
+
 LM_NAMESPACE_BEGIN
 
 class Texture_Bitmap final : public Texture
@@ -96,10 +98,12 @@ public:
                 return false;
             }
 
+            #if LM_TEXTURE_BITMAP_FLIP_VERTICAL
             // Flip the loaded image
             // Note that in FreeImage loaded image is flipped from the beginning,
             // i.e., y axis is originated from bottom-left point and grows upwards.
             FreeImage_FlipVertical(fibitmap);
+            #endif
 
             // Read image data
             data_.clear();
@@ -143,7 +147,7 @@ public:
             // --------------------------------------------------------------------------------
 
             // Scale
-            const auto scale = prop->ChildAs<Float>("scale", 1_f);
+            const auto scale = (float)(prop->ChildAs<Float>("scale", 1_f));
             for (auto& v : data_)
             {
                 v *= scale;
