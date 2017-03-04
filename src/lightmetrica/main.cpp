@@ -714,7 +714,7 @@ private:
                 {
                     LM_LOG_ERROR("Missing '" + name + "' node");
                     PropertyUtils::PrintPrettyError(root);
-                    return ConfigurableT::UniquePtr(nullptr, nullptr);
+                    return typename ConfigurableT::UniquePtr(nullptr, nullptr);
                 }
 
                 LM_LOG_WARN("Missing '" + name + "' node");
@@ -734,7 +734,7 @@ private:
                 }
 
                 LM_UNREACHABLE();
-                return ConfigurableT::UniquePtr(nullptr, nullptr);
+                return typename ConfigurableT::UniquePtr(nullptr, nullptr);
             }
 
             // Creata an instance of the given name
@@ -743,7 +743,7 @@ private:
             {
                 LM_LOG_ERROR("Missing '" + name + "/type' node");
                 PropertyUtils::PrintPrettyError(n);
-                return ConfigurableT::UniquePtr(nullptr, nullptr);
+                return typename ConfigurableT::UniquePtr(nullptr, nullptr);
             }
             type = tn->template As<std::string>();
             LM_LOG_INFO("Type: '" + type + "'");
@@ -753,14 +753,14 @@ private:
             {
                 LM_LOG_ERROR("Failed to create '" + type + "'");
                 PropertyUtils::PrintPrettyError(tn);
-                return ConfigurableT::UniquePtr(nullptr, nullptr);
+                return typename ConfigurableT::UniquePtr(nullptr, nullptr);
             }
 
             return p;
         }();
         if (!p)
         {
-            return ConfigurableT::UniquePtr(nullptr, nullptr);
+            return typename ConfigurableT::UniquePtr(nullptr, nullptr);
         }
         
         // Initialize
@@ -768,7 +768,7 @@ private:
         if (!initializeFunc(p.get(), pn))
         {
             LM_LOG_ERROR("Failed to initialize '" + type + "'");
-            return ConfigurableT::UniquePtr(nullptr, nullptr);
+            return typename ConfigurableT::UniquePtr(nullptr, nullptr);
         }
 
         return p;

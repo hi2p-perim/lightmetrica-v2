@@ -23,8 +23,8 @@
 */
 
 #include <pch.h>
-#include <lightmetrica/accel.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/accel3.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/triaccel.h>
 #include <lightmetrica/primitive.h>
@@ -136,11 +136,11 @@ public:
     }
 };
 
-class Accel_QBVH final : public Accel
+class Accel_QBVH final : public Accel3
 {
 public:
 
-    LM_IMPL_CLASS(Accel_QBVH, Accel);
+    LM_IMPL_CLASS(Accel_QBVH, Accel3);
 
 public:
 
@@ -149,9 +149,10 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Build) = [this](const Scene* scene) -> bool
+    LM_IMPL_F(Build) = [this](const Scene* scene_) -> bool
     {
         std::vector<Bound> bounds_;
+        const auto* scene = static_cast<const Scene3*>(scene_);
 
         // --------------------------------------------------------------------------------
 
@@ -394,7 +395,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Intersect) = [this](const Scene* scene, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
+    LM_IMPL_F(Intersect) = [this](const Scene* scene_, const Ray& ray, Intersection& isect, Float minT, Float maxT) -> bool
     {
         #pragma region Prepare some required data
 
@@ -484,6 +485,7 @@ public:
 
         if (hit)
         {
+            const auto* scene = static_cast<const Scene3*>(scene_);
             isect = IntersectionUtils::CreateTriangleIntersection(
                 scene->PrimitiveAt(triangles_[minIndex].primIndex),
                 ray.o + ray.d * maxT,
