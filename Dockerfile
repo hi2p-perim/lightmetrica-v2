@@ -88,10 +88,11 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release -D BUILD_SHARED_LIBS=ON .. && make $BUILD_C
 
 # tbb
 WORKDIR /
-RUN wget https://github.com/01org/tbb/releases/download/2017_U5/tbb2017_20170226oss_lin.tgz
-RUN tar -C /opt xf tbb2017_20170226oss_lin.tgz
-RUN sed -i "s%SUBSTITUTE_INSTALL_DIR_HERE%/opt/tbb" /opt/tbb2017_20170226oss_lin/bin/tbbvars.*
-RUN source /opt/tbb2017_20170226oss_lin/bin/tbbvars.sh intel64
+RUN git clone --depth=1 --branch 2017_U5 https://github.com/01org/tbb.git tbb
+WORKDIR /tbb
+RUN make $BUILD_CORES && make install
+RUN cp -rf build/linux_*_release/lib* /usr/local/lib/
+RUN cp -rf include/tbb /usr/local/include/
 
 # --------------------------------------------------------------------------------
 
