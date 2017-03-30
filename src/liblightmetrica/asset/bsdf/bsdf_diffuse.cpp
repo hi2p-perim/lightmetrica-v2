@@ -113,6 +113,7 @@ public:
     };
 
     LM_IMPL_F(Reflectance) = [this]() -> SPD { return R_; };
+    LM_IMPL_F(Reflectance2) = [this](const SurfaceGeometry& geom) -> SPD { return texR_ ? SPD::FromRGB(texR_->Evaluate(geom.uv)) : R_; };
 
 public:
 

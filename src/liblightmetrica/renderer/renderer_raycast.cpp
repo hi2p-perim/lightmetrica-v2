@@ -79,7 +79,8 @@ public:
                 }
 
                 // Set color to the pixel
-                const auto c = Math::Abs(Math::Dot(isect.geom.sn, -ray.d));
+                const auto R = isect.primitive->bsdf->Reflectance2(isect.geom);
+                const auto c = Math::Abs(Math::Dot(isect.geom.sn, -ray.d)) * R;
                 film->SetPixel(x, y, SPD(c));
             }
 

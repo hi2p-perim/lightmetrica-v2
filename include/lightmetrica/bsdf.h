@@ -42,7 +42,7 @@ class BSDF : public SurfaceInteraction
 {
 public:
 
-    LM_INTERFACE_CLASS(BSDF, SurfaceInteraction, 4);
+    LM_INTERFACE_CLASS(BSDF, SurfaceInteraction, 5);
 
 public:
 
@@ -62,6 +62,9 @@ public:
 
     ///! Get refractive index if available.
     LM_INTERFACE_F(3, Eta, Float(const SurfaceGeometry& geom, const Vec3& wi));
+
+    ///! TODO. Replace it
+    LM_INTERFACE_F(0, Reflectance2, SPD(const SurfaceGeometry& geom));
 
 };
 

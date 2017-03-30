@@ -133,6 +133,9 @@ public:
         return roughness_;
     };
 
+    LM_IMPL_F(Reflectance) = [this]() -> SPD { return R_; };
+    LM_IMPL_F(Reflectance2) = [this](const SurfaceGeometry& geom) -> SPD { return texR_ ? SPD::FromRGB(texR_->Evaluate(geom.uv)) : R_; };
+
 private:
 
     auto EvaluateNormalDist(const Vec3& H) const -> Float

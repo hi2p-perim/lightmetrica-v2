@@ -25,12 +25,9 @@
 #include <pch.h>
 #include <lightmetrica/detail/parallel.h>
 #include <lightmetrica/logger.h>
+#define TBB_PREVIEW_LOCAL_OBSERVER 1
 #include <tbb/tbb.h>
-
-// Avoid this
-// https://software.intel.com/en-us/forums/intel-threading-building-blocks/topic/706167
-// https://www.threadingbuildingblocks.org/docs/help/index.htm#reference/appendices/preview_features/task_isolation.html
-//#define LM_PARALLEL_NO_TBB_TLS 1
+#include <tbb/task_scheduler_observer.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -62,7 +59,7 @@ private:
     #if LM_DEBUG_MODE
     long long grainSize_ = 1000;
     #else
-    long long grainSize_ = 10;
+    long long grainSize_ = 10000;
     #endif
 
 public:
@@ -164,17 +161,15 @@ public:
         };
 
         std::atomic<bool> done(false);
+        struct Context
+        {
+            long long processed = 0;
+        };
+        std::vector<Context> contexts(numThreads_);
         do
         {
             #pragma region TLS
-            struct Context
-            {
-                int threadid = -1;
-                long long processed = 0;
-            };
-            tbb::enumerable_thread_specific<Context> contexts;
-            std::mutex contextInitMutex;
-            int currentThreadID = 0;
+            contexts.assign(numThreads_, Context());
             #pragma endregion
 
             // --------------------------------------------------------------------------------
@@ -187,12 +182,8 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region TLS
-                auto& ctx = contexts.local();
-                if (ctx.threadid < 0)
-                {
-                    std::unique_lock<std::mutex> lock(contextInitMutex);
-                    ctx.threadid = currentThreadID++;
-                }
+                const int threadid = tbb::this_task_arena::current_thread_index();
+                auto& ctx = contexts[threadid];
                 #pragma endregion
                 
                 // --------------------------------------------------------------------------------
@@ -201,7 +192,7 @@ public:
                 for (long long i = range.begin(); i != range.end(); i++)
                 {
                     // TODO. Fix it. Keeping thrid argument to false now.
-                    processFunc(processed + i, ctx.threadid, false);
+                    processFunc(processed + i, threadid, false);
                     ctx.processed++;
                     if (ctx.processed > progressUpdateInterval_)
                     {

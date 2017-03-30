@@ -352,7 +352,6 @@ public:
             // --------------------------------------------------------------------------------
 
             #pragma region Main sensor
-
             {
                 const auto mainSensorNode = sceneNode->Child("sensor");
                 if (!mainSensorNode)
@@ -372,7 +371,6 @@ public:
 
                 sensorPrimitive_ = it->second;
             }
-
             #pragma endregion
         }
 
