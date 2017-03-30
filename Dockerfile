@@ -9,21 +9,6 @@ USER root
 # --------------------------------------------------------------------------------
 
 # Install some packages
-#RUN apt-get update -qq && apt-get install -qq -y \
-#    git \
-#    software-properties-common \
-#    python \
-#    python-jinja2 \
-#    build-essential \
-#    freeglut3-dev \
-#    libxmu-dev \
-#    libxi-dev \
-#    libtbb-dev \
-#    libeigen3-dev \
-#    wget \
-#    unzip \
-#    curl
-
 RUN apt-get update -qq && apt-get install -qq -y \
     git \
     software-properties-common \
@@ -31,7 +16,6 @@ RUN apt-get update -qq && apt-get install -qq -y \
     freeglut3-dev \
     libxmu-dev \
     libxi-dev \
-    libtbb-dev \
     libeigen3-dev \
     wget \
     unzip \
