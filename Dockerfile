@@ -90,7 +90,7 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release -D BUILD_SHARED_LIBS=ON .. && make $BUILD_C
 WORKDIR /
 RUN git clone --depth=1 --branch 2017_U5 https://github.com/01org/tbb.git tbb
 WORKDIR /tbb
-RUN make $BUILD_CORES && make install
+RUN make $BUILD_CORES
 RUN cp -rf build/linux_*_release/lib* /usr/local/lib/
 RUN cp -rf include/tbb /usr/local/include/
 
