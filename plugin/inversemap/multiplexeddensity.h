@@ -258,8 +258,7 @@ public:
                     us.push_back(u[1]);
 
                     // Light selection prob
-                    const auto Delta = 1_f / scene->NumLightPrimitives();
-                    const auto uC = Math::Clamp(rng->Next() + Delta * v->primitive->lightIndex, 0_f, 1_f);
+                    const auto uC = Math::Clamp((rng->Next() + (Float)v->primitive->lightIndex) / scene->NumLightPrimitives(), 0_f, 1_f);
                     us.push_back(uC);
                 }
             }
