@@ -707,11 +707,11 @@ public:
                 {
                     LM_LOG_INDENTER();
                     {
-                        const double ave = (double)sumFailures / sum;
+                        const double ave = (double)sumFailures1 / sum;
                         LM_LOG_INFO(boost::str(boost::format("1: %.5f (%d / %d)") % ave % sumFailures1 % sum));
                     }
                     {
-                        const double ave = (double)sumFailures / sum;
+                        const double ave = (double)sumFailures2 / sum;
                         LM_LOG_INFO(boost::str(boost::format("2: %.5f (%d / %d)") % ave % sumFailures2 % sum));
                     }
                 }
