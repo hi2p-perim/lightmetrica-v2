@@ -559,6 +559,39 @@ public:
                                     #endif
                                     if (!path_propInvS)
                                     {
+                                        #if INVERSEMAP_MMLTINVMAP_DEBUG_IO
+                                        {
+                                            LM_LOG_DEBUG("path1");
+                                            DebugIO::Wait();
+                                            std::vector<double> vs;
+                                            for (const auto& v : propP->p.vertices) for (int i = 0; i < 3; i++) { vs.push_back(v.geom.p[i]); }
+                                            std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
+                                            DebugIO::Output("path1", ss.str());
+                                        }
+                                        Subpath subpathE;
+                                        Subpath subpathL;
+                                        subpathE.vertices.clear();
+                                        subpathL.vertices.clear();
+                                        subpathE.SampleSubpathWithPrimarySamples(scene, propInvS->usE_, TransportDirection::EL, propInvS->numVertices_);
+                                        subpathL.SampleSubpathWithPrimarySamples(scene, propInvS->usL_, TransportDirection::LE, propInvS->numVertices_);
+                                        {
+                                            LM_LOG_DEBUG("path2");
+                                            DebugIO::Wait();
+                                            std::vector<double> vs;
+                                            for (const auto& v : subpathE.vertices) for (int i = 0; i < 3; i++) { vs.push_back(v.geom.p[i]); }
+                                            std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
+                                            DebugIO::Output("path2", ss.str());
+                                        }
+                                        {
+                                            LM_LOG_DEBUG("path3");
+                                            DebugIO::Wait();
+                                            std::vector<double> vs;
+                                            for (const auto& v : subpathL.vertices) for (int i = 0; i < 3; i++) { vs.push_back(v.geom.p[i]); }
+                                            std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
+                                            DebugIO::Output("path3", ss.str());
+                                        }
+                                        #endif
+
                                         #if INVERSEMAP_MMLTINVMAP_MEASURE_TRANSITION_TIME
                                         ctx.sanitycheckFailureCount++;
                                         ctx.sanitycheckFailureCount1++;
@@ -568,25 +601,6 @@ public:
                                     const auto C2 = (path_propInvS->Cstar * path_propInvS->w).Luminance();
                                     if (currP.s != path_propInvS->s || currP.t != path_propInvS->t || C2 == 0)
                                     {
-                                        #if INVERSEMAP_MMLTINVMAP_DEBUG_IO
-                                        {
-                                            LM_LOG_DEBUG("current_path");
-                                            DebugIO::Wait();
-                                            std::vector<double> vs;
-                                            for (const auto& v : propP->p.vertices) for (int i = 0; i < 3; i++) { vs.push_back(v.geom.p[i]); }
-                                            std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
-                                            DebugIO::Output("current_path", ss.str());
-                                        }
-                                        {
-                                            LM_LOG_DEBUG("next_path");
-                                            DebugIO::Wait();
-                                            std::vector<double> vs;
-                                            for (const auto& v : propP->p.vertices) for (int i = 0; i < 3; i++) { vs.push_back(v.geom.p[i]); }
-                                            std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
-                                            DebugIO::Output("next_path", ss.str());
-                                        }
-                                        #endif
-
                                         #if INVERSEMAP_MMLTINVMAP_MEASURE_TRANSITION_TIME
                                         ctx.sanitycheckFailureCount++;
                                         ctx.sanitycheckFailureCount2++;

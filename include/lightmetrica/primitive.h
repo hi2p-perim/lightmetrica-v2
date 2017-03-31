@@ -62,6 +62,9 @@ struct Primitive : public SIMDAlignedType
     // Primitive index
     size_t index;
 
+    // Light primitive index (only for L)
+    size_t lightIndex;
+
     // Transform & normal transform
     Mat4 transform;
     Mat3 normalTransform;

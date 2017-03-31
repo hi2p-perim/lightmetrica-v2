@@ -53,7 +53,7 @@ class Scene : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene, Component, 11);
+    LM_INTERFACE_CLASS(Scene, Component, 12);
 
 public:
 
@@ -115,6 +115,8 @@ public:
     //! Compute the bound of the scene
     LM_INTERFACE_F(9,  GetBound, Bound());
     LM_INTERFACE_F(10, GetSphereBound, SphereBound());
+
+    LM_INTERFACE_F(11, NumLightPrimitives, int());
 
 public:
 

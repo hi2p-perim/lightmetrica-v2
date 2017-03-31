@@ -210,10 +210,10 @@ public:
         State state(rng, n);
 
         // Map subpaths
-        const auto usL = CDF_Subpath(p, s, rng, TransportDirection::LE);
+        const auto usL = CDF_Subpath(scene, p, s, rng, TransportDirection::LE);
         assert(usL.size() <= state.usL_.size());
         for (size_t i = 0; i < usL.size(); i++) { state.usL_[i] = usL[i]; }
-        const auto usE = CDF_Subpath(p, t, rng, TransportDirection::EL);
+        const auto usE = CDF_Subpath(scene, p, t, rng, TransportDirection::EL);
         assert(usE.size() <= state.usE_.size());
         for (size_t i = 0; i < usE.size(); i++) { state.usE_[i] = usE[i]; }
 
@@ -223,7 +223,7 @@ public:
         return state;
     }
 
-    static auto CDF_Subpath(const Path& p, int k, Random* rng, TransportDirection transDir) -> std::vector<Float>
+    static auto CDF_Subpath(const Scene* scene, const Path& p, int k, Random* rng, TransportDirection transDir) -> std::vector<Float>
     {
         const int n = (int)(p.vertices.size());
         const auto index = [&](int i) -> int { return transDir == TransportDirection::LE ? i : n - 1 - i; };
@@ -256,7 +256,11 @@ public:
                     const auto u = InversemapUtils::SampleTriangleMesh_Inverse(v->primitive, *triAreaDist, v->geom);
                     us.push_back(u[0]);
                     us.push_back(u[1]);
-                    us.push_back(undef());
+
+                    // Light selection prob
+                    const auto Delta = 1_f / scene->NumLightPrimitives();
+                    const auto uC = Math::Clamp(rng->Next() + Delta * v->primitive->lightIndex, 0_f, 1_f);
+                    us.push_back(uC);
                 }
             }
             else if (vp->type == SurfaceInteractionType::E)
