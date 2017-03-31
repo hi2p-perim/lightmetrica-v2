@@ -24,11 +24,16 @@
 
 #include "mltutils.h"
 #include "multiplexeddensity.h"
+#include "debugio.h"
 #include <regex>
 #include <chrono>
+#include <cereal/archives/json.hpp>
+#include <cereal/types/vector.hpp>
 
 #define INVERSEMAP_MMLTINVMAP_DEBUG_OUTPUT_AVE_ACC 1
 #define INVERSEMAP_MMLTINVMAP_MEASURE_TRANSITION_TIME 1
+
+#define INVERSEMAP_MMLTINVMAP_DEBUG_IO 0
 
 LM_NAMESPACE_BEGIN
 
@@ -129,7 +134,53 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
     {
+        #if INVERSEMAP_MMLTINVMAP_DEBUG_IO
+        DebugIO::Run();
+        #endif
+
+        // --------------------------------------------------------------------------------
+
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
+
+        // --------------------------------------------------------------------------------
+        
+        #if INVERSEMAP_MMLTINVMAP_DEBUG_IO
+        LM_LOG_DEBUG("triangle_vertices");
+        {
+            DebugIO::Wait();
+
+            std::vector<double> vs;
+            for (int i = 0; i < scene->NumPrimitives(); i++)
+            {
+                const auto* primitive = scene->PrimitiveAt(i);
+                const auto* mesh = primitive->mesh;
+                if (!mesh) { continue; }
+                const auto* ps = mesh->Positions();
+                const auto* faces = mesh->Faces();
+                for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
+                {
+                    unsigned int vi1 = faces[3 * fi];
+                    unsigned int vi2 = faces[3 * fi + 1];
+                    unsigned int vi3 = faces[3 * fi + 2];
+                    Vec3 p1(primitive->transform * Vec4(ps[3 * vi1], ps[3 * vi1 + 1], ps[3 * vi1 + 2], 1_f));
+                    Vec3 p2(primitive->transform * Vec4(ps[3 * vi2], ps[3 * vi2 + 1], ps[3 * vi2 + 2], 1_f));
+                    Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
+                    for (int j = 0; j < 3; j++) vs.push_back(p1[j]);
+                    for (int j = 0; j < 3; j++) vs.push_back(p2[j]);
+                    for (int j = 0; j < 3; j++) vs.push_back(p3[j]);
+                }
+            }
+            
+            std::stringstream ss;
+            {
+                cereal::JSONOutputArchive oa(ss);
+                oa(vs);
+            }
+
+            DebugIO::Output("triangle_vertices", ss.str());
+            DebugIO::Wait();
+        }
+        #endif
 
         // --------------------------------------------------------------------------------
 
@@ -241,6 +292,8 @@ public:
                 long long transitionCount = 0;
                 long long sanitycheckCount = 0;
                 long long sanitycheckFailureCount = 0;
+                long long sanitycheckFailureCount1 = 0;
+                long long sanitycheckFailureCount2 = 0;
                 #endif
             };
             std::vector<Context> contexts(Parallel::GetNumThreads());
@@ -508,14 +561,35 @@ public:
                                     {
                                         #if INVERSEMAP_MMLTINVMAP_MEASURE_TRANSITION_TIME
                                         ctx.sanitycheckFailureCount++;
+                                        ctx.sanitycheckFailureCount1++;
                                         #endif
                                         return { false, strategy };
                                     }
                                     const auto C2 = (path_propInvS->Cstar * path_propInvS->w).Luminance();
                                     if (currP.s != path_propInvS->s || currP.t != path_propInvS->t || C2 == 0)
                                     {
+                                        #if INVERSEMAP_MMLTINVMAP_DEBUG_IO
+                                        {
+                                            LM_LOG_DEBUG("current_path");
+                                            DebugIO::Wait();
+                                            std::vector<double> vs;
+                                            for (const auto& v : propP->p.vertices) for (int i = 0; i < 3; i++) { vs.push_back(v.geom.p[i]); }
+                                            std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
+                                            DebugIO::Output("current_path", ss.str());
+                                        }
+                                        {
+                                            LM_LOG_DEBUG("next_path");
+                                            DebugIO::Wait();
+                                            std::vector<double> vs;
+                                            for (const auto& v : propP->p.vertices) for (int i = 0; i < 3; i++) { vs.push_back(v.geom.p[i]); }
+                                            std::stringstream ss; { cereal::JSONOutputArchive oa(ss); oa(vs); }
+                                            DebugIO::Output("next_path", ss.str());
+                                        }
+                                        #endif
+
                                         #if INVERSEMAP_MMLTINVMAP_MEASURE_TRANSITION_TIME
                                         ctx.sanitycheckFailureCount++;
+                                        ctx.sanitycheckFailureCount2++;
                                         #endif
                                         return { false, strategy };
                                     }
@@ -612,11 +686,35 @@ public:
             {
                 long long sum = 0;
                 long long sumFailures = 0;
-                for (auto& ctx : contexts) { sum += ctx.sanitycheckCount; sumFailures += ctx.sanitycheckFailureCount; }
-                const double ave = (double)sum / processed;
-                LM_LOG_INFO(boost::str(boost::format("Expected sanity checks: %.5f (%d / %d)") % ave % sum % processed));
-                const double ave2 = (double)sumFailures / sum;
-                LM_LOG_INFO(boost::str(boost::format("Expected failure cases in sanity checks: %.5f (%d / %d)") % ave2 % sumFailures % sum));
+                long long sumFailures1 = 0;
+                long long sumFailures2 = 0;
+                for (auto& ctx : contexts)
+                {
+                    sum += ctx.sanitycheckCount;
+                    sumFailures += ctx.sanitycheckFailureCount;
+                    sumFailures1 += ctx.sanitycheckFailureCount1;
+                    sumFailures2 += ctx.sanitycheckFailureCount2;
+                }
+
+                {
+                    const double ave = (double)sum / processed;
+                    LM_LOG_INFO(boost::str(boost::format("Expected sanity checks: %.5f (%d / %d)") % ave % sum % processed));
+                }
+                {
+                    const double ave = (double)sumFailures / sum;
+                    LM_LOG_INFO(boost::str(boost::format("Expected failure cases in sanity checks: %.5f (%d / %d)") % ave % sumFailures % sum));
+                }
+                {
+                    LM_LOG_INDENTER();
+                    {
+                        const double ave = (double)sumFailures / sum;
+                        LM_LOG_INFO(boost::str(boost::format("1: %.5f (%d / %d)") % ave % sumFailures1 % sum));
+                    }
+                    {
+                        const double ave = (double)sumFailures / sum;
+                        LM_LOG_INFO(boost::str(boost::format("2: %.5f (%d / %d)") % ave % sumFailures2 % sum));
+                    }
+                }
             }
             #endif
 
@@ -641,6 +739,12 @@ public:
             film->Save(outputPath);
         }
         #pragma endregion
+
+        // --------------------------------------------------------------------------------
+        
+        #if INVERSEMAP_MMLTINVMAP_DEBUG_IO
+        DebugIO::Stop();
+        #endif
     };
 
 };
