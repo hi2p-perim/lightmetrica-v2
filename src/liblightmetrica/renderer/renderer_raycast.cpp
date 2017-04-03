@@ -79,7 +79,7 @@ public:
                 }
 
                 // Set color to the pixel
-                const auto R = isect.primitive->bsdf->Reflectance2(isect.geom);
+                const auto R = isect.primitive->bsdf->Reflectance2.Implemented() ? isect.primitive->bsdf->Reflectance2(isect.geom) : SPD(1_f);
                 const auto c = Math::Abs(Math::Dot(isect.geom.sn, -ray.d)) * R;
                 film->SetPixel(x, y, SPD(c));
             }
