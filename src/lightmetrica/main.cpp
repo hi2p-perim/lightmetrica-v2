@@ -601,7 +601,7 @@ private:
         // --------------------------------------------------------------------------------
 
         #pragma region Initialize asset manager
-        const auto assets = InitializeConfigurable<Assets>(root, "assets", { "Assets_" }, [&](Assets* p, const PropertyNode* pn)
+        const auto assets = InitializeConfigurable<Assets>(root, "assets", { "assets::assets3" }, [&](Assets* p, const PropertyNode* pn)
         {
             return p->Initialize(pn);
         });
@@ -627,7 +627,7 @@ private:
         // --------------------------------------------------------------------------------
 
         #pragma region Initialize scene
-        const auto scene = InitializeConfigurable<Scene>(root, "scene", { "Scene3_" }, [&](Scene* p, const PropertyNode* pn)
+        const auto scene = InitializeConfigurable<Scene>(root, "scene", { "scene::scene3" }, [&](Scene* p, const PropertyNode* pn)
         {
             return p->Initialize(pn, assets.get(), accel.get());
         });
@@ -748,7 +748,9 @@ private:
             type = tn->template As<std::string>();
             LM_LOG_INFO("Type: '" + type + "'");
 
-            auto p = ComponentFactory::Create<ConfigurableT>(name + "::" + type);
+            auto p = type == "default"
+                ? ComponentFactory::Create<ConfigurableT>()
+                : ComponentFactory::Create<ConfigurableT>(name + "::" + type);
             if (!p)
             {
                 LM_LOG_ERROR("Failed to create '" + type + "'");

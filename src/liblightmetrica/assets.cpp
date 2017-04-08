@@ -32,11 +32,11 @@
 LM_NAMESPACE_BEGIN
 
 // The assets are loaded when it queries.
-class Assets_ final : public Assets
+class Assets3 final : public Assets
 {
 public:
 
-    LM_IMPL_CLASS(Assets_, Assets);
+    LM_IMPL_CLASS(Assets3, Assets);
 
 public:
 
@@ -158,6 +158,6 @@ private:
 
 };
 
-LM_COMPONENT_REGISTER_IMPL_DEFAULT(Assets_);
+LM_COMPONENT_REGISTER_IMPL(Assets3, "assets::assets3");
 
 LM_NAMESPACE_END
