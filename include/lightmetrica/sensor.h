@@ -44,7 +44,7 @@ class Sensor : public Emitter
 {
 public:
 
-    LM_INTERFACE_CLASS(Sensor, Emitter, 2);
+    LM_INTERFACE_CLASS(Sensor, Emitter, 3);
 
 public:
 
@@ -71,6 +71,16 @@ public:
 		\return Film.
 	*/
     LM_INTERFACE_F(1, GetFilm, Film*());
+
+    /*!
+        \brief Get projection matrix.
+        Returns the projection matrix if available.
+
+        \param zNear Near clip.
+        \param zFar  Far clip.
+        \return      Projection matrix.
+    */
+    LM_INTERFACE_F(2, GetProjectionMatrix, Mat4(Float zNear, Float zFar));
 
 };
 

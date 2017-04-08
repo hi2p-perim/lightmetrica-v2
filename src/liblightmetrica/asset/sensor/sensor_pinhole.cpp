@@ -180,6 +180,18 @@ public:
         return film_;
     };
 
+    LM_IMPL_F(GetProjectionMatrix) = [this](Float zNear, Float zFar) -> Mat4
+    {
+        const Float tanFov = Math::Tan(fov_ * 0.5_f);
+        Mat4 m;
+        m[0][0] = 1_f / (aspect_ * tanFov);
+        m[1][1] = 1_f / tanFov;
+        m[2][3] = 1_f;
+        m[2][2] = zFar / (zFar - zNear);
+        m[3][2] = -(zFar * zNear) / (zFar - zNear);
+        return m;
+    };
+
 private:
 
     Vec3 We_;
