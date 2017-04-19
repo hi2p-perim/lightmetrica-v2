@@ -433,9 +433,9 @@ TEST(ComponentTest, ContructorAndDescturctor)
 
 #pragma region Clone
 
-struct H : public Clonable
+struct H : public BasicComponent
 {
-    LM_INTERFACE_CLASS(H, Clonable, 2);
+    LM_INTERFACE_CLASS(H, BasicComponent, 2);
     LM_INTERFACE_F(0, Load, void(int v));
     LM_INTERFACE_F(1, V, int());
 };
@@ -447,7 +447,7 @@ struct H_ final : public H
     LM_IMPL_F(Load) = [this](int v_) -> void { v = v_; };
     LM_IMPL_F(V) = [this]() -> int { return v; };
 
-    LM_IMPL_F(Clone) = [this](Clonable* o) -> void
+    LM_IMPL_F(Clone) = [this](BasicComponent* o) -> void
     {
         auto* p = static_cast<H_*>(o);
         p->v = v;
@@ -465,6 +465,64 @@ TEST(ComponentTest, CloneTest)
     p->Load(42);
     const auto p2 = ComponentFactory::Clone<H>(p.get());
     EXPECT_EQ(42, p2->V());
+}
+
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Serialize & Deserialize
+
+struct I : public BasicComponent
+{
+    LM_INTERFACE_CLASS(I, BasicComponent, 2);
+    LM_INTERFACE_F(0, Load, void(int v));
+    LM_INTERFACE_F(1, V, int());
+};
+
+struct I_ final : public I
+{
+    LM_IMPL_CLASS(I_, I);
+
+    LM_IMPL_F(Load) = [this](int v_) -> void { v = v_; };
+    LM_IMPL_F(V) = [this]() -> int { return v; };
+
+    LM_IMPL_F(Serialize) = [this]() -> std::string
+    {
+        return std::to_string(v);
+    };
+
+    LM_IMPL_F(Deserialize) = [this](const std::string& serialized) -> void
+    {
+        v = std::stoi(serialized);
+    };
+
+    int v;
+};
+
+LM_COMPONENT_REGISTER_IMPL_DEFAULT(I_);
+
+TEST(ComponentTest, SerializeTest)
+{
+    const auto p = ComponentFactory::Create<I>();
+    EXPECT_NE(nullptr, p);
+    p->Load(42);
+    EXPECT_EQ("42", p->Serialize());
+}
+
+TEST(ComponentTest, DeserializeTest)
+{
+    const auto p = ComponentFactory::Create<I>();
+    EXPECT_NE(nullptr, p);
+    p->Deserialize("42");
+    EXPECT_EQ(42, p->V());
+}
+
+TEST(ComponentTest, CreateFromSerializedTest)
+{
+    const auto p = ComponentFactory::CreateFromSerialized<I>("42");
+    EXPECT_NE(nullptr, p);
+    EXPECT_EQ(42, p->V());
 }
 
 #pragma endregion

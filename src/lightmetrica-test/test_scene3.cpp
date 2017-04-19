@@ -87,7 +87,7 @@ TEST_F(Scene3Test, SimpleLoad)
 
     const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
     const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
-    const auto scene = ComponentFactory::Create<Scene3>();
+    const auto scene = ComponentFactory::Create<Scene3>("scene::scene3");
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     EXPECT_EQ("n1", std::string(scene->PrimitiveByID("n1")->id));
@@ -187,11 +187,11 @@ TEST_F(Scene3Test, SimpleLoadWithAssets)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     ASSERT_TRUE(prop->LoadFromString(SimpleLoad_Input));
 
-    const auto assets = ComponentFactory::Create<Assets>();
+    const auto assets = ComponentFactory::Create<Assets>("assets::assets3");
     EXPECT_TRUE(assets->Initialize(prop->Root()->Child("assets")));
     
     const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
-    const auto scene = ComponentFactory::Create<Scene3>();
+    const auto scene = ComponentFactory::Create<Scene3>("scene::scene3");
     ASSERT_TRUE(scene->Initialize(prop->Root()->Child("scene"), assets.get(), accel.get()));
 
     const auto* n1 = scene->PrimitiveByID("n1");
@@ -261,7 +261,7 @@ TEST_F(Scene3Test, Transform)
 
     const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
     const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
-    const auto scene = ComponentFactory::Create<Scene3>();
+    const auto scene = ComponentFactory::Create<Scene3>("scene::scene3");
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     const Primitive* n1 = scene->PrimitiveByID("n1");
@@ -294,7 +294,7 @@ TEST_F(Scene3Test, SensorNode)
 
     const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
     const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
-    const auto scene = ComponentFactory::Create<Scene3>();
+    const auto scene = ComponentFactory::Create<Scene3>("scene::scene3");
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     EXPECT_EQ("n2", std::string(scene->GetSensor()->id));

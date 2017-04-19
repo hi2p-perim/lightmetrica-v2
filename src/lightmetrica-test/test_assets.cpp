@@ -74,7 +74,7 @@ TEST_F(AssetsTest, AssetByIDAndType)
     const auto prop = ComponentFactory::Create<PropertyTree>();
     EXPECT_TRUE(prop->LoadFromString(AssetByIDAndType_Input));
 
-    const auto assets = ComponentFactory::Create<Assets>();
+    const auto assets = ComponentFactory::Create<Assets>("assets::assets3");
     EXPECT_TRUE(assets->Initialize(prop->Root()));
 
     {

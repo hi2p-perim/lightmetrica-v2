@@ -196,7 +196,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Clone) = [this](Clonable* o) -> void
+    LM_IMPL_F(Clone) = [this](BasicComponent* o) -> void
     {
         auto* film = static_cast<Film_HDR*>(o);
         film->width_ = width_;

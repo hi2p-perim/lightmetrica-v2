@@ -239,6 +239,7 @@ struct VirtualFunction<ID, Iface, ReturnType(ArgTypes...)>
                 LM_LOG_ERROR("Missing implementation. We recommend to "
                              "check if the function '" + std::string(o_->implName) + "::" + std::string(name_) + "' is properly implmeneted with RF_IMPL_F macro.");
             }
+            Logger::Flush();
             return ReturnType();
         }
         
@@ -376,30 +377,30 @@ struct ImplFunctionGenerator<void(ArgTypes...)>
 
 // --------------------------------------------------------------------------------
 
-#pragma region Clonable component
+#pragma region Basic component
 
 /*!
-    \brief Clonable component
+    \brief Basic component
 
-    In some case, a component instance needs to be copied to another component instances.
-    From the point of the implementation, we prohibit to use copy constructors so
-    all interface possible to be copied must implement this interface.
+    Inherits component class directly, offers clonable and seriazation features in the interface.
+    Each functions does not requires implementation if the implemetation
+    need either clonable or serialibrary features.
 */
-class Clonable : public Component
+class BasicComponent : public Component
 {
 public:
 
-    LM_INTERFACE_CLASS(Clonable, Component, 1);
+    LM_INTERFACE_CLASS(BasicComponent, Component, 3);
 
 public:
 
-    Clonable() = default;
-    LM_DISABLE_COPY_AND_MOVE(Clonable);
+    BasicComponent() = default;
+    LM_DISABLE_COPY_AND_MOVE(BasicComponent);
 
 public:
 
     /*!
-        \brief Clone the instalce.
+        \brief Clone the instance.
 
         Clones the content of the instance to the given argument.
         This function is called from `Component::Clone` function.
@@ -407,7 +408,13 @@ public:
 
         \param o The target instance for cloning the asset.
     */
-    LM_INTERFACE_F(0, Clone, void(Clonable* o));
+    LM_INTERFACE_F(0, Clone, void(BasicComponent* o));
+
+    ///! Serialize the instance.
+    LM_INTERFACE_F(1, Serialize, std::string());
+    
+    ///! Deserialize the instance
+    LM_INTERFACE_F(2, Deserialize, void(const std::string& serialized));
 
 };
 
@@ -491,6 +498,7 @@ public:
             LM_LOG_INDENTER();
             LM_LOG_ERROR("Impl: " + key);
             LM_LOG_ERROR("Interface: " + std::string(InterfaceType::Type_().name));
+            Logger::Flush();
             return ReturnType(nullptr, nullptr);
         }
         return ReturnType(p, ReleaseFunc(key));
@@ -505,10 +513,51 @@ public:
     }
 
     template <typename InterfaceType>
+    static auto CreateFromSerialized(const std::string& key, const std::string& serialized) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    {
+        static_assert(std::is_base_of<BasicComponent, InterfaceType>::value, "InterfaceType must inherit BasicComponent");
+        using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
+        auto p = Create<InterfaceType>(key);
+        if (!p)
+        {
+            return ReturnType(nullptr, nullptr);
+        }
+        if (!p->Deserialize.Implemented())
+        {
+            LM_LOG_ERROR("Failed to serialize instance");
+            LM_LOG_INDENTER();
+            LM_LOG_ERROR("Deserialize() is not implemented.");
+            LM_LOG_ERROR("Impl: " + key);
+            LM_LOG_ERROR("Interface: " + std::string(InterfaceType::Type_().name));
+            Logger::Flush();
+            return ReturnType(nullptr, nullptr);
+        }
+        p->Deserialize(serialized);
+        return p;
+    }
+
+    template <typename InterfaceType>
+    static auto CreateFromSerialized(const std::string& serialized) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    {
+        static_assert(std::is_base_of<BasicComponent, InterfaceType>::value, "InterfaceType must inherit BasicComponent");
+        const auto key = std::string(InterfaceType::Type_().name) + "_";
+        return CreateFromSerialized<InterfaceType>(key, serialized);
+    }
+
+    template <typename InterfaceType>
     static auto Clone(InterfaceType* p) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
-        static_assert(std::is_base_of<Clonable, InterfaceType>::value, "InterfaceType must inherit Clonable");
+        static_assert(std::is_base_of<BasicComponent, InterfaceType>::value, "InterfaceType must inherit BasicComponent");
         using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
+        if (!p->Clone.Implemented())
+        {
+            LM_LOG_ERROR("Failed to clone instance");
+            LM_LOG_INDENTER();
+            LM_LOG_ERROR("Clone() is not implemented.");
+            LM_LOG_ERROR("Interface: " + std::string(InterfaceType::Type_().name));
+            Logger::Flush();
+            return ReturnType(nullptr, nullptr);
+        }
         auto* p2 = static_cast<InterfaceType*>(p->createFunc());
         p2->createFunc  = p->createFunc;
         p2->releaseFunc = p->releaseFunc;

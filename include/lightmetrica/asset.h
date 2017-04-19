@@ -47,11 +47,11 @@ class Scene;
 
     \ingroup asset
 */
-class Asset : public Clonable
+class Asset : public BasicComponent
 {
 public:
 
-    LM_INTERFACE_CLASS(Asset, Clonable, 2);
+    LM_INTERFACE_CLASS(Asset, BasicComponent, 2);
 
 public:
 
