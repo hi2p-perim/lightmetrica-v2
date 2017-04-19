@@ -31,10 +31,19 @@
 # 2.0.1 - sansha-sanyou
 # 2.0.2 - stella
 # 2.0.3 - kemono
+# 2.0.4 - hinako
 set(LM_VERSION_MAJOR "2")
 set(LM_VERSION_MINOR "0")
-set(LM_VERSION_PATCH "3")
-set(LM_VERSION_CODENAME "kemono")
+set(LM_VERSION_PATCH "4")
+set(LM_VERSION_CODENAME "hinako")
+
+# Scene version
+set(LM_SCENE_VERSION_MIN_MAJOR "1")
+set(LM_SCENE_VERSION_MIN_MINOR "1")
+set(LM_SCENE_VERSION_MIN_PATCH "0")
+set(LM_SCENE_VERSION_MAX_MAJOR "1")
+set(LM_SCENE_VERSION_MAX_MINOR "1")
+set(LM_SCENE_VERSION_MAX_PATCH "0")
 
 # Execute git command in the project root and check revision number
 find_package(Git REQUIRED)

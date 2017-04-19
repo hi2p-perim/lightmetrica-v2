@@ -556,8 +556,8 @@ private:
         {
             // Scene version support
             using VersionT = std::tuple<int, int, int>;
-            const VersionT MinVersion{ 1, 1, 0 };
-            const VersionT MaxVersion{ 1, 1, 0 };
+            const VersionT MinVersion = Version::SceneVersionMin();
+            const VersionT MaxVersion = Version::SceneVersionMax();
 
             const auto* versionNode = root->Child("version");
             if (!versionNode)

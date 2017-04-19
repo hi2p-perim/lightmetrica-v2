@@ -26,6 +26,7 @@
 
 #include <lightmetrica/macros.h>
 #include <string>
+#include <tuple>
 
 LM_NAMESPACE_BEGIN
 
@@ -52,6 +53,12 @@ public:
 
 	//! Patch version
     LM_PUBLIC_API static auto Patch() -> std::string;
+
+    //! Minimum scene version
+    LM_PUBLIC_API static auto SceneVersionMin()->std::tuple<int, int, int>;
+
+    //! Maximum scene version
+    LM_PUBLIC_API static auto SceneVersionMax()->std::tuple<int, int, int>;
 
 	//! Revision number
     LM_PUBLIC_API static auto Revision() -> std::string;
