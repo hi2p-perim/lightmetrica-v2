@@ -22,29 +22,54 @@
     THE SOFTWARE.
 */
 
-#include <iostream>
-#include <fstream>
-#include <functional>
-#include <thread>
+#pragma once
+
+#include <lightmetrica/component.h>
 #include <string>
-#include <atomic>
-#include <mutex>
-#include <random>
-#include <unordered_map>
-#include <unordered_set>
-#include <chrono>
-#include <regex>
-#include <tuple>
-#include <numeric>
+#include <sstream>
+#include <functional>
 
-#include <boost/format.hpp>
-//#include <boost/scoped_array.hpp>
-//#include <boost/optional.hpp>
-//#include <boost/range/adaptors.hpp>
-#include <boost/filesystem.hpp>
-//#include <boost/numeric/conversion/cast.hpp>
-//#include <boost/math/constants/constants.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/predicate.hpp>
+LM_NAMESPACE_BEGIN
 
-#include <lightmetrica/macros.h>
+class DebugIO
+{
+public:
+
+    LM_DISABLE_CONSTRUCT(DebugIO);
+
+public:
+
+    static auto Run() -> void;
+    static auto Stop() -> void;
+    static auto Input() ->std::string;
+    static auto Output(const std::string& tag, const std::string& out) -> void;
+    static auto Connected() -> bool;
+    static auto Wait() -> bool;
+
+public:
+
+    static auto BreakPoint(const std::string& name, const std::function<std::string()>& serializeFunc) -> void
+    {
+        LM_LOG_DEBUG(name);
+        Wait();
+        const auto s = serializeFunc();
+        Output(name, s);
+        Wait();
+    }
+
+    static auto BreakPoint(const std::string& name, const BasicComponent& o) -> void
+    {
+        if (!o.Serialize.Implemented())
+        {
+            LM_LOG_ERROR("Unserializable component. Skipping.");
+            return;
+        }
+        BreakPoint(name, [&]()
+        {
+            return o.Serialize();
+        });
+    }
+
+};
+
+LM_NAMESPACE_END

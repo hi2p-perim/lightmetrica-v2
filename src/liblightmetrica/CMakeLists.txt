@@ -96,6 +96,7 @@ set(
     "propertyutils.cpp"
 	"version.cpp"
 	"parallel.cpp"
+	"debugio.cpp"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core" FILES ${_CORE_HEADER_FILES})
@@ -114,6 +115,7 @@ set(
 	"${_INCLUDE_DIR}/detail/propertyutils.h"
 	"${_INCLUDE_DIR}/detail/parallel.h"
     "${_INCLUDE_DIR}/detail/version.h"
+    "${_INCLUDE_DIR}/detail/debugio.h"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core\\detail" FILES ${_CORE_DETAIL_HEADER_FILES})
