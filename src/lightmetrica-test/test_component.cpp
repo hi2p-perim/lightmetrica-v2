@@ -476,28 +476,29 @@ TEST(ComponentTest, CloneTest)
 struct I : public BasicComponent
 {
     LM_INTERFACE_CLASS(I, BasicComponent, 2);
-    LM_INTERFACE_F(0, Load, void(int v));
-    LM_INTERFACE_F(1, V, int());
+    LM_INTERFACE_F(0, Load, void(unsigned char v));
+    LM_INTERFACE_F(1, V, unsigned char());
 };
 
 struct I_ final : public I
 {
     LM_IMPL_CLASS(I_, I);
 
-    LM_IMPL_F(Load) = [this](int v_) -> void { v = v_; };
-    LM_IMPL_F(V) = [this]() -> int { return v; };
+    LM_IMPL_F(Load) = [this](unsigned char v_) -> void { v = v_; };
+    LM_IMPL_F(V) = [this]() -> unsigned char { return v; };
 
-    LM_IMPL_F(Serialize) = [this]() -> std::string
+    LM_IMPL_F(Serialize) = [this](std::vector<unsigned char>& arch) -> void
     {
-        return std::to_string(v);
+        arch.clear();
+        arch.push_back(v);
     };
 
-    LM_IMPL_F(Deserialize) = [this](const std::string& serialized) -> void
+    LM_IMPL_F(Deserialize) = [this](const std::vector<unsigned char>& arch) -> void
     {
-        v = std::stoi(serialized);
+        v = arch[0];
     };
 
-    int v;
+    unsigned char v;
 };
 
 LM_COMPONENT_REGISTER_IMPL_DEFAULT(I_);
@@ -507,20 +508,26 @@ TEST(ComponentTest, SerializeTest)
     const auto p = ComponentFactory::Create<I>();
     EXPECT_NE(nullptr, p);
     p->Load(42);
-    EXPECT_EQ("42", p->Serialize());
+    std::vector<unsigned char> arch;
+    p->Serialize(arch);
+    EXPECT_EQ(42, arch[0]);
 }
 
 TEST(ComponentTest, DeserializeTest)
 {
     const auto p = ComponentFactory::Create<I>();
     EXPECT_NE(nullptr, p);
-    p->Deserialize("42");
+    std::vector<unsigned char> arch;
+    arch.push_back(42);
+    p->Deserialize(arch);
     EXPECT_EQ(42, p->V());
 }
 
 TEST(ComponentTest, CreateFromSerializedTest)
 {
-    const auto p = ComponentFactory::CreateFromSerialized<I>("42");
+    std::vector<unsigned char> arch;
+    arch.push_back(42);
+    const auto p = ComponentFactory::CreateFromSerialized<I>(arch);
     EXPECT_NE(nullptr, p);
     EXPECT_EQ(42, p->V());
 }

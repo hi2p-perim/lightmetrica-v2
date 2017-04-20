@@ -116,6 +116,7 @@ set(
 	"${_INCLUDE_DIR}/detail/parallel.h"
     "${_INCLUDE_DIR}/detail/version.h"
     "${_INCLUDE_DIR}/detail/debugio.h"
+    "${_INCLUDE_DIR}/detail/serial.h"
 )
 
 source_group("${_HEADER_FILES_ROOT}\\core\\detail" FILES ${_CORE_DETAIL_HEADER_FILES})

@@ -42,11 +42,11 @@ class Accel;
     \brief A base class of the scene.
     \ingroup scene
 */
-class Scene : public Component
+class Scene : public BasicComponent
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene, Component, 1);
+    LM_INTERFACE_CLASS(Scene, BasicComponent, 1);
 
 public:
 
@@ -56,7 +56,7 @@ public:
         Initializes the scene from the given property of
         the scene configuration file.
     */
-    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*, Assets*, Accel*));
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
 
 };
 

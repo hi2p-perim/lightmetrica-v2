@@ -31,6 +31,9 @@
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/emitter.h>
 #include <lightmetrica/intersection.h>
+#include <lightmetrica/detail/debugio.h>
+
+#define LM_RAYCAST_DEBUG_IO 1
 
 LM_NAMESPACE_BEGIN
 
@@ -49,6 +52,18 @@ public:
 
     LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
+        #if LM_RAYCAST_DEBUG_IO
+        DebugIO::Run();
+        #endif
+
+        // --------------------------------------------------------------------------------
+
+        #if LM_RAYCAST_DEBUG_IO
+        DebugIO::BreakPoint("scene", scene_);
+        #endif
+
+        // --------------------------------------------------------------------------------
+
         const auto* scene = static_cast<const Scene3*>(scene_);
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         const int w = film->Width();
@@ -99,6 +114,12 @@ public:
             film->Save(outputPath);
         }
         #pragma endregion
+
+        // --------------------------------------------------------------------------------
+        
+        #if LM_RAYCAST_DEBUG_IO
+        DebugIO::Stop();
+        #endif
     };
 
 };

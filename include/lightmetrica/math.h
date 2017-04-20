@@ -2356,7 +2356,6 @@ namespace Math
     {
         c = Abs(a.x) > Abs(a.y) ? Normalize(Vec3(a.z, 0_f, -a.x)) : Normalize(Vec3(0_f, a.z, -a.y));
         b = Cross(c, a);
-        //b = Normalize(Cross(c, a));
     }
 
     #pragma endregion

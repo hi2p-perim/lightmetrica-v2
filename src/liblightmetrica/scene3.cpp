@@ -36,6 +36,7 @@
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>
 #include <lightmetrica/detail/propertyutils.h>
+#include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -50,28 +51,22 @@ public:
     LM_IMPL_F(Initialize) = [this](const PropertyNode* sceneNode, Assets* assets, Accel* accel) -> bool
     {
         #pragma region Load primitives
-        
         {
             LM_LOG_INFO("Loading primitives");
             LM_LOG_INDENTER();
 
             #pragma region Traverse scene nodes and create primitives
-
             const std::function<bool(const PropertyNode*, const Mat4&)> Traverse = [&](const PropertyNode* propNode, const Mat4& parentTransform) -> bool
             {
                 #pragma region Create primitive
-
                 std::unique_ptr<Primitive> primitive(new Primitive);
-
                 LM_LOG_INFO("Traversing node");
                 LM_LOG_INDENTER();
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
                 #pragma region Parse ID
-                
                 {
                     const auto* idNode = propNode->Child("id");
                     if (idNode)
@@ -80,15 +75,12 @@ public:
                         LM_LOG_INFO("ID: '" + std::string(primitive->id) + "'");
                     }
                 }
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
                 #pragma region Parse transform
-
                 Mat4 transform;
-
                 {
                     LM_LOG_INFO("Parsing transform");
                     LM_LOG_INDENTER();
@@ -223,25 +215,21 @@ public:
                     // Compute normal transform
                     primitive->normalTransform = Mat3(Math::Transpose(Math::Inverse(primitive->transform)));
                 }
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
                 #pragma region Triangle mesh
-
                 const auto* meshNode = propNode->Child("mesh");
                 if (meshNode)
                 {
                     primitive->mesh = static_cast<const TriangleMesh*>(assets->AssetByIDAndType(meshNode->RawScalar(), "trianglemesh", primitive.get()));
                 }
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
                 #pragma region BSDF
-
                 const auto* bsdfNode = propNode->Child("bsdf");
                 if (bsdfNode)
                 {
@@ -252,13 +240,11 @@ public:
                     // If bsdf node is empty, assign 'null' bsdf.
                     primitive->bsdf = nullBSDF_.get();
                 }
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
                 #pragma region Emitter
-
                 const auto* L = propNode->Child("light");
                 const auto* E = propNode->Child("sensor");
                 if (L && E)
@@ -289,28 +275,23 @@ public:
                         return false;
                     }
                 }
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
                 #pragma region Add primitive
-
                 // Register primitive ID
+                primitive->index = primitives_.size();
                 if (primitive->id)
                 {
-                    primitiveIDMap_[primitive->id] = primitive.get();
+                    primitiveIDMap_[primitive->id] = primitive->index;
                 }
-
-                primitive->index = primitives_.size();
                 primitives_.push_back(std::move(primitive));
-                
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
                 #pragma region Traverse child nodes
-
                 const auto* childNode = propNode->Child("child");
                 if (childNode)
                 {
@@ -322,7 +303,6 @@ public:
                         }
                     }
                 }
-
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
@@ -346,13 +326,11 @@ public:
                     return false;
                 }
             }
-
             #pragma endregion
 
             // --------------------------------------------------------------------------------
 
             #pragma region Main sensor
-
             {
                 const auto mainSensorNode = sceneNode->Child("sensor");
                 if (!mainSensorNode)
@@ -370,9 +348,8 @@ public:
                     return false;
                 }
 
-                sensorPrimitive_ = it->second;
+                sensorPrimitiveIndex_ = it->second;
             }
-
             #pragma endregion
         }
 
@@ -381,7 +358,6 @@ public:
         // --------------------------------------------------------------------------------
 
         #pragma region Compute scene bound
-
         // AABB
         bound_ = Bound();
         for (const auto& primitive : primitives_)
@@ -406,24 +382,20 @@ public:
         // Bounding sphere
         sphereBound_.center = (bound_.max + bound_.min) * .5_f;
         sphereBound_.radius = Math::Length(sphereBound_.center - bound_.max) * 1.01_f;  // Grow slightly
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Post load
-
         if (!assets->PostLoad(this))
         {
             return false;
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
 
         #pragma region Create emitter shapes
-
         for (const auto& primitive : primitives_)
         {
             if (primitive->emitter && primitive->emitter->GetEmitterShape.Implemented())
@@ -431,26 +403,21 @@ public:
                 emitterShapes_.push_back(primitive->emitter->GetEmitterShape());
             }
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
         
         #pragma region Build accel
-
         {
             LM_LOG_INFO("Building acceleration structure");
             LM_LOG_INDENTER();
-
             auto* accel3 = static_cast<Accel3*>(accel);
             if (!accel3->Build(this))
             {
                 return false;
             }
-
             accel_ = accel3;
         }
-
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -488,12 +455,12 @@ public:
     LM_IMPL_F(PrimitiveByID) = [this](const std::string& id) -> const Primitive*
     {
         const auto it = primitiveIDMap_.find(id);
-        return it != primitiveIDMap_.end() ? it->second : nullptr;
+        return it != primitiveIDMap_.end() ? primitives_.at(it->second).get() : nullptr;
     };
 
     LM_IMPL_F(GetSensor) = [this]() -> const Primitive*
     {
-        return sensorPrimitive_;
+        return primitives_.at(sensorPrimitiveIndex_).get();
     };
 
     LM_IMPL_F(NumPrimitives) = [this]() -> int
@@ -517,7 +484,7 @@ public:
 
         if ((type & SurfaceInteractionType::E) > 0)
         {
-            return sensorPrimitive_;
+            return primitives_.at(sensorPrimitiveIndex_).get();
         }
 
         LM_UNREACHABLE();
@@ -551,11 +518,39 @@ public:
         return sphereBound_;
     };
 
+    LM_IMPL_F(Serialize) = [this]() -> std::string
+    {
+        // Convert primitives to serializable format
+        std::vector<SerializablePrimitive> serializablePrimitives;
+        for (const auto& p : primitives_)
+        {
+            serializablePrimitives.emplace_back(p);
+        }
+
+        // Serialize into binary
+        std::stringstream ss;
+        std::basic_ifstream<unsigned char> out()
+        {
+
+            cereal::PortableBinaryOutputArchive oa()
+            oa(serializablePrimitives);
+            oa(primitiveIDMap_);
+            oa(sensorPrimitiveIndex_);
+            oa(lightPrimitiveIndices_);
+        }
+        return ss.str();
+    };
+
+    LM_IMPL_F(Deserialize) = [this](const std::string& serialized, const std::unordered_map<std::string, void*>& userdata) -> void
+    {
+        
+    };
+
 private:
 
     std::vector<std::unique_ptr<Primitive>> primitives_;                // Primitives
-    std::unordered_map<std::string, Primitive*> primitiveIDMap_;        // Mapping from ID to primitive pointer
-    Primitive* sensorPrimitive_;                                        // Pointer to sensor primitive
+    std::unordered_map<std::string, size_t> primitiveIDMap_;            // Mapping from ID to primitive index
+    size_t sensorPrimitiveIndex_;                                       // Sensor primitive index
     std::vector<size_t> lightPrimitiveIndices_;                         // Pointers to light primitives
 
     const Accel3* accel_;                                               // Acceleration structure

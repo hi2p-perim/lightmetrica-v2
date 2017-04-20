@@ -57,17 +57,18 @@ public:
         Wait();
     }
 
-    static auto BreakPoint(const std::string& name, const BasicComponent& o) -> void
+    static auto BreakPoint(const std::string& name, const BasicComponent* o) -> void
     {
-        if (!o.Serialize.Implemented())
+        if (!o->Serialize.Implemented())
         {
             LM_LOG_ERROR("Unserializable component. Skipping.");
             return;
         }
-        BreakPoint(name, [&]()
-        {
-            return o.Serialize();
-        });
+        LM_TBA_RUNTIME();
+        //BreakPoint(name, [&]()
+        //{
+        //    return o->Serialize();
+        //});
     }
 
 };

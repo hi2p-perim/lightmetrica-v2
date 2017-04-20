@@ -40,6 +40,7 @@
 #include <string>
 #include <sstream>
 #include <cassert>
+#include <unordered_map>
 
 /*!
     \defgroup component Component system
@@ -411,10 +412,10 @@ public:
     LM_INTERFACE_F(0, Clone, void(BasicComponent* o));
 
     ///! Serialize the instance.
-    LM_INTERFACE_F(1, Serialize, std::string());
+    LM_INTERFACE_F(1, Serialize, void(std::vector<unsigned char>& arch));
     
     ///! Deserialize the instance
-    LM_INTERFACE_F(2, Deserialize, void(const std::string& serialized));
+    LM_INTERFACE_F(2, Deserialize, void(const std::vector<unsigned char>& arch, const std::unordered_map<std::string, void*>& userdata));
 
 };
 
@@ -513,7 +514,7 @@ public:
     }
 
     template <typename InterfaceType>
-    static auto CreateFromSerialized(const std::string& key, const std::string& serialized) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    static auto CreateFromSerialized(const std::string& key, const std::vector<unsigned char>& serialized) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
         static_assert(std::is_base_of<BasicComponent, InterfaceType>::value, "InterfaceType must inherit BasicComponent");
         using ReturnType = std::unique_ptr<InterfaceType, ReleaseFuncPointerType>;
@@ -537,7 +538,7 @@ public:
     }
 
     template <typename InterfaceType>
-    static auto CreateFromSerialized(const std::string& serialized) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
+    static auto CreateFromSerialized(const std::vector<unsigned char>& serialized) -> std::unique_ptr<InterfaceType, ReleaseFuncPointerType>
     {
         static_assert(std::is_base_of<BasicComponent, InterfaceType>::value, "InterfaceType must inherit BasicComponent");
         const auto key = std::string(InterfaceType::Type_().name) + "_";

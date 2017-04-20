@@ -692,9 +692,6 @@ private:
 
 private:
 
-    // Get type and configurable parameters
-    
-
     // Function to initialize configurable component
     template <typename ConfigurableT>
     auto InitializeConfigurable(const PropertyNode* root, const std::string& name, const std::vector<std::string>& defs, const std::function<bool(ConfigurableT*, const PropertyNode* pn)>& initializeFunc) -> typename ConfigurableT::UniquePtr
