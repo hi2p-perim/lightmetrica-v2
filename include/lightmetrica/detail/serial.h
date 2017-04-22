@@ -26,25 +26,14 @@
 
 #include <lightmetrica/macros.h>
 #include <lightmetrica/math.h>
-#include <lightmetrica/primitive.h>
+#include <lightmetrica/bound.h>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/memory.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
 
 LM_NAMESPACE_BEGIN
-
-//! Utility class for serialization and deserialization.
-class SerializationUtils
-{
-private:
-
-    LM_DISABLE_CONSTRUCT(SerializationUtils);
-
-public:
-
-    
-
-};
 
 // --------------------------------------------------------------------------------
 
@@ -55,6 +44,8 @@ template <typename Archive> auto serialize(Archive& ar, Vec4& v) { ar(v.x, v.y, 
 template <typename Archive> auto serialize(Archive& ar, Mat2& m) { ar(m.v_[0], m.v_[1]); }
 template <typename Archive> auto serialize(Archive& ar, Mat3& m) { ar(m.v_[0], m.v_[1], m.v_[2]); }
 template <typename Archive> auto serialize(Archive& ar, Mat4& m) { ar(m.v_[0], m.v_[1], m.v_[2], m.v_[3]); }
+template <typename Archive> auto serialize(Archive& ar, Bound& b) { ar(b.min, b.max); }
+template <typename Archive> auto serialize(Archive& ar, SphereBound& b) { ar(b.center, b.radius); }
 #pragma endregion
 
 // --------------------------------------------------------------------------------
@@ -63,7 +54,7 @@ template <typename Archive> auto serialize(Archive& ar, Mat4& m) { ar(m.v_[0], m
 struct SerializablePrimitive
 {
     std::string id;
-    size_t index;
+    int index;
     Mat4 transform;
     Mat3 normalTransform;
     
@@ -73,12 +64,6 @@ struct SerializablePrimitive
     int emitterID;
     int lightID;
     int sensorID;
-
-    SerializablePrimitive() {}
-    SerializablePrimitive(const Primitive& p)
-    {
-        
-    }
 
     template <typename Archive>
     auto serialize(Archive& ar) -> void

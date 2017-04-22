@@ -107,11 +107,14 @@ public:
     //! \cond detail
     auto ID() const -> std::string { return id_.Get(); }
     auto SetID(const std::string& id) -> void { id_.Set(id); }
+    auto Index() const -> int { return index_; }
+    auto SetIndex(int index) -> void { index_ = index; }
     //! \endcond
 
 private:
 
     Portable<std::string> id_;
+    int index_;
 
 };
 

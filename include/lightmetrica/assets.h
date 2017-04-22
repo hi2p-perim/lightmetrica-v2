@@ -46,11 +46,11 @@ class Scene;
 
     \ingroup asset
 */
-class Assets : public Component
+class Assets : public BasicComponent
 {
 public:
 
-    LM_INTERFACE_CLASS(Assets, Component, 3);
+    LM_INTERFACE_CLASS(Assets, Component, 4);
 
 public:
 
@@ -94,6 +94,17 @@ public:
         \retval false Failed to load.
     */
     LM_INTERFACE_F(2, PostLoad, bool(const Scene* scene));
+
+    /*!
+        \brief Get an asset by index.
+
+        Returns an asset by index.
+        The asset speficied by the index must be already loaded.
+
+        \param index  Asset index.
+        \retval Asset instance.
+    */
+    LM_INTERFACE_F(3, GetByIndex, Asset*(int index));
 
 };
 

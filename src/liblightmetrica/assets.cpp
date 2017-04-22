@@ -28,6 +28,7 @@
 #include <lightmetrica/property.h>
 #include <lightmetrica/asset.h>
 #include <lightmetrica/detail/propertyutils.h>
+#include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -88,9 +89,6 @@ public:
                 return nullptr;
             }
 
-            // Check the interface inherits `Asset` class
-            // TODO
-
             // Create asset instance
             const auto* typeNode = assetNode->Child("type");
             const std::string implType = typeNode->RawScalar();
@@ -101,13 +99,6 @@ public:
                 PropertyUtils::PrintPrettyError(assetNode);
                 return nullptr;
             }
-
-            // Check interface type
-            //if (asset->Type_().name == interfaceType)
-            //{
-            //    LM_LOG_ERROR("");
-            //    return nullptr;
-            //}
 
             // Load asset
             if (!asset->Load(assetNode->Child("params"), this, primitive))
@@ -121,6 +112,7 @@ public:
             assets_.push_back(std::move(asset));
             assetIndexMap_[id] = assets_.size() - 1;
             assets_.back()->SetID(id);
+            assets_.back()->SetIndex((int)(assets_.size() - 1));
         }
         #pragma endregion
 
@@ -144,6 +136,55 @@ public:
                 return false;
             }
         }
+        return true;
+    };
+
+    LM_IMPL_F(GetByIndex) = [this](int index) -> Asset*
+    {
+        return assets_[index].get();
+    };
+
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        // Convert the assets into vector of serialized assets
+        std::vector<std::string> serializedAssetKeys;
+        std::vector<std::string> serializedAssets;
+        for (const auto& asset : assets_)
+        {
+            std::ostringstream ss(std::ios::binary);
+            if (!asset->Serialize(ss)) { return false; }
+            serializedAssetKeys.emplace_back(asset->createKey);
+            serializedAssets.emplace_back(ss.str());
+        }
+
+        // Serialize into binary
+        cereal::PortableBinaryOutputArchive oa(stream);
+        oa(serializedAssetKeys, serializedAssets, assetIndexMap_);
+        
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        // Deserialize
+        std::vector<std::string> serializedAssetKeys;
+        std::vector<std::string> serializedAssets;
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(serializedAssetKeys, serializedAssets, assetIndexMap_);
+        }
+
+        // Deserialize assets
+        for (size_t i = 0; i < serializedAssetKeys.size(); i++)
+        {
+            const auto& key = serializedAssetKeys[i];
+            const auto& serializedAsset = serializedAssets[i];
+            std::istringstream ss(serializedAsset);
+            auto asset = ComponentFactory::Create<Asset>(key);
+            if (!asset->Deserialize(ss, {})) { return false; }
+            assets_.push_back(std::move(asset));
+        }
+
         return true;
     };
 

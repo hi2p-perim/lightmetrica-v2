@@ -88,6 +88,7 @@ public:
         auto* p = it->second.createFunc();
         p->createFunc = it->second.createFunc;
         p->releaseFunc = it->second.releaseFunc;
+        p->createKey = key;
         return p;
     }
 

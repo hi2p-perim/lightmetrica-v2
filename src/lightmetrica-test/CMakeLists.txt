@@ -81,6 +81,7 @@ set(
 	"test_assets.cpp"
 	#"test_metacounter.cpp"
 	"test_plugin.cpp"
+    "test_serial.cpp"
 
 	# Internal
 	#"test_stringtemplate.cpp"

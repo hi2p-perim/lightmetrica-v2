@@ -56,11 +56,11 @@ class Sensor;
 struct Primitive : public SIMDAlignedType
 {
 
-    // Primitive ID
-    const char* id = nullptr;
+    // Primitive ID (TODO: portability)
+    std::string id;
 
     // Primitive index
-    size_t index;
+    int index;
 
     // Transform & normal transform
     Mat4 transform;

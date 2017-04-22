@@ -174,6 +174,9 @@ public:
     // Name of implementation type
     const char* implName = nullptr;
 
+    // Key for instance creation
+    const char* createKey = nullptr;
+
     // Create and release function of the instance
     CreateFuncPointerType  createFunc  = nullptr;
     ReleaseFuncPointerType releaseFunc = nullptr;
@@ -412,10 +415,10 @@ public:
     LM_INTERFACE_F(0, Clone, void(BasicComponent* o));
 
     ///! Serialize the instance.
-    LM_INTERFACE_F(1, Serialize, void(std::vector<unsigned char>& arch));
+    LM_INTERFACE_F(1, Serialize, bool(std::ostream& stream));
     
     ///! Deserialize the instance
-    LM_INTERFACE_F(2, Deserialize, void(const std::vector<unsigned char>& arch, const std::unordered_map<std::string, void*>& userdata));
+    LM_INTERFACE_F(2, Deserialize, bool(std::istream& stream, const std::unordered_map<std::string, void*>& userdata));
 
 };
 
@@ -562,6 +565,7 @@ public:
         auto* p2 = static_cast<InterfaceType*>(p->createFunc());
         p2->createFunc  = p->createFunc;
         p2->releaseFunc = p->releaseFunc;
+        p2->createKey = p->createKey;
         assert(p2);
         p->Clone(p2);
         return ReturnType(p2, p->releaseFunc);

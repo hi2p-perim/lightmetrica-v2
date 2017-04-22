@@ -46,6 +46,79 @@ public:
 
     LM_IMPL_CLASS(Scene3_, Scene3);
 
+private:
+
+    // Initialize function called after the primitives are loaded.
+    auto Initialize_PostLoadPrimitive(Assets* assets, Accel* accel) -> bool
+    {
+        #pragma region Compute scene bound
+        // AABB
+        bound_ = Bound();
+        for (const auto& primitive : primitives_)
+        {
+            if (primitive->mesh)
+            {
+                const int n = primitive->mesh->NumVertices();
+                const auto* ps = primitive->mesh->Positions();
+                for (int i = 0; i < n; i++)
+                {
+                    Vec3 p(primitive->transform * Vec4(ps[3 * i], ps[3 * i + 1], ps[3 * i + 2], 1_f));
+                    bound_ = Math::Union(bound_, p);
+                }
+            }
+
+            if (primitive->emitter && primitive->emitter->GetBound.Implemented())
+            {
+                bound_ = Math::Union(bound_, primitive->emitter->GetBound());
+            }
+        }
+        
+        // Bounding sphere
+        sphereBound_.center = (bound_.max + bound_.min) * .5_f;
+        sphereBound_.radius = Math::Length(sphereBound_.center - bound_.max) * 1.01_f;  // Grow slightly
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Post load
+        if (!assets->PostLoad(this))
+        {
+            return false;
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        #pragma region Create emitter shapes
+        for (const auto& primitive : primitives_)
+        {
+            if (primitive->emitter && primitive->emitter->GetEmitterShape.Implemented())
+            {
+                emitterShapes_.push_back(primitive->emitter->GetEmitterShape());
+            }
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+        
+        #pragma region Build accel
+        {
+            LM_LOG_INFO("Building acceleration structure");
+            LM_LOG_INDENTER();
+            auto* accel3 = static_cast<Accel3*>(accel);
+            if (!accel3->Build(this))
+            {
+                return false;
+            }
+            accel_ = accel3;
+        }
+        #pragma endregion
+
+        // --------------------------------------------------------------------------------
+
+        return true;
+    }
+
 public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* sceneNode, Assets* assets, Accel* accel) -> bool
@@ -281,8 +354,8 @@ public:
 
                 #pragma region Add primitive
                 // Register primitive ID
-                primitive->index = primitives_.size();
-                if (primitive->id)
+                primitive->index = (int)(primitives_.size());
+                if (!primitive->id.empty())
                 {
                     primitiveIDMap_[primitive->id] = primitive->index;
                 }
@@ -357,68 +430,10 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        #pragma region Compute scene bound
-        // AABB
-        bound_ = Bound();
-        for (const auto& primitive : primitives_)
-        {
-            if (primitive->mesh)
-            {
-                const int n = primitive->mesh->NumVertices();
-                const auto* ps = primitive->mesh->Positions();
-                for (int i = 0; i < n; i++)
-                {
-                    Vec3 p(primitive->transform * Vec4(ps[3 * i], ps[3 * i + 1], ps[3 * i + 2], 1_f));
-                    bound_ = Math::Union(bound_, p);
-                }
-            }
-
-            if (primitive->emitter && primitive->emitter->GetBound.Implemented())
-            {
-                bound_ = Math::Union(bound_, primitive->emitter->GetBound());
-            }
-        }
-        
-        // Bounding sphere
-        sphereBound_.center = (bound_.max + bound_.min) * .5_f;
-        sphereBound_.radius = Math::Length(sphereBound_.center - bound_.max) * 1.01_f;  // Grow slightly
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        #pragma region Post load
-        if (!assets->PostLoad(this))
+        if (!Initialize_PostLoadPrimitive(assets, accel))
         {
             return false;
         }
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        #pragma region Create emitter shapes
-        for (const auto& primitive : primitives_)
-        {
-            if (primitive->emitter && primitive->emitter->GetEmitterShape.Implemented())
-            {
-                emitterShapes_.push_back(primitive->emitter->GetEmitterShape());
-            }
-        }
-        #pragma endregion
-
-        // --------------------------------------------------------------------------------
-        
-        #pragma region Build accel
-        {
-            LM_LOG_INFO("Building acceleration structure");
-            LM_LOG_INDENTER();
-            auto* accel3 = static_cast<Accel3*>(accel);
-            if (!accel3->Build(this))
-            {
-                return false;
-            }
-            accel_ = accel3;
-        }
-        #pragma endregion
 
         // --------------------------------------------------------------------------------
 
@@ -518,32 +533,78 @@ public:
         return sphereBound_;
     };
 
-    LM_IMPL_F(Serialize) = [this]() -> std::string
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
     {
         // Convert primitives to serializable format
         std::vector<SerializablePrimitive> serializablePrimitives;
         for (const auto& p : primitives_)
         {
-            serializablePrimitives.emplace_back(p);
+            SerializablePrimitive sp;
+            sp.id = p->id;
+            sp.index = p->index;
+            sp.transform = p->transform;
+            sp.normalTransform = p->normalTransform;
+            sp.meshID    = p->mesh->Index();
+            sp.bsdfID    = p->bsdf->Index();
+            sp.emitterID = p->emitter->Index();
+            sp.lightID   = p->light->Index();
+            sp.sensorID  = p->sensor->Index();
+            serializablePrimitives.push_back(std::move(sp));
         }
 
         // Serialize into binary
-        std::stringstream ss;
-        std::basic_ifstream<unsigned char> out()
         {
-
-            cereal::PortableBinaryOutputArchive oa()
-            oa(serializablePrimitives);
-            oa(primitiveIDMap_);
-            oa(sensorPrimitiveIndex_);
-            oa(lightPrimitiveIndices_);
+            cereal::PortableBinaryOutputArchive oa(stream);
+            oa(serializablePrimitives, primitiveIDMap_, sensorPrimitiveIndex_, lightPrimitiveIndices_);
         }
-        return ss.str();
+
+        return true;
     };
 
-    LM_IMPL_F(Deserialize) = [this](const std::string& serialized, const std::unordered_map<std::string, void*>& userdata) -> void
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
     {
+        // Deserialize
+        std::vector<SerializablePrimitive> serializablePrimitives;
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(serializablePrimitives, primitiveIDMap_, sensorPrimitiveIndex_, lightPrimitiveIndices_);
+        }
         
+        // Recover primitives
+        auto* assets = static_cast<Assets*>(userdata.at("assets"));
+        if (!assets)
+        {
+            LM_LOG_ERROR("Missing assets");
+            return false;
+        }
+        for (const auto& sp : serializablePrimitives)
+        {
+            std::unique_ptr<Primitive> p(new Primitive);
+            p->id = sp.id;
+            p->index = sp.index;
+            p->transform = sp.transform;
+            p->normalTransform = sp.normalTransform;
+            p->mesh    = static_cast<const TriangleMesh*>(assets->GetByIndex(sp.meshID));
+            p->bsdf    = static_cast<const BSDF*>(assets->GetByIndex(sp.bsdfID));
+            p->emitter = static_cast<const Emitter*>(assets->GetByIndex(sp.emitterID));
+            p->light   = static_cast<const Light*>(assets->GetByIndex(sp.lightID));
+            p->sensor  = static_cast<const Sensor*>(assets->GetByIndex(sp.sensorID));
+            primitives_.push_back(std::move(p));
+        }
+
+        // Post initialization
+        auto* accel = static_cast<Accel3*>(userdata.at("accel"));
+        if (!accel)
+        {
+            LM_LOG_ERROR("Missing accel");
+            return false;
+        }
+        if (!Initialize_PostLoadPrimitive(assets, accel))
+        {
+            return false;
+        }
+
+        return true;
     };
 
 private:

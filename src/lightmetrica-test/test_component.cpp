@@ -471,6 +471,7 @@ TEST(ComponentTest, CloneTest)
 
 // --------------------------------------------------------------------------------
 
+#if 0
 #pragma region Serialize & Deserialize
 
 struct I : public BasicComponent
@@ -533,5 +534,6 @@ TEST(ComponentTest, CreateFromSerializedTest)
 }
 
 #pragma endregion
+#endif
 
 LM_TEST_NAMESPACE_END

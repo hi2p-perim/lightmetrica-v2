@@ -56,7 +56,7 @@ public:
         Initializes the scene from the given property of
         the scene configuration file.
     */
-    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode*));
+    LM_INTERFACE_F(0, Initialize, bool(const PropertyNode* sceneNode, Assets* assets, Accel* accel));
 
 };
 
