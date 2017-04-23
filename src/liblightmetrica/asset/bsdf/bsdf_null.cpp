@@ -65,6 +65,16 @@ public:
         return false;
     };
 
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        return true;
+    };
+        
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        return true;
+    };
+
 };
 
 LM_COMPONENT_REGISTER_IMPL(BSDF_Null, "bsdf::null");

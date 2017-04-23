@@ -158,8 +158,10 @@ public:
         }
 
         // Serialize into binary
-        cereal::PortableBinaryOutputArchive oa(stream);
-        oa(serializedAssetKeys, serializedAssets, assetIndexMap_);
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            oa(serializedAssetKeys, serializedAssets, assetIndexMap_);
+        }
         
         return true;
     };
@@ -175,13 +177,14 @@ public:
         }
 
         // Deserialize assets
+        std::unordered_map<std::string, void*> userdata2{ {"assets", static_cast<void*>(this)} };
         for (size_t i = 0; i < serializedAssetKeys.size(); i++)
         {
             const auto& key = serializedAssetKeys[i];
             const auto& serializedAsset = serializedAssets[i];
             std::istringstream ss(serializedAsset);
             auto asset = ComponentFactory::Create<Asset>(key);
-            if (!asset->Deserialize(ss, {})) { return false; }
+            if (!asset->Deserialize(ss, userdata2)) { return false; }
             assets_.push_back(std::move(asset));
         }
 

@@ -27,6 +27,7 @@
 #include <lightmetrica/macros.h>
 #include <lightmetrica/math.h>
 #include <lightmetrica/bound.h>
+#include <lightmetrica/spectrum.h>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/memory.hpp>
@@ -46,6 +47,12 @@ template <typename Archive> auto serialize(Archive& ar, Mat3& m) { ar(m.v_[0], m
 template <typename Archive> auto serialize(Archive& ar, Mat4& m) { ar(m.v_[0], m.v_[1], m.v_[2], m.v_[3]); }
 template <typename Archive> auto serialize(Archive& ar, Bound& b) { ar(b.min, b.max); }
 template <typename Archive> auto serialize(Archive& ar, SphereBound& b) { ar(b.center, b.radius); }
+#pragma endregion
+
+// --------------------------------------------------------------------------------
+
+#pragma region Serialization support for spectrum class
+template <typename Archive> auto serialize(Archive& ar, SPD& s) { ar(s.v); }
 #pragma endregion
 
 // --------------------------------------------------------------------------------

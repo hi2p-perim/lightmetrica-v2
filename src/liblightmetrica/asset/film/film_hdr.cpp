@@ -29,6 +29,7 @@
 #include <lightmetrica/enum.h>
 #include <FreeImage.h>
 #include <signal.h>
+#include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -301,6 +302,24 @@ public:
         const int pX = Math::Clamp((int)(rasterPos.x * Float(width_)), 0, width_ - 1);
         const int pY = Math::Clamp((int)(rasterPos.y * Float(height_)), 0, height_ - 1);
         return pY * width_ + pX;
+    };
+
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            oa(width_, height_, type_, data_);
+        }
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(width_, height_, type_, data_);
+        }
+        return true;
     };
 
 private:

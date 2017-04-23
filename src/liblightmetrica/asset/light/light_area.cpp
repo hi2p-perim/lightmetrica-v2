@@ -31,6 +31,7 @@
 #include <lightmetrica/sampler.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/triangleutils.h>
+#include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -116,6 +117,31 @@ public:
     };
 
     LM_IMPL_F(Emittance) = [this]() -> SPD { return Le_; };
+
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            int texID = texR_ ? texR_->Index() : -1;
+            oa(R_, texID, eta_, roughness_);
+        }
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        int texID;
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(R_, texID, eta_, roughness_);
+        }
+        if (texID >= 0)
+        {
+            auto* assets = static_cast<Assets*>(userdata.at("assets"));
+            texR_ = static_cast<const Texture*>(assets->GetByIndex(texID));
+        }
+        return true;
+    };
 
 private:
 
