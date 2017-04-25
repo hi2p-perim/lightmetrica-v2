@@ -34,7 +34,7 @@ LM_NAMESPACE_BEGIN
     \brief Discrete 1D distribution.
     \ingroup math
 */
-class Distribution1D
+struct Distribution1D
 {
 public:
 

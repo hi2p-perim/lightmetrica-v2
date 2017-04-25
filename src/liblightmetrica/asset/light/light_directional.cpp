@@ -43,9 +43,8 @@ public:
 
 public:
 
-    EmitterShape_DirectionalLight(const SphereBound& bound, const Primitive* primitive)
+    EmitterShape_DirectionalLight(const SphereBound& bound)
         : bound_(bound)
-        , primitive_(primitive)
     {}
 
 public:
@@ -73,20 +72,20 @@ public:
         isect.geom.p = c + isect.geom.dpdu * Math::Dot(isect.geom.dpdu, p - c) + isect.geom.dpdv * Math::Dot(isect.geom.dpdv, p - c);
 
         // Primitive
-        isect.primitive = primitive_;
+        //isect.primitive = primitive_;
 
         return true;
     };
 
-    LM_IMPL_F(GetPrimitive) = [this]() -> const Primitive*
-    {
-        return primitive_;
-    };
+    //LM_IMPL_F(GetPrimitive) = [this]() -> const Primitive*
+    //{
+    //    return primitive_;
+    //};
 
 public:
 
     SphereBound bound_;
-    const Primitive* primitive_;
+    //const Primitive* primitive_;
 
 };
 

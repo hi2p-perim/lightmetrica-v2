@@ -28,6 +28,7 @@
 #include <lightmetrica/math.h>
 #include <lightmetrica/bound.h>
 #include <lightmetrica/spectrum.h>
+#include <lightmetrica/dist.h>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/memory.hpp>
@@ -38,7 +39,9 @@ LM_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
 
-#pragma region Serialization support for math functions
+#pragma region Serialization support
+
+// Math objects
 template <typename Archive> auto serialize(Archive& ar, Vec2& v) { ar(v.x, v.y); }
 template <typename Archive> auto serialize(Archive& ar, Vec3& v) { ar(v.x, v.y, v.z); }
 template <typename Archive> auto serialize(Archive& ar, Vec4& v) { ar(v.x, v.y, v.z, v.w); }
@@ -47,12 +50,13 @@ template <typename Archive> auto serialize(Archive& ar, Mat3& m) { ar(m.v_[0], m
 template <typename Archive> auto serialize(Archive& ar, Mat4& m) { ar(m.v_[0], m.v_[1], m.v_[2], m.v_[3]); }
 template <typename Archive> auto serialize(Archive& ar, Bound& b) { ar(b.min, b.max); }
 template <typename Archive> auto serialize(Archive& ar, SphereBound& b) { ar(b.center, b.radius); }
-#pragma endregion
 
-// --------------------------------------------------------------------------------
-
-#pragma region Serialization support for spectrum class
+// Bound
 template <typename Archive> auto serialize(Archive& ar, SPD& s) { ar(s.v); }
+
+// Distribution 1D
+template <typename Archive> auto serialize(Archive& ar, Distribution1D& d) { ar(d.cdf); }
+
 #pragma endregion
 
 // --------------------------------------------------------------------------------

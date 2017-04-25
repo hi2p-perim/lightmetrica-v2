@@ -31,6 +31,7 @@
 #include <lightmetrica/sampler.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/triangleutils.h>
+#include <lightmetrica/assets.h>
 #include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
@@ -49,8 +50,9 @@ public:
         Le_ = SPD::FromRGB(prop->ChildAs<Vec3>("Le", Vec3()));
 
         // Create distribution according to triangle area
-        primitive_ = primitive;
-        TriangleUtils::CreateTriangleAreaDist(primitive_, dist_, invArea_);
+        mesh_ = primitive->mesh;
+        transform_ = primitive->transform;
+        TriangleUtils::CreateTriangleAreaDist(primitive, dist_, invArea_);
 
         return true;
     };
@@ -64,13 +66,13 @@ public:
 
     LM_IMPL_F(SamplePositionGivenPreviousPosition) = [this](const Vec2& u, const SurfaceGeometry& geomPrev, SurfaceGeometry& geom) -> void
     {
-        TriangleUtils::SampleTriangleMesh(u, primitive_, dist_, geom);
+        TriangleUtils::SampleTriangleMesh(u, mesh_, transform_, dist_, geom);
     };
 
     LM_IMPL_F(SamplePositionAndDirection) = [this](const Vec2& u, const Vec2& u2, SurfaceGeometry& geom, Vec3& wo) -> void
     {
         // Position
-        TriangleUtils::SampleTriangleMesh(u, primitive_, dist_, geom);
+        TriangleUtils::SampleTriangleMesh(u, mesh_, transform_, dist_, geom);
 
         // Direction
         const auto localWo = Sampler::CosineSampleHemisphere(u2);
@@ -122,23 +124,23 @@ public:
     {
         {
             cereal::PortableBinaryOutputArchive oa(stream);
-            int texID = texR_ ? texR_->Index() : -1;
-            oa(R_, texID, eta_, roughness_);
+            int meshID = mesh_ ? mesh_->Index() : -1;
+            oa(Le_, dist_, invArea_, meshID, transform_);
         }
         return true;
     };
 
     LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
     {
-        int texID;
+        int meshID;
         {
             cereal::PortableBinaryInputArchive ia(stream);
-            ia(R_, texID, eta_, roughness_);
+            ia(Le_, dist_, invArea_, meshID, transform_);
         }
-        if (texID >= 0)
+        if (meshID >= 0)
         {
             auto* assets = static_cast<Assets*>(userdata.at("assets"));
-            texR_ = static_cast<const Texture*>(assets->GetByIndex(texID));
+            mesh_ = static_cast<const TriangleMesh*>(assets->GetByIndex(meshID));
         }
         return true;
     };
@@ -148,7 +150,8 @@ private:
     SPD Le_;
     Distribution1D dist_;
     Float invArea_;
-    const Primitive* primitive_;
+    const TriangleMesh* mesh_ = nullptr;
+    Mat4 transform_;
 
 };
 

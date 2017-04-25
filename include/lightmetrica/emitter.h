@@ -54,7 +54,7 @@ public:
     LM_INTERFACE_F(0, Intersect, bool(const Ray& ray, Float minT, Float maxT, Intersection& isect));
     
     //! Get primitive associated to the shape
-    LM_INTERFACE_F(1, GetPrimitive, const Primitive*());
+    //LM_INTERFACE_F(1, GetPrimitive, const Primitive*());
 
 };
 

@@ -35,6 +35,7 @@
 #include <lightmetrica/renderutils.h>
 #include <lightmetrica/texture.h>
 #include <lightmetrica/assets.h>
+#include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -46,9 +47,8 @@ public:
 
 public:
 
-    EmitterShape_EnvLight(const SphereBound& bound, const Primitive* primitive)
+    EmitterShape_EnvLight(const SphereBound& bound)
         : bound_(bound)
-        , primitive_(primitive)
     {}
 
 public:
@@ -76,20 +76,20 @@ public:
         isect.geom.p = c + isect.geom.dpdu * Math::Dot(isect.geom.dpdu, p - c) + isect.geom.dpdv * Math::Dot(isect.geom.dpdv, p - c);
 
         // Primitive
-        isect.primitive = primitive_;
+        //isect.primitive = primitive_;
 
         return true;
     };
 
-    LM_IMPL_F(GetPrimitive) = [this]() -> const Primitive*
-    {
-        return primitive_;
-    };
+    //LM_IMPL_F(GetPrimitive) = [this]() -> const Primitive*
+    //{
+    //    return primitive_;
+    //};
 
 public:
 
     SphereBound bound_;
-    const Primitive* primitive_;
+    //const Primitive* primitive_;
 
 };
 
@@ -103,8 +103,6 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        primitive_ = primitive;
-
         if (prop->Child("envmap"))
         {
             std::string id;
@@ -127,7 +125,7 @@ public:
         const auto* scene = static_cast<const Scene3*>(scene_);
         bound_ = scene->GetSphereBound();
         invArea_ = 1_f / (Math::Pi() * bound_.radius * bound_.radius);
-        emitterShape_.reset(new EmitterShape_EnvLight(bound_, primitive_));
+        emitterShape_.reset(new EmitterShape_EnvLight(bound_));
         return true;
     };
 
@@ -233,18 +231,40 @@ public:
         return false;
     };
 
-public:
-
     LM_IMPL_F(GetEmitterShape) = [this]() -> const EmitterShape*
     {  
         return emitterShape_.get();
+    };
+
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            int envmapID = envmap_ ? envmap_->Index() : -1;
+            oa(bound_, invArea_, Le_, envmapID, rotate_);
+        }
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        int envmapID;
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(bound_, invArea_, Le_, envmapID, rotate_);
+        }
+        if (envmapID >= 0)
+        {
+            auto* assets = static_cast<Assets*>(userdata.at("assets"));
+            envmap_ = static_cast<const Texture*>(assets->GetByIndex(envmapID));
+        }
+        return true;
     };
 
 public:
 
     SphereBound bound_;
     Float invArea_;
-    const Primitive* primitive_;
     std::unique_ptr<EmitterShape_EnvLight> emitterShape_;
 
     SPD Le_;

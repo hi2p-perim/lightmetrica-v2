@@ -68,7 +68,7 @@ public:
     }
 
     //! Sample a position on the triangle mesh
-    static auto SampleTriangleMesh(const Vec2& u, const Primitive* primitive, const Distribution1D& dist, SurfaceGeometry& geom)
+    static auto SampleTriangleMesh(const Vec2& u, const TriangleMesh* mesh, const Mat4& transform, const Distribution1D& dist, SurfaceGeometry& geom)
     {
         #pragma region Sample a triangle & a position on triangle
 
@@ -82,7 +82,6 @@ public:
 
         #pragma region Store surface geometry information
 
-        const auto* mesh = primitive->mesh;
         const auto* fs = mesh->Faces();
         const auto* ps = mesh->Positions();
         unsigned int i1 = fs[3 * i];
@@ -90,9 +89,9 @@ public:
         unsigned int i3 = fs[3 * i + 2];
 
         // Position
-        Vec3 p1(primitive->transform * Vec4(ps[3 * i1], ps[3 * i1 + 1], ps[3 * i1 + 2], 1_f));
-        Vec3 p2(primitive->transform * Vec4(ps[3 * i2], ps[3 * i2 + 1], ps[3 * i2 + 2], 1_f));
-        Vec3 p3(primitive->transform * Vec4(ps[3 * i3], ps[3 * i3 + 1], ps[3 * i3 + 2], 1_f));
+        Vec3 p1(transform * Vec4(ps[3 * i1], ps[3 * i1 + 1], ps[3 * i1 + 2], 1_f));
+        Vec3 p2(transform * Vec4(ps[3 * i2], ps[3 * i2 + 1], ps[3 * i2 + 2], 1_f));
+        Vec3 p3(transform * Vec4(ps[3 * i3], ps[3 * i3 + 1], ps[3 * i3 + 2], 1_f));
         geom.p = p1 * (1_f - b.x - b.y) + p2 * b.x + p3 * b.y;
 
         // UV
