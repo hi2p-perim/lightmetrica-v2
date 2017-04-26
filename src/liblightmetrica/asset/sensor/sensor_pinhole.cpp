@@ -29,6 +29,7 @@
 #include <lightmetrica/assets.h>
 #include <lightmetrica/film.h>
 #include <lightmetrica/surfacegeometry.h>
+#include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -190,6 +191,31 @@ public:
         m[2][2] = zFar / (zFar - zNear);
         m[3][2] = -(zFar * zNear) / (zFar - zNear);
         return m;
+    };
+
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            int filmID = film_ ? film_->Index() : -1;
+            oa(We_, fov_, position_, vx_, vy_, vz_, filmID, aspect_);
+        }
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        int filmID;
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(We_, fov_, position_, vx_, vy_, vz_, filmID, aspect_);
+        }
+        if (filmID >= 0)
+        {
+            auto* assets = static_cast<Assets*>(userdata.at("assets"));
+            film_ = static_cast<Film*>(assets->GetByIndex(filmID));
+        }
+        return true;
     };
 
 private:

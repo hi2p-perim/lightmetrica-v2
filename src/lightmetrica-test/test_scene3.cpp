@@ -33,6 +33,7 @@
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/bsdf.h>
 #include <lightmetrica/trianglemesh.h>
+#include <lightmetrica/detail/serial.h>
 #include <lightmetrica-test/mathutils.h>
 
 LM_TEST_NAMESPACE_BEGIN
@@ -298,6 +299,166 @@ TEST_F(Scene3Test, SensorNode)
     ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
 
     EXPECT_EQ("n2", std::string(scene->GetSensor()->id));
+}
+
+// --------------------------------------------------------------------------------
+
+// Test for serialization (simplified case)
+TEST_F(Scene3Test, SerializationSimple)
+{
+    // We do not provide serialization functions for stub assets and accel
+    // Tests serialization for primitives
+
+    const auto Input = TestUtils::MultiLineLiteral(R"x(
+    | sensor: n1
+    | nodes:
+    |   - id: n1
+    |   - id: n2
+    )x");
+
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    EXPECT_TRUE(prop->LoadFromString(Input));
+
+    const auto assets = ComponentFactory::Create<Assets>("Stub_Assets");
+    const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
+    const auto scene = ComponentFactory::Create<Scene3>("scene::scene3");
+    ASSERT_TRUE(scene->Initialize(prop->Root(), assets.get(), accel.get()));
+
+    // Serialize the scene
+    std::string serialized;
+    {
+        std::ostringstream ss(std::ios::binary);
+        ASSERT_TRUE(scene->Serialize(ss));
+        serialized = ss.str();
+    }
+
+    // Deserialize into a new scene instance
+    auto scene2 = ComponentFactory::Create<Scene3>("scene::scene3");
+    std::istringstream ss(serialized, std::ios::binary);
+    ASSERT_TRUE(scene2->Deserialize(ss, { { "assets", assets.get() },{ "accel", accel.get() } }));
+
+    // Check consistencies
+    const auto* n1 = scene2->PrimitiveByID("n1");
+    ASSERT_NE(nullptr, n1);
+    EXPECT_EQ("n1", n1->id);
+    const auto* n2 = scene2->PrimitiveByID("n2");
+    ASSERT_NE(nullptr, n2);
+    EXPECT_EQ("n2", n2->id);
+}
+
+struct Stub_BSDF_Serializable : public BSDF
+{
+    SPD R_;
+    LM_IMPL_CLASS(Stub_BSDF_Serializable, BSDF);
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
+    {
+        R_ = SPD(42);
+        return true;
+    };
+    LM_IMPL_F(Reflectance) = [this]() -> SPD
+    {
+        return R_;
+    };
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        cereal::PortableBinaryOutputArchive oa(stream);
+        oa(R_);
+        return true;
+    };
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        cereal::PortableBinaryInputArchive ia(stream);
+        ia(R_);
+        return true;
+    };
+};
+
+struct Stub_TriangleMesh_Serializable : public TriangleMesh
+{
+    int nv_ = 1;
+    std::vector<Float> ps_{ 1_f, 2_f, 3_f };
+    LM_IMPL_CLASS(Stub_TriangleMesh_Serializable, TriangleMesh);
+    LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool { return true; };
+    LM_IMPL_F(NumVertices) = [this]() -> int { return nv_; };
+    LM_IMPL_F(Positions) = [this]() -> const Float* { return ps_.data(); };
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        cereal::PortableBinaryOutputArchive oa(stream);
+        oa(nv_, ps_);
+        return true;
+    };
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        cereal::PortableBinaryInputArchive ia(stream);
+        ia(nv_, ps_);
+        return true;
+    };
+};
+
+LM_COMPONENT_REGISTER_IMPL(Stub_BSDF_Serializable, "bsdf::stub_bsdf_serializable");
+LM_COMPONENT_REGISTER_IMPL(Stub_TriangleMesh_Serializable, "trianglemesh::stub_trianglemesh_serializable");
+
+// Test for serialization (with serializable assets)
+TEST_F(Scene3Test, SerializationWithAssets)
+{
+    const auto Input = TestUtils::MultiLineLiteral(R"x(
+    | assets:
+    |   mesh_1:
+    |     interface: trianglemesh
+    |     type: stub_trianglemesh_serializable
+    |
+    |   bsdf_1:
+    |     interface: bsdf
+    |     type: stub_bsdf_serializable
+    |
+    | scene:
+    |   sensor: n1
+    |   nodes:
+    |     - id: n1
+    |     - id: n2
+    |       mesh: mesh_1
+    |       bsdf: bsdf_1
+    )x");
+
+    const auto prop = ComponentFactory::Create<PropertyTree>();
+    ASSERT_TRUE(prop->LoadFromString(Input));
+
+    const auto assets = ComponentFactory::Create<Assets>("assets::assets3");
+    EXPECT_TRUE(assets->Initialize(prop->Root()->Child("assets")));
+
+    const auto accel = ComponentFactory::Create<Accel3>("Stub_Accel");
+    const auto scene = ComponentFactory::Create<Scene3>("scene::scene3");
+    ASSERT_TRUE(scene->Initialize(prop->Root()->Child("scene"), assets.get(), accel.get()));
+
+    // Serialize the scene
+    std::string serialized;
+    {
+        std::ostringstream ss(std::ios::binary);
+        ASSERT_TRUE(scene->Serialize(ss));
+        serialized = ss.str();
+    }
+
+    // Deserialize into a new scene instance
+    auto scene2 = ComponentFactory::Create<Scene3>("scene::scene3");
+    std::istringstream ss(serialized, std::ios::binary);
+    ASSERT_TRUE(scene2->Deserialize(ss, { { "assets", assets.get() },{ "accel", accel.get() } }));
+
+    // Check consistencies
+    const auto* n1 = scene2->PrimitiveByID("n1");
+    ASSERT_NE(nullptr, n1);
+    EXPECT_EQ("n1", n1->id);
+    const auto* n2 = scene2->PrimitiveByID("n2");
+    ASSERT_NE(nullptr, n2);
+    EXPECT_EQ("n2", n2->id);
+    ASSERT_NE(nullptr, n2->bsdf);
+    EXPECT_EQ("bsdf_1", n2->bsdf->ID());
+    EXPECT_TRUE(ExpectVecNear(Vec3(42), n2->bsdf->Reflectance().v));
+    ASSERT_NE(nullptr, n2->mesh);
+    EXPECT_EQ("mesh_1", n2->mesh->ID());
+    EXPECT_EQ(1, n2->mesh->NumVertices());
+    EXPECT_TRUE(ExpectNear(1_f, n2->mesh->Positions()[0]));
+    EXPECT_TRUE(ExpectNear(2_f, n2->mesh->Positions()[1]));
+    EXPECT_TRUE(ExpectNear(3_f, n2->mesh->Positions()[2]));
 }
 
 // --------------------------------------------------------------------------------

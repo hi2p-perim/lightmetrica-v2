@@ -116,6 +116,10 @@ private:
 
         // --------------------------------------------------------------------------------
 
+        assets_ = assets;
+
+        // --------------------------------------------------------------------------------
+
         return true;
     }
 
@@ -440,6 +444,16 @@ public:
         return true;
     };
 
+    LM_IMPL_F(GetAssets) = [this]() -> const Assets*
+    {
+        return assets_;
+    };
+
+    LM_IMPL_F(GetAccel) = [this]() -> const Accel*
+    {
+        return accel_;
+    };
+
     LM_IMPL_F(Intersect) = [this](const Ray& ray, Intersection& isect) -> bool
     {
         // Intersect with accel
@@ -544,11 +558,11 @@ public:
             sp.index = p->index;
             sp.transform = p->transform;
             sp.normalTransform = p->normalTransform;
-            sp.meshID    = p->mesh->Index();
-            sp.bsdfID    = p->bsdf->Index();
-            sp.emitterID = p->emitter->Index();
-            sp.lightID   = p->light->Index();
-            sp.sensorID  = p->sensor->Index();
+            sp.meshID    = p->mesh ? p->mesh->Index() : -1;
+            sp.bsdfID    = p->bsdf && p->bsdf != nullBSDF_.get() ? p->bsdf->Index() : -1;
+            sp.emitterID = p->emitter ? p->emitter->Index() : -1;
+            sp.lightID   = p->light ? p->light->Index() : -1;
+            sp.sensorID  = p->sensor ? p->sensor->Index() : -1;
             serializablePrimitives.push_back(std::move(sp));
         }
 
@@ -584,11 +598,11 @@ public:
             p->index = sp.index;
             p->transform = sp.transform;
             p->normalTransform = sp.normalTransform;
-            p->mesh    = static_cast<const TriangleMesh*>(assets->GetByIndex(sp.meshID));
-            p->bsdf    = static_cast<const BSDF*>(assets->GetByIndex(sp.bsdfID));
-            p->emitter = static_cast<const Emitter*>(assets->GetByIndex(sp.emitterID));
-            p->light   = static_cast<const Light*>(assets->GetByIndex(sp.lightID));
-            p->sensor  = static_cast<const Sensor*>(assets->GetByIndex(sp.sensorID));
+            p->mesh    = sp.meshID    != -1 ? static_cast<const TriangleMesh*>(assets->GetByIndex(sp.meshID)) : nullptr;
+            p->bsdf    = sp.bsdfID    != -1 ? static_cast<const BSDF*>(assets->GetByIndex(sp.bsdfID)) : nullptr;
+            p->emitter = sp.emitterID != -1 ? static_cast<const Emitter*>(assets->GetByIndex(sp.emitterID)) : nullptr;
+            p->light   = sp.lightID   != -1 ? static_cast<const Light*>(assets->GetByIndex(sp.lightID)) : nullptr;
+            p->sensor  = sp.sensorID  != -1 ? static_cast<const Sensor*>(assets->GetByIndex(sp.sensorID)) : nullptr;
             primitives_.push_back(std::move(p));
         }
 
@@ -614,6 +628,7 @@ private:
     size_t sensorPrimitiveIndex_;                                       // Sensor primitive index
     std::vector<size_t> lightPrimitiveIndices_;                         // Pointers to light primitives
 
+    const Assets* assets_;                                              // Asset manager
     const Accel3* accel_;                                               // Acceleration structure
     Bound bound_;                                                       // Scene bound (AABB)
     SphereBound sphereBound_;                                           // Scene bound (sphere)

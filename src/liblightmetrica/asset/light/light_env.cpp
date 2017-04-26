@@ -276,4 +276,3 @@ public:
 LM_COMPONENT_REGISTER_IMPL(Light_EnvLight, "light::env");
 
 LM_NAMESPACE_END
- 

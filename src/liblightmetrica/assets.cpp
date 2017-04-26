@@ -182,7 +182,7 @@ public:
         {
             const auto& key = serializedAssetKeys[i];
             const auto& serializedAsset = serializedAssets[i];
-            std::istringstream ss(serializedAsset);
+            std::istringstream ss(serializedAsset, std::ios::binary);
             auto asset = ComponentFactory::Create<Asset>(key);
             if (!asset->Deserialize(ss, userdata2)) { return false; }
             assets_.push_back(std::move(asset));

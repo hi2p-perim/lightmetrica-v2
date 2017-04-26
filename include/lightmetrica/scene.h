@@ -46,7 +46,7 @@ class Scene : public BasicComponent
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene, BasicComponent, 1);
+    LM_INTERFACE_CLASS(Scene, BasicComponent, 3);
 
 public:
 
@@ -57,6 +57,12 @@ public:
         the scene configuration file.
     */
     LM_INTERFACE_F(0, Initialize, bool(const PropertyNode* sceneNode, Assets* assets, Accel* accel));
+
+    //! Gets the instance of the asset manager.
+    LM_INTERFACE_F(1, GetAssets, const Assets*());
+
+    //! Gets the instance of the acceleration structure.
+    LM_INTERFACE_F(2, GetAccel, const Accel*());
 
 };
 

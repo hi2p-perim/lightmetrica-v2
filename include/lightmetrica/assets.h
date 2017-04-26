@@ -50,7 +50,7 @@ class Assets : public BasicComponent
 {
 public:
 
-    LM_INTERFACE_CLASS(Assets, Component, 4);
+    LM_INTERFACE_CLASS(Assets, BasicComponent, 4);
 
 public:
 

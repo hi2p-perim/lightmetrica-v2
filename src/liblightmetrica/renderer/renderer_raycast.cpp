@@ -58,9 +58,11 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        #if LM_RAYCAST_DEBUG_IO
-        DebugIO::BreakPoint("scene", scene_);
-        #endif
+        //#if LM_RAYCAST_DEBUG_IO
+        //{
+        //    DebugIO::BreakPoint("scene", scene_);
+        //}
+        //#endif
 
         // --------------------------------------------------------------------------------
 

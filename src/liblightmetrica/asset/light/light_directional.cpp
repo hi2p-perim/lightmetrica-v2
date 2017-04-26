@@ -32,6 +32,7 @@
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/triangleutils.h>
 #include <lightmetrica/scene3.h>
+#include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -99,7 +100,6 @@ public:
 
     LM_IMPL_F(Load) = [this](const PropertyNode* prop, Assets* assets, const Primitive* primitive) -> bool
     {
-        primitive_ = primitive;
         Le_ = SPD::FromRGB(prop->ChildAs<Vec3>("Le", Vec3()));
         direction_ = Mat3(primitive->transform) * Math::Normalize(prop->ChildAs<Vec3>("direction", Vec3()));
         return true;
@@ -110,7 +110,7 @@ public:
         const auto* scene = static_cast<const Scene3*>(scene_);
         bound_ = scene->GetSphereBound();
         invArea_ = 1_f / (Math::Pi() * bound_.radius * bound_.radius);
-        emitterShape_.reset(new EmitterShape_DirectionalLight(bound_, primitive_));
+        emitterShape_.reset(new EmitterShape_DirectionalLight(bound_));
         return true;
     };
 
@@ -189,13 +189,31 @@ public:
         return false;
     };
 
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            oa(Le_, direction_, bound_, invArea_);
+        }
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(Le_, direction_, bound_, invArea_);
+        }
+        return true;
+    };
+
 public:
 
     SPD Le_;
     Vec3 direction_;
     SphereBound bound_;
     Float invArea_;
-    const Primitive* primitive_;
+    //const Primitive* primitive_;
     std::unique_ptr<EmitterShape_DirectionalLight> emitterShape_;
 
 };

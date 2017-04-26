@@ -34,7 +34,7 @@ LM_NAMESPACE_BEGIN
     \brief Discrete 1D distribution.
     \ingroup math
 */
-struct Distribution1D
+class Distribution1D
 {
 public:
 
@@ -95,7 +95,7 @@ public:
         return cdf.size() == 1;
     }
 
-private:
+public:
 
     std::vector<Float> cdf;
 

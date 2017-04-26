@@ -25,6 +25,7 @@
 #include <pch.h>
 #include <lightmetrica/trianglemesh.h>
 #include <lightmetrica/property.h>
+#include <lightmetrica/detail/serial.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #pragma warning(push)
@@ -100,6 +101,26 @@ public:
     LM_IMPL_F(Normals)     = [this]() -> const Float* { return ns_.data(); };
     LM_IMPL_F(Texcoords)   = [this]() -> const Float* { return ts_.data(); };
     LM_IMPL_F(Faces)       = [this]() -> const unsigned int* { return fs_.data(); };
+
+public:
+
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            oa(ps_, ns_, ts_, fs_);
+        }
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(ps_, ns_, ts_, fs_);
+        }
+        return true;
+    };
 
 protected:
 

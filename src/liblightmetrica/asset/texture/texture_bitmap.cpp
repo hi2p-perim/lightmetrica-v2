@@ -25,6 +25,7 @@
 #include <pch.h>
 #include <lightmetrica/texture.h>
 #include <lightmetrica/property.h>
+#include <lightmetrica/detail/serial.h>
 #include <FreeImage.h>
 
 #define LM_TEXTURE_BITMAP_FLIP_VERTICAL 0
@@ -174,6 +175,24 @@ public:
         const int y = Math::Clamp<int>((int)(Math::Fract(uv.y) * height_), 0, height_ - 1);
         const int i = width_ * y + x;
         return Vec3(Float(data_[3 * i]), Float(data_[3 * i + 1]), Float(data_[3 * i + 2]));
+    };
+
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            oa(width_, height_, data_);
+        }
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(width_, height_, data_);
+        }
+        return true;
     };
 
 private:

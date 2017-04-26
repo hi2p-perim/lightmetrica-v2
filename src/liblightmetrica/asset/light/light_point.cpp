@@ -31,6 +31,7 @@
 #include <lightmetrica/sampler.h>
 #include <lightmetrica/surfacegeometry.h>
 #include <lightmetrica/triangleutils.h>
+#include <lightmetrica/detail/serial.h>
 
 LM_NAMESPACE_BEGIN
 
@@ -105,6 +106,24 @@ public:
 
     LM_IMPL_F(IsDeltaPosition) = [this](int type) -> bool
     {
+        return true;
+    };
+
+    LM_IMPL_F(Serialize) = [this](std::ostream& stream) -> bool
+    {
+        {
+            cereal::PortableBinaryOutputArchive oa(stream);
+            oa(Le_, position_);
+        }
+        return true;
+    };
+
+    LM_IMPL_F(Deserialize) = [this](std::istream& stream, const std::unordered_map<std::string, void*>& userdata) -> bool
+    {
+        {
+            cereal::PortableBinaryInputArchive ia(stream);
+            ia(Le_, position_);
+        }
         return true;
     };
 
