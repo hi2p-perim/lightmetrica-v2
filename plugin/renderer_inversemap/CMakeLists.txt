@@ -23,7 +23,7 @@
 #
 
 include(AddPlugin)
-set(_PROJECT_NAME "inversemap")
+set(_PROJECT_NAME "renderer_inversemap")
 add_plugin(
 	NAME ${_PROJECT_NAME}
 	SOURCE
@@ -35,11 +35,11 @@ add_plugin(
 		"manifoldutils.cpp"
 		"debugio.h"
 		"debugio.cpp"
-        "renderer_invmap_pssmltfixed.cpp"
-        "renderer_invmap_mltfixed.cpp"
-        "renderer_invmap_mlt.cpp"
-        "renderer_invmap_mltinvmapfixed.cpp"
-        "renderer_invmap_ptfixed.cpp"
+		"renderer_invmap_pssmltfixed.cpp"
+		"renderer_invmap_mltfixed.cpp"
+		"renderer_invmap_mlt.cpp"
+		"renderer_invmap_mltinvmapfixed.cpp"
+		"renderer_invmap_ptfixed.cpp"
 		"renderer_invmap_bdptfixed.cpp"
 		"renderer_invmap_bdpt.cpp"
 		"renderer_invmap_pssmlt.cpp"
@@ -60,18 +60,18 @@ set(_PROJECT_NAME "inversemap-test")
 set(_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/lightmetrica-test")
 set(_GTEST_SOURCE_DIR "${PROJECT_SOURCE_DIR}/external-src/gtest-1.7.0")
 pch_add_executable(
-    ${_PROJECT_NAME}
-    PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h"
-    "${_INCLUDE_DIR}/macros.h"
-    "${_INCLUDE_DIR}/utils.h"
-    "${_INCLUDE_DIR}/mathutils.h"
-    "${PROJECT_SOURCE_DIR}/src/lightmetrica-test/main.cpp"
-	
+	${_PROJECT_NAME}
+	PCH_HEADER "${PROJECT_SOURCE_DIR}/pch/pch_test.h"
+	"${_INCLUDE_DIR}/macros.h"
+	"${_INCLUDE_DIR}/utils.h"
+	"${_INCLUDE_DIR}/mathutils.h"
+	"${PROJECT_SOURCE_DIR}/src/lightmetrica-test/main.cpp"
+
 	"manifoldutils.h"
 	"manifoldutils.cpp"
-    "inversemap_test.cpp"
+	"inversemap_test.cpp"
 	"manifold_test.cpp"
-    
+
 	"${_GTEST_SOURCE_DIR}/src/gtest-all.cc")
 target_link_libraries(${_PROJECT_NAME} ${COMMON_LIBRARIES} liblightmetrica)
 add_dependencies(${_PROJECT_NAME} liblightmetrica)

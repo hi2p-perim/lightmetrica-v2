@@ -44,7 +44,7 @@ struct Subpath
 {
     std::vector<SubpathSampler::PathVertex> vertices;
 
-    auto SampleSubpathFromEndpoint(const Scene* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> int
+    auto SampleSubpathFromEndpoint(const Scene3* scene, Random* rng, TransportDirection transDir, int maxNumVertices) -> int
     {
         const auto  n = (int)(vertices.size());
         const auto* pv = n > 0 ? &vertices[n - 1] : nullptr;
@@ -57,7 +57,7 @@ struct Subpath
         return (int)(vertices.size()) - n;
     }
 
-    auto SampleSubpathWithPrimarySamples(const Scene* scene, const std::vector<Float>& us, TransportDirection transDir, int maxNumVertices) -> void
+    auto SampleSubpathWithPrimarySamples(const Scene3* scene, const std::vector<Float>& us, TransportDirection transDir, int maxNumVertices) -> void
     {
         int idx = 0;
         vertices.clear();
@@ -161,7 +161,7 @@ struct Path
         return true;
     }
 
-    auto ConnectSubpaths(const Scene* scene, const Subpath& subpathL, const Subpath& subpathE, int s, int t) -> bool
+    auto ConnectSubpaths(const Scene3* scene, const Subpath& subpathL, const Subpath& subpathE, int s, int t) -> bool
     {
         assert(s >= 0);
         assert(t >= 0);
@@ -190,7 +190,7 @@ struct Path
         return true;
     }
 
-    auto EvaluateUnweightContribution(const Scene* scene, int s) const -> SPD
+    auto EvaluateUnweightContribution(const Scene3* scene, int s) const -> SPD
     {
         const int n = (int)(vertices.size());
         const int t = n - s;
@@ -302,7 +302,7 @@ struct Path
         return alphaL * cst * alphaE;
     }
 
-    auto EvaluateAlpha(const Scene* scene, int l, TransportDirection transDir) const -> SPD
+    auto EvaluateAlpha(const Scene3* scene, int l, TransportDirection transDir) const -> SPD
     {
         const int n = (int)(vertices.size());
         const auto index = [&](int i)
@@ -463,7 +463,7 @@ struct Path
         return cst;
     }
 
-    auto EvaluatePathPDF(const Scene* scene, int s) const -> PDFVal
+    auto EvaluatePathPDF(const Scene3* scene, int s) const -> PDFVal
     {
         const int n = (int)(vertices.size());
         const int t = n - s;
@@ -515,7 +515,7 @@ struct Path
         return pdf;
     }
 
-    auto EvaluateMISWeight(const Scene* scene, int s_) const -> Float
+    auto EvaluateMISWeight(const Scene3* scene, int s_) const -> Float
     {
         const int n = static_cast<int>(vertices.size());
         const auto ps = EvaluatePathPDF(scene, s_);
@@ -671,7 +671,7 @@ public:
 public:
 
     ///! Returns boost::none for invalid paths for early rejection.
-    static auto MapPS2Path(const Scene* scene, const std::vector<Float>& primarySample) -> boost::optional<Path>
+    static auto MapPS2Path(const Scene3* scene, const std::vector<Float>& primarySample) -> boost::optional<Path>
     {
         Vec3 initWo;
         SubpathSampler::PathVertex pv, ppv;

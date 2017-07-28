@@ -46,7 +46,7 @@ class Scene : public BasicComponent
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene, BasicComponent, 11);
+    LM_INTERFACE_CLASS(Scene, BasicComponent, 3);
 
 public:
 
@@ -64,25 +64,25 @@ public:
     //! Gets the instance of the acceleration structure.
     LM_INTERFACE_F(2, GetAccel, const Accel*());
 
-    //! Get the number of primitives.
-    LM_INTERFACE_F(3, NumPrimitives, int());
+    ////! Get the number of primitives.
+    //LM_INTERFACE_F(3, NumPrimitives, int());
 
-    //! Get a primitive by index.
-    LM_INTERFACE_F(4, PrimitiveAt, const Primitive*(int index));
+    ////! Get a primitive by index.
+    //LM_INTERFACE_F(4, PrimitiveAt, const Primitive*(int index));
 
-    //! Get a primitive by index.
-    LM_INTERFACE_F(5, GetSensor, const Primitive*());
+    ////! Get a primitive by index.
+    //LM_INTERFACE_F(5, GetSensor, const Primitive*());
 
-    //! Get a primitive by index.
-    LM_INTERFACE_F(6, SampleEmitter, const Primitive*(int type, Float u));
-    LM_INTERFACE_F(7, EvaluateEmitterPDF, PDFVal(const Primitive* primitive));
+    ////! Get a primitive by index.
+    //LM_INTERFACE_F(6, SampleEmitter, const Primitive*(int type, Float u));
+    //LM_INTERFACE_F(7, EvaluateEmitterPDF, PDFVal(const Primitive* primitive));
 
-    //! Compute the bound of the scene
-    LM_INTERFACE_F(8, GetBound, Bound());
-    LM_INTERFACE_F(9, GetSphereBound, SphereBound());
+    ////! Compute the bound of the scene
+    //LM_INTERFACE_F(8, GetBound, Bound());
+    //LM_INTERFACE_F(9, GetSphereBound, SphereBound());
 
-    //! Get a number of light primitives.
-    LM_INTERFACE_F(10, NumLightPrimitives, int());
+    ////! Get a number of light primitives.
+    //LM_INTERFACE_F(10, NumLightPrimitives, int());
 
 };
 

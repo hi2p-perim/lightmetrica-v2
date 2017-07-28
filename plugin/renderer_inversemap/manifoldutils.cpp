@@ -115,7 +115,7 @@ auto SolveBlockLinearEq(const ConstraintJacobian& nablaC, const std::vector<Vec2
 
 }
 
-#if 0
+#if 1
 auto ManifoldUtils::ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void
 {
 	const int n = (int)(path.vertices.size());
@@ -381,7 +381,7 @@ auto ManifoldUtils::ComputeConstraintJacobianDeterminant(const Subpath& subpath)
     return Math::Abs(det);
 }
 
-auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, const Vec3& target) -> boost::optional<Subpath>
+auto ManifoldUtils::WalkManifold(const Scene3* scene, const Subpath& seedPath, const Vec3& target) -> boost::optional<Subpath>
 {
     Subpath subpath;
     if (!WalkManifold(scene, seedPath, target, subpath))
@@ -392,7 +392,7 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
 }
 
 // Returns the converged path. Returns none if not converged.
-auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, const Vec3& target, Subpath& connPath) -> bool
+auto ManifoldUtils::WalkManifold(const Scene3* scene, const Subpath& seedPath, const Vec3& target, Subpath& connPath) -> bool
 {
 	#pragma region Preprocess
 
@@ -444,19 +444,21 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
 
     // --------------------------------------------------------------------------------
 
-    //#if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
-    //LM_LOG_DEBUG("tanget_frame_v1");
-    //{
-    //    DebugIO::Wait();
-    //    std::stringstream ss;
-    //    {
-    //        cereal::JSONOutputArchive oa(ss);
-    //        const auto& v = currP.vertices[1];
-    //        oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
-    //    }
-    //    DebugIO::Output("tanget_frame_v1", ss.str());
-    //}
-    //#endif
+    #if 0
+    #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+    LM_LOG_DEBUG("tanget_frame_v1");
+    {
+        DebugIO::Wait();
+        std::stringstream ss;
+        {
+            cereal::JSONOutputArchive oa(ss);
+            const auto& v = currP.vertices[1];
+            oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
+        }
+        DebugIO::Output("tanget_frame_v1", ss.str());
+    }
+    #endif
+    #endif
 
     // --------------------------------------------------------------------------------
 
@@ -514,26 +516,30 @@ auto ManifoldUtils::WalkManifold(const Scene* scene, const Subpath& seedPath, co
 
         // --------------------------------------------------------------------------------
 
-        //#if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
-        //LM_LOG_DEBUG("current_tanget_frame_v1");
-        //{
-        //    DebugIO::Wait();
-        //    std::stringstream ss;
-        //    {
-        //        cereal::JSONOutputArchive oa(ss);
-        //        const auto& v = currP.vertices[1];
-        //        oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
-        //    }
-        //    DebugIO::Output("current_tanget_frame_v1", ss.str());
-        //}
-        //#endif
+        #if 0
+        #if INVERSEMAP_MANIFOLDWALK_DEBUG_IO
+        LM_LOG_DEBUG("current_tanget_frame_v1");
+        {
+            DebugIO::Wait();
+            std::stringstream ss;
+            {
+                cereal::JSONOutputArchive oa(ss);
+                const auto& v = currP.vertices[1];
+                oa(v.geom.p, v.geom.sn, v.geom.dpdu, v.geom.dpdv);
+            }
+            DebugIO::Output("current_tanget_frame_v1", ss.str());
+        }
+        #endif
+        #endif
 
         // --------------------------------------------------------------------------------
 
+        #if 0
         {
-            //const auto d = Math::Length(currP.vertices.back().geom.p - target);
-            //LM_LOG_DEBUG(boost::str(boost::format("#%02d: Dist to target %.15f") % iteration % d));
+            const auto d = Math::Length(currP.vertices.back().geom.p - target);
+            LM_LOG_DEBUG(boost::str(boost::format("#%02d: Dist to target %.15f") % iteration % d));
         }
+        #endif
 
         // --------------------------------------------------------------------------------
 

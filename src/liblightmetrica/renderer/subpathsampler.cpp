@@ -31,7 +31,7 @@
 #include <lightmetrica/sensor.h>
 #include <lightmetrica/ray.h>
 #include <lightmetrica/intersection.h>
-#include <lightmetrica/scene.h>
+#include <lightmetrica/scene3.h>
 #include <lightmetrica/primitive.h>
 
 LM_NAMESPACE_BEGIN
@@ -40,7 +40,7 @@ namespace
 {
     
     auto TraceSubpath_(
-        const Scene* scene,
+        const Scene3* scene,
         const SubpathSampler::PathVertex* initPV,
         const SubpathSampler::PathVertex* initPPV,
         boost::optional<int> initNV,
@@ -202,12 +202,12 @@ namespace
     }
 }
 
-auto SubpathSampler::TraceSubpath(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
+auto SubpathSampler::TraceSubpath(const Scene3* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
 {
     TraceSubpath_(scene, nullptr, nullptr, boost::none, maxNumVertices, transDir, processPathVertexFunc, [&](int numVertices, const Primitive* primitive, SampleUsage usage, int index) -> Float { return rng->Next(); });
 }
 
-auto SubpathSampler::TraceEyeSubpathFixedRasterPos(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const Vec2& rasterPos, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
+auto SubpathSampler::TraceEyeSubpathFixedRasterPos(const Scene3* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const Vec2& rasterPos, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
 {
     assert(transDir == TransportDirection::EL);
     TraceSubpath_(scene, nullptr, nullptr, boost::none, maxNumVertices, transDir, processPathVertexFunc, [&](int numVertices, const Primitive* primitive, SampleUsage usage, int index) -> Float
@@ -220,12 +220,12 @@ auto SubpathSampler::TraceEyeSubpathFixedRasterPos(const Scene* scene, Random* r
     });
 }
 
-auto SubpathSampler::TraceSubpathFromEndpoint(const Scene* scene, Random* rng, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
+auto SubpathSampler::TraceSubpathFromEndpoint(const Scene3* scene, Random* rng, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
 {
     TraceSubpath_(scene, pv, ppv, nv, maxNumVertices, transDir, processPathVertexFunc, [&](int numVertices, const Primitive* primitive, SampleUsage usage, int index) -> Float { return rng->Next(); });
 }
 
-auto SubpathSampler::TraceSubpathFromEndpointWithSampler(const Scene* scene, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SubpathSampler::SamplerFunc& sampleNext, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
+auto SubpathSampler::TraceSubpathFromEndpointWithSampler(const Scene3* scene, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SubpathSampler::SamplerFunc& sampleNext, const SubpathSampler::ProcessPathVertexFunc& processPathVertexFunc) -> void
 {
     TraceSubpath_(scene, pv, ppv, nv, maxNumVertices, transDir, processPathVertexFunc, sampleNext);
 }

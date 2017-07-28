@@ -52,8 +52,8 @@ public:
 public:
 
     static auto ComputeConstraintJacobian(const Subpath& path, ConstraintJacobian& nablaC) -> void;
-    static auto WalkManifold(const Scene* scene, const Subpath& seedPath, const Vec3& target)->boost::optional<Subpath>;
-    static auto WalkManifold(const Scene* scene, const Subpath& seedPath, const Vec3& target, Subpath& connPath) -> bool;
+    static auto WalkManifold(const Scene3* scene, const Subpath& seedPath, const Vec3& target)->boost::optional<Subpath>;
+    static auto WalkManifold(const Scene3* scene, const Subpath& seedPath, const Vec3& target, Subpath& connPath) -> bool;
     static auto ComputeConstraintJacobianDeterminant(const Subpath& subpath) -> Float;
 
 };

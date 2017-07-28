@@ -23,87 +23,35 @@
 */
 
 #include "inversemaputils.h"
-#include "debugio.h"
-#include <cereal/archives/json.hpp>
-#include <cereal/types/vector.hpp>
-
-#define INVERSEMAP_BDPT_DEBUG_IO 0
 
 LM_NAMESPACE_BEGIN
 
-class Renderer_Invmap_BDPT final : public Renderer
+class Renderer_Invmap_BDPTFixed final : public Renderer
 {
 public:
 
-    LM_IMPL_CLASS(Renderer_Invmap_BDPT, Renderer);
+    LM_IMPL_CLASS(Renderer_Invmap_BDPTFixed, Renderer);
 
 public:
 
-    int maxNumVertices_;
-    int minNumVertices_;
+    int numVertices_;
     long long numMutations_;
-    double renderTime_;
+    std::string pathType_;
 
 public:
 
     LM_IMPL_F(Initialize) = [this](const PropertyNode* prop) -> bool
     {
-        if (!prop->ChildAs<int>("max_num_vertices", maxNumVertices_)) return false;
-        if (!prop->ChildAs<int>("min_num_vertices", minNumVertices_)) return false;
-        numMutations_ = prop->ChildAs<long long>("num_mutations", 0);
-        renderTime_ = prop->ChildAs<double>("render_time", -1);
+        if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
+        if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
+        pathType_ = prop->ChildAs<std::string>("path_type", "");
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
-        #if INVERSEMAP_BDPT_DEBUG_IO
-        DebugIO::Run();
-        #endif
-
-        // --------------------------------------------------------------------------------
-
+        const auto* scene = static_cast<const Scene3*>(scene_);
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
-
-        // --------------------------------------------------------------------------------
-
-        #if INVERSEMAP_BDPT_DEBUG_IO
-        LM_LOG_DEBUG("triangle_vertices");
-        {
-            DebugIO::Wait();
-
-            std::vector<double> vs;
-            for (int i = 0; i < scene->NumPrimitives(); i++)
-            {
-                const auto* primitive = scene->PrimitiveAt(i);
-                const auto* mesh = primitive->mesh;
-                if (!mesh) { continue; }
-                const auto* ps = mesh->Positions();
-                const auto* faces = mesh->Faces();
-                for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
-                {
-                    unsigned int vi1 = faces[3 * fi];
-                    unsigned int vi2 = faces[3 * fi + 1];
-                    unsigned int vi3 = faces[3 * fi + 2];
-                    Vec3 p1(primitive->transform * Vec4(ps[3 * vi1], ps[3 * vi1 + 1], ps[3 * vi1 + 2], 1_f));
-                    Vec3 p2(primitive->transform * Vec4(ps[3 * vi2], ps[3 * vi2 + 1], ps[3 * vi2 + 2], 1_f));
-                    Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
-                    for (int j = 0; j < 3; j++) vs.push_back(p1[j]);
-                    for (int j = 0; j < 3; j++) vs.push_back(p2[j]);
-                    for (int j = 0; j < 3; j++) vs.push_back(p3[j]);
-                }
-            }
-            
-            std::stringstream ss;
-            {
-                cereal::JSONOutputArchive oa(ss);
-                oa(vs);
-            }
-
-            DebugIO::Output("triangle_vertices", ss.str());
-            DebugIO::Wait();
-        }
-        #endif
 
         // --------------------------------------------------------------------------------
 
@@ -112,12 +60,6 @@ public:
         {
             Random rng;
             Film::UniquePtr film{ nullptr, nullptr };
-            struct
-            {
-                Subpath subpathE;
-                Subpath subpathL;
-                Path fullpath;
-            } cache;
         };
         std::vector<Context> contexts(Parallel::GetNumThreads());
         for (auto& ctx : contexts)
@@ -131,19 +73,17 @@ public:
         // --------------------------------------------------------------------------------
 
         #pragma region Parallel loop
-        const auto processed = Parallel::For({ renderTime_ < 0 ? ParallelMode::Samples : ParallelMode::Time, numMutations_, renderTime_ }, [&](long long index, int threadid, bool init)
+        Parallel::For(numMutations_, [&](long long index, int threadid, bool init)
         {
             auto& ctx = contexts[threadid];
 
             // --------------------------------------------------------------------------------
-            
+
             #pragma region Sample subpaths
-            auto& subpathE = ctx.cache.subpathE;
-            auto& subpathL = ctx.cache.subpathL;
-            subpathE.vertices.clear();
-            subpathL.vertices.clear();
-            subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, maxNumVertices_);
-            subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, maxNumVertices_);
+            Subpath subpathE;
+            Subpath subpathL;
+            subpathE.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::EL, numVertices_);
+            subpathL.SampleSubpathFromEndpoint(scene, &ctx.rng, TransportDirection::LE, numVertices_);
             #pragma endregion
 
             // --------------------------------------------------------------------------------
@@ -153,20 +93,39 @@ public:
             for (int t = 1; t <= nE; t++)
             {
                 const int nL = (int)(subpathL.vertices.size());
-                const int minS = Math::Max(0, Math::Max(2 - t, minNumVertices_ - t));
-                const int maxS = Math::Min(nL, maxNumVertices_ - t);
+                const int minS = Math::Max(0, Math::Max(2 - t, numVertices_ - t));
+                const int maxS = Math::Min(nL, numVertices_ - t);
                 for (int s = minS; s <= maxS; s++)
                 {
+                    if (s + t != numVertices_) { continue; }
+
                     // Connect vertices and create a full path
-                    auto& fullpath = ctx.cache.fullpath;
+                    Path fullpath;
                     if (!fullpath.ConnectSubpaths(scene, subpathL, subpathE, s, t)) { continue; }
 
+                    // Check path type
+                    if (!fullpath.IsPathType(pathType_)) { continue; }
+
+                    #if 0
                     // Evaluate contribution
+                    const auto f = fullpath.EvaluateF(s);
+                    if (f.Black()) { continue; }
+
+                    // Evaluate connection PDF
+                    const auto p = fullpath.EvaluatePathPDF(scene, s);
+                    if (p.v == 0)
+                    {
+                        // Due to precision issue, this can happen.
+                        continue;
+                    }
+                    const auto Cstar = f / p;
+                    #else
                     const auto Cstar = fullpath.EvaluateUnweightContribution(scene, s);
                     if (Cstar.Black())
                     {
                         continue;
                     }
+                    #endif
 
                     // Evaluate MIS weight
                     const auto w = fullpath.EvaluateMISWeight(scene, s);
@@ -188,7 +147,7 @@ public:
         {
             film->Accumulate(ctx.film.get());
         }
-        film->Rescale((Float)(film->Width() * film->Height()) / processed);
+        film->Rescale((Float)(film->Width() * film->Height()) / numMutations_);
         #pragma endregion
 
         // --------------------------------------------------------------------------------
@@ -200,16 +159,10 @@ public:
             film->Save(outputPath);
         }
         #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        #if INVERSEMAP_BDPT_DEBUG_IO
-        DebugIO::Stop();
-        #endif
     };
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_Invmap_BDPT, "renderer::invmap_bdpt");
+LM_COMPONENT_REGISTER_IMPL(Renderer_Invmap_BDPTFixed, "renderer::invmap_bdptfixed");
 
 LM_NAMESPACE_END

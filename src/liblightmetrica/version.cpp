@@ -33,21 +33,17 @@ auto Version::Minor()     -> std::string { return LM_VERSION_MINOR; }
 auto Version::Patch()     -> std::string { return LM_VERSION_PATCH; }
 auto Version::SceneVersionMin() -> std::tuple<int, int, int>
 {
-    return
-    {
+    return std::make_tuple(
         std::stoi(LM_SCENE_VERSION_MIN_MAJOR),
         std::stoi(LM_SCENE_VERSION_MIN_MINOR),
-        std::stoi(LM_SCENE_VERSION_MIN_PATCH)
-    };
+        std::stoi(LM_SCENE_VERSION_MIN_PATCH));
 }
 auto Version::SceneVersionMax() -> std::tuple<int, int, int>
 {
-    return
-    {
+    return std::make_tuple(
         std::stoi(LM_SCENE_VERSION_MAX_MAJOR),
         std::stoi(LM_SCENE_VERSION_MAX_MINOR),
-        std::stoi(LM_SCENE_VERSION_MAX_PATCH)
-    };
+        std::stoi(LM_SCENE_VERSION_MAX_PATCH));
 }
 auto Version::Revision()  -> std::string { return LM_VERSION_REVISION; }
 auto Version::BuildDate() -> std::string { return LM_BUILD_DATE; }

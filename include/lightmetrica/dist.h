@@ -104,7 +104,7 @@ public:
         return cdf.back();
     }
 
-private:
+public:
 
     std::vector<Float> cdf;
 

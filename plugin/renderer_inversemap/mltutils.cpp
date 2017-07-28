@@ -225,7 +225,7 @@ auto MLTMutationStrategy::CheckMutatable_Manifold(const Path& currP) -> bool
 
 // --------------------------------------------------------------------------------
 
-auto MLTMutationStrategy::Mutate_BidirFixed(const Scene* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
+auto MLTMutationStrategy::Mutate_BidirFixed(const Scene3* scene, Random& rng, const Path& currP) -> boost::optional<Prop>
 {
     const int n = (int)(currP.vertices.size());
 
@@ -314,7 +314,7 @@ auto MLTMutationStrategy::Mutate_BidirFixed(const Scene* scene, Random& rng, con
     return prop;
 }
 
-auto MLTMutationStrategy::Mutate_Bidir(const Scene* scene, Random& rng, const Path& currP, int maxPathVertices) -> boost::optional<Prop>
+auto MLTMutationStrategy::Mutate_Bidir(const Scene3* scene, Random& rng, const Path& currP, int maxPathVertices) -> boost::optional<Prop>
 {
     const int currN = (int)(currP.vertices.size());
 
@@ -412,7 +412,7 @@ auto MLTMutationStrategy::Mutate_Bidir(const Scene* scene, Random& rng, const Pa
     return prop;
 }
 
-auto MLTMutationStrategy::Mutate_Lens(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
+auto MLTMutationStrategy::Mutate_Lens(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
 {
     const int n = (int)(currP.vertices.size());
 
@@ -527,7 +527,7 @@ auto MLTMutationStrategy::Mutate_Lens(const Scene* scene, Random& rng, const Pat
     return prop;
 }
 
-auto MLTMutationStrategy::Mutate_Caustic(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
+auto MLTMutationStrategy::Mutate_Caustic(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
 {
     const int n = (int)(currP.vertices.size());
 
@@ -649,7 +649,7 @@ auto MLTMutationStrategy::Mutate_Caustic(const Scene* scene, Random& rng, const 
     return prop;
 }
 
-auto MLTMutationStrategy::Mutate_Multichain(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
+auto MLTMutationStrategy::Mutate_Multichain(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
 {
     const int n = (int)(currP.vertices.size());
                  
@@ -771,7 +771,7 @@ auto MLTMutationStrategy::Mutate_Multichain(const Scene* scene, Random& rng, con
     return prop;
 }
 
-auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
+auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
 {
     // L | S* | DS+E
     const int n = (int)(currP.vertices.size());
@@ -965,7 +965,7 @@ auto MLTMutationStrategy::Mutate_ManifoldLens(const Scene* scene, Random& rng, c
     return prop;
 }
 
-auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
+auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
 {
     // LS+D | S* | E
     const int n = (int)(currP.vertices.size());
@@ -1159,7 +1159,7 @@ auto MLTMutationStrategy::Mutate_ManifoldCaustic(const Scene* scene, Random& rng
     return prop;
 }
 
-auto MLTMutationStrategy::Mutate_Manifold(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
+auto MLTMutationStrategy::Mutate_Manifold(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>
 {
     const int n = (int)(currP.vertices.size());
 
@@ -1435,7 +1435,7 @@ auto MLTMutationStrategy::Mutate_Manifold(const Scene* scene, Random& rng, const
 
 // --------------------------------------------------------------------------------
 
-auto MLTMutationStrategy::Q_BidirFixed(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
+auto MLTMutationStrategy::Q_BidirFixed(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int xN = (int)(x.vertices.size());
 
@@ -1479,7 +1479,7 @@ auto MLTMutationStrategy::Q_BidirFixed(const Scene* scene, const Path& x, const 
     return pD2 * sum;
 }
 
-auto MLTMutationStrategy::Q_Bidir(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace, int maxPathVertices) -> Float
+auto MLTMutationStrategy::Q_Bidir(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace, int maxPathVertices) -> Float
 {
     const int xN = (int)(x.vertices.size());
     const int yN = (int)(y.vertices.size());
@@ -1556,7 +1556,7 @@ auto MLTMutationStrategy::Q_Bidir(const Scene* scene, const Path& x, const Path&
     return pD1 * pD2 * pA1 * pA2 * sum;
 }
 
-auto MLTMutationStrategy::Q_Lens(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
+auto MLTMutationStrategy::Q_Lens(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1595,7 +1595,7 @@ auto MLTMutationStrategy::Q_Lens(const Scene* scene, const Path& x, const Path& 
     return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
 }
 
-auto MLTMutationStrategy::Q_Caustic(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
+auto MLTMutationStrategy::Q_Caustic(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1611,7 +1611,7 @@ auto MLTMutationStrategy::Q_Caustic(const Scene* scene, const Path& x, const Pat
     return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
 }
 
-auto MLTMutationStrategy::Q_Multichain(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
+auto MLTMutationStrategy::Q_Multichain(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1636,7 +1636,7 @@ auto MLTMutationStrategy::Q_Multichain(const Scene* scene, const Path& x, const 
     return 1_f / InversemapUtils::ScalarContrb(alpha * cst);
 }
 
-auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
+auto MLTMutationStrategy::Q_ManifoldLens(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1691,7 +1691,7 @@ auto MLTMutationStrategy::Q_ManifoldLens(const Scene* scene, const Path& x, cons
     return 1_f / InversemapUtils::ScalarContrb(C);
 }
 
-auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
+auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));
@@ -1746,7 +1746,7 @@ auto MLTMutationStrategy::Q_ManifoldCaustic(const Scene* scene, const Path& x, c
     return 1_f / InversemapUtils::ScalarContrb(C);
 }
 
-auto MLTMutationStrategy::Q_Manifold(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
+auto MLTMutationStrategy::Q_Manifold(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float
 {
     const int n = (int)(x.vertices.size());
     assert(n == (int)(y.vertices.size()));

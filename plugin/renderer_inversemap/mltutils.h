@@ -107,7 +107,7 @@ public:
     }
 
     // maxPathVertices is only used in MLTStrategy::Bidir
-    static auto Mutate(MLTStrategy strategy, const Scene* scene, Random& rng, const Path& currP, int maxPathVertices = -1, Float s1 = 1_f / 256_f, Float s2 = 1_f / 16_f) -> boost::optional<Prop>
+    static auto Mutate(MLTStrategy strategy, const Scene3* scene, Random& rng, const Path& currP, int maxPathVertices = -1, Float s1 = 1_f / 256_f, Float s2 = 1_f / 16_f) -> boost::optional<Prop>
     {
         if      (strategy == MLTStrategy::BidirFixed)      { return Mutate_BidirFixed(scene, rng, currP); }
         else if (strategy == MLTStrategy::Bidir)           { return Mutate_Bidir(scene, rng, currP, maxPathVertices); }
@@ -122,7 +122,7 @@ public:
         return Prop();
     }
 
-    static auto Q(MLTStrategy strategy, const Scene* scene, const Path& x, const Path& y, const Subspace& subspace, int maxPathVertices = -1) -> Float
+    static auto Q(MLTStrategy strategy, const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace, int maxPathVertices = -1) -> Float
     {
         if      (strategy == MLTStrategy::BidirFixed)      { return Q_BidirFixed(scene, x, y, subspace); }
         else if (strategy == MLTStrategy::Bidir)           { return Q_Bidir(scene, x, y, subspace, maxPathVertices); }
@@ -150,25 +150,25 @@ private:
 
 private:
 
-    static auto Mutate_BidirFixed(const Scene* scene, Random& rng, const Path& currP)->boost::optional<Prop>;
-    static auto Mutate_Bidir(const Scene* scene, Random& rng, const Path& currP, int maxPathVertices)->boost::optional<Prop>;
-    static auto Mutate_Lens(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
-    static auto Mutate_Caustic(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
-    static auto Mutate_Multichain(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
-    static auto Mutate_ManifoldLens(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
-    static auto Mutate_ManifoldCaustic(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
-    static auto Mutate_Manifold(const Scene* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
+    static auto Mutate_BidirFixed(const Scene3* scene, Random& rng, const Path& currP)->boost::optional<Prop>;
+    static auto Mutate_Bidir(const Scene3* scene, Random& rng, const Path& currP, int maxPathVertices)->boost::optional<Prop>;
+    static auto Mutate_Lens(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
+    static auto Mutate_Caustic(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
+    static auto Mutate_Multichain(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
+    static auto Mutate_ManifoldLens(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
+    static auto Mutate_ManifoldCaustic(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
+    static auto Mutate_Manifold(const Scene3* scene, Random& rng, const Path& currP, Float s1, Float s2) -> boost::optional<Prop>;
 
 private:
 
-    static auto Q_BidirFixed(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace)->Float;
-    static auto Q_Bidir(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace, int maxPathVertices)->Float;
-    static auto Q_Lens(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
-    static auto Q_Caustic(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
-    static auto Q_Multichain(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
-    static auto Q_ManifoldLens(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
-    static auto Q_ManifoldCaustic(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
-    static auto Q_Manifold(const Scene* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_BidirFixed(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace)->Float;
+    static auto Q_Bidir(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace, int maxPathVertices)->Float;
+    static auto Q_Lens(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_Caustic(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_Multichain(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_ManifoldLens(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_ManifoldCaustic(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
+    static auto Q_Manifold(const Scene3* scene, const Path& x, const Path& y, const Subspace& subspace) -> Float;
 
 public:
 

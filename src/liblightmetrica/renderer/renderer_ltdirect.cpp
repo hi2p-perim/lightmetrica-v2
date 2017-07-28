@@ -260,20 +260,6 @@ public:
                 #pragma endregion
             }
         });
-<<<<<<< HEAD
-=======
-
-        // --------------------------------------------------------------------------------
-
-        #pragma region Save image
-        {
-            LM_LOG_INFO("Saving image");
-            LM_LOG_INDENTER();
-            film_->Save(outputPath);
-        }
-        #pragma endregion
-    };
->>>>>>> inversemap
 
         // --------------------------------------------------------------------------------
 

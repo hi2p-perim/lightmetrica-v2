@@ -44,7 +44,7 @@ class Scene3 : public Scene
 {
 public:
 
-    LM_INTERFACE_CLASS(Scene3, Scene, 10);
+    LM_INTERFACE_CLASS(Scene3, Scene, 11);
 
 public:
 
@@ -98,6 +98,9 @@ public:
     //! Compute the bound of the scene
     LM_INTERFACE_F(8,  GetBound, Bound());
     LM_INTERFACE_F(9, GetSphereBound, SphereBound());
+
+    //! Get a number of light primitives.
+    LM_INTERFACE_F(10, NumLightPrimitives, int());
 
 public:
 

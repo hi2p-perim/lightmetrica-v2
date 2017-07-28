@@ -132,7 +132,7 @@ public:
         return true;
     };
 
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
+    LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
         #if INVERSEMAP_MMLTINVMAP_DEBUG_IO
         DebugIO::Run();
@@ -140,6 +140,7 @@ public:
 
         // --------------------------------------------------------------------------------
 
+        const auto* scene = static_cast<const Scene3*>(scene_);
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
 
         // --------------------------------------------------------------------------------

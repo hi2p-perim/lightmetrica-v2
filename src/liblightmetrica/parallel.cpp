@@ -182,7 +182,7 @@ public:
                 // --------------------------------------------------------------------------------
 
                 #pragma region TLS
-                const int threadid = tbb::this_task_arena::current_thread_index();
+                const int threadid = tbb::task_arena::current_thread_index();
                 auto& ctx = contexts[threadid];
                 #pragma endregion
                 

@@ -23,33 +23,42 @@
 */
 
 #include "mltutils.h"
-#include "inversemaputils.h"
-#include "debugio.h"
-#include <mutex>
-#include <cereal/archives/json.hpp>
-#include <cereal/types/vector.hpp>
 
-#define INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_TRIANGLES 0
-#define INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_SAMPLED_PATHS 0
-#define INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION 0
-#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LENS_PERTURB_SUBSPACE_CONSISTENCY 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION 0
+#define INVERSEMAP_MLTINVMAPFIXED_DEBUG_COUNT_OCCURRENCES 0
 
 LM_NAMESPACE_BEGIN
 
-///! Metropolis light transport (fixed path length)
-class Renderer_Invmap_MLTFixed final : public Renderer
+enum class InvmapStrategy : int
+{
+    // Path space mutations
+    BidirFixed  = (int)(MLTStrategy::BidirFixed),
+    Bidir       = (int)(MLTStrategy::Bidir),
+    Lens        = (int)(MLTStrategy::Lens),
+    Caustic     = (int)(MLTStrategy::Caustic),
+    Multichain  = (int)(MLTStrategy::Multichain),
+    Identity    = (int)(MLTStrategy::Identity),
+        
+    // Primary sample space mutations
+    SmallStep,
+    LargeStep,
+};
+
+///! Combining PSSMLT and MLT via inversemap (fixed path length)
+class Renderer_Invmap_MLTInvmapFixed final : public Renderer
 {
 public:
 
-    LM_IMPL_CLASS(Renderer_Invmap_MLTFixed, Renderer);
+    LM_IMPL_CLASS(Renderer_Invmap_MLTInvmapFixed, Renderer);
 
 public:
 
     int numVertices_;
     long long numMutations_;
     long long numSeedSamples_;
-    MLTMutationStrategy mut_;
-    std::vector<Float> initStrategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
+    std::vector<Float> strategyWeights_{ 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f, 1_f };
     #if INVERSEMAP_OMIT_NORMALIZATION
     Float normalization_;
     #endif
@@ -62,6 +71,7 @@ public:
         if (!prop->ChildAs<int>("num_vertices", numVertices_)) return false;
         if (!prop->ChildAs<long long>("num_mutations", numMutations_)) return false;
         if (!prop->ChildAs<long long>("num_seed_samples", numSeedSamples_)) return false;
+
         {
             LM_LOG_INFO("Loading mutation strategy weights");
             LM_LOG_INDENTER();
@@ -71,36 +81,31 @@ public:
                 LM_LOG_ERROR("Missing 'mutation_strategy_weights'");
                 return false;
             }
-            initStrategyWeights_[(int)(MLTStrategy::BidirFixed)]      = child->ChildAs<Float>("bidir", 1_f);
-            initStrategyWeights_[(int)(MLTStrategy::Bidir)]           = 0_f;
-            initStrategyWeights_[(int)(MLTStrategy::Lens)]            = child->ChildAs<Float>("lens", 1_f);
-            initStrategyWeights_[(int)(MLTStrategy::Caustic)]         = child->ChildAs<Float>("caustic", 1_f);
-            initStrategyWeights_[(int)(MLTStrategy::Multichain)]      = child->ChildAs<Float>("multichain", 1_f);
-            initStrategyWeights_[(int)(MLTStrategy::ManifoldLens)]    = child->ChildAs<Float>("manifoldlens", 1_f);
-            initStrategyWeights_[(int)(MLTStrategy::ManifoldCaustic)] = child->ChildAs<Float>("manifoldcaustic", 1_f);
-            initStrategyWeights_[(int)(MLTStrategy::Manifold)]        = child->ChildAs<Float>("manifold", 1_f);
-            initStrategyWeights_[(int)(MLTStrategy::Identity)]        = child->ChildAs<Float>("identity", 0_f);
+            strategyWeights_[(int)(InvmapStrategy::BidirFixed)] = child->ChildAs<Float>("bidir", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::Bidir)]      = 0_f;
+            strategyWeights_[(int)(InvmapStrategy::Lens)]       = child->ChildAs<Float>("lens", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::Caustic)]    = child->ChildAs<Float>("caustic", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::Multichain)] = child->ChildAs<Float>("multichain", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::Identity)]   = child->ChildAs<Float>("identity", 0_f);
+            strategyWeights_[(int)(InvmapStrategy::SmallStep)]  = child->ChildAs<Float>("smallstep", 1_f);
+            strategyWeights_[(int)(InvmapStrategy::LargeStep)]  = child->ChildAs<Float>("largestep", 1_f);
         }
+
         #if INVERSEMAP_OMIT_NORMALIZATION
         normalization_ = prop->ChildAs<Float>("normalization", 1_f);
         #endif
         pathType_ = prop->ChildAs<std::string>("path_type", "");
         return true;
     };
-
-    LM_IMPL_F(Render) = [this](const Scene* scene, Random* initRng, const std::string& outputPath) -> void
+    
+    LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
-        #if INVERSEMAP_MLT_DEBUG_IO
-        DebugIO::Run();
-        #endif
-
-        // --------------------------------------------------------------------------------
-
+        const auto* scene = static_cast<const Scene3*>(scene_);
         auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
 
         // --------------------------------------------------------------------------------
 
-        #if INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_TRIANGLES
+        #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_OUTPUT_TRIANGLE
         // Output triangles
         {
             std::ofstream out("tris.out", std::ios::out | std::ios::trunc);
@@ -125,46 +130,6 @@ public:
                         << p1.x << " " << p1.y << " " << p1.z << std::endl;
                 }
             }
-        }
-        #endif
-
-        // --------------------------------------------------------------------------------
-
-        #if INVERSEMAP_MLT_DEBUG_IO
-        LM_LOG_DEBUG("triangle_vertices");
-        {
-            DebugIO::Wait();
-
-            std::vector<double> vs;
-            for (int i = 0; i < scene->NumPrimitives(); i++)
-            {
-                const auto* primitive = scene->PrimitiveAt(i);
-                const auto* mesh = primitive->mesh;
-                if (!mesh) { continue; }
-                const auto* ps = mesh->Positions();
-                const auto* faces = mesh->Faces();
-                for (int fi = 0; fi < primitive->mesh->NumFaces(); fi++)
-                {
-                    unsigned int vi1 = faces[3 * fi];
-                    unsigned int vi2 = faces[3 * fi + 1];
-                    unsigned int vi3 = faces[3 * fi + 2];
-                    Vec3 p1(primitive->transform * Vec4(ps[3 * vi1], ps[3 * vi1 + 1], ps[3 * vi1 + 2], 1_f));
-                    Vec3 p2(primitive->transform * Vec4(ps[3 * vi2], ps[3 * vi2 + 1], ps[3 * vi2 + 2], 1_f));
-                    Vec3 p3(primitive->transform * Vec4(ps[3 * vi3], ps[3 * vi3 + 1], ps[3 * vi3 + 2], 1_f));
-                    for (int j = 0; j < 3; j++) vs.push_back(p1[j]);
-                    for (int j = 0; j < 3; j++) vs.push_back(p2[j]);
-                    for (int j = 0; j < 3; j++) vs.push_back(p3[j]);
-                }
-            }
-            
-            std::stringstream ss;
-            {
-                cereal::JSONOutputArchive oa(ss);
-                oa(vs);
-            }
-
-            DebugIO::Output("triangle_vertices", ss.str());
-            DebugIO::Wait();
         }
         #endif
 
@@ -212,8 +177,8 @@ public:
             Float b = 0_f;
             for (auto& ctx : contexts) { b += ctx.b; }
             b /= numSeedSamples_;
-
             LM_LOG_INFO(boost::str(boost::format("Normalization factor: %.10f") % b));
+
             return b;
         }();
         #endif
@@ -227,13 +192,13 @@ public:
             LM_LOG_INDENTER();
 
             // --------------------------------------------------------------------------------
-
-            // Thread-specific context
+            
+            #pragma region Thread-specific context
             struct Context
             {
                 Random rng;
                 Film::UniquePtr film{ nullptr, nullptr };
-                Path currP;
+                std::vector<Float> currPS;
             };
             std::vector<Context> contexts(Parallel::GetNumThreads());
             for (auto& ctx : contexts)
@@ -281,7 +246,6 @@ public:
                         continue;
                     }
 
-#if 0
                     // Convert the path to the primary sample with cdf(path).
                     const auto ps = InversemapUtils::MapPath2PS(*path, initRng);
 
@@ -293,14 +257,12 @@ public:
                     }
                     const auto f1 = path->EvaluateF(0).Luminance();
                     const auto f2 = path2->EvaluateF(0).Luminance();
-                    const auto err = Math::Abs(f1 - f2) / Math::Abs(f1);
-                    if (err > Math::Eps())
+                    if (Math::Abs(f1 - f2) > Math::Eps())
                     {
                         continue;
                     }
-#endif
 
-                    ctx.currP = *path;
+                    ctx.currPS = ps;
                     break;
                 }
 #else
@@ -320,15 +282,16 @@ public:
                         continue;
                     }
 
-                    ctx.currP = *path;
+                    ctx.currPS = ps;
                     break;
                 }
 #endif
             }
+            #pragma endregion
 
             // --------------------------------------------------------------------------------
 
-            #if INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION
+            #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
             static long long maxReject = 0;
             #endif
             Parallel::For(numMutations_, [&](long long index, int threadid, bool init) -> void
@@ -336,88 +299,201 @@ public:
                 auto& ctx = contexts[threadid];
 
                 // --------------------------------------------------------------------------------
-                
-                const auto accept = [&]() -> bool
+
+                const bool accept = [&]() -> bool
                 {
                     #pragma region Select mutation strategy
-                    const auto strategy = [&]() -> MLTStrategy
+
+                    const auto strategy = [&]() -> InvmapStrategy
                     {
                         const auto StrategyDist = [&]() -> Distribution1D
                         {
                             Distribution1D dist;
-                            for (size_t i = 0; i < initStrategyWeights_.size(); i++)
-                            {
-                                const auto w = initStrategyWeights_[i];
-                                if (MLTMutationStrategy::CheckMutatable((MLTStrategy)(i), ctx.currP))
-                                {
-                                    dist.Add(w);
-                                }
-                                else
-                                {
-                                    dist.Add(0_f);
-                                }
-                            }
+                            for (Float w : strategyWeights_) dist.Add(w);
                             dist.Normalize();
                             return dist;
                         }();
-                        return (MLTStrategy)(StrategyDist.Sample(ctx.rng.Next()));
+                        return (InvmapStrategy)(StrategyDist.Sample(ctx.rng.Next()));
                     }();
+
                     #pragma endregion
 
                     // --------------------------------------------------------------------------------
 
-                    #pragma region Mutate the current path
-                    const auto prop = MLTMutationStrategy::Mutate(strategy, scene, ctx.rng, ctx.currP);
-                    if (!prop)
+                    if (strategy == InvmapStrategy::SmallStep || strategy == InvmapStrategy::LargeStep)
                     {
-                        return false;
-                    }
-                    #pragma endregion
+                        #pragma region PSSMLT mutations
 
-                    // --------------------------------------------------------------------------------
+                        const auto LargeStep = [this](const std::vector<Float>& currPS, Random& rng) -> std::vector <Float>
+                        {
+                            assert(currPS.size() == numVertices_);
+                            std::vector<Float> propPS;
+                            for (int i = 0; i < InversemapUtils::NumSamples(numVertices_); i++)
+                            {
+                                propPS.push_back(rng.Next());
+                            }
+                            return propPS;
+                        };
 
-                    #pragma region MH update
-                    {
-                        const auto Qxy = MLTMutationStrategy::Q(strategy, scene, ctx.currP, prop->p, prop->subspace);
-                        const auto Qyx = MLTMutationStrategy::Q(strategy, scene, prop->p, ctx.currP, prop->subspace);
-                        Float A = 0_f;
-                        if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
+                        const auto SmallStep = [this](const std::vector<Float>& ps, Random& rng) -> std::vector<Float>
                         {
-                            A = 0_f;
-                        }
-                        else
+                            const auto Perturb = [](Random& rng, const Float u, const Float s1, const Float s2)
+                            {
+                                Float result;
+                                Float r = rng.Next();
+                                if (r < 0.5_f)
+                                {
+                                    r = r * 2_f;
+                                    result = u + s2 * std::exp(-std::log(s2 / s1) * r);
+                                    if (result > 1_f) result -= 1_f;
+                                }
+                                else
+                                {
+                                    r = (r - 0.5_f) * 2_f;
+                                    result = u - s2 * std::exp(-std::log(s2 / s1) * r);
+                                    if (result < 0_f) result += 1_f;
+                                }
+                                return result;
+                            };
+
+                            std::vector<Float> propPS;
+                            for (const Float u : ps)
+                            {
+                                propPS.push_back(Perturb(rng, u, 1_f / 256_f, 1_f / 16_f));
+                            }
+
+                            return propPS;
+                        };
+
+                        // Function to compute path contribution
+                        const auto PathContrb = [&](const Path& path) -> SPD
                         {
-                            A = Math::Min(1_f, Qyx / Qxy);
+                            const auto F = path.EvaluateF(0);
+                            assert(!F.Black());
+                            SPD C;
+                            if (!F.Black())
+                            {
+                                const auto P = path.EvaluatePathPDF(scene, 0);
+                                assert(P > 0);
+                                C = F / P;
+                            }
+                            return C;
+                        };
+
+                        // --------------------------------------------------------------------------------
+
+                        // Mutate
+                        auto propPS = strategy == InvmapStrategy::LargeStep ? LargeStep(ctx.currPS, ctx.rng) : SmallStep(ctx.currPS, ctx.rng);
+
+                        // Map primary samples to paths
+                        const auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                        const auto propP = InversemapUtils::MapPS2Path(scene, propPS);
+
+                        // Immediately rejects if the proposed path is invalid or the dimension changes
+                        if (!propP || currP->vertices.size() != propP->vertices.size())
+                        {
+                            return false;
                         }
+
+                        // Evaluate contributions
+                        const Float currC = InversemapUtils::ScalarContrb(PathContrb(*currP));
+                        const Float propC = InversemapUtils::ScalarContrb(PathContrb(*propP));
+
+                        // Acceptance ratio
+                        const Float A = currC == 0 ? 1 : Math::Min(1_f, propC / currC);
+
+                        // Accept or reject?
                         if (ctx.rng.Next() < A)
                         {
-                            ctx.currP = prop->p;
+                            ctx.currPS.swap(propPS);
+                            return true;
                         }
                         else
                         {
                             return false;
                         }
+
+                        #pragma endregion
                     }
-                    #pragma endregion
+                    else
+                    {
+                        #pragma region MLT mutations
+
+                        #pragma region Map to path space
+                        auto currP = [&]() -> Path
+                        {
+                            const auto path = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                            assert(path);
+                            assert(!path->EvaluateF(0).Black());
+                            assert(path->vertices.size() == numVertices_);
+                            return *path;
+                        }();
+                        #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        #pragma region Mutate the current path
+                        const auto prop = MLTMutationStrategy::Mutate((MLTStrategy)(strategy), scene, ctx.rng, currP);
+                        if (!prop)
+                        {
+                            return false;
+                        }
+                        #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        #pragma region MH update
+                        {
+                            const auto Qxy = MLTMutationStrategy::Q((MLTStrategy)(strategy), scene, currP, prop->p, prop->subspace);
+                            const auto Qyx = MLTMutationStrategy::Q((MLTStrategy)(strategy), scene, prop->p, currP, prop->subspace);
+                            Float A = 0_f;
+                            if (Qxy <= 0_f || Qyx <= 0_f || std::isnan(Qxy) || std::isnan(Qyx))
+                            {
+                                A = 0_f;
+                            }
+                            else
+                            {
+                                A = Math::Min(1_f, Qyx / Qxy);
+                            }
+                            if (ctx.rng.Next() < A)
+                            {
+                                currP = prop->p;
+                            }
+                            else
+                            {
+                                // This is critical
+                                return false;
+                            }
+                        }
+                        #pragma endregion
+
+                        // --------------------------------------------------------------------------------
+
+                        #pragma region Map to primary sample space
+                        const auto ps = InversemapUtils::MapPath2PS(currP, &ctx.rng);
+                        const auto currP2 = InversemapUtils::MapPS2Path(scene, ps);
+                        if (!currP2 || currP.vertices.size() != currP2->vertices.size() || currP2->EvaluateF(0).Black())
+                        {
+                            // This sometimes happens due to numerical problem
+                            return false;
+                        }
+                        ctx.currPS = ps;
+                        #pragma endregion
+
+                        return true;
+                        #pragma endregion
+                    }
 
                     // --------------------------------------------------------------------------------
-
-                    return true;
+                    LM_UNREACHABLE();
+                    return false;
                 }();
-
-                #if LM_DEBUG_MODE
-                static long long lastAcceptIndex = 0;
-                if (accept)
-                {
-                    lastAcceptIndex = index;
-                }
-                #endif
 
                 // --------------------------------------------------------------------------------
 
-                #if INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION
-                if (threadid == 0)
+                #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
                 {
+                    assert(Parallel::GetNumThreads() == 1);
                     static bool prevIsReject = false;
                     static long long sequencialtReject = 0;
                     if (accept)
@@ -441,6 +517,10 @@ public:
                         }
                     }
                 }
+                if (maxReject > 10000)
+                {
+                    __debugbreak();
+                }
                 #else
                 LM_UNUSED(accept);
                 #endif
@@ -449,33 +529,36 @@ public:
 
                 #pragma region Accumulate contribution
                 {
-                    const auto currF = ctx.currP.EvaluateF(0);
-                    if (!currF.Black() && ctx.currP.IsPathType(pathType_))
+                    auto currP = InversemapUtils::MapPS2Path(scene, ctx.currPS);
+                    #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_COUNT_OCCURRENCES
+                    ctx.film->Splat(currP->RasterPosition(), SPD(1_f));
+                    #else
+                    const auto currF = currP->EvaluateF(0);
+                    if (!currF.Black() && currP->IsPathType(pathType_))
                     {
-                        ctx.film->Splat(ctx.currP.RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
-                        //ctx.film->Splat(ctx.currP.RasterPosition(), SPD(b));
+                        ctx.film->Splat(currP->RasterPosition(), currF * (b / InversemapUtils::ScalarContrb(currF)));
                     }
+                    #endif
                 }
                 #pragma endregion
 
                 // --------------------------------------------------------------------------------
 
-                #if INVERSEMAP_MLTFIXED_DEBUG_OUTPUT_SAMPLED_PATHS
-                if (threadid == 0)
+                #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_TRACEPLOT
                 {
-                    // Output sampled path
+                    assert(Parallel::GetNumThreads() == 1);
                     static long long count = 0;
                     if (count == 0)
                     {
-                        boost::filesystem::remove("dirs.out");
+                        boost::filesystem::remove("traceplot.out");
                     }
-                    if (count < 100 && accept)
+                    if (count < 1000)
                     {
                         count++;
-                        std::ofstream out("dirs.out", std::ios::out | std::ios::app);
-                        for (const auto& v : ctx.currP.vertices)
+                        std::ofstream out("traceplot.out", std::ios::out | std::ios::app);
+                        for (const auto& v : ctx.currPS)
                         {
-                            out << boost::str(boost::format("%.10f %.10f %.10f ") % v.geom.p.x % v.geom.p.y % v.geom.p.z);
+                            out << v << " ";
                         }
                         out << std::endl;
                     }
@@ -483,10 +566,9 @@ public:
                 #endif
             });
 
-            
             // --------------------------------------------------------------------------------
 
-            #if INVERSEMAP_MLTFIXED_DEBUG_LONGEST_REJECTION
+            #if INVERSEMAP_MLTINVMAPFIXED_DEBUG_LONGEST_REJECTION
             {
                 LM_LOG_INFO("Maximum # of rejection: " + std::to_string(maxReject));
             }
@@ -507,12 +589,6 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        #if INVERSEMAP_DEBUG_MLT_MANIFOLDWALK_STAT
-        MLTMutationStrategy::PrintStat();
-        #endif
-
-        // --------------------------------------------------------------------------------
-
         #pragma region Save image
         {
             LM_LOG_INFO("Saving image");
@@ -520,16 +596,10 @@ public:
             film->Save(outputPath);
         }
         #pragma endregion
-
-        // --------------------------------------------------------------------------------
-
-        #if INVERSEMAP_MLT_DEBUG_IO
-        DebugIO::Stop();
-        #endif
     };
 
 };
 
-LM_COMPONENT_REGISTER_IMPL(Renderer_Invmap_MLTFixed, "renderer::invmap_mltfixed");
+LM_COMPONENT_REGISTER_IMPL(Renderer_Invmap_MLTInvmapFixed, "renderer::invmap_mltinvmapfixed");
 
 LM_NAMESPACE_END

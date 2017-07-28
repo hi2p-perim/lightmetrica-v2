@@ -151,7 +151,7 @@ public:
         SPD Cstar;      // Caches unweighed contribution
         Float w;        // Caches MIS weight
     };
-    static auto InvCDF(const State& s, const Scene* scene) -> boost::optional<CachedPath>
+    static auto InvCDF(const State& s, const Scene3* scene) -> boost::optional<CachedPath>
     {
         Subpath subpathE;
         Subpath subpathL;
@@ -201,7 +201,7 @@ public:
     }
 
     // Maps a path to a state in multiplexed primary sample space
-    static auto CDF(const Path& p, int s, const Scene* scene, Random* rng) -> boost::optional<State>
+    static auto CDF(const Path& p, int s, const Scene3* scene, Random* rng) -> boost::optional<State>
     {
         const int n = (int)(p.vertices.size());
         const int t = n - s;
@@ -223,7 +223,7 @@ public:
         return state;
     }
 
-    static auto CDF_Subpath(const Scene* scene, const Path& p, int k, Random* rng, TransportDirection transDir) -> std::vector<Float>
+    static auto CDF_Subpath(const Scene3* scene, const Path& p, int k, Random* rng, TransportDirection transDir) -> std::vector<Float>
     {
         const int n = (int)(p.vertices.size());
         const auto index = [&](int i) -> int { return transDir == TransportDirection::LE ? i : n - 1 - i; };

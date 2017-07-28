@@ -735,7 +735,7 @@ private:
                 return typename ConfigurableT::UniquePtr(nullptr, nullptr);
             }
 
-            // Creata an instance of the given name
+            // Create an instance of the given name
             const auto tn = n->Child("type");
             if (!tn)
             {
@@ -743,7 +743,7 @@ private:
                 PropertyUtils::PrintPrettyError(n);
                 return typename ConfigurableT::UniquePtr(nullptr, nullptr);
             }
-            type = tn->template As<std::string>();
+            type = tn->As<std::string>();
             LM_LOG_INFO("Type: '" + type + "'");
 
             auto p = type == "default"
@@ -762,7 +762,7 @@ private:
         {
             return typename ConfigurableT::UniquePtr(nullptr, nullptr);
         }
-        
+
         // Initialize
         const auto* pn = n ? n->Child("params") : nullptr;
         if (!initializeFunc(p.get(), pn))

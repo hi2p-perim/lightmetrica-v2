@@ -50,7 +50,6 @@ public:
         return true;
     };
 
-<<<<<<< HEAD
     LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
         #if LM_RAYCAST_DEBUG_IO
