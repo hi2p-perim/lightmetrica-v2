@@ -75,7 +75,13 @@ public:
         TriangleUtils::SampleTriangleMesh(u, mesh_, transform_, dist_, geom);
 
         // Direction
-        const auto localWo = Sampler::CosineSampleHemisphere(u2);
+        const auto localWo = Sampler::CosineSampleHemisphere(u);
+        wo = geom.ToWorld * localWo;
+    };
+
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    {
+        const auto localWo = Sampler::CosineSampleHemisphere(u);
         wo = geom.ToWorld * localWo;
     };
 
@@ -93,7 +99,7 @@ public:
 
     LM_IMPL_F(EvaluatePositionGivenPreviousPositionPDF) = [this](const SurfaceGeometry& geom, const SurfaceGeometry& geomPrev, bool evalDelta) -> PDFVal
     {
-        return PDFVal(PDFMeasure::Area, invArea_);
+        return PDFVal(PDFMeasure::Area, invArea_);  
     };
 
     LM_IMPL_F(EvaluateDirection) = [this](const SurfaceGeometry& geom, int types, const Vec3& wi, const Vec3& wo, TransportDirection transDir, bool evalDelta) -> SPD
@@ -144,6 +150,8 @@ public:
         }
         return true;
     };
+
+    LM_IMPL_F(TriAreaDist) = [this]() -> Distribution1D* { return &dist_; };
 
 private:
 

@@ -118,6 +118,7 @@ public:
             int numVertices;                // Number of vertices needed to generate the measurement point 
         };
 
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         const auto W = film->Width();
         const auto H = film->Height();
         std::vector<MeasurementPoint> mps(W * H);

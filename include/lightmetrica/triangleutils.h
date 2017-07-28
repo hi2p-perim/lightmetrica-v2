@@ -87,6 +87,7 @@ public:
         unsigned int i1 = fs[3 * i];
         unsigned int i2 = fs[3 * i + 1];
         unsigned int i3 = fs[3 * i + 2];
+        geom.faceindex = i;
 
         // Position
         Vec3 p1(transform * Vec4(ps[3 * i1], ps[3 * i1 + 1], ps[3 * i1 + 2], 1_f));

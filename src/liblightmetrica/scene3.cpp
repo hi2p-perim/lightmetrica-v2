@@ -337,6 +337,7 @@ public:
                     {
                         primitive->light   = static_cast<const Light*>(assets->AssetByIDAndType(L->RawScalar(), "light", primitive.get()));
                         primitive->emitter = static_cast<const Emitter*>(primitive->light);
+                        primitive->lightIndex = lightPrimitiveIndices_.size();
                         lightPrimitiveIndices_.push_back(primitives_.size());
                     }
                     else if (E)
@@ -619,6 +620,11 @@ public:
         }
 
         return true;
+    };
+
+    LM_IMPL_F(NumLightPrimitives) = [this]() -> int
+    {
+        return (int)(lightPrimitiveIndices_.size());
     };
 
 private:

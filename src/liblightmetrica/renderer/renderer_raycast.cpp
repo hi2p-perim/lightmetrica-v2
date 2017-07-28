@@ -33,7 +33,7 @@
 #include <lightmetrica/intersection.h>
 #include <lightmetrica/detail/debugio.h>
 
-#define LM_RAYCAST_DEBUG_IO 1
+#define LM_RAYCAST_DEBUG_IO 0
 
 LM_NAMESPACE_BEGIN
 
@@ -50,6 +50,7 @@ public:
         return true;
     };
 
+<<<<<<< HEAD
     LM_IMPL_F(Render) = [this](const Scene* scene_, Random* initRng, const std::string& outputPath) -> void
     {
         #if LM_RAYCAST_DEBUG_IO
@@ -58,11 +59,9 @@ public:
 
         // --------------------------------------------------------------------------------
 
-        //#if LM_RAYCAST_DEBUG_IO
-        //{
-        //    DebugIO::BreakPoint("scene", scene_);
-        //}
-        //#endif
+        #if LM_RAYCAST_DEBUG_IO
+        DebugIO::BreakPoint("scene", scene_);
+        #endif
 
         // --------------------------------------------------------------------------------
 
@@ -97,7 +96,8 @@ public:
                 }
 
                 // Set color to the pixel
-                const auto c = Math::Abs(Math::Dot(isect.geom.sn, -ray.d));
+                const auto R = isect.primitive->bsdf->Reflectance2.Implemented() ? isect.primitive->bsdf->Reflectance2(isect.geom) : SPD(1_f);
+                const auto c = Math::Abs(Math::Dot(isect.geom.sn, -ray.d)) * R;
                 film->SetPixel(x, y, SPD(c));
             }
 

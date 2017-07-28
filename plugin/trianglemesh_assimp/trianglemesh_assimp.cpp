@@ -118,22 +118,26 @@ public:
         }
 
         //if (!scene->mMeshes[0]->HasNormals() && postProcessNode)
-        if (!scene->mMeshes[0]->HasNormals())
+        const int enablePostProcess = prop->ChildAs<int>("postprocess", 1);
+        if (enablePostProcess)
         {
-            importer.ApplyPostProcessing(
-                aiProcess_GenNormals |
-                //(postProcessNode["generate_normals"].as<bool>() ? aiProcess_GenNormals : 0) |
-                //(postProcessNode["generate_smooth_normals"].as<bool>() ? aiProcess_GenSmoothNormals : 0) |
-                aiProcess_Triangulate |
-                aiProcess_JoinIdenticalVertices |
-                aiProcess_PreTransformVertices);
-        }
-        else
-        {
-            importer.ApplyPostProcessing(
-                aiProcess_Triangulate |
-                aiProcess_JoinIdenticalVertices |
-                aiProcess_PreTransformVertices);
+            if (!scene->mMeshes[0]->HasNormals())
+            {
+                importer.ApplyPostProcessing(
+                    aiProcess_GenNormals |
+                    //(postProcessNode["generate_normals"].as<bool>() ? aiProcess_GenNormals : 0) |
+                    //(postProcessNode["generate_smooth_normals"].as<bool>() ? aiProcess_GenSmoothNormals : 0) |
+                    aiProcess_Triangulate |
+                    aiProcess_JoinIdenticalVertices |
+                    aiProcess_PreTransformVertices);
+            }
+            else
+            {
+                importer.ApplyPostProcessing(
+                    aiProcess_Triangulate |
+                    aiProcess_JoinIdenticalVertices |
+                    aiProcess_PreTransformVertices);
+            }
         }
 
         #pragma endregion
@@ -143,7 +147,8 @@ public:
         #pragma region Load triangle mesh
 
         {
-            const auto* aimesh = scene->mMeshes[0];
+            const int meshid = prop->ChildAs<int>("meshid", 0);
+            const auto* aimesh = scene->mMeshes[meshid];
 
             // --------------------------------------------------------------------------------
 

@@ -585,6 +585,7 @@ public:
         // --------------------------------------------------------------------------------
 
         Float mergeRadius = 0_f;
+        auto* film = static_cast<const Sensor*>(scene->GetSensor()->emitter)->GetFilm();
         for (long long pass = 0; pass < numIterationPass_; pass++)
         {
             LM_LOG_INFO("Pass " + std::to_string(pass));

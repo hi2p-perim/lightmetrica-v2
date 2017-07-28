@@ -33,7 +33,11 @@
 
 LM_NAMESPACE_BEGIN
 
+<<<<<<< HEAD
 class Scene3;
+=======
+class Scene;
+>>>>>>> inversemap
 class Random;
 struct Primitive;
 
@@ -99,7 +103,11 @@ public:
         \param transDir              Transport direction of the subpath.
         \param processPathVertexFunc Callback function to process vertices.
     */
+<<<<<<< HEAD
     LM_PUBLIC_API static auto TraceSubpath(const Scene3* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+=======
+    LM_PUBLIC_API static auto TraceSubpath(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+>>>>>>> inversemap
 
     /*!
         Function to trace eye subpath with fixed raster position.
@@ -111,7 +119,11 @@ public:
         \param rasterPos             Fixed raster position.
         \param processPathVertexFunc Callback function to process vertices.
     */
+<<<<<<< HEAD
     LM_PUBLIC_API static auto TraceEyeSubpathFixedRasterPos(const Scene3* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const Vec2& rasterPos, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+=======
+    LM_PUBLIC_API static auto TraceEyeSubpathFixedRasterPos(const Scene* scene, Random* rng, int maxNumVertices, TransportDirection transDir, const Vec2& rasterPos, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+>>>>>>> inversemap
 
     /*!
         Function to trance subpath from current endpoint.
@@ -125,7 +137,11 @@ public:
         \param transDir              Transport direction of the subpath.
         \param processPathVertexFunc Callback function to process vertices.
     */
+<<<<<<< HEAD
     LM_PUBLIC_API static auto TraceSubpathFromEndpoint(const Scene3* scene, Random* rng, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+=======
+    LM_PUBLIC_API static auto TraceSubpathFromEndpoint(const Scene* scene, Random* rng, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+>>>>>>> inversemap
 
     /*!
         Function to trance subpath from current endpoint with given sampler.
@@ -139,7 +155,11 @@ public:
         \param sampleNext            Sampler function.
         \param processPathVertexFunc Callback function to process vertices.
     */
+<<<<<<< HEAD
     LM_PUBLIC_API static auto TraceSubpathFromEndpointWithSampler(const Scene3* scene, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SamplerFunc& sampleNext, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+=======
+    LM_PUBLIC_API static auto TraceSubpathFromEndpointWithSampler(const Scene* scene, const PathVertex* pv, const PathVertex* ppv, int nv, int maxNumVertices, TransportDirection transDir, const SamplerFunc& sampleNext, const ProcessPathVertexFunc& processPathVertexFunc) -> void;
+>>>>>>> inversemap
 
 };
 

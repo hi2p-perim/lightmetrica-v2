@@ -39,7 +39,6 @@ class Distribution1D
 public:
 
     Distribution1D() { Clear(); }
-    LM_DISABLE_COPY_AND_MOVE(Distribution1D);
 
 public:
 
@@ -82,6 +81,11 @@ public:
         return (i < 0 || i + 1 >= static_cast<int>(cdf.size())) ? 0 : cdf[i + 1] - cdf[i];
     }
 
+    auto EvaluateCDF(int i) const -> Float
+    {
+        return cdf[i];
+    }
+
     //! Clear distribution
     auto Clear() -> void
     {
@@ -95,7 +99,12 @@ public:
         return cdf.size() == 1;
     }
 
-public:
+    auto Sum() const -> Float
+    {
+        return cdf.back();
+    }
+
+private:
 
     std::vector<Float> cdf;
 

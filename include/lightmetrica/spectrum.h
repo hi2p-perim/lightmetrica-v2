@@ -87,6 +87,7 @@ struct DiscreteSPD<3>
     static auto FromRGB(const Vec3& rgb) -> T { T s; s.v = rgb; return s; }
 
     auto Black() const -> bool { return Math::IsZero(v); }
+    auto Luminance() const -> Float { return 0.212671_f * v.x + 0.715160_f * v.y + 0.072169_f * v.z; }
 
     LM_INLINE auto operator+=(const DiscreteSPD<3>& spd) -> T& { v += spd.v; return *this; }
     LM_INLINE auto operator*=(const DiscreteSPD<3>& spd) -> T& { v *= spd.v; return *this; }

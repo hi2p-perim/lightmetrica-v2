@@ -34,6 +34,8 @@ LM_NAMESPACE_BEGIN
     \ingroup asset
 */
 
+class Distribution1D;
+
 /*!
     \brief An interface for Light
     \ingroup light
@@ -42,7 +44,7 @@ class Light : public Emitter
 {
 public:
 
-    LM_INTERFACE_CLASS(Light, Emitter, 1);
+    LM_INTERFACE_CLASS(Light, Emitter, 2);
 
 public:
 
@@ -53,6 +55,9 @@ public:
 
     ///! Get emittance if available.
     LM_INTERFACE_F(0, Emittance, SPD());
+
+    ///! Get distribution for triangle selection if available.
+    LM_INTERFACE_F(1, TriAreaDist, Distribution1D*());
 
 };
 

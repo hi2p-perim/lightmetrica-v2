@@ -37,7 +37,7 @@ public:
 
     LM_IMPL_F(Type) = [this]() -> int
     {
-        return SurfaceInteractionType::BSDF;
+        return SurfaceInteractionType::None;
     };
 
     LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float u2, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void

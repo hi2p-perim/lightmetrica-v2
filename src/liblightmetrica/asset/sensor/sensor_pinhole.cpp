@@ -89,6 +89,14 @@ public:
         wo = vx_ * woEye.x + vy_ * woEye.y + vz_ * woEye.z;
     };
 
+    LM_IMPL_F(SampleDirection) = [this](const Vec2& u, Float uComp, int queryType, const SurfaceGeometry& geom, const Vec3& wi, Vec3& wo) -> void
+    {
+        const auto rasterPos = 2.0_f * u - Vec2(1.0_f);
+        const Float tanFov = Math::Tan(fov_ * 0.5_f);
+        const auto woEye = Math::Normalize(Vec3(aspect_ * tanFov * rasterPos.x, tanFov * rasterPos.y, -1_f));
+        wo = vx_ * woEye.x + vy_ * woEye.y + vz_ * woEye.z;
+    };
+
     LM_IMPL_F(EvaluateDirectionPDF) = [this](const SurfaceGeometry& geom, int queryType, const Vec3& wi, const Vec3& wo, bool evalDelta) -> PDFVal
     {
         return PDFVal(PDFMeasure::ProjectedSolidAngle, Importance(wo, geom));

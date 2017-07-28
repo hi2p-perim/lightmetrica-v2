@@ -680,6 +680,7 @@ private:
 
             // Dispatch renderer
             FPUtils::EnableFPControl();
+
             renderer->Render(scene.get(), &initRng, opt.Render.OutputPath);
             FPUtils::DisableFPControl();
         }
