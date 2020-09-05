@@ -55,8 +55,8 @@ RUN ./b2 cxxflags=-fPIC cflags=-fPIC link=static $BUILD_CORES_BOOST
 
 # FreeImage
 WORKDIR /
-RUN wget http://downloads.sourceforge.net/freeimage/FreeImage3170.zip
-RUN unzip FreeImage3170.zip
+RUN wget http://downloads.sourceforge.net/freeimage/FreeImage3180.zip
+RUN unzip FreeImage3180.zip
 WORKDIR /FreeImage
 RUN make $BUILD_CORES && make install
 
@@ -72,9 +72,9 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release .. && make $BUILD_CORES && make install
 
 # Embree
 WORKDIR /
-RUN git clone --depth=1 --branch v2.8.0 https://github.com/embree/embree.git embree
+RUN git clone --depth=1 --branch v2.17.7 https://github.com/embree/embree.git embree
 WORKDIR /embree/build
-RUN cmake -D CMAKE_BUILD_TYPE=Release -D ENABLE_ISPC_SUPPORT=OFF -D RTCORE_TASKING_SYSTEM=INTERNAL -D ENABLE_TUTORIALS=OFF .. && make $BUILD_CORES && make install && cp libembree.so /usr/local/lib
+RUN cmake -D CMAKE_BUILD_TYPE=Release -D EMBREE_ISPC_SUPPORT=OFF -D EMBREE_TASKING_SYSTEM=INTERNAL -D EMBREE_TUTORIALS=OFF .. && make $BUILD_CORES && make install && cp libembree.so /usr/local/lib
 
 # --------------------------------------------------------------------------------
 
@@ -99,7 +99,7 @@ RUN cp -rf include/tbb /usr/local/include/
 USER $NB_USER
 
 RUN pip install imageio
-RUN conda install -c menpo -y opencv3=3.1.0
+RUN pip install opencv-python==3.4.11.41
 
 # --------------------------------------------------------------------------------
 
